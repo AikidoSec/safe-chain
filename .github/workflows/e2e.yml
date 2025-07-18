@@ -60,9 +60,6 @@ jobs:
       - name: Install safe-chain globally
         run: npm install -g .
 
-      - name: Run unit tests
-        run: npm test
-
       - name: Run linting
         run: npm run lint
 
