@@ -44,6 +44,7 @@
   },
   "homepage": "https://github.com/AikidoSec/safe-chain#readme",
   "overrides": {
-    "brace-expansion@<=2.0.2": "2.0.2"
+    "brace-expansion@<=2.0.2": "2.0.2",
+    "tmp@<=0.2.4": "0.2.4"
   }
 }
