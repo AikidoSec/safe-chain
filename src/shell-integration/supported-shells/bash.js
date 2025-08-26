@@ -4,12 +4,22 @@ import {
   removeLinesMatchingPattern,
 } from "../helpers.js";
 import { execSync } from "child_process";
+import { platform } from "os";
 
 const shellName = "Bash";
 const executableName = "bash";
 const startupFileCommand = "echo ~/.bashrc";
 
 function isInstalled() {
+  // Do not try to modify the bash config on Windows as it will fail in most cases.
+  // If WSL is installed, the bash command will open the WSL environment.
+  // In this case the returned path /home/user/.bashrc is not accessible from Windows.
+  // If Git Bash or MinGW is installed, the bash command may open the Git Bash or MinGW environment.
+  // It will return a path like /c/Users/user/.bashrc which is not a valid Windows file path.
+  if (platform() === "win32") {
+    return false;
+  }
+
   return doesExecutableExistOnSystem(executableName);
 }
 
