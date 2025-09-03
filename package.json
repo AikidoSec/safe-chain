@@ -10,6 +10,12 @@
     "type": "git",
     "url": "git+https://github.com/AikidoSec/safe-chain.git"
   },
+  "exports": {
+    ".": {
+      "bun": "./src/bun.js",
+      "default": "./bin/safe-chain.js"
+    }
+  },
   "bin": {
     "aikido-npm": "bin/aikido-npm.js",
     "aikido-npx": "bin/aikido-npx.js",
