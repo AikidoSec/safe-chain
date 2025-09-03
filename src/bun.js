@@ -4,27 +4,24 @@
 import { auditChanges } from "./scanning/audit/index.js";
 
 export const scanner = {
-  version: "1", // Required by Bun security scanner interface
+  version: "1", // Our scanner is using version 1 of the bun security scanner API.
 
   async scan({ packages }) {
     const advisories = [];
 
     try {
-      // Convert Bun package format to safe-chain's internal format
-      const changes = packages.map(pkg => ({
+      const changes = packages.map((pkg) => ({
         name: pkg.name,
         version: pkg.version,
-        type: "add", // Bun packages being scanned are always being added
+        type: "add",
       }));
 
-      // Reuse existing safe-chain scanning logic
       const audit = await auditChanges(changes);
 
-      // Convert safe-chain audit results to Bun advisory format
       if (!audit.isAllowed) {
         for (const change of audit.disallowedChanges) {
           advisories.push({
-            level: "fatal", // Block malicious packages
+            level: "fatal", // Fatal will block the installation process, this is what we want for packages that contain malware.
             package: change.name,
             url: null,
             description: `Package ${change.name}@${change.version} contains known security threats (${change.reason}). Installation blocked by Safe-Chain.`,
@@ -32,7 +29,6 @@ export const scanner = {
         }
       }
     } catch (error) {
-      // Graceful degradation - log error but don't block installation
       console.warn(`Safe-Chain security scan failed: ${error.message}`);
     }
 
