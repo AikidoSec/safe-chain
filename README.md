@@ -19,61 +19,31 @@ Aikido Safe Chain works on Node.js version 18 and above and supports the followi
 
 ## Installation
 
-### For npm, npx, yarn, pnpm, pnpx
-
 Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
 
 1. **Install the Aikido Safe Chain package globally** using npm:
    ```shell
    npm install -g @aikidosec/safe-chain
    ```
-2. **Setup the shell integration** by running:
+2. **Setup integrations** by running:
+
    ```shell
    safe-chain setup
    ```
+
+   This will automatically:
+
+   - Configure shell aliases for npm, npx, yarn, pnpm, and pnpx
+   - Configure Bun security scanner (if Bun is installed) by creating `~/.bunfig.toml`
+
 3. **❗Restart your terminal** to start using the Aikido Safe Chain.
-   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm and pnpx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 4. **Verify the installation** by running:
    ```shell
    npm install safe-chain-test
-   ```
-   - The output should show that Aikido Safe Chain is blocking the installation of this package as it is flagged as malware.
-
-When running `npm`, `npx`, `yarn`, `pnpm` or `pnpx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. If any malware is detected, it will prompt you to exit the command.
-
-### For bun
-
-Bun uses a different integration approach and **does not require shell integration**:
-
-1. **Install the Aikido Safe Chain package globally**:
-
-   ```shell
-   bun add -g @aikidosec/safe-chain
-   ```
-
-2. **Configure Bun security scanner** by creating a `bunfig.toml` file:
-
-   **Option A: Global (recommended)** - Create in your home directory (`~/bunfig.toml`):
-
-   ```toml
-   [install.security]
-   scanner = "@aikidosec/safe-chain"
-   ```
-
-   **Option B: Project-level** - Create in your project root:
-
-   ```toml
-   [install.security]
-   scanner = "@aikidosec/safe-chain"
-   ```
-
-3. **Verify Bun integration** by running:
-   ```shell
+   # or for Bun users:
    bun add safe-chain-test
    ```
-   The output should show that Aikido Safe Chain is blocking the installation of this package as it is flagged as malware.
-
-**Note**: Unlike other package managers, Bun users do **not** need to run `safe-chain setup` or restart their terminal, as Bun uses its native security scanner API instead of shell aliases.
+   - The output should show that Aikido Safe Chain is blocking the installation of this package as it is flagged as malware.
 
 ## How it works
 
@@ -93,29 +63,36 @@ More information about the shell integration can be found in the [shell integrat
 
 ## Uninstallation
 
-### For npm, npx, yarn, pnpm, pnpx
+### Automatic Teardown (Recommended)
 
 To uninstall the Aikido Safe Chain:
 
-1. **Remove all aliases from your shell** by running:
+1. **Remove all configurations** by running:
    ```shell
    safe-chain teardown
    ```
+   This will automatically:
+   - Remove shell aliases for npm, npx, yarn, pnpm, and pnpx
+   - Remove Bun security scanner configuration from `~/.bunfig.toml`
+   - Clean up configuration files
 2. **Uninstall the Aikido Safe Chain package** using npm:
    ```shell
    npm uninstall -g @aikidosec/safe-chain
    ```
-3. **❗Restart your terminal** to remove the aliases.
+3. **❗Restart your terminal** to apply the changes.
 
-### For Bun
+### Manual Cleanup (Alternative)
 
-To uninstall for Bun users:
+If you need to manually clean up:
 
-1. **Remove the scanner configuration** by deleting the `[install.security]` section from your `bunfig.toml` file (either in your project root or `~/bunfig.toml`)
-2. **Uninstall the Aikido Safe Chain package**:
-   ```shell
-   bun remove -g @aikidosec/safe-chain
-   ```
+**For shell aliases:**
+
+- Manually remove the aliases from your shell configuration files (`.bashrc`, `.zshrc`, etc.)
+
+**For Bun:**
+
+- Remove the `[install.security]` section from your `.bunfig.toml` file (either in your project root or `~/.bunfig.toml`)
+- Optionally remove the global package: `bun remove -g @aikidosec/safe-chain`
 
 # Usage in CI/CD
 

@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
-import { detectShells } from "./shellDetection.js";
+import { detectShells, detectPackageManagerIntegrations } from "./integrationDetection.js";
 import { knownAikidoTools } from "./helpers.js";
 import fs from "fs";
 import os from "os";
@@ -19,11 +19,26 @@ export async function setup() {
 
   copyStartupFiles();
 
+  const shellUpdatedCount = setupShells();
+  const packageManagerUpdatedCount = setupPackageManagers();
+
+  if (shellUpdatedCount > 0 || packageManagerUpdatedCount > 0) {
+    ui.emptyLine();
+    ui.writeInformation(`Please restart your terminal to apply the changes.`);
+  }
+}
+
+/**
+ * Sets up all detected shells and returns the count of successful setups.
+ */
+function setupShells() {
+  let shellUpdatedCount = 0;
+
   try {
     const shells = detectShells();
     if (shells.length === 0) {
       ui.writeError("No supported shells detected. Cannot set up aliases.");
-      return;
+      return 0;
     }
 
     ui.writeInformation(
@@ -32,23 +47,51 @@ export async function setup() {
         .join(", ")}.`
     );
 
-    let updatedCount = 0;
     for (const shell of shells) {
       if (setupShell(shell)) {
-        updatedCount++;
+        shellUpdatedCount++;
       }
-    }
-
-    if (updatedCount > 0) {
-      ui.emptyLine();
-      ui.writeInformation(`Please restart your terminal to apply the changes.`);
     }
   } catch (error) {
     ui.writeError(
       `Failed to set up shell aliases: ${error.message}. Please check your shell configuration.`
     );
-    return;
+    return 0;
   }
+
+  return shellUpdatedCount;
+}
+
+/**
+ * Sets up all detected package managers and returns the count of successful setups.
+ */
+function setupPackageManagers() {
+  let packageManagerUpdatedCount = 0;
+
+  try {
+    const packageManagers = detectPackageManagerIntegrations();
+    
+    if (packageManagers.length > 0) {
+      ui.emptyLine();
+      ui.writeInformation(
+        `Detected ${packageManagers.length} supported package manager(s): ${packageManagers
+          .map((pm) => chalk.bold(pm.name))
+          .join(", ")}.`
+      );
+
+      for (const packageManager of packageManagers) {
+        if (setupPackageManager(packageManager)) {
+          packageManagerUpdatedCount++;
+        }
+      }
+    }
+  } catch (error) {
+    ui.writeError(
+      `Failed to setup package manager integrations: ${error.message}. Please check your package manager configuration.`
+    );
+  }
+
+  return packageManagerUpdatedCount;
 }
 
 /**
@@ -74,6 +117,31 @@ function setupShell(shell) {
       `${chalk.bold("- " + shell.name + ":")} ${chalk.red(
         "Setup failed"
       )}. Please check your ${shell.name} configuration.`
+    );
+  }
+
+  return success;
+}
+
+function setupPackageManager(packageManager) {
+  let success = false;
+  try {
+    success = packageManager.setup();
+  } catch {
+    success = false;
+  }
+
+  if (success) {
+    ui.writeInformation(
+      `${chalk.bold("- " + packageManager.name + ":")} ${chalk.green(
+        "Setup successful"
+      )}`
+    );
+  } else {
+    ui.writeError(
+      `${chalk.bold("- " + packageManager.name + ":")} ${chalk.red(
+        "Setup failed"
+      )}. Please check your ${packageManager.name} configuration.`
     );
   }
 

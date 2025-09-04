@@ -46,12 +46,12 @@ function writeHelp() {
   ui.writeInformation(
     `- ${chalk.cyan(
       "safe-chain setup"
-    )}: This will setup your shell to wrap safe-chain around npm, npx and yarn.`
+    )}: This will setup your shell to wrap safe-chain around npm, npx, yarn, pnpm, and configure Bun security scanner.`
   );
   ui.writeInformation(
     `- ${chalk.cyan(
       "safe-chain teardown"
-    )}: This will remove safe-chain aliases from your shell configuration.`
+    )}: This will remove safe-chain aliases and configurations from your shell and Bun.`
   );
   ui.emptyLine();
 }
