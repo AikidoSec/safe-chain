@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 
-// Placeholder for setup function - will be implemented in next step
-function setup(configFile) {
-  console.log("Setup functionality coming soon...");
-  console.log("Target config file:", configFile || "~/.bunfig.toml");
-}
+import { setup } from "../src/setup.js";
 
 if (process.argv.length < 3) {
   console.error("No command provided. Please provide a command to execute.");
