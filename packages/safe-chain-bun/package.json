@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "safe-chain-bun": "bin/safe-chain-bun.js"
+  },
   "scripts": {
     "test": "node --test --experimental-test-module-mocks 'src/**/*.spec.js'"
   },
@@ -12,7 +15,13 @@
       "default": "./src/index.js"
     }
   },
-  "keywords": ["bun", "security", "scanner", "malware", "aikido"],
+  "keywords": [
+    "bun",
+    "security",
+    "scanner",
+    "malware",
+    "aikido"
+  ],
   "author": "Aikido Security",
   "license": "AGPL-3.0-or-later",
   "description": "Aikido Security Scanner for Bun package manager - detects malware and security threats during package installation",

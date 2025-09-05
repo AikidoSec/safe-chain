@@ -26,14 +26,16 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Create package tarball
-        run: npm pack --workspace=packages/safe-chain
+      - name: Create package tarballs
+        run: |
+          npm pack --workspace=packages/safe-chain
+          npm pack --workspace=packages/safe-chain-bun
 
-      - name: Upload package tarball
+      - name: Upload package tarballs
         uses: actions/upload-artifact@v4
         with:
-          name: safe-chain-package
-          path: aikidosec-safe-chain-*.tgz
+          name: safe-chain-packages
+          path: aikidosec-*.tgz
 
   e2e-tests:
     name: Run E2E tests
