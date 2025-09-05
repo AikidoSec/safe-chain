@@ -3,7 +3,8 @@ import assert from "node:assert";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { addScannerToToml, setup } from "./setup.js";
+import { addScannerToToml } from "./toml-utils.js";
+import { setup } from "./setup.js";
 
 describe("addScannerToToml", () => {
   it("should add scanner to empty content", () => {

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import os from "os";
+import { getGlobalConfigPath, addScannerToToml } from "./toml-utils.js";
 
 /**
  * Main setup function that registers safe-chain-bun as a security scanner
@@ -31,13 +31,6 @@ export function setup(configFile) {
   }
 }
 
-/**
- * Gets the global bunfig.toml path
- * @returns {string} Path to global bunfig.toml
- */
-function getGlobalConfigPath() {
-  return path.join(os.homedir(), ".bunfig.toml");
-}
 
 /**
  * Updates or creates a bunfig.toml file with safe-chain-bun scanner configuration
@@ -86,42 +79,3 @@ function updateBunfigFile(filePath, isGlobal) {
   }
 }
 
-/**
- * Adds or updates the scanner configuration in TOML content
- * @param {string} content - Existing TOML content
- * @returns {{content: string, changed: boolean}} Updated content and change status
- */
-export function addScannerToToml(content) {
-  const scannerLine = 'scanner = "@aikidosec/safe-chain-bun"';
-  
-  if (content.includes(scannerLine)) {
-    return { content, changed: false };
-  }
-  
-  const lines = content.split(/[\r\n\u2028\u2029]+/);
-  const installSecurityRegex = /^\[install\.security\]$/;
-  const scannerRegex = /^scanner\s*=.*$/;
-  
-  const securitySectionIndex = lines.findIndex(line => installSecurityRegex.test(line));
-  
-  if (securitySectionIndex >= 0) {
-    const scannerLineIndex = lines.findIndex((line, index) => 
-      index > securitySectionIndex && scannerRegex.test(line)
-    );
-    
-    if (scannerLineIndex >= 0) {
-      lines[scannerLineIndex] = scannerLine;
-    } else {
-      lines.splice(securitySectionIndex + 1, 0, scannerLine);
-    }
-  } else {
-    if (lines[lines.length - 1] !== '') {
-      lines.push('');
-    }
-    lines.push('[install.security]');
-    lines.push(scannerLine);
-    lines.push('');
-  }
-  
-  return { content: lines.join(os.EOL), changed: true };
-}
