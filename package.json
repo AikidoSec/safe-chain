@@ -25,6 +25,7 @@
     "typescript-eslint": "^8.32.0"
   },
   "overrides": {
-    "brace-expansion@<=2.0.2": "2.0.2"
+    "brace-expansion@<=2.0.2": "2.0.2",
+    "tmp@<=0.2.4": "0.2.4"
   }
 }
