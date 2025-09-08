@@ -35,13 +35,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aikidosec-safe-chain-1.0.0.tgz
-          path: packages/safe-chain/aikidosec-safe-chain-*.tgz
+          path: **/aikidosec-safe-chain-*.tgz
 
       - name: Upload safe-chain-bun tarball
         uses: actions/upload-artifact@v4
         with:
           name: aikidosec-safe-chain-bun-1.0.0.tgz
-          path: packages/safe-chain-bun/aikidosec-safe-chain-bun-*.tgz
+          path: **/aikidosec-safe-chain-bun-*.tgz
 
   e2e-tests:
     name: Run E2E tests
