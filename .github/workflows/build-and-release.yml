@@ -65,3 +65,25 @@ jobs:
           npm publish --workspace=packages/safe-chain-bun --access public
         env:
           NPM_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+      - name: Pack safe-chain tarball
+        run: |
+          cd packages/safe-chain
+          npm pack
+
+      - name: Pack safe-chain-bun tarball
+        run: |
+          cd packages/safe-chain-bun
+          npm pack
+
+      - name: Upload safe-chain tarball
+        uses: actions/upload-artifact@v3
+        with:
+          name: aikidosec-safe-chain-${{ steps.get_version.outputs.tag }}
+          path: packages/safe-chain/aikidosec-safe-chain-*.tgz
+
+      - name: Upload safe-chain-bun tarball
+        uses: actions/upload-artifact@v3
+        with:
+          name: aikidosec-safe-chain-bun-${{ steps.get_version.outputs.tag }}
+          path: packages/safe-chain-bun/aikidosec-safe-chain-bun-*.tgz

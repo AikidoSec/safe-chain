@@ -31,11 +31,17 @@ jobs:
           npm pack --workspace=packages/safe-chain
           npm pack --workspace=packages/safe-chain-bun
 
-      - name: Upload package tarballs
-        uses: actions/upload-artifact@v4
+      - name: Upload safe-chain tarball
+        uses: actions/upload-artifact@v3
         with:
-          name: safe-chain-packages
-          path: aikidosec-*.tgz
+          name: aikidosec-safe-chain-1.0.0.tgz
+          path: packages/safe-chain/aikidosec-safe-chain-*.tgz
+
+      - name: Upload safe-chain-bun tarball
+        uses: actions/upload-artifact@v3
+        with:
+          name: aikidosec-safe-chain-bun-1.0.0.tgz
+          path: packages/safe-chain-bun/aikidosec-safe-chain-bun-*.tgz
 
   e2e-tests:
     name: Run E2E tests
