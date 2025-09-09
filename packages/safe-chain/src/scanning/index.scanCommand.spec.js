@@ -128,7 +128,7 @@ describe("scanCommand", async () => {
     assert.equal(failureMessageWasSet, true);
   });
 
-  it("should fail and prompt the user when malicious changes are detected", async () => {
+  it("should fail and exit immediately when malicious changes are detected (without INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE)", async () => {
     let failureMessageWasSet = false;
     mockStartProcess.mock.mockImplementationOnce(() => ({
       setText: () => {},
@@ -140,41 +140,56 @@ describe("scanCommand", async () => {
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
       { name: "malicious", version: "1.0.0" },
     ]);
-    let userWasPrompted = false;
-    mockConfirm.mock.mockImplementationOnce(() => {
-      userWasPrompted = true;
-      return true; // Simulate user accepting the risk, otherwise the process would exit
-    });
 
-    await scanCommand(["install", "malicious"]);
+    // Mock process.exit to avoid actually exiting during test
+    const originalExit = process.exit;
+    let exitCode;
+    process.exit = (code) => { exitCode = code; throw new Error("process.exit called"); };
+
+    try {
+      await scanCommand(["install", "malicious"]);
+      assert.fail("Expected process.exit to be called");
+    } catch (error) {
+      if (error.message !== "process.exit called") {
+        throw error;
+      }
+    } finally {
+      process.exit = originalExit;
+    }
 
     assert.equal(failureMessageWasSet, true);
-    assert.equal(userWasPrompted, true);
+    assert.equal(exitCode, 1);
   });
 
-  it("should not report a timeout when the user takes a long time to respond (it should not affect the timeout)", async () => {
-    let failureMessages = [];
+  it("should continue installation when INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE=1", async () => {
+    // Set the environment variable
+    const originalEnv = process.env.INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE;
+    process.env.INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE = "1";
+
+    let failureMessageWasSet = false;
     mockStartProcess.mock.mockImplementationOnce(() => ({
       setText: () => {},
       succeed: () => {},
-      fail: (message) => {
-        failureMessages.push(message);
+      fail: () => {
+        failureMessageWasSet = true;
       },
     }));
-    getScanTimeoutMock.mock.mockImplementationOnce(() => 100);
-    mockGetDependencyUpdatesForCommand.mock.mockImplementation(async () => {
-      return [{ name: "malicious", version: "4.17.21" }];
-    });
-    mockConfirm.mock.mockImplementationOnce(async () => {
-      await setTimeout(200);
-      return true; // Simulate user accepting the risk, otherwise the process would exit
-    });
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
+      { name: "malicious", version: "1.0.0" },
+    ]);
 
-    await scanCommand(["install", "malicious"]);
-
-    assert.equal(failureMessages.length, 1);
-    const failureMessage = failureMessages[0];
-    assert.equal(failureMessage.toLowerCase().includes("timeout"), false);
-    assert.equal(failureMessage.toLowerCase().includes("malicious"), true);
+    try {
+      await scanCommand(["install", "malicious"]);
+      
+      assert.equal(failureMessageWasSet, true);
+      // Should not exit when env var is set
+    } finally {
+      // Restore original env var
+      if (originalEnv === undefined) {
+        delete process.env.INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE;
+      } else {
+        process.env.INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE = originalEnv;
+      }
+    }
   });
 });

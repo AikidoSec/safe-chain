@@ -37,7 +37,12 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    ```
    - The output should show that Aikido Safe Chain is blocking the installation of this package as it is flagged as malware.
 
-When running `npm`, `npx`, `yarn`, `pnpm` or `pnpx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. If any malware is detected, it will prompt you to exit the command.
+When running `npm`, `npx`, `yarn`, `pnpm` or `pnpx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. If any malware is detected, the installation will be blocked by default for security.
+
+To override this safety check and install packages despite malware detection (not recommended), you can use:
+```shell
+INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE=1 npm install <package-name>
+```
 
 ## How it works
 

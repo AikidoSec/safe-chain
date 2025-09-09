@@ -59,10 +59,7 @@ export async function scanCommand(args) {
     spinner.succeed("No malicious packages detected.");
   } else {
     printMaliciousChanges(audit.disallowedChanges, spinner);
-    await acceptRiskOrExit(
-      "Do you want to continue with the installation despite the risks?",
-      false
-    );
+    await acceptRiskOrExit();
   }
 }
 
@@ -74,19 +71,18 @@ function printMaliciousChanges(changes, spinner) {
   }
 }
 
-async function acceptRiskOrExit(message, defaultValue) {
-  ui.emptyLine();
-  const continueInstall = await ui.confirm({
-    message: message,
-    default: defaultValue,
-  });
-
-  if (continueInstall) {
-    ui.writeInformation("Continuing with the installation...");
+async function acceptRiskOrExit() {
+  // Check if the user has explicitly allowed risky installations
+  if (process.env.INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE === "1") {
+    ui.emptyLine();
+    ui.writeInformation("INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE=1 detected. Continuing with the installation despite risks...");
     return;
   }
 
-  ui.writeInformation("Exiting without installing packages.");
+  // Default secure behavior: exit without prompting
+  ui.emptyLine();
+  ui.writeInformation("Installation blocked due to malicious packages detected.");
+  ui.writeInformation("To override this safety check, run with: INSTALL_A_POSSIBLY_MALICIOUS_PACKAGE=1");
   ui.emptyLine();
   process.exit(1);
 }
