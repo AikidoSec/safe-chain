@@ -66,7 +66,3 @@ To uninstall the Aikido Safe Chain, you can run the following command:
    npm uninstall -g @aikidosec/safe-chain
    ```
 3. **❗Restart your terminal** to remove the aliases.
-
-# Usage in CI/CD
-
-🚧 Support for CI/CD environments is coming soon...
