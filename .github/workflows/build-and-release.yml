@@ -27,8 +27,10 @@ jobs:
           version="${{ github.ref_name }}"
           echo "tag=$version" >> $GITHUB_OUTPUT
 
-      - name: Set the version in safe-chain package
-        run: npm --no-git-tag-version version ${{ steps.get_version.outputs.tag }} --workspace=packages/safe-chain
+      - name: Set the version in both packages
+        run: |
+          npm --no-git-tag-version version ${{ steps.get_version.outputs.tag }} --workspace=packages/safe-chain
+          npm --no-git-tag-version version ${{ steps.get_version.outputs.tag }} --workspace=packages/safe-chain-bun
 
       - name: Install dependencies
         run: npm ci
@@ -42,9 +44,24 @@ jobs:
           cp LICENSE packages/safe-chain/
           cp -r docs packages/safe-chain/
 
-      - name: Publish to npm
+      - name: Publish safe-chain to npm
         run: |
-          echo "Publishing version ${{ steps.get_version.outputs.tag }} to NPM"
+          echo "Publishing safe-chain version ${{ steps.get_version.outputs.tag }} to NPM"
           npm publish --workspace=packages/safe-chain --access public
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+      - name: Update safe-chain-bun dependency for publishing
+        run: |
+          # During development, safe-chain-bun uses "file:../safe-chain" to depend on the local package
+          # This works great for local development but breaks when published to npm registry
+          # We need to replace it with the actual version number so users can install from npm
+          # Changes: "@aikidosec/safe-chain": "file:../safe-chain" → "@aikidosec/safe-chain": "1.0.0"
+          sed -i 's/"@aikidosec\/safe-chain": "file:..\/safe-chain"/"@aikidosec\/safe-chain": "${{ steps.get_version.outputs.tag }}"/g' packages/safe-chain-bun/package.json
+
+      - name: Publish safe-chain-bun to npm
+        run: |
+          echo "Publishing safe-chain-bun version ${{ steps.get_version.outputs.tag }} to NPM"
+          npm publish --workspace=packages/safe-chain-bun --access public
         env:
           NPM_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
