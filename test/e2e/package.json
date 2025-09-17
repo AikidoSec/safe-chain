@@ -11,6 +11,6 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "dependencies": {
-    "node-pty": "^1.0.0"
+    "node-pty": "1.0.0"
   }
 }
