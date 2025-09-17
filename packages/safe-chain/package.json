@@ -35,6 +35,14 @@
     "ora": "8.2.0",
     "semver": "7.7.2"
   },
+  "devDependencies": {
+    "@eslint/js": "9.35.0",
+    "@eslint/config-helpers": "0.3.1",
+    "eslint": "9.35.0",
+    "eslint-plugin-import": "2.32.0",
+    "globals": "16.1.0",
+    "typescript-eslint": "8.32.0"
+  },
   "main": "src/main.js",
   "bugs": {
     "url": "https://github.com/AikidoSec/safe-chain/issues"

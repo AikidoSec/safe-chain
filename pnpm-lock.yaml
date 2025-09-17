@@ -6,23 +6,7 @@ settings:
 
 importers:
 
-  .:
-    devDependencies:
-      '@eslint/js':
-        specifier: 9.35.0
-        version: 9.35.0
-      eslint:
-        specifier: 9.35.0
-        version: 9.35.0
-      eslint-plugin-import:
-        specifier: 2.32.0
-        version: 2.32.0(@typescript-eslint/parser@8.32.0(eslint@9.35.0)(typescript@5.8.3))(eslint@9.35.0)
-      globals:
-        specifier: 16.1.0
-        version: 16.1.0
-      typescript-eslint:
-        specifier: 8.32.0
-        version: 8.32.0(eslint@9.35.0)(typescript@5.8.3)
+  .: {}
 
   packages/safe-chain:
     dependencies:
@@ -44,6 +28,25 @@ importers:
       semver:
         specifier: 7.7.2
         version: 7.7.2
+    devDependencies:
+      '@eslint/config-helpers':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@eslint/js':
+        specifier: 9.35.0
+        version: 9.35.0
+      eslint:
+        specifier: 9.35.0
+        version: 9.35.0
+      eslint-plugin-import:
+        specifier: 2.32.0
+        version: 2.32.0(@typescript-eslint/parser@8.32.0(eslint@9.35.0)(typescript@5.8.3))(eslint@9.35.0)
+      globals:
+        specifier: 16.1.0
+        version: 16.1.0
+      typescript-eslint:
+        specifier: 8.32.0
+        version: 8.32.0(eslint@9.35.0)(typescript@5.8.3)
 
   packages/safe-chain-bun:
     dependencies:
