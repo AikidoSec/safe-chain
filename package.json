@@ -2,14 +2,10 @@
   "name": "aikido-safe-chain-workspace",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "packages/*",
-    "test/e2e"
-  ],
   "scripts": {
-    "test": "npm run test --workspace=packages/safe-chain --workspace=packages/safe-chain-bun",
-    "test:e2e": "npm run test --workspace=test/e2e",
-    "lint": "npm run lint --workspace=packages/safe-chain"
+    "test": "pnpm --filter @aikidosec/safe-chain test && pnpm --filter packages/safe-chain-bun test",
+    "test:e2e": "pnpm --filter @aikidosec/safe-chain-e2e-tests test",
+    "lint": "pnpm --filter @aikidosec/safe-chain lint"
   },
   "repository": {
     "type": "git",

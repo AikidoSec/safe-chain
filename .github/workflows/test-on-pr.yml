@@ -18,16 +18,16 @@ jobs:
           node-version: "lts/*"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install
 
       - name: Run unit tests
-        run: npm test
+        run: pnpm test
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm lint
 
       - name: Create package tarball
-        run: npm pack --workspace=packages/safe-chain
+        run: pnpm pack --workspace=packages/safe-chain
 
       - name: Upload package tarball
         uses: actions/upload-artifact@v4
@@ -95,7 +95,7 @@ jobs:
           node-version: "lts/*"
 
       - name: Install dependencies (root)
-        run: npm ci
+        run: pnpm install
 
       - name: Run E2E tests
         env:
@@ -103,7 +103,7 @@ jobs:
           NPM_VERSION: ${{ matrix.npm_version }}
           YARN_VERSION: ${{ matrix.yarn_version }}
           PNPM_VERSION: ${{ matrix.pnpm_version }}
-        run: npm run test:e2e
+        run: pnpm run test:e2e
 
       - name: Clean up Docker resources
         if: always()

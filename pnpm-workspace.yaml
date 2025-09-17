@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - test/e2e
+
+minimumReleaseAge: 1440
+
+onlyBuiltDependencies:
+  - node-pty
