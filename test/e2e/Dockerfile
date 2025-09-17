@@ -1,22 +1,26 @@
 FROM node:24-bookworm as builder
 
 ENV CI=true
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY packages/safe-chain/package*.json ./
+COPY ./pnpm-lock.yaml ./
+COPY ./pnpm-workspace.yaml ./
 
 # Install dependencies
-RUN npm install
+RUN pnpm install
 
 # Copy the rest of the application
 COPY packages/safe-chain ./
 
 # Build the application
-RUN npm --no-git-tag-version version 1.0.0 --allow-same-version
-RUN npm pack
+RUN pnpm pack --filter @aikidosec/safe-chain
 
 FROM buildpack-deps:trixie
 
