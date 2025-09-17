@@ -34,7 +34,7 @@ jobs:
         run: pnpm lint
 
       - name: Create package tarball
-        run: pnpm pack --workspace=packages/safe-chain
+        run: pnpm pack --filter @aikidosec/safe-chain
 
       - name: Upload package tarball
         uses: actions/upload-artifact@v4
