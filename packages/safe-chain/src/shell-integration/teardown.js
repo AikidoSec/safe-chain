@@ -1,12 +1,12 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools } from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
 
 export async function teardown() {
   ui.writeInformation(
     chalk.bold("Removing shell aliases.") +
-      " This will remove safe-chain aliases for npm, npx, and yarn commands."
+      ` This will remove safe-chain aliases for ${getPackageManagerList()}.`
   );
   ui.emptyLine();
 

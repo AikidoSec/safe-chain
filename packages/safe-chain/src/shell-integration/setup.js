@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools } from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -13,7 +13,7 @@ import { fileURLToPath } from "url";
 export async function setup() {
   ui.writeInformation(
     chalk.bold("Setting up shell aliases.") +
-      " This will wrap safe-chain around npm, npx, and yarn commands."
+      ` This will wrap safe-chain around ${getPackageManagerList()}.`
   );
   ui.emptyLine();
 

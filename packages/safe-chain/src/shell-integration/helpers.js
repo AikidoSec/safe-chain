@@ -13,6 +13,22 @@ export const knownAikidoTools = [
   // and add the documentation for the new tool in the README.md
 ];
 
+/**
+ * Returns a formatted string listing all supported package managers.
+ * Example: "npm, npx, yarn, pnpm, and pnpx commands"
+ */
+export function getPackageManagerList() {
+  const tools = knownAikidoTools.map(t => t.tool);
+  if (tools.length <= 1) {
+    return `${tools[0] || ''} commands`;
+  }
+  if (tools.length === 2) {
+    return `${tools[0]} and ${tools[1]} commands`;
+  }
+  const lastTool = tools.pop();
+  return `${tools.join(', ')}, and ${lastTool} commands`;
+}
+
 export function doesExecutableExistOnSystem(executableName) {
   if (os.platform() === "win32") {
     const result = spawnSync("where", [executableName], { stdio: "ignore" });
