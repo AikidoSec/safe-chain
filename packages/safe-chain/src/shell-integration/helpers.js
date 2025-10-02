@@ -18,15 +18,15 @@ export const knownAikidoTools = [
  * Example: "npm, npx, yarn, pnpm, and pnpx commands"
  */
 export function getPackageManagerList() {
-  const tools = knownAikidoTools.map(t => t.tool);
+  const tools = knownAikidoTools.map((t) => t.tool);
   if (tools.length <= 1) {
-    return `${tools[0] || ''} commands`;
+    return `${tools[0] || ""} commands`;
   }
   if (tools.length === 2) {
     return `${tools[0]} and ${tools[1]} commands`;
   }
   const lastTool = tools.pop();
-  return `${tools.join(', ')}, and ${lastTool} commands`;
+  return `${tools.join(", ")}, and ${lastTool} commands`;
 }
 
 export function doesExecutableExistOnSystem(executableName) {
@@ -47,7 +47,7 @@ export function removeLinesMatchingPattern(filePath, pattern, eol) {
   eol = eol || os.EOL;
 
   const fileContent = fs.readFileSync(filePath, "utf-8");
-  const lines = fileContent.split(/[\r\n\u2028\u2029]/);
+  const lines = fileContent.split(/\r?\n|\r|\u2028|\u2029/);
   const updatedLines = lines.filter((line) => !shouldRemoveLine(line, pattern));
   fs.writeFileSync(filePath, updatedLines.join(eol), "utf-8");
 }
