@@ -1,13 +1,20 @@
 import { ui } from "../../environment/userInteraction.js";
-import { safeSpawnSync } from "../../utils/safeSpawn.js";
+import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
+import { safeSpawn } from "../../utils/safeSpawn.js";
 
-export function runPnpmCommand(args, toolName = "pnpm") {
+export async function runPnpmCommand(args, toolName = "pnpm") {
   try {
     let result;
     if (toolName === "pnpm") {
-      result = safeSpawnSync("pnpm", args, { stdio: "inherit" });
+      result = await safeSpawn("pnpm", args, {
+        stdio: "inherit",
+        env: mergeSafeChainProxyEnvironmentVariables(process.env),
+      });
     } else if (toolName === "pnpx") {
-      result = safeSpawnSync("pnpx", args, { stdio: "inherit" });
+      result = await safeSpawn("pnpx", args, {
+        stdio: "inherit",
+        env: mergeSafeChainProxyEnvironmentVariables(process.env),
+      });
     } else {
       throw new Error(`Unsupported tool name for aikido-pnpm: ${toolName}`);
     }

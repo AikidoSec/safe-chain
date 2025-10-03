@@ -46,7 +46,7 @@ jobs:
         include:
           # Common production setup
           - node_version: "20"
-            npm_version: "10.0.0"
+            npm_version: "10.2.0"
             yarn_version: "4.0.0"
             pnpm_version: "9.0.0"
           # Current Active LTS with latest tools
@@ -66,7 +66,7 @@ jobs:
             pnpm_version: "latest"
           # Version pinning scenario
           - node_version: "22"
-            npm_version: "10.0.0"
+            npm_version: "10.2.0"
             yarn_version: "4.0.0"
             pnpm_version: "9.0.0"
           # Backward compatibility testing
@@ -82,7 +82,7 @@ jobs:
           # EOL compatibility testing - Node 16 (EOL Sept 2023)
           - node_version: "16"
             npm_version: "8.0.0"
-            yarn_version: "3.6.0"
+            yarn_version: "1.22.0"
             pnpm_version: "8.0.0"
 
     steps:

@@ -31,7 +31,7 @@ describe("E2E: pnpm coverage", () => {
     const result = await shell.runCommand("pnpm add axios");
 
     assert.ok(
-      result.output.includes("No malicious packages detected."),
+      result.output.includes("no malicious packages found."),
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
@@ -57,6 +57,28 @@ describe("E2E: pnpm coverage", () => {
     assert.ok(
       !listResult.output.includes("safe-chain-test"),
       `Malicious package was installed despite safe-chain protection. Output of 'pnpm list' was:\n${listResult.output}`
+    );
+  });
+
+  it(`safe-chain blocks download of malicious packages already in package.json`, async () => {
+    const shell = await container.openShell("zsh");
+    await shell.runCommand(
+      'echo \'{"name":"test-project","version":"1.0.0","dependencies":{"safe-chain-test":"0.0.1-security"}}\' > package.json'
+    );
+
+    var result = await shell.runCommand("pnpm install");
+
+    assert.ok(
+      result.output.includes("blocked 1 malicious package downloads"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("- safe-chain-test"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("Exiting without installing malicious packages."),
+      `Output did not include expected text. Output was:\n${result.output}`
     );
   });
 

@@ -5,4 +5,6 @@ import { initializePackageManager } from "../src/packagemanager/currentPackageMa
 
 const packageManagerName = "pnpx";
 initializePackageManager(packageManagerName, process.versions.node);
-await main(process.argv.slice(2));
+var exitCode = await main(process.argv.slice(2));
+
+process.exit(exitCode);

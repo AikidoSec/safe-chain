@@ -6,7 +6,9 @@ import { initializePackageManager } from "../src/packagemanager/currentPackageMa
 
 const packageManagerName = "npm";
 initializePackageManager(packageManagerName, getNpmVersion());
-await main(process.argv.slice(2));
+var exitCode = await main(process.argv.slice(2));
+
+process.exit(exitCode);
 
 function getNpmVersion() {
   try {

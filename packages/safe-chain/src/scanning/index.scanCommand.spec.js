@@ -13,6 +13,7 @@ describe("scanCommand", async () => {
     setText: () => {},
     succeed: () => {},
     fail: () => {},
+    stop: () => {},
   }));
   const mockConfirm = mock.fn(() => true);
   let malwareAction = MALWARE_ACTION_PROMPT;
@@ -88,29 +89,31 @@ describe("scanCommand", async () => {
   const { scanCommand } = await import("./index.js");
 
   it("should succeed when there are no changes", async () => {
-    let successMessageWasSet = false;
+    let progressWasStopped = false;
     mockStartProcess.mock.mockImplementationOnce(() => ({
       setText: () => {},
-      succeed: () => {
-        successMessageWasSet = true;
-      },
+      succeed: () => {},
       fail: () => {},
+      stop: () => {
+        progressWasStopped = true;
+      },
     }));
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
 
     await scanCommand(["install", "lodash"]);
 
-    assert.equal(successMessageWasSet, true);
+    assert.equal(progressWasStopped, true);
   });
 
   it("should succeed when changes are not malicious", async () => {
-    let successMessageWasSet = false;
+    let progressWasStopped = false;
     mockStartProcess.mock.mockImplementationOnce(() => ({
       setText: () => {},
-      succeed: () => {
-        successMessageWasSet = true;
-      },
+      succeed: () => {},
       fail: () => {},
+      stop: () => {
+        progressWasStopped = true;
+      },
     }));
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
       { name: "lodash", version: "4.17.21" },
@@ -118,7 +121,7 @@ describe("scanCommand", async () => {
 
     await scanCommand(["install", "lodash"]);
 
-    assert.equal(successMessageWasSet, true);
+    assert.equal(progressWasStopped, true);
   });
 
   it("should throw an error when timing out", async () => {
@@ -129,6 +132,7 @@ describe("scanCommand", async () => {
       fail: () => {
         failureMessageWasSet = true;
       },
+      stop: () => {},
     }));
     getScanTimeoutMock.mock.mockImplementationOnce(() => 100);
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(async () => {
@@ -149,6 +153,7 @@ describe("scanCommand", async () => {
       fail: () => {
         failureMessageWasSet = true;
       },
+      stop: () => {},
     }));
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
       { name: "malicious", version: "1.0.0" },
@@ -173,6 +178,7 @@ describe("scanCommand", async () => {
       fail: (message) => {
         failureMessages.push(message);
       },
+      stop: () => {},
     }));
     getScanTimeoutMock.mock.mockImplementationOnce(() => 100);
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(async () => {
@@ -194,21 +200,22 @@ describe("scanCommand", async () => {
   it("should exit immediately when malicious changes are detected in block mode", async () => {
     // Set malware action to block mode for this test
     malwareAction = MALWARE_ACTION_BLOCK;
-    
+
     // Reset mock call count
     mockConfirm.mock.resetCalls();
-    
+
     let failureMessageWasSet = false;
     let exitCode = null;
-    
+
     mockStartProcess.mock.mockImplementationOnce(() => ({
       setText: () => {},
       succeed: () => {},
       fail: () => {
         failureMessageWasSet = true;
       },
+      stop: () => {},
     }));
-    
+
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
       { name: "malicious", version: "1.0.0" },
     ]);
@@ -241,19 +248,20 @@ describe("scanCommand", async () => {
   it("should exit immediately when malicious changes are detected in block mode without prompting", async () => {
     // Set malware action to block mode for this test
     malwareAction = MALWARE_ACTION_BLOCK;
-    
+
     // Reset mock call count
     mockConfirm.mock.resetCalls();
-    
+
     let processExited = false;
     let userWasPrompted = false;
-    
+
     mockStartProcess.mock.mockImplementationOnce(() => ({
       setText: () => {},
       succeed: () => {},
       fail: () => {},
+      stop: () => {},
     }));
-    
+
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
       { name: "malicious", version: "1.0.0" },
     ]);

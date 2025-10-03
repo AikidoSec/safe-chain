@@ -61,7 +61,7 @@ export async function scanCommand(args) {
   }
 
   if (!audit || audit.isAllowed) {
-    spinner.succeed("Safe-chain: No malicious packages detected.");
+    spinner.stop();
   } else {
     printMaliciousChanges(audit.disallowedChanges, spinner);
     await onMalwareFound();

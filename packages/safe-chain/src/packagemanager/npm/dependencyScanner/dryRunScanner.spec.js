@@ -36,7 +36,7 @@ describe("dryRunScanner", async () => {
       }));
 
       const scanner = dryRunScanner();
-      const result = scanner.scan(["audit", "fix"]);
+      const result = await scanner.scan(["audit", "fix"]);
 
       // Should not throw an error for audit fix commands
       assert.ok(Array.isArray(result));
@@ -53,8 +53,8 @@ describe("dryRunScanner", async () => {
 
       const scanner = dryRunScanner();
 
-      assert.throws(() => {
-        scanner.scan(["install", "lodash"]);
+      await assert.rejects(async () => {
+        await scanner.scan(["install", "lodash"]);
       }, /Dry-run command failed with exit code 1/);
     });
 
@@ -67,7 +67,7 @@ describe("dryRunScanner", async () => {
       }));
 
       const scanner = dryRunScanner();
-      const result = scanner.scan(["install", "lodash"]);
+      const result = await scanner.scan(["install", "lodash"]);
 
       assert.ok(Array.isArray(result));
       assert.equal(mockWriteError.mock.callCount(), 0);
@@ -83,8 +83,8 @@ describe("dryRunScanner", async () => {
 
       const scanner = dryRunScanner();
 
-      assert.throws(() => {
-        scanner.scan(["audit", "fix"]);
+      await assert.rejects(async () => {
+        await scanner.scan(["audit", "fix"]);
       }, /Dry-run command failed with exit code 1/);
     });
   });
@@ -99,7 +99,7 @@ describe("dryRunScanner", async () => {
       }));
 
       const scanner = dryRunScanner({ dryRunCommand: "install" });
-      scanner.scan(["install-test", "lodash"]);
+      await scanner.scan(["install-test", "lodash"]);
 
       // Should call with "install" instead of "install-test"
       assert.equal(mockDryRunNpmCommandAndOutput.mock.callCount(), 1);

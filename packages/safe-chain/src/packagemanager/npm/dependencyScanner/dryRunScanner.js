@@ -8,6 +8,7 @@ export function dryRunScanner(scannerOptions) {
     shouldScan: (args) => shouldScanDependencies(scannerOptions, args),
   };
 }
+
 function scanDependencies(scannerOptions, args) {
   let dryRunArgs = args;
 
@@ -31,8 +32,8 @@ function shouldScanDependencies(scannerOptions, args) {
   return true;
 }
 
-function checkChangesWithDryRun(args) {
-  const dryRunOutput = dryRunNpmCommandAndOutput(args);
+async function checkChangesWithDryRun(args) {
+  const dryRunOutput = await dryRunNpmCommandAndOutput(args);
 
   // Dry-run can return a non-zero status code in some cases
   //  e.g., when running "npm audit fix --dry-run", it returns exit code 1

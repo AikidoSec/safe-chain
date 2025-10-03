@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "End-to-end tests for the Aikido Safe Chain",
   "scripts": {
-    "test": "node --test **/*.spec.js"
+    "test": "node --test --test-concurrency=1 **/*.spec.js"
   },
   "keywords": [],
   "author": "Aikido Security",

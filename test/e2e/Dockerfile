@@ -29,6 +29,9 @@ ARG PNPM_VERSION=latest
 SHELL ["/bin/bash", "-c"]
 ENV BASH_ENV=~/.bashrc
 
+# Install a proxy
+RUN apt-get update && apt-get install tinyproxy -y
+
 # Install zsh
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.2.1/zsh-in-docker.sh)"
 # Install fish

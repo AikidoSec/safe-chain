@@ -36,7 +36,7 @@ describe("E2E: pnpm coverage", () => {
     const result = await shell.runCommand("pnpm add axios");
 
     assert.ok(
-      result.output.includes("No malicious packages detected."),
+      result.output.includes("no malicious packages found."),
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
