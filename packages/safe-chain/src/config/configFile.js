@@ -6,7 +6,7 @@ import { ui } from "../environment/userInteraction.js";
 export function getScanTimeout() {
   const config = readConfigFile();
   return (
-    parseInt(process.env.AIKIDO_SCAN_TIMEOUT_MS) || config.scanTimeout || 10000 // Default to 10 seconds
+    parseInt(process.env.AIKIDO_SCAN_TIMEOUT_MS) || config.scanTimeout || 30000 // Default to 30 seconds
   );
 }
 
