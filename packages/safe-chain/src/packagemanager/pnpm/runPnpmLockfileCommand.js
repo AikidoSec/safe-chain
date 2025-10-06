@@ -33,6 +33,7 @@ export function generatePnpmLockfile(args) {
       unlinkSync("pnpm-lock.yaml");
     } catch (error) {
       // Ignore if file doesn't exist or can't be deleted
+      console.warn("Warning: Unable to delete temporary pnpm-lock.yaml:", error.message);
     }
 
     return { status: 0, lockfilePath: LOCKFILE_PATH };
@@ -42,6 +43,7 @@ export function generatePnpmLockfile(args) {
       unlinkSync("pnpm-lock.yaml");
     } catch (cleanupError) {
       // Ignore cleanup errors
+      console.warn("Warning: Unable to delete temporary pnpm-lock.yaml:", cleanupError.message);
     }
 
     if (error.status) {
