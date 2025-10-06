@@ -115,4 +115,34 @@ describe("E2E: pnpm coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
+
+  it(`safe-chain blocks installation when malicious package is in package.json and pnpm install is run`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // First, create a package.json with the malicious package
+    await shell.runCommand("echo '{\"dependencies\": {\"safe-chain-test\": \"0.0.1-security\"}}' > package.json");
+    
+    // Run pnpm install - this should trigger the lockfile scanner
+    const result = await shell.runCommand("pnpm install");
+
+    assert.ok(
+      result.output.includes("Malicious changes detected:"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("- safe-chain-test"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("Exiting without installing malicious packages."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+
+    // Verify the package was not actually installed
+    const listResult = await shell.runCommand("pnpm list");
+    assert.ok(
+      !listResult.output.includes("safe-chain-test"),
+      `Malicious package was installed despite safe-chain protection. Output of 'pnpm list' was:\n${listResult.output}`
+    );
+  });
 });
