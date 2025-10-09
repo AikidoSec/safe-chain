@@ -16,8 +16,8 @@ function buildCommand(command, args) {
 
 function resolveCommandPath(command) {
   // command will be "npm", "yarn", etc.
-  // Use 'command -v' to find the full path
-  const fullPath = execSync(`command -v ${command}`, {
+  // Use 'which' to find the full path
+  const fullPath = execSync(`which ${command}`, {
     encoding: "utf8",
     shell: true,
   }).trim();
