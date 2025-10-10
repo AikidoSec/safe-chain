@@ -1,13 +1,57 @@
 import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
-import { logProxyError } from "./proxyLogger.js";
+import { logProxyError, logProxyInfo } from "./proxyLogger.js";
 
 export function mitmConnect(req, clientSocket, isAllowed) {
   try {
     const { hostname } = new URL(`http://${req.url}`);
 
-    const server = createHttpsServer(hostname, isAllowed);
+    // Log all events on clientSocket
+    const originalEmit = clientSocket.emit;
+    clientSocket.emit = function (event, ...args) {
+      logProxyInfo(`[clientSocket event] ${event} - ${req.url}`);
+      return originalEmit.apply(this, [event, ...args]);
+    };
+
+    // Listen to all common socket events
+    clientSocket.on("error", (err) => {
+      logProxyError(`clientSocket error for ${req.url}: ${err.message}`);
+      cleanup();
+    });
+
+    clientSocket.on("end", () => {
+      logProxyInfo(`clientSocket end event for ${req.url}`);
+    });
+
+    clientSocket.on("close", (hadError) => {
+      logProxyInfo(`clientSocket closed for ${req.url}, hadError: ${hadError}`);
+      cleanup();
+    });
+
+    clientSocket.on("timeout", () => {
+      logProxyInfo(`clientSocket timeout for ${req.url}`);
+    });
+
+    let serverClosed = false;
+    const cleanup = () => {
+      if (!serverClosed) {
+        serverClosed = true;
+        logProxyInfo(`Closing server for ${req.url}`);
+        server.close();
+      }
+    };
+
+    const server = createHttpsServer(hostname, isAllowed, cleanup);
+
+    // Log server events
+    server.on("close", () => {
+      logProxyInfo(`[server event] close - ${req.url}`);
+    });
+
+    server.on("request", (serverReq) => {
+      logProxyInfo(`[server event] request ${serverReq.method} ${serverReq.url} - ${hostname}`);
+    });
 
     // Establish the connection
     clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
@@ -67,6 +111,7 @@ function forwardRequest(req, hostname, res) {
   });
 
   req.on("end", () => {
+    logProxyInfo(`Forwarded request to ${hostname}${req.url}`);
     proxyReq.end();
   });
 }
