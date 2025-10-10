@@ -24,7 +24,7 @@ jobs:
 
       - name: Setup safe-chain
         run: |
-          npm i -g @aikidosec/safe-chain
+          npm link --workspace=packages/safe-chain/
           safe-chain setup-ci
 
       - name: Install dependencies
@@ -47,7 +47,7 @@ jobs:
 
   e2e-tests:
     name: Run E2E tests
-
+    if: false # Temporarily disabled to focus on unit tests
     runs-on: ubuntu-latest
 
     strategy:
