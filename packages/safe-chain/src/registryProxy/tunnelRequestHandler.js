@@ -1,10 +1,6 @@
 import * as net from "net";
 import { ui } from "../environment/userInteraction.js";
-
-// CONNECT / Tunnel requests are typically long-lived as they are re-used for multiple requests
-// We set a long timeout to avoid the proxy closing the connection while it's still in use
-// by the package manager
-const TUNNEL_REQUEST_TIMEOUT_MS = 600000;
+import { logProxyInfo } from "./proxyLogger.js";
 
 export function tunnelRequest(req, clientSocket, head) {
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
@@ -29,20 +25,29 @@ export function tunnelRequest(req, clientSocket, head) {
 function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
 
-  const connectOptions = {
-    port: port || 443,
-    host: hostname,
-    timeout: TUNNEL_REQUEST_TIMEOUT_MS,
-  };
-
-  const serverSocket = net.connect(connectOptions, () => {
-    clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-    serverSocket.write(head);
-    serverSocket.pipe(clientSocket);
-    clientSocket.pipe(serverSocket);
+  clientSocket.on("close", () => {
+    logProxyInfo(`Tunnel client socket closed: ${req.url}`);
+  });
+  clientSocket.on("error", (err) => {
+    logProxyInfo(`Tunnel client socket error: ${req.url} - ${err.message}`);
   });
 
+  const serverSocket = net.connect(
+    { port: port || 443, host: hostname },
+    () => {
+      clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      serverSocket.write(head);
+      serverSocket.pipe(clientSocket);
+      clientSocket.pipe(serverSocket);
+      logProxyInfo(`Tunnel established to ${req.url}`);
+    }
+  );
+
+  serverSocket.on("close", () => {
+    logProxyInfo(`Tunnel server socket closed: ${req.url}`);
+  });
   serverSocket.on("error", (err) => {
+    logProxyInfo(`Tunnel server socket error: ${req.url} - ${err.message}`);
     ui.writeError(
       `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
     );
