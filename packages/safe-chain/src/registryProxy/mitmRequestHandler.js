@@ -1,17 +1,22 @@
 import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import { logProxyError } from "./proxyLogger.js";
 
 export function mitmConnect(req, clientSocket, isAllowed) {
-  const { hostname } = new URL(`http://${req.url}`);
+  try {
+    const { hostname } = new URL(`http://${req.url}`);
 
-  const server = createHttpsServer(hostname, isAllowed);
+    const server = createHttpsServer(hostname, isAllowed);
 
-  // Establish the connection
-  clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+    // Establish the connection
+    clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
 
-  // Hand off the socket to the HTTPS server
-  server.emit("connection", clientSocket);
+    // Hand off the socket to the HTTPS server
+    server.emit("connection", clientSocket);
+  } catch (error) {
+    logProxyError(`Error in mitmConnect: ${error}`);
+  }
 }
 
 function createHttpsServer(hostname, isAllowed) {
@@ -51,7 +56,8 @@ function getRequestPathAndQuery(url) {
 function forwardRequest(req, hostname, res) {
   const proxyReq = createProxyRequest(hostname, req, res);
 
-  proxyReq.on("error", () => {
+  proxyReq.on("error", (err) => {
+    logProxyError(`Error in forwardRequest proxyReq ${err}`);
     res.writeHead(502);
     res.end("Bad Gateway");
   });

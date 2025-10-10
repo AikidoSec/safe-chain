@@ -6,6 +6,7 @@ import { auditChanges } from "../scanning/audit/index.js";
 import { knownRegistries, parsePackageFromUrl } from "./parsePackageFromUrl.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
+import { logProxyInfo } from "./proxyLogger.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 const state = {
@@ -104,9 +105,11 @@ function handleConnect(req, clientSocket, head) {
   if (knownRegistries.some((reg) => req.url.includes(reg))) {
     // For npm and yarn registries, we want to intercept and inspect the traffic
     // so we can block packages with malware
+    logProxyInfo(`CONNECT to ${req.url} - inspecting traffic`);
     mitmConnect(req, clientSocket, isAllowedUrl);
   } else {
     // For other hosts, just tunnel the request to the destination tcp socket
+    logProxyInfo(`CONNECT to ${req.url} - tunneling without inspection`);
     tunnelRequest(req, clientSocket, head);
   }
 }
