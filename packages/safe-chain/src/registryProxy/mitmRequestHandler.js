@@ -3,41 +3,53 @@ import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { logProxyError, logProxyInfo } from "./proxyLogger.js";
 
+let serverCount = 0;
+
 export function mitmConnect(req, clientSocket, isAllowed) {
   try {
     const { hostname } = new URL(`http://${req.url}`);
 
+    const serverId = ++serverCount;
+
     // Log all events on clientSocket
     const originalEmit = clientSocket.emit;
     clientSocket.emit = function (event, ...args) {
-      logProxyInfo(`[clientSocket event] ${event} - ${req.url}`);
+      logProxyInfo(
+        `[srv#${serverId}] [clientSocket event] ${event} - ${req.url}`
+      );
       return originalEmit.apply(this, [event, ...args]);
     };
 
     // Listen to all common socket events
     clientSocket.on("error", (err) => {
-      logProxyError(`clientSocket error for ${req.url}: ${err.message}`);
+      logProxyError(
+        `[srv#${serverId}] [clientSocket event] error - ${req.url}: ${err.message}`
+      );
       cleanup();
     });
 
     clientSocket.on("end", () => {
-      logProxyInfo(`clientSocket end event for ${req.url}`);
+      logProxyInfo(`[srv#${serverId}] [clientSocket event] end - ${req.url}`);
     });
 
     clientSocket.on("close", (hadError) => {
-      logProxyInfo(`clientSocket closed for ${req.url}, hadError: ${hadError}`);
+      logProxyInfo(
+        `[srv#${serverId}] [clientSocket event] close - ${req.url}, hadError: ${hadError}`
+      );
       cleanup();
     });
 
     clientSocket.on("timeout", () => {
-      logProxyInfo(`clientSocket timeout for ${req.url}`);
+      logProxyInfo(
+        `[srv#${serverId}] [clientSocket event] timeout - ${req.url}`
+      );
     });
 
     let serverClosed = false;
     const cleanup = () => {
       if (!serverClosed) {
         serverClosed = true;
-        logProxyInfo(`Closing server for ${req.url}`);
+        logProxyInfo(`[srv#${serverId}] [server event] close - ${req.url}`);
         server.close();
       }
     };
@@ -46,11 +58,13 @@ export function mitmConnect(req, clientSocket, isAllowed) {
 
     // Log server events
     server.on("close", () => {
-      logProxyInfo(`[server event] close - ${req.url}`);
+      logProxyInfo(`[srv#${serverId}] [server event] close - ${req.url}`);
     });
 
     server.on("request", (serverReq) => {
-      logProxyInfo(`[server event] request ${serverReq.method} ${serverReq.url} - ${hostname}`);
+      logProxyInfo(
+        `[srv#${serverId}] [server event] request ${serverReq.method} ${serverReq.url} - ${hostname}`
+      );
     });
 
     // Establish the connection
@@ -111,7 +125,6 @@ function forwardRequest(req, hostname, res) {
   });
 
   req.on("end", () => {
-    logProxyInfo(`Forwarded request to ${hostname}${req.url}`);
     proxyReq.end();
   });
 }
