@@ -32,13 +32,16 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     logProxyInfo(`Tunnel client socket error: ${req.url} - ${err.message}`);
   });
 
-  const serverSocket = net.connect(port || 443, hostname, () => {
-    clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-    serverSocket.write(head);
-    serverSocket.pipe(clientSocket);
-    clientSocket.pipe(serverSocket);
-    logProxyInfo(`Tunnel established to ${req.url}`);
-  });
+  const serverSocket = net.connect(
+    { port, host: hostname, timeout: 300000 },
+    () => {
+      clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      serverSocket.write(head);
+      serverSocket.pipe(clientSocket);
+      clientSocket.pipe(serverSocket);
+      logProxyInfo(`Tunnel established to ${req.url}`);
+    }
+  );
 
   serverSocket.on("close", () => {
     logProxyInfo(`Tunnel server socket closed: ${req.url}`);
