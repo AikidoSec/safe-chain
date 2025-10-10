@@ -1,9 +1,15 @@
 import { spawnSync, spawn } from "child_process";
 
 function escapeArg(arg) {
-  // If argument contains spaces or quotes, wrap in double quotes and escape double quotes
-  if (arg.includes(" ") || arg.includes('"') || arg.includes("'")) {
-    return '"' + arg.replaceAll('"', '\\"') + '"';
+  // Shell metacharacters that need escaping
+  // These characters have special meaning in shells and need to be quoted
+  const shellMetaChars = /[ "&'|;<>()$`\\!*?[\]{}~#]/;
+
+  // If argument contains shell metacharacters, wrap in double quotes
+  // and escape characters that are special even inside double quotes
+  if (shellMetaChars.test(arg)) {
+    // Inside double quotes, we need to escape: " $ ` \
+    return '"' + arg.replace(/(["`$\\])/g, '\\$1') + '"';
   }
   return arg;
 }

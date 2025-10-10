@@ -105,5 +105,14 @@ describe("safeSpawn", () => {
       assert.strictEqual(spawnCalls[0].command, "npm install axios --save");
       assert.strictEqual(spawnCalls[0].options.shell, true);
     });
+
+    it(`should escape ampersand character (${variant})`, async () => {
+      await runSafeSpawn(variant, "npx", ["cypress", "run", "--env", "password=foo&bar"]);
+
+      assert.strictEqual(spawnCalls.length, 1);
+      // & should be escaped by wrapping the arg in quotes
+      assert.strictEqual(spawnCalls[0].command, 'npx cypress run --env "password=foo&bar"');
+      assert.strictEqual(spawnCalls[0].options.shell, true);
+    });
   }
 });
