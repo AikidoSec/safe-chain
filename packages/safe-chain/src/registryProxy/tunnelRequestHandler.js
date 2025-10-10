@@ -1,6 +1,11 @@
 import * as net from "net";
 import { ui } from "../environment/userInteraction.js";
 
+// CONNECT / Tunnel requests are typically long-lived as they are re-used for multiple requests
+// We set a long timeout to avoid the proxy closing the connection while it's still in use
+// by the package manager
+const TUNNEL_REQUEST_TIMEOUT_MS = 600000;
+
 export function tunnelRequest(req, clientSocket, head) {
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 
@@ -24,7 +29,13 @@ export function tunnelRequest(req, clientSocket, head) {
 function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
 
-  const serverSocket = net.connect(port || 443, hostname, () => {
+  const connectOptions = {
+    port: port || 443,
+    host: hostname,
+    timeout: TUNNEL_REQUEST_TIMEOUT_MS,
+  };
+
+  const serverSocket = net.connect(connectOptions, () => {
     clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
     serverSocket.write(head);
     serverSocket.pipe(clientSocket);
