@@ -102,7 +102,10 @@ function handleConnect(req, clientSocket, head) {
   // CONNECT method is used for HTTPS requests
   // It establishes a tunnel to the server identified by the request URL
 
-  if (knownRegistries.some((reg) => req.url.includes(reg))) {
+  if (
+    knownRegistries.some((reg) => req.url.includes(reg)) ||
+    req.url.includes("nodejs.org")
+  ) {
     // For npm and yarn registries, we want to intercept and inspect the traffic
     // so we can block packages with malware
     logProxyInfo(`CONNECT to ${req.url} - inspecting traffic`);

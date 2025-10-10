@@ -1,7 +1,6 @@
 import * as net from "net";
 import { ui } from "../environment/userInteraction.js";
 import { logProxyInfo } from "./proxyLogger.js";
-import { log } from "console";
 
 export function tunnelRequest(req, clientSocket, head) {
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;

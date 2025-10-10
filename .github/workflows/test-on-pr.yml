@@ -33,12 +33,15 @@ jobs:
         id: npm_ci
 
       - name: Log proxy output on failure
-        if: steps.npm_ci.outcome == 'failure'
         shell: bash
         run: |
           echo "=== Proxy log output ==="
           cat ~/.safe-chain/proxy.log || echo "Proxy log not found"
           exit 1
+
+      - name: Exit if dependencies failed to install
+        if: steps.npm_ci.outcome == 'failure'
+        run: exit 1
 
       - name: Run unit tests
         run: npm test
