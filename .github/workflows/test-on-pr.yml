@@ -22,10 +22,10 @@ jobs:
         with:
           node-version: "lts/*"
 
-      - name: Setup safe-chain
-        run: |
-          npm install -g aikidosec-safe-chain-1.0.0.tgz
-          safe-chain setup-ci
+      # - name: Setup safe-chain
+      #   run: |
+      #     npm install -g aikidosec-safe-chain-1.0.0.tgz
+      #     safe-chain setup-ci
 
       - name: Install dependencies
         run: npm ci
