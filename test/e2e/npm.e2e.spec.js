@@ -62,48 +62,24 @@ describe("E2E: npm coverage", () => {
 
   it(`safe-chain blocks download of malicious packages already in package.json`, async () => {
     const shell = await container.openShell("zsh");
-    const npmVersion = (await shell.runCommand("npm --version")).output.trim();
-    const majorVersion = parseInt(npmVersion.split(".")[0]);
-    const minorVersion = parseInt(npmVersion.split(".")[1]);
-    const isBelow10_4 =
-      majorVersion < 10 || (majorVersion === 10 && minorVersion < 4);
     await shell.runCommand(
       'echo \'{"name":"test-project","version":"1.0.0","dependencies":{"safe-chain-test":"0.0.1-security"}}\' > package.json'
     );
 
     var result = await shell.runCommand("npm install");
 
-    if (isBelow10_4) {
-      assert.ok(
-        result.output.includes("blocked 1 malicious package downloads"),
-        `Output did not include expected text. Output was:\n${result.output}`
-      );
-      assert.ok(
-        result.output.includes("- safe-chain-test"),
-        `Output did not include expected text. Output was:\n${result.output}`
-      );
-      assert.ok(
-        result.output.includes(
-          "Exiting without installing malicious packages."
-        ),
-        `Output did not include expected text. Output was:\n${result.output}`
-      );
-    } else {
-      assert.ok(
-        result.output.includes("Malicious changes detected:"),
-        `Output did not include expected text. Output was:\n${result.output}`
-      );
-      assert.ok(
-        result.output.includes("- safe-chain-test"),
-        `Output did not include expected text. Output was:\n${result.output}`
-      );
-      assert.ok(
-        result.output.includes(
-          "Exiting without installing malicious packages."
-        ),
-        `Output did not include expected text. Output was:\n${result.output}`
-      );
-    }
+    assert.ok(
+      result.output.includes("blocked 1 malicious package downloads"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("- safe-chain-test"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("Exiting without installing malicious packages."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
   });
 
   it("safe-chain blocks npx from executing malicious packages", async () => {

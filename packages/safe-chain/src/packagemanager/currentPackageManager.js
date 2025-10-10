@@ -14,9 +14,9 @@ const state = {
   packageManagerName: null,
 };
 
-export function initializePackageManager(packageManagerName, version) {
+export function initializePackageManager(packageManagerName) {
   if (packageManagerName === "npm") {
-    state.packageManagerName = createNpmPackageManager(version);
+    state.packageManagerName = createNpmPackageManager();
   } else if (packageManagerName === "npx") {
     state.packageManagerName = createNpxPackageManager();
   } else if (packageManagerName === "yarn") {
