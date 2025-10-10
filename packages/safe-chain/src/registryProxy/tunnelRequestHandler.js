@@ -25,9 +25,9 @@ export function tunnelRequest(req, clientSocket, head) {
 function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
 
-  clientSocket.on("close", () => {
-    logProxyInfo(`Tunnel client socket closed: ${req.url}`);
-  });
+  // clientSocket.on("close", () => {
+  //   logProxyInfo(`Tunnel client socket closed: ${req.url}`);
+  // });
   clientSocket.on("error", (err) => {
     logProxyInfo(`Tunnel client socket error: ${req.url} - ${err.message}`);
   });
@@ -43,9 +43,9 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     }
   );
 
-  serverSocket.on("close", () => {
-    logProxyInfo(`Tunnel server socket closed: ${req.url}`);
-  });
+  // serverSocket.on("close", () => {
+  //   logProxyInfo(`Tunnel server socket closed: ${req.url}`);
+  // });
   serverSocket.on("error", (err) => {
     ui.writeError(
       `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
