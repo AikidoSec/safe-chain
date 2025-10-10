@@ -28,6 +28,9 @@ function tunnelRequestToDestination(req, clientSocket, head) {
   clientSocket.on("close", () => {
     logProxyInfo(`Tunnel client socket closed: ${req.url}`);
   });
+  clientSocket.on("error", (err) => {
+    logProxyInfo(`Tunnel client socket error: ${req.url} - ${err.message}`);
+  });
 
   const serverSocket = net.connect(
     { port: port || 443, host: hostname },
