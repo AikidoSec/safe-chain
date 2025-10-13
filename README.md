@@ -77,16 +77,22 @@ To uninstall the Aikido Safe Chain, you can run the following command:
 
 ## Malware Action
 
-You can control how Aikido Safe Chain responds when malware is detected using the `--safe-chain-malware-action` flag:
+You can control how Aikido Safe Chain responds when malware is detected or when safe-chain is not available using the `--safe-chain-malware-action` flag:
 
-- `--safe-chain-malware-action=block` (**default**) - Automatically blocks installation and exits with an error when malware is detected
-- `--safe-chain-malware-action=prompt` - Prompts the user to decide whether to continue despite the malware detection
+- `--safe-chain-malware-action=block` (**default**) - Automatically blocks installation and exits with an error when malware is detected or when safe-chain is unavailable
+- `--safe-chain-malware-action=prompt` - Prompts the user to decide whether to continue despite the malware detection or missing safe-chain
 
 Example usage:
 
 ```shell
 npm install suspicious-package --safe-chain-malware-action=prompt
 ```
+
+### When Safe Chain is Not Available
+
+By default, if the safe-chain commands (aikido-npm, aikido-yarn, etc.) are not found in your PATH, the command will be **blocked** to protect you from installing packages without malware scanning. This can happen when using version managers like [asdf](https://github.com/asdf-vm/asdf) where each Node version has its own global packages.
+
+To continue in this situation, use the `prompt` mode: `npm install package --safe-chain-malware-action=prompt`
 
 # Usage in CI/CD
 
