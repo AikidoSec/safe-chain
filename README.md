@@ -88,6 +88,18 @@ Example usage:
 npm install suspicious-package --safe-chain-malware-action=prompt
 ```
 
+## Logging
+
+You can control the output from Aikido Safe Chain using the `--safe-chain-logging` flag:
+
+- `--safe-chain-logging=silent` - Suppresses all Aikido Safe Chain output except when malware is blocked. The package manager output is written to stdout as normal, and Safe Chain only writes a short message if it has blocked malware and causes the process to exit.
+
+Example usage:
+
+```shell
+npm install express --safe-chain-logging=silent
+```
+
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.

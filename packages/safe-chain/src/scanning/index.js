@@ -93,7 +93,7 @@ async function onMalwareFound() {
     }
   }
 
-  ui.writeError("Exiting without installing malicious packages.");
+  ui.writeExitWithoutInstallingMaliciousPackages();
   ui.emptyLine();
   return 1;
 }

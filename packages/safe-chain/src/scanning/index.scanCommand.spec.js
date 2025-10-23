@@ -46,6 +46,7 @@ describe("scanCommand", async () => {
         writeError: () => {},
         writeInformation: () => {},
         writeWarning: () => {},
+        writeExitWithoutInstallingMaliciousPackages: () => {},
         emptyLine: () => {},
         confirm: mockConfirm,
       },
