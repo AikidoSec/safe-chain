@@ -4,9 +4,11 @@ import assert from "node:assert";
 describe("safeSpawn", () => {
   let safeSpawn;
   let spawnCalls = [];
+  let os;
 
   beforeEach(async () => {
     spawnCalls = [];
+    os = "win32"; // Test Windows behavior by default
 
     // Mock child_process module to capture what command string gets built
     mock.module("child_process", {
@@ -15,13 +17,27 @@ describe("safeSpawn", () => {
           spawnCalls.push({ command, options });
           return {
             on: (event, callback) => {
-              if (event === 'close') {
+              if (event === "close") {
                 // Simulate immediate success
                 setTimeout(() => callback(0), 0);
               }
-            }
+            },
           };
         },
+        execSync: (cmd) => {
+          // Simulate 'command -v' returning full path
+          const match = cmd.match(/command -v (.+)/);
+          if (match) {
+            return `/usr/bin/${match[1]}\n`;
+          }
+          return "";
+        },
+      },
+    });
+
+    mock.module("os", {
+      namedExports: {
+        platform: () => os,
       },
     });
 
@@ -85,5 +101,114 @@ describe("safeSpawn", () => {
     // Safe arguments (alphanumeric, dash, underscore, dot, slash) shouldn't be quoted
     assert.strictEqual(spawnCalls[0].command, "npm install axios --save");
     assert.strictEqual(spawnCalls[0].options.shell, true);
+  });
+
+  it(`should escape ampersand character`, async () => {
+    await safeSpawn("npx", ["cypress", "run", "--env", "password=foo&bar"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    // & should be escaped by wrapping the arg in quotes
+    assert.strictEqual(
+      spawnCalls[0].command,
+      'npx cypress run --env "password=foo&bar"'
+    );
+    assert.strictEqual(spawnCalls[0].options.shell, true);
+  });
+
+  it("should escape dollar signs to prevent variable expansion", async () => {
+    await safeSpawn("echo", ["$HOME/test"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'echo "\\$HOME/test"');
+  });
+
+  it("should escape backticks to prevent command substitution", async () => {
+    await safeSpawn("echo", ["file`whoami`.txt"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'echo "file\\`whoami\\`.txt"');
+  });
+
+  it("should escape backslashes properly", async () => {
+    await safeSpawn("echo", ["path\\with\\backslash"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(
+      spawnCalls[0].command,
+      'echo "path\\\\with\\\\backslash"'
+    );
+  });
+
+  it("should handle multiple special characters in one argument", async () => {
+    await safeSpawn("cmd", ['test "quoted" $var `cmd` & more']);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(
+      spawnCalls[0].command,
+      'cmd "test \\"quoted\\" \\$var \\`cmd\\` & more"'
+    );
+  });
+
+  it("should handle pipe character", async () => {
+    await safeSpawn("echo", ["foo|bar"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'echo "foo|bar"');
+  });
+
+  it("should handle parentheses", async () => {
+    await safeSpawn("echo", ["(test)"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'echo "(test)"');
+  });
+
+  it("should handle angle brackets for redirection", async () => {
+    await safeSpawn("echo", ["foo>output.txt"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'echo "foo>output.txt"');
+  });
+
+  it("should handle wildcard characters", async () => {
+    await safeSpawn("echo", ["*.txt"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'echo "*.txt"');
+  });
+
+  it("should handle multiple arguments with mixed escaping needs", async () => {
+    await safeSpawn("cmd", ["safe", "needs space", "$dangerous", "also-safe"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(
+      spawnCalls[0].command,
+      'cmd safe "needs space" "\\$dangerous" also-safe'
+    );
+  });
+
+  it("should reject command names with special characters", async () => {
+    await assert.rejects(async () => await safeSpawn("npm; echo hacked", []), {
+      message: "Invalid command name: npm; echo hacked",
+    });
+  });
+
+  it("should reject command names with spaces", async () => {
+    await assert.rejects(async () => await safeSpawn("npm install", []), {
+      message: "Invalid command name: npm install",
+    });
+  });
+
+  it("should reject command names with slashes", async () => {
+    await assert.rejects(async () => await safeSpawn("../../malicious", []), {
+      message: "Invalid command name: ../../malicious",
+    });
+  });
+
+  it("should accept valid command names with letters, numbers, underscores and hyphens", async () => {
+    await safeSpawn("valid_command-123", []);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, "valid_command-123");
   });
 });
