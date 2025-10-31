@@ -82,11 +82,19 @@ You can control the output from Aikido Safe Chain using the `--safe-chain-loggin
 
 - `--safe-chain-logging=silent` - Suppresses all Aikido Safe Chain output except when malware is blocked. The package manager output is written to stdout as normal, and Safe Chain only writes a short message if it has blocked malware and causes the process to exit.
 
-Example usage:
+  Example usage:
 
-```shell
-npm install express --safe-chain-logging=silent
-```
+  ```shell
+  npm install express --safe-chain-logging=silent
+  ```
+
+- `--safe-chain-logging=verbose` - Enables detailed diagnostic output from Aikido Safe Chain. Useful for troubleshooting issues or understanding what Safe Chain is doing behind the scenes.
+
+  Example usage:
+
+  ```shell
+  npm install express --safe-chain-logging=verbose
+  ```
 
 # Usage in CI/CD
 

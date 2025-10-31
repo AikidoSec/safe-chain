@@ -2,10 +2,23 @@
 import chalk from "chalk";
 import ora from "ora";
 import { isCi } from "./environment.js";
-import { getLoggingLevel, LOGGING_SILENT } from "../config/settings.js";
+import {
+  getLoggingLevel,
+  LOGGING_SILENT,
+  LOGGING_VERBOSE,
+} from "../config/settings.js";
+
+const state = {
+  bufferOutput: false,
+  bufferedMessages: [],
+};
 
 function isSilentMode() {
   return getLoggingLevel() === LOGGING_SILENT;
+}
+
+function isVerboseMode() {
+  return getLoggingLevel() === LOGGING_VERBOSE;
 }
 
 function emptyLine() {
@@ -17,7 +30,7 @@ function emptyLine() {
 function writeInformation(message, ...optionalParams) {
   if (isSilentMode()) return;
 
-  console.log(message, ...optionalParams);
+  writeOrBuffer(() => console.log(message, ...optionalParams));
 }
 
 function writeWarning(message, ...optionalParams) {
@@ -26,14 +39,14 @@ function writeWarning(message, ...optionalParams) {
   if (!isCi()) {
     message = chalk.yellow(message);
   }
-  console.warn(message, ...optionalParams);
+  writeOrBuffer(() => console.warn(message, ...optionalParams));
 }
 
 function writeError(message, ...optionalParams) {
   if (!isCi()) {
     message = chalk.red(message);
   }
-  console.error(message, ...optionalParams);
+  writeOrBuffer(() => console.error(message, ...optionalParams));
 }
 
 function writeExitWithoutInstallingMaliciousPackages() {
@@ -41,7 +54,21 @@ function writeExitWithoutInstallingMaliciousPackages() {
   if (!isCi()) {
     message = chalk.red(message);
   }
-  console.error(message);
+  writeOrBuffer(() => console.error(message));
+}
+
+function writeVerbose(message, ...optionalParams) {
+  if (!isVerboseMode()) return;
+
+  writeOrBuffer(() => console.log(message, ...optionalParams));
+}
+
+function writeOrBuffer(messageFunction) {
+  if (state.bufferOutput) {
+    state.bufferedMessages.push(messageFunction);
+  } else {
+    messageFunction();
+  }
 }
 
 function startProcess(message) {
@@ -86,11 +113,27 @@ function startProcess(message) {
   }
 }
 
+function startBufferingLogs() {
+  state.bufferOutput = true;
+  state.bufferedMessages = [];
+}
+
+function writeBufferedLogsAndStopBuffering() {
+  state.bufferOutput = false;
+  for (const log of state.bufferedMessages) {
+    log();
+  }
+  state.bufferedMessages = [];
+}
+
 export const ui = {
+  writeVerbose,
   writeInformation,
   writeWarning,
   writeError,
   writeExitWithoutInstallingMaliciousPackages,
   emptyLine,
   startProcess,
+  startBufferingLogs,
+  writeBufferedLogsAndStopBuffering,
 };
