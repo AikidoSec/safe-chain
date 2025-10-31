@@ -9,6 +9,7 @@ import {
   createPnpxPackageManager,
 } from "./pnpm/createPackageManager.js";
 import { createYarnPackageManager } from "./yarn/createPackageManager.js";
+import { createPipPackageManager } from "./pip/createPackageManager.js";
 
 const state = {
   packageManagerName: null,
@@ -29,6 +30,8 @@ export function initializePackageManager(packageManagerName) {
     state.packageManagerName = createBunPackageManager();
   } else if (packageManagerName === "bunx") {
     state.packageManagerName = createBunxPackageManager();
+  } else if (packageManagerName === "pip" || packageManagerName === "pip3") {
+    state.packageManagerName = createPipPackageManager(packageManagerName);
   } else {
     throw new Error("Unsupported package manager: " + packageManagerName);
   }

@@ -13,8 +13,13 @@ describe("safeSpawn", () => {
     // Mock child_process module to capture what command string gets built
     mock.module("child_process", {
       namedExports: {
-        spawn: (command, options) => {
-          spawnCalls.push({ command, options });
+        spawn: (command, argsOrOptions, options) => {
+          // Handle both signatures: spawn(cmd, {opts}) and spawn(cmd, [args], {opts})
+          if (Array.isArray(argsOrOptions)) {
+            spawnCalls.push({ command, args: argsOrOptions, options: options || {} });
+          } else {
+            spawnCalls.push({ command, options: argsOrOptions || {} });
+          }
           return {
             on: (event, callback) => {
               if (event === "close") {
@@ -210,5 +215,44 @@ describe("safeSpawn", () => {
 
     assert.strictEqual(spawnCalls.length, 1);
     assert.strictEqual(spawnCalls[0].command, "valid_command-123");
+  });
+
+  it("should handle Python version specifiers with comparison operators on Windows", async () => {
+    os = "win32";
+    await safeSpawn("pip3", ["install", "Jinja2>=3.1,<3.2"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    // On Windows, args are built into a command string with proper escaping
+    assert.strictEqual(spawnCalls[0].command, 'pip3 install "Jinja2>=3.1,<3.2"');
+    assert.strictEqual(spawnCalls[0].options.shell, true);
+  });
+
+  it("should handle Python version specifiers with comparison operators on Unix", async () => {
+    os = "darwin"; // or "linux"
+    await safeSpawn("pip3", ["install", "Jinja2>=3.1,<3.2"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    // On Unix, resolves full path and passes args as array (no shell interpretation)
+    assert.strictEqual(spawnCalls[0].command, "/usr/bin/pip3");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "Jinja2>=3.1,<3.2"]);
+    assert.deepStrictEqual(spawnCalls[0].options, {});
+  });
+
+  it("should handle Python not-equal version specifiers", async () => {
+    os = "win32";
+    await safeSpawn("pip3", ["install", "idna!=3.5,>=3.0"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'pip3 install "idna!=3.5,>=3.0"');
+    assert.strictEqual(spawnCalls[0].options.shell, true);
+  });
+
+  it("should handle Python extras with square brackets", async () => {
+    os = "win32";
+    await safeSpawn("pip3", ["install", "requests[socks]"]);
+
+    assert.strictEqual(spawnCalls.length, 1);
+    assert.strictEqual(spawnCalls[0].command, 'pip3 install "requests[socks]"');
+    assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 });

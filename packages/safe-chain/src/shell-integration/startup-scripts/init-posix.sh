@@ -60,3 +60,37 @@ function npm() {
 
   wrapSafeChainCommand "npm" "aikido-npm" "$@"
 }
+
+function pip() {
+  wrapSafeChainCommand "pip" "aikido-pip" "$@"
+}
+
+function pip3() {
+  wrapSafeChainCommand "pip3" "aikido-pip3" "$@"
+}
+
+# `python -m pip`, `python -m pip3`.
+function python() {
+  if [[ "$1" == "-m" && "$2" == pip* ]]; then
+    local mod="$2"
+    shift 2
+    if [[ "$mod" == "pip3" ]]; then
+      wrapSafeChainCommand "pip3" "aikido-pip3" "$@"
+    else
+      wrapSafeChainCommand "pip" "aikido-pip" "$@"
+    fi
+  else
+    command python "$@"
+  fi
+}
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3() {
+  if [[ "$1" == "-m" && "$2" == pip* ]]; then
+    shift 2
+    # python3 always uses pip3, regardless of whether user types `pip` or `pip3`
+    wrapSafeChainCommand "pip3" "aikido-pip3" "$@"
+  else
+    command python3 "$@"
+  fi
+}
