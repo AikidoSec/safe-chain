@@ -4,7 +4,8 @@
   "scripts": {
     "test": "node --test --experimental-test-module-mocks 'src/**/*.spec.js'",
     "test:watch": "node --test --watch --experimental-test-module-mocks 'src/**/*.spec.js'",
-    "lint": "oxlint --deny-warnings"
+    "lint": "oxlint --deny-warnings",
+    "typecheck": "tsc --noEmit"
   },
   "bin": {
     "aikido-npm": "bin/aikido-npm.js",
@@ -37,6 +38,14 @@
     "npm-registry-fetch": "18.0.2",
     "ora": "8.2.0",
     "semver": "7.7.2"
+  },
+  "devDependencies": {
+    "@types/make-fetch-happen": "^10.0.4",
+    "@types/node": "^18.19.130",
+    "@types/npm-registry-fetch": "^8.0.9",
+    "@types/semver": "^7.7.1",
+    "@types/node-forge": "^1.3.14",
+    "typescript": "^5.9.3"
   },
   "main": "src/main.js",
   "bugs": {

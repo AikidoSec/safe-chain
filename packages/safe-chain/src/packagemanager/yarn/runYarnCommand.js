@@ -2,8 +2,14 @@ import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 
+/**
+ * @param {string[]} args
+ *
+ * @returns {Promise<{status: number}>}
+ */
 export async function runYarnCommand(args) {
   try {
+    // @ts-expect-error values of process.env can be string | undefined
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
     await fixYarnProxyEnvironmentVariables(env);
 
@@ -12,7 +18,7 @@ export async function runYarnCommand(args) {
       env,
     });
     return { status: result.status };
-  } catch (error) {
+  } catch (/** @type any */ error) {
     if (error.status) {
       return { status: error.status };
     } else {
@@ -22,6 +28,11 @@ export async function runYarnCommand(args) {
   }
 }
 
+/**
+ * @param {Record<string, string>} env
+ *
+ * @returns {Promise<void>}
+ */
 async function fixYarnProxyEnvironmentVariables(env) {
   // Yarn ignores standard proxy environment variable HTTPS_PROXY
   // It does respect NODE_EXTRA_CA_CERTS for custom CA certificates though.

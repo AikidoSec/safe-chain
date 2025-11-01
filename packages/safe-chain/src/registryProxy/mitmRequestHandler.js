@@ -3,6 +3,11 @@ import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("net").Socket} clientSocket
+ * @param {(target: string) => Promise<boolean>} isAllowed
+ */
 export function mitmConnect(req, clientSocket, isAllowed) {
   const { hostname } = new URL(`http://${req.url}`);
 
@@ -16,6 +21,7 @@ export function mitmConnect(req, clientSocket, isAllowed) {
 
   server.on("error", (err) => {
     ui.writeError(`Safe-chain: HTTPS server error: ${err.message}`);
+    // @ts-expect-error Property 'headersSent' does not exist on type 'Socket'
     if (!clientSocket.headersSent) {
       clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
     } else if (clientSocket.writable) {
@@ -30,10 +36,22 @@ export function mitmConnect(req, clientSocket, isAllowed) {
   server.emit("connection", clientSocket);
 }
 
+/**
+ * @param {string} hostname
+ * @param {(target: string) => Promise<boolean>} isAllowed
+ * @returns {import("https").Server}
+ */
 function createHttpsServer(hostname, isAllowed) {
   const cert = generateCertForHost(hostname);
 
+  /**
+   * @param {import("http").IncomingMessage} req
+   * @param {import("http").ServerResponse} res
+   *
+   * @returns {Promise<void>}
+   */
   async function handleRequest(req, res) {
+    // @ts-expect-error req.url might be undefined
     const pathAndQuery = getRequestPathAndQuery(req.url);
     const targetUrl = `https://${hostname}${pathAndQuery}`;
 
@@ -58,6 +76,10 @@ function createHttpsServer(hostname, isAllowed) {
   return server;
 }
 
+/**
+ * @param {string} url
+ * @returns {*|string}
+ */
 function getRequestPathAndQuery(url) {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     const parsedUrl = new URL(url);
@@ -66,6 +88,11 @@ function getRequestPathAndQuery(url) {
   return url;
 }
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {string} hostname
+ * @param {import("http").ServerResponse} res
+ */
 function forwardRequest(req, hostname, res) {
   const proxyReq = createProxyRequest(hostname, req, res);
 
@@ -88,7 +115,15 @@ function forwardRequest(req, hostname, res) {
   });
 }
 
+/**
+ * @param {string} hostname
+ * @param {import("http").IncomingMessage} req
+ * @param {import("http").ServerResponse} res
+ *
+ * @returns {import("http").ClientRequest}
+ */
 function createProxyRequest(hostname, req, res) {
+  /** @type {import("http").RequestOptions} */
   const options = {
     hostname: hostname,
     port: 443,
@@ -97,7 +132,9 @@ function createProxyRequest(hostname, req, res) {
     headers: { ...req.headers },
   };
 
-  delete options.headers.host;
+  if (options.headers && "host" in options.headers) {
+    delete options.headers["host"];
+  }
 
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
   if (httpsProxy) {
@@ -115,6 +152,7 @@ function createProxyRequest(hostname, req, res) {
       }
     });
 
+    // @ts-expect-error statusCode might be undefined
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
     proxyRes.pipe(res);
   });

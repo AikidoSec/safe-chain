@@ -1,6 +1,9 @@
 import { commandArgumentScanner } from "./dependencyScanner/commandArgumentScanner.js";
 import { runNpx } from "./runNpxCommand.js";
 
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 export function createNpxPackageManager() {
   const scanner = commandArgumentScanner();
 

@@ -14,12 +14,22 @@ function emptyLine() {
   writeInformation("");
 }
 
+/**
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
 function writeInformation(message, ...optionalParams) {
   if (isSilentMode()) return;
 
   console.log(message, ...optionalParams);
 }
 
+/**
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
 function writeWarning(message, ...optionalParams) {
   if (isSilentMode()) return;
 
@@ -29,6 +39,11 @@ function writeWarning(message, ...optionalParams) {
   console.warn(message, ...optionalParams);
 }
 
+/**
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
 function writeError(message, ...optionalParams) {
   if (!isCi()) {
     message = chalk.red(message);
@@ -44,6 +59,19 @@ function writeExitWithoutInstallingMaliciousPackages() {
   console.error(message);
 }
 
+/**
+ * @typedef {Object} Spinner
+ * @property {(message: string) => void} succeed
+ * @property {(message: string) => void} fail
+ * @property {() => void} stop
+ * @property {(message: string) => void} setText
+ */
+
+/**
+ * @param {string} message
+ *
+ * @returns {Spinner}
+ */
 function startProcess(message) {
   if (isSilentMode()) {
     return {

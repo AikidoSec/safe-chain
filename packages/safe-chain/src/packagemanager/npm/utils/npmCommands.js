@@ -1,5 +1,9 @@
 import { deref } from "./cmd-list.js";
 
+/**
+ * @param {string[]} args
+ * @returns {string | null}
+ */
 export function getNpmCommandForArgs(args) {
   if (args.length === 0) {
     return null;
@@ -13,6 +17,10 @@ export function getNpmCommandForArgs(args) {
   return argCommand;
 }
 
+/**
+ * @param {string[]} args
+ * @returns {boolean}
+ */
 export function hasDryRunArg(args) {
   return args.some((arg) => arg === "--dry-run");
 }

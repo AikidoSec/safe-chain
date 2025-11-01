@@ -3,6 +3,9 @@ import { runYarnCommand } from "./runYarnCommand.js";
 
 const scanner = commandArgumentScanner();
 
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 export function createYarnPackageManager() {
   return {
     runCommand: runYarnCommand,
@@ -18,6 +21,11 @@ export function createYarnPackageManager() {
   };
 }
 
+/**
+ * @param {string[]} args
+ * @param {...string} commandArgs
+ * @returns {boolean}
+ */
 function matchesCommand(args, ...commandArgs) {
   if (args.length < commandArgs.length) {
     return false;

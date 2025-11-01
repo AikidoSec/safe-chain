@@ -1,6 +1,11 @@
 import * as semver from "semver";
 import * as npmFetch from "npm-registry-fetch";
 
+/**
+ * @param {string} packageName
+ * @param {string | null} [versionRange]
+ * @returns {Promise<string | null>}
+ */
 export async function resolvePackageVersion(packageName, versionRange) {
   if (!versionRange) {
     versionRange = "latest";
@@ -11,7 +16,10 @@ export async function resolvePackageVersion(packageName, versionRange) {
     return versionRange;
   }
 
-  const packageInfo = await getPackageInfo(packageName);
+  const packageInfo = (
+    /** @type {{"dist-tags"?: Record<string, string>, versions?: Record<string, unknown>} | null} */
+    await getPackageInfo(packageName)
+  );
   if (!packageInfo) {
     // It is possible that no version is found (could be a private package, or a package that doesn't exist)
     // In this case, we return null to indicate that we couldn't resolve the version
@@ -19,7 +27,7 @@ export async function resolvePackageVersion(packageName, versionRange) {
   }
 
   const distTags = packageInfo["dist-tags"];
-  if (distTags && distTags[versionRange]) {
+  if (distTags && isDistTags(distTags) && distTags[versionRange]) {
     // If the version range is a dist-tag, return the version associated with that tag
     // e.g., "latest", "next", etc.
     return distTags[versionRange];
@@ -41,6 +49,19 @@ export async function resolvePackageVersion(packageName, versionRange) {
   return null;
 }
 
+/**
+ *
+ * @param {unknown} distTags
+ * @returns {distTags is Record<string, string>}
+ */
+function isDistTags(distTags) {
+  return typeof distTags === "object";
+}
+
+/**
+ * @param {string} packageName
+ * @returns {Promise<Record<string, unknown> | null>}
+ */
 async function getPackageInfo(packageName) {
   try {
     return await npmFetch.json(packageName);

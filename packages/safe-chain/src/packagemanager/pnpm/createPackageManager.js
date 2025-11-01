@@ -4,6 +4,9 @@ import { runPnpmCommand } from "./runPnpmCommand.js";
 
 const scanner = commandArgumentScanner();
 
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 export function createPnpmPackageManager() {
   return {
     runCommand: (args) => runPnpmCommand(args, "pnpm"),
@@ -23,6 +26,9 @@ export function createPnpmPackageManager() {
   };
 }
 
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 export function createPnpxPackageManager() {
   return {
     runCommand: (args) => runPnpmCommand(args, "pnpx"),
@@ -32,6 +38,11 @@ export function createPnpxPackageManager() {
   };
 }
 
+/**
+ * @param {string[]} args
+ * @param {boolean} isPnpx
+ * @returns {Promise<import("../npm/dependencyScanner/commandArgumentScanner.js").ScanResult[]>}
+ */
 function getDependencyUpdatesForCommand(args, isPnpx) {
   if (isPnpx) {
     return scanner.scan(args);

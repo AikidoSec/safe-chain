@@ -14,6 +14,11 @@ function isInstalled() {
   return doesExecutableExistOnSystem(executableName);
 }
 
+/**
+ * @param {import("../helpers.js").AikidoTool[]} tools
+ *
+ * @returns {boolean}
+ */
 function teardown(tools) {
   const startupFile = getStartupFile();
 
@@ -54,7 +59,7 @@ function getStartupFile() {
       encoding: "utf8",
       shell: executableName,
     }).trim();
-  } catch (error) {
+  } catch (/** @type {any} */ error) {
     throw new Error(
       `Command failed: ${startupFileCommand}. Error: ${error.message}`
     );

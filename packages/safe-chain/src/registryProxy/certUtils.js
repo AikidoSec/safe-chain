@@ -12,6 +12,10 @@ export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
 }
 
+/**
+ * @param {string} hostname
+ * @returns {{privateKey: string, certificate: string}}
+ */
 export function generateCertForHost(hostname) {
   let existingCert = certCache.get(hostname);
   if (existingCert) {

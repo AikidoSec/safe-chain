@@ -1,6 +1,11 @@
 import { spawn, execSync } from "child_process";
 import os from "os";
 
+/**
+ * @param {string} arg
+ *
+ * @returns {string}
+ */
 function sanitizeShellArgument(arg) {
   // If argument contains shell metacharacters, wrap in double quotes
   // and escape characters that are special even inside double quotes
@@ -11,6 +16,11 @@ function sanitizeShellArgument(arg) {
   return arg;
 }
 
+/**
+ * @param {string} arg
+ *
+ * @returns {boolean}
+ */
 function hasShellMetaChars(arg) {
   // Shell metacharacters that need escaping
   // These characters have special meaning in shells and need to be quoted
@@ -20,12 +30,23 @@ function hasShellMetaChars(arg) {
   return shellMetaChars.test(arg);
 }
 
+/**
+ * @param {string} arg
+ *
+ * @returns {string}
+ */
 function escapeDoubleQuoteContent(arg) {
   // Escape special characters for shell safety
   // This escapes ", $, `, and \ by prefixing them with a backslash
   return arg.replace(/(["`$\\])/g, "\\$1");
 }
 
+/**
+ * @param {string} command
+ * @param {string[]} args
+ *
+ * @returns {string}
+ */
 function buildCommand(command, args) {
   if (args.length === 0) {
     return command;
@@ -36,11 +57,17 @@ function buildCommand(command, args) {
   return `${command} ${escapedArgs.join(" ")}`;
 }
 
+/**
+ * @param {string} command
+ *
+ * @returns {string}
+ */
 function resolveCommandPath(command) {
   // command will be "npm", "yarn", etc.
   // Use 'command -v' to find the full path
   const fullPath = execSync(`command -v ${command}`, {
     encoding: "utf8",
+    // @ts-expect-error shell is a string option
     shell: true,
   }).trim();
 
@@ -51,6 +78,13 @@ function resolveCommandPath(command) {
   return fullPath;
 }
 
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {import("child_process").SpawnOptions} options
+ *
+ * @returns {Promise<{status: number, stdout: string, stderr: string}>}
+ */
 export async function safeSpawn(command, args, options = {}) {
   // The command is always one of our supported package managers.
   // It should always be alphanumeric or _ or -
@@ -87,6 +121,7 @@ export async function safeSpawn(command, args, options = {}) {
 
     child.on("close", (code) => {
       resolve({
+        // @ts-expect-error code can be null
         status: code,
         stdout: stdout,
         stderr: stderr,

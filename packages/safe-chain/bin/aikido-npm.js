@@ -7,4 +7,5 @@ const packageManagerName = "npm";
 initializePackageManager(packageManagerName);
 var exitCode = await main(process.argv.slice(2));
 
+// @ts-expect-error scanCommand can return an empty array in main
 process.exit(exitCode);

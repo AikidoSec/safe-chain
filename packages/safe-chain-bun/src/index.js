@@ -29,7 +29,7 @@ export const scanner = {
           });
         }
       }
-    } catch (error) {
+    } catch (/** @type any */ error) {
       console.warn(`Safe-Chain security scan failed: ${error.message}`);
     }
 

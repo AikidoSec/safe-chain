@@ -1,6 +1,13 @@
 import * as net from "net";
 import { ui } from "../environment/userInteraction.js";
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("net").Socket} clientSocket
+ * @param {Buffer} head
+ *
+ * @returns {void}
+ */
 export function tunnelRequest(req, clientSocket, head) {
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 
@@ -21,9 +28,17 @@ export function tunnelRequest(req, clientSocket, head) {
   }
 }
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("net").Socket} clientSocket
+ * @param {Buffer} head
+ *
+ * @returns {void}
+ */
 function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
 
+  // @ts-expect-error port from URL is a string but net.connect accepts number
   const serverSocket = net.connect(port || 443, hostname, () => {
     clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
     serverSocket.write(head);
@@ -49,11 +64,18 @@ function tunnelRequestToDestination(req, clientSocket, head) {
   });
 }
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("net").Socket} clientSocket
+ * @param {Buffer} head
+ * @param {string} proxyUrl
+ */
 function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
   const { port, hostname } = new URL(`http://${req.url}`);
   const proxy = new URL(proxyUrl);
 
   // Connect to proxy server
+  // @ts-expect-error net.connect wants port as number but proxy.port is string
   const proxySocket = net.connect({
     host: proxy.hostname,
     port: proxy.port,

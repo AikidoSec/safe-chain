@@ -3,6 +3,9 @@ import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
 import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
 
+/**
+ * @returns {Promise<void>}
+ */
 export async function teardown() {
   ui.writeInformation(
     chalk.bold("Removing shell aliases.") +
@@ -52,7 +55,7 @@ export async function teardown() {
       ui.emptyLine();
       ui.writeInformation(`Please restart your terminal to apply the changes.`);
     }
-  } catch (error) {
+  } catch (/** @type {any} */ error) {
     ui.writeError(
       `Failed to remove shell aliases: ${error.message}. Please check your shell configuration.`
     );

@@ -1,5 +1,22 @@
+/**
+ * @typedef {Object} PackageDetail
+ * @property {string} name
+ * @property {string} version
+ */
+
+/**
+ * @typedef {Object} NpmOption
+ * @property {string} name
+ * @property {number} numberOfParameters
+ */
+
+/**
+ * @param {string[]} args
+ * @returns {PackageDetail[]}
+ */
 export function parsePackagesFromInstallArgs(args) {
-  const changes = [];
+  /** @type {{name: string, version: string | null}[]} */
+  const changes  = [];
   let defaultTag = "latest";
 
   // Skip first argument (install command)
@@ -32,9 +49,13 @@ export function parsePackagesFromInstallArgs(args) {
     }
   }
 
-  return changes;
+  return /** @type {PackageDetail[]} */ (changes);
 }
 
+/**
+ * @param {string} arg
+ * @returns {NpmOption | undefined}
+ */
 function getNpmOption(arg) {
   if (isNpmOptionWithParameter(arg)) {
     return {
@@ -54,6 +75,10 @@ function getNpmOption(arg) {
   return undefined;
 }
 
+/**
+ * @param {string} arg
+ * @returns {boolean}
+ */
 function isNpmOptionWithParameter(arg) {
   const optionsWithParameters = [
     "--access",
@@ -81,6 +106,10 @@ function isNpmOptionWithParameter(arg) {
   return optionsWithParameters.includes(arg);
 }
 
+/**
+ * @param {string} arg
+ * @returns {{name: string, version: string | null}}
+ */
 function parsePackagename(arg) {
   arg = removeAlias(arg);
   const lastAtIndex = arg.lastIndexOf("@");
@@ -102,6 +131,10 @@ function parsePackagename(arg) {
   };
 }
 
+/**
+ * @param {string} arg
+ * @returns {string}
+ */
 function removeAlias(arg) {
   const aliasIndex = arg.indexOf("@npm:");
   if (aliasIndex !== -1) {

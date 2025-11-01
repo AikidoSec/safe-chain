@@ -1,7 +1,14 @@
 import * as http from "http";
 import * as https from "https";
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("http").ServerResponse} res
+ *
+ * @returns {void}
+ */
 export function handleHttpProxyRequest(req, res) {
+  // @ts-expect-error req.url might be undefined
   const url = new URL(req.url);
 
   // The protocol for the plainHttpProxy should usually only be http:
@@ -20,9 +27,11 @@ export function handleHttpProxyRequest(req, res) {
 
   const proxyRequest = protocol
     .request(
+      // @ts-expect-error req.url might be undefined
       req.url,
       { method: req.method, headers: req.headers },
       (proxyRes) => {
+        // @ts-expect-error statusCode might be undefined
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
 

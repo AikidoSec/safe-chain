@@ -1,9 +1,16 @@
+/**
+ * @type {{loggingLevel: string | undefined}}
+ */
 const state = {
   loggingLevel: undefined,
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
 
+/**
+ * @param {string[]} args
+ * @returns {string[]}
+ */
 export function initializeCliArguments(args) {
   // Reset state on each call
   state.loggingLevel = undefined;
@@ -24,6 +31,11 @@ export function initializeCliArguments(args) {
   return remainingArgs;
 }
 
+/**
+ * @param {string[]} args
+ * @param {string} prefix
+ * @returns {string | undefined}
+ */
 function getLastArgEqualsValue(args, prefix) {
   for (var i = args.length - 1; i >= 0; i--) {
     const arg = args[i];
@@ -35,6 +47,10 @@ function getLastArgEqualsValue(args, prefix) {
   return undefined;
 }
 
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
 function setLoggingLevel(args) {
   const safeChainLoggingArg = SAFE_CHAIN_ARG_PREFIX + "logging=";
 

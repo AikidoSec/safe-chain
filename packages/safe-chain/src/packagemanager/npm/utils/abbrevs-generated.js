@@ -1,5 +1,6 @@
 // This was ran with the abbrev package to generate the abbrevs object below
 // console.log(abbrev(commands.concat(Object.keys(aliases))));
+/** @type {Record<string, string>} */
 export const abbrevs = {
   ac: "access",
   acc: "access",

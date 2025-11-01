@@ -43,7 +43,7 @@ export async function setup() {
       ui.emptyLine();
       ui.writeInformation(`Please restart your terminal to apply the changes.`);
     }
-  } catch (error) {
+  } catch (/** @type {any} */ error) {
     ui.writeError(
       `Failed to set up shell aliases: ${error.message}. Please check your shell configuration.`
     );
@@ -53,6 +53,7 @@ export async function setup() {
 
 /**
  * Calls the setup function for the given shell and reports the result.
+ * @param {import("./shellDetection.js").Shell} shell
  */
 function setupShell(shell) {
   let success = false;
@@ -60,7 +61,7 @@ function setupShell(shell) {
   try {
     shell.teardown(knownAikidoTools); // First, tear down to prevent duplicate aliases
     success = shell.setup(knownAikidoTools);
-  } catch (err) {
+  } catch (/** @type {any} */ err) {
     success = false;
     error = err;
   }

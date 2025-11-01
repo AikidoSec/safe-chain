@@ -1,5 +1,9 @@
 export const knownRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
 
+/**
+ * @param {string} url
+ * @returns {{packageName: string | undefined, version: string | undefined}}
+ */
 export function parsePackageFromUrl(url) {
   let packageName, version, registry;
 

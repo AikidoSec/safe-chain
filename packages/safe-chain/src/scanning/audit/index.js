@@ -3,6 +3,25 @@ import {
   openMalwareDatabase,
 } from "../malwareDatabase.js";
 
+/**
+ * @typedef {Object} PackageChange
+ * @property {string} name
+ * @property {string} version
+ * @property {string} type
+ */
+
+/**
+ * @typedef {Object} AuditResult
+ * @property {PackageChange[]} allowedChanges
+ * @property {(PackageChange & {reason: string})[]} disallowedChanges
+ * @property {boolean} isAllowed
+ */
+
+/**
+ * @param {PackageChange[]} changes
+ *
+ * @returns {Promise<AuditResult>}
+ */
 export async function auditChanges(changes) {
   const allowedChanges = [];
   const disallowedChanges = [];
@@ -34,6 +53,10 @@ export async function auditChanges(changes) {
   return auditResults;
 }
 
+/**
+ * @param {{name: string, version: string, type: string}[]} changes
+ * @returns {Promise<{name: string, version: string, status: string}[]>}
+ */
 async function getPackagesWithMalware(changes) {
   if (changes.length === 0) {
     return [];

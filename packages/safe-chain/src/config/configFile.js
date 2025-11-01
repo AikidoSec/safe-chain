@@ -3,13 +3,46 @@ import path from "path";
 import os from "os";
 import { ui } from "../environment/userInteraction.js";
 
+/**
+ * @returns {number}
+ */
 export function getScanTimeout() {
+  if (process.env.AIKIDO_SCAN_TIMEOUT_MS) {
+    const timeout = parseInt(process.env.AIKIDO_SCAN_TIMEOUT_MS);
+    if (!isNaN(timeout) && timeout >= 0) {
+      return timeout;
+    }
+  }
+
   const config = readConfigFile();
+
+  if (hasScanTimeout(config) && config.scanTimeout >= 0) {
+    return config.scanTimeout;
+  }
+
+  return 10000; // Default to 10 seconds
+}
+
+/**
+ * @param {unknown} config
+ *
+ * @returns {config is {scanTimeout: number}}
+ */
+function hasScanTimeout(config) {
   return (
-    parseInt(process.env.AIKIDO_SCAN_TIMEOUT_MS) || config.scanTimeout || 10000 // Default to 10 seconds
+    typeof config === "object" &&
+    config !== null &&
+    "scanTimeout" in config &&
+    typeof config.scanTimeout === "number"
   );
 }
 
+/**
+ * @param {import("../api/aikido.js").MalwarePackage[]} data
+ * @param {string | number} version
+ *
+ * @returns {void}
+ */
 export function writeDatabaseToLocalCache(data, version) {
   try {
     const databasePath = getDatabasePath();
@@ -24,6 +57,9 @@ export function writeDatabaseToLocalCache(data, version) {
   }
 }
 
+/**
+ * @returns {{malwareDatabase: import("../api/aikido.js").MalwarePackage[] | null, version: string | null}}
+ */
 export function readDatabaseFromLocalCache() {
   try {
     const databasePath = getDatabasePath();
@@ -55,6 +91,9 @@ export function readDatabaseFromLocalCache() {
   }
 }
 
+/**
+ * @returns {unknown}
+ */
 function readConfigFile() {
   const configFilePath = getConfigFilePath();
 
@@ -66,6 +105,9 @@ function readConfigFile() {
   return JSON.parse(data);
 }
 
+/**
+ * @returns {string}
+ */
 function getDatabasePath() {
   const aikidoDir = getAikidoDirectory();
   return path.join(aikidoDir, "malwareDatabase.json");
@@ -76,10 +118,16 @@ function getDatabaseVersionPath() {
   return path.join(aikidoDir, "version.txt");
 }
 
+/**
+ * @returns {string}
+ */
 function getConfigFilePath() {
   return path.join(getAikidoDirectory(), "config.json");
 }
 
+/**
+ * @returns {string}
+ */
 function getAikidoDirectory() {
   const homeDir = os.homedir();
   const aikidoDir = path.join(homeDir, ".aikido");

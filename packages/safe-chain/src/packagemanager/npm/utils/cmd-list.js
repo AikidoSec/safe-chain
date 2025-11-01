@@ -73,6 +73,7 @@ const commands = [
 ];
 
 // These must resolve to an entry in commands
+/** @type {Record<string, string>} */
 const aliases = {
   // aliases
   author: "owner",
@@ -138,6 +139,10 @@ const aliases = {
   "add-user": "adduser",
 };
 
+/**
+ * @param {string} c
+ * @returns {string | undefined}
+ */
 export function deref(c) {
   if (!c) {
     return;

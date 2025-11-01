@@ -5,6 +5,11 @@ import chalk from "chalk";
 import { getPackageManager } from "../packagemanager/currentPackageManager.js";
 import { ui } from "../environment/userInteraction.js";
 
+/**
+ * @param {string[]} args
+ *
+ * @returns {boolean}
+ */
 export function shouldScanCommand(args) {
   if (!args || args.length === 0) {
     return false;
@@ -13,6 +18,11 @@ export function shouldScanCommand(args) {
   return getPackageManager().isSupportedCommand(args);
 }
 
+/**
+ * @param {string[]} args
+ *
+ * @returns {Promise<number | never[]>}
+ */
 export async function scanCommand(args) {
   if (!shouldScanCommand(args)) {
     return [];
@@ -23,6 +33,7 @@ export async function scanCommand(args) {
   const spinner = ui.startProcess(
     "Safe-chain: Scanning for malicious packages..."
   );
+  /** @type {import("./audit/index.js").AuditResult | undefined} */
   let audit;
 
   await Promise.race([
@@ -44,7 +55,7 @@ export async function scanCommand(args) {
         }
 
         audit = await auditChanges(changes);
-      } catch (error) {
+      } catch (/** @type any */ error) {
         spinner.fail(`Safe-chain: Error while scanning.`);
         throw error;
       }
@@ -69,6 +80,12 @@ export async function scanCommand(args) {
   }
 }
 
+/**
+ * @param {import("./audit/index.js").PackageChange[]} changes
+ * @param spinner {import("../environment/userInteraction.js").Spinner}
+ *
+ * @return {void}
+ */
 function printMaliciousChanges(changes, spinner) {
   spinner.fail("Safe-chain: " + chalk.bold("Malicious changes detected:"));
 

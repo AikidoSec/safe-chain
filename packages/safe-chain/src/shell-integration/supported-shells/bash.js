@@ -15,6 +15,11 @@ function isInstalled() {
   return doesExecutableExistOnSystem(executableName);
 }
 
+/**
+ * @param {import("../helpers.js").AikidoTool[]} tools
+ *
+ * @returns {boolean}
+ */
 function teardown(tools) {
   const startupFile = getStartupFile();
 
@@ -57,13 +62,18 @@ function getStartupFile() {
     }).trim();
 
     return windowsFixPath(path);
-  } catch (error) {
+  } catch (/** @type {any} */ error) {
     throw new Error(
       `Command failed: ${startupFileCommand}. Error: ${error.message}`
     );
   }
 }
 
+/**
+ * @param {string} path
+ *
+ * @returns {string}
+ */
 function windowsFixPath(path) {
   try {
     if (os.platform() !== "win32") {
@@ -93,6 +103,11 @@ function hasCygpath() {
   }
 }
 
+/**
+ * @param {string} path
+ *
+ * @returns {string}
+ */
 function cygpathw(path) {
   try {
     var result = spawnSync("cygpath", ["-w", path], {
@@ -108,6 +123,9 @@ function cygpathw(path) {
   }
 }
 
+/**
+ * @type {import("../shellDetection.js").Shell}
+ */
 export default {
   name: shellName,
   isInstalled,

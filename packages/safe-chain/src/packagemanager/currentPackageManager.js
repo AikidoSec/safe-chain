@@ -10,10 +10,25 @@ import {
 } from "./pnpm/createPackageManager.js";
 import { createYarnPackageManager } from "./yarn/createPackageManager.js";
 
+/**
+ * @type {{packageManagerName: PackageManager | null}}
+ */
 const state = {
   packageManagerName: null,
 };
 
+/**
+ * @typedef {Object} PackageManager
+ * @property {(args: string[]) => Promise<{ status: number }>} runCommand
+ * @property {(args: string[]) => boolean} isSupportedCommand
+ * @property {(args: string[]) => Promise<{name: string, version: string, type: string}[]>} getDependencyUpdatesForCommand
+ */
+
+/**
+ * @param {string} packageManagerName
+ *
+ * @return {PackageManager}
+ */
 export function initializePackageManager(packageManagerName) {
   if (packageManagerName === "npm") {
     state.packageManagerName = createNpmPackageManager();

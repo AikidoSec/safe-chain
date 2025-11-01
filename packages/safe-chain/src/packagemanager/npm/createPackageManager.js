@@ -8,7 +8,15 @@ import {
   npmExecCommand,
 } from "./utils/npmCommands.js";
 
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 export function createNpmPackageManager() {
+  /**
+   * @param {string[]} args
+   *
+   * @returns {boolean}
+   */
   function isSupportedCommand(args) {
     const scanner = findDependencyScannerForCommand(
       commandScannerMapping,
@@ -17,6 +25,11 @@ export function createNpmPackageManager() {
     return scanner.shouldScan(args);
   }
 
+  /**
+   * @param {string[]} args
+   *
+   * @returns {Promise<{name: string, version: string, type: string}[]>}
+   */
   function getDependencyUpdatesForCommand(args) {
     const scanner = findDependencyScannerForCommand(
       commandScannerMapping,
@@ -32,12 +45,22 @@ export function createNpmPackageManager() {
   };
 }
 
+/**
+ * @type {Record<string, import("./dependencyScanner/commandArgumentScanner.js").CommandArgumentScanner>}
+ */
 const commandScannerMapping = {
   [npmInstallCommand]: commandArgumentScanner(),
   [npmUpdateCommand]: commandArgumentScanner(),
   [npmExecCommand]: commandArgumentScanner({ ignoreDryRun: true }), // exec command doesn't support dry-run
 };
 
+/**
+ *
+ * @param {Record<string, import("./dependencyScanner/commandArgumentScanner.js").CommandArgumentScanner>} scanners
+ * @param {string[]} args
+ *
+ * @returns {import("./dependencyScanner/commandArgumentScanner.js").CommandArgumentScanner}
+ */
 function findDependencyScannerForCommand(scanners, args) {
   const command = getNpmCommandForArgs(args);
   if (!command) {

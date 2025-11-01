@@ -31,6 +31,9 @@ jobs:
       - name: Run linting
         run: npm run lint
 
+      - name: Type check
+        run: npm run typecheck --workspace=packages/safe-chain
+
       - name: Create package tarball
         run: npm pack --workspace=packages/safe-chain
 

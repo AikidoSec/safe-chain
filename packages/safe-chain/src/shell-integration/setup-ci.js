@@ -28,6 +28,11 @@ export async function setupCi() {
   ui.writeInformation(`Added shims directory to PATH for CI environments.`);
 }
 
+/**
+ * @param {string} shimsDir
+ *
+ * @returns {void}
+ */
 function createUnixShims(shimsDir) {
   // Read the template file
   const __filename = fileURLToPath(import.meta.url);
@@ -64,6 +69,11 @@ function createUnixShims(shimsDir) {
   );
 }
 
+/**
+ * @param {string} shimsDir
+ *
+ * @returns {void}
+ */
 function createWindowsShims(shimsDir) {
   // Read the template file
   const __filename = fileURLToPath(import.meta.url);
@@ -97,6 +107,11 @@ function createWindowsShims(shimsDir) {
   );
 }
 
+/**
+ * @param {string} shimsDir
+ *
+ * @returns {void}
+ */
 function createShims(shimsDir) {
   if (os.platform() === "win32") {
     createWindowsShims(shimsDir);
@@ -105,6 +120,11 @@ function createShims(shimsDir) {
   }
 }
 
+/**
+ * @param {string} shimsDir
+ *
+ * @returns {void}
+ */
 function modifyPathForCi(shimsDir) {
   if (process.env.GITHUB_PATH) {
     // In GitHub Actions, append the shims directory to GITHUB_PATH
