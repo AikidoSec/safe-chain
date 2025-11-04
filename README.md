@@ -165,3 +165,22 @@ This automatically configures your CI environment to use Aikido Safe Chain for a
 ```
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
+
+### Python (pip/pip3) example
+
+```yaml
+- name: Setup Python
+  uses: actions/setup-python@v5
+  with:
+    python-version: '3.x'
+
+- name: Setup safe-chain
+  run: |
+    npm i -g @aikidosec/safe-chain
+    safe-chain setup-ci
+
+- name: Install Python dependencies
+  run: |
+    pip3 install --upgrade pip
+    pip3 install -r requirements.txt
+```

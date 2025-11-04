@@ -51,13 +51,9 @@ function createUnixShims(shimsDir) {
 
   const template = fs.readFileSync(templatePath, "utf-8");
 
-  // Create a shim for each tool except pip (CI support not yet implemented)
+  // Create a shim for each tool
   let created = 0;
   for (const toolInfo of knownAikidoTools) {
-    if (toolInfo.tool === "pip") {
-      continue; // Skip pip shims in CI for now
-    }
-
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
       .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
@@ -70,9 +66,52 @@ function createUnixShims(shimsDir) {
     created++;
   }
 
+  // Also create python and python3 shims to support `python[3] -m pip[3]` in CI
+  createUnixPythonShims(shimsDir);
+
   ui.writeInformation(
     `Created ${created} Unix shim(s) in ${shimsDir}`
   );
+}
+
+/**
+ * @param {string} shimsDir
+ */
+function createUnixPythonShims(shimsDir) {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  const entries = [
+    {
+      name: "python",
+      template: path.resolve(
+        __dirname,
+        "path-wrappers",
+        "templates",
+        "unix-python-wrapper.template.sh"
+      ),
+    },
+    {
+      name: "python3",
+      template: path.resolve(
+        __dirname,
+        "path-wrappers",
+        "templates",
+        "unix-python-wrapper.template.sh"
+      ),
+    },
+  ];
+
+  for (const entry of entries) {
+    if (!fs.existsSync(entry.template)) {
+      ui.writeError(`Template file not found: ${entry.template}`);
+      continue;
+    }
+    const shimContent = fs.readFileSync(entry.template, "utf-8");
+  const shimPath = `${shimsDir}/${entry.name}`;
+    fs.writeFileSync(shimPath, shimContent, "utf-8");
+    fs.chmodSync(shimPath, 0o755);
+  }
 }
 
 /**
@@ -98,25 +137,63 @@ function createWindowsShims(shimsDir) {
 
   const template = fs.readFileSync(templatePath, "utf-8");
 
-  // Create a shim for each tool except pip (CI support not yet implemented)
+  // Create a shim for each tool
   let created = 0;
   for (const toolInfo of knownAikidoTools) {
-    if (toolInfo.tool === "pip") {
-      continue; // Skip pip shims in CI for now
-    }
-
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
       .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
 
-    const shimPath = path.join(shimsDir, `${toolInfo.tool}.cmd`);
+  const shimPath = `${shimsDir}/${toolInfo.tool}.cmd`;
     fs.writeFileSync(shimPath, shimContent, "utf-8");
     created++;
   }
 
+  // Also create python and python3 shims for Windows to support `python[3] -m pip[3]` in CI
+  createWindowsPythonShims(shimsDir);
+
   ui.writeInformation(
     `Created ${created} Windows shim(s) in ${shimsDir}`
   );
+}
+
+/**
+ * @param {string} shimsDir
+ */
+function createWindowsPythonShims(shimsDir) {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  const entries = [
+    {
+      name: "python.cmd",
+      template: path.resolve(
+        __dirname,
+        "path-wrappers",
+        "templates",
+        "windows-python-wrapper.template.cmd"
+      ),
+    },
+    {
+      name: "python3.cmd",
+      template: path.resolve(
+        __dirname,
+        "path-wrappers",
+        "templates",
+        "windows-python-wrapper.template.cmd"
+      ),
+    },
+  ];
+
+  for (const entry of entries) {
+    if (!fs.existsSync(entry.template)) {
+      ui.writeError(`Windows template file not found: ${entry.template}`);
+      continue;
+    }
+    const shimContent = fs.readFileSync(entry.template, "utf-8");
+  const shimPath = `${shimsDir}/${entry.name}`;
+    fs.writeFileSync(shimPath, shimContent, "utf-8");
+  }
 }
 
 /**
