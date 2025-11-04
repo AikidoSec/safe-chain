@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { ui } from "../environment/userInteraction.js";
+import { getEcoSystem } from "./settings.js";
 
 /**
  * @typedef {Object} SafeChainConfig
@@ -128,12 +129,14 @@ function readConfigFile() {
  */
 function getDatabasePath() {
   const aikidoDir = getAikidoDirectory();
-  return path.join(aikidoDir, "malwareDatabase.json");
+  const ecosystem = getEcoSystem();
+  return path.join(aikidoDir, `malwareDatabase_${ecosystem}.json`);
 }
 
 function getDatabaseVersionPath() {
   const aikidoDir = getAikidoDirectory();
-  return path.join(aikidoDir, "version.txt");
+  const ecosystem = getEcoSystem();
+  return path.join(aikidoDir, `version_${ecosystem}.txt`);
 }
 
 /**

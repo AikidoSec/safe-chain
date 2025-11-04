@@ -7,6 +7,7 @@ import {
   mergeSafeChainProxyEnvironmentVariables,
 } from "./registryProxy.js";
 import { getCaCertPath } from "./certUtils.js";
+import { setEcoSystem, ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
 import fs from "fs";
 
 describe("registryProxy.mitm", () => {
@@ -19,6 +20,8 @@ describe("registryProxy.mitm", () => {
     const proxyUrl = new URL(envVars.HTTPS_PROXY);
     proxyHost = proxyUrl.hostname;
     proxyPort = parseInt(proxyUrl.port, 10);
+    // Default to JS ecosystem for JS registry tests
+    setEcoSystem(ECOSYSTEM_JS);
   });
 
   after(async () => {
@@ -139,6 +142,66 @@ describe("registryProxy.mitm", () => {
 
     // Same hostname should get the same certificate (fingerprint)
     assert.strictEqual(cert1.fingerprint, cert2.fingerprint);
+  });
+
+  // --- Pip registry MITM and env var tests ---
+  it("should NOT set Python CA environment variables in proxy merge (handled by runPipCommand)", () => {
+    const envVars = mergeSafeChainProxyEnvironmentVariables([]);
+    assert.strictEqual(envVars.PIP_CERT, undefined);
+    assert.strictEqual(envVars.REQUESTS_CA_BUNDLE, undefined);
+    assert.strictEqual(envVars.SSL_CERT_FILE, undefined);
+  });
+
+  it("should intercept HTTPS requests to pypi.org for pip package", async () => {
+    // Switch to Python ecosystem for pip registry MITM tests
+    setEcoSystem(ECOSYSTEM_PY);
+    const response = await makeRegistryRequest(
+      proxyHost,
+      proxyPort,
+      "pypi.org",
+      "/packages/source/f/foo_bar/foo_bar-2.0.0.tar.gz"
+    );
+    assert.notStrictEqual(response.statusCode, 403);
+    assert.ok(typeof response.body === "string");
+  });
+
+  it("should intercept HTTPS requests to files.pythonhosted.org for pip wheel", async () => {
+    // Ensure Python ecosystem
+    setEcoSystem(ECOSYSTEM_PY);
+    const response = await makeRegistryRequest(
+      proxyHost,
+      proxyPort,
+      "files.pythonhosted.org",
+      "/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl"
+    );
+    assert.notStrictEqual(response.statusCode, 403);
+    assert.ok(typeof response.body === "string");
+  });
+
+  it("should handle pip package with a1 version", async () => {
+    // Ensure Python ecosystem
+    setEcoSystem(ECOSYSTEM_PY);
+    const response = await makeRegistryRequest(
+      proxyHost,
+      proxyPort,
+      "pypi.org",
+      "/packages/source/f/foo_bar/foo_bar-2.0.0a1.tar.gz"
+    );
+    assert.notStrictEqual(response.statusCode, 403);
+    assert.ok(typeof response.body === "string");
+  });
+
+  it("should handle pip package with latest version (should not block)", async () => {
+    // Ensure Python ecosystem
+    setEcoSystem(ECOSYSTEM_PY);
+    const response = await makeRegistryRequest(
+      proxyHost,
+      proxyPort,
+      "pypi.org",
+      "/packages/source/f/foo_bar/foo_bar-latest.tar.gz"
+    );
+    assert.notStrictEqual(response.statusCode, 403);
+    assert.ok(typeof response.body === "string");
   });
 });
 

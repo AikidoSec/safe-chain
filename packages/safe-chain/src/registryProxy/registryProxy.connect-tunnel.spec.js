@@ -49,6 +49,32 @@ describe("registryProxy.connectTunnel", () => {
     socket.destroy();
   });
 
+  it("should use destination's real certificate (not safe-chain's self-signed CA)", async () => {
+    const socket = await connectToProxy(proxyHost, proxyPort);
+    await establishHttpsTunnel(socket, "postman-echo.com", 443);
+
+    // Verifies that tunnel requests pass through the destination's real certificate
+    // without interception by the safe-chain MITM proxy.
+    const certInfo = await getTlsCertificateInfo(
+      socket,
+      new URL("https://postman-echo.com")
+    );
+
+    // Verify the certificate is NOT issued by our safe-chain CA
+    // Our self-signed CA would have issuer: "Safe-Chain Proxy CA"
+    assert.ok(certInfo.issuer !== undefined, "Certificate should have an issuer");
+    assert.ok(
+      !certInfo.issuer.includes("Safe-Chain"),
+      `Tunnel should use destination's real certificate, not safe-chain CA. Issuer: ${certInfo.issuer}`
+    );
+
+    // Verify it's a real certificate with proper hostname
+    assert.strictEqual(certInfo.subject.includes("postman-echo.com"), true,
+      `Certificate subject should include postman-echo.com, got: ${certInfo.subject}`);
+
+    socket.destroy();
+  });
+
   describe("Error Handling", () => {
     it("should return 502 Bad Gateway for invalid hostname", async () => {
       const socket = await connectToProxy(proxyHost, proxyPort);
@@ -141,12 +167,15 @@ function establishHttpsTunnel(socket, targetHost, targetPort) {
   });
 }
 
-function sendHttpsRequestThroughTunnel(socket, verb, url) {
+function sendHttpsRequestThroughTunnel(socket, verb, url, rejectUnauthorized = false) {
   return new Promise((resolve, reject) => {
     const tlsSocket = tls.connect(
       {
         socket: socket,
         servername: url.hostname,
+        // Tests should focus on tunnel behavior, not system CA state;
+        // disable CA verification to avoid flakiness on machines without full roots.
+        rejectUnauthorized: rejectUnauthorized,
       },
       () => {
         tlsSocket.write(
@@ -164,6 +193,38 @@ function sendHttpsRequestThroughTunnel(socket, verb, url) {
     tlsSocket.on("end", () => {
       resolve(tlsData);
     });
+
+    tlsSocket.on("error", (err) => {
+      reject(err);
+    });
+  });
+}
+
+function getTlsCertificateInfo(socket, url) {
+  return new Promise((resolve, reject) => {
+    const tlsSocket = tls.connect(
+      {
+        socket: socket,
+        servername: url.hostname,
+        // Don't reject unauthorized to avoid system CA issues in CI
+        // We just want to inspect the certificate
+        rejectUnauthorized: false,
+      },
+      () => {
+        const cert = tlsSocket.getPeerCertificate();
+
+        // Extract issuer and subject information
+        const issuer = cert.issuer ?
+          Object.entries(cert.issuer).map(([k, v]) => `${k}=${v}`).join(", ") :
+          "unknown";
+        const subject = cert.subject ?
+          Object.entries(cert.subject).map(([k, v]) => `${k}=${v}`).join(", ") :
+          "unknown";
+
+        tlsSocket.end();
+        resolve({ issuer, subject });
+      }
+    );
 
     tlsSocket.on("error", (err) => {
       reject(err);

@@ -51,8 +51,13 @@ function createUnixShims(shimsDir) {
 
   const template = fs.readFileSync(templatePath, "utf-8");
 
-  // Create a shim for each tool
+  // Create a shim for each tool except pip (CI support not yet implemented)
+  let created = 0;
   for (const toolInfo of knownAikidoTools) {
+    if (toolInfo.tool === "pip") {
+      continue; // Skip pip shims in CI for now
+    }
+
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
       .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
@@ -62,10 +67,11 @@ function createUnixShims(shimsDir) {
 
     // Make the shim executable on Unix systems
     fs.chmodSync(shimPath, 0o755);
+    created++;
   }
 
   ui.writeInformation(
-    `Created ${knownAikidoTools.length} Unix shim(s) in ${shimsDir}`
+    `Created ${created} Unix shim(s) in ${shimsDir}`
   );
 }
 
@@ -92,18 +98,24 @@ function createWindowsShims(shimsDir) {
 
   const template = fs.readFileSync(templatePath, "utf-8");
 
-  // Create a shim for each tool
+  // Create a shim for each tool except pip (CI support not yet implemented)
+  let created = 0;
   for (const toolInfo of knownAikidoTools) {
+    if (toolInfo.tool === "pip") {
+      continue; // Skip pip shims in CI for now
+    }
+
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
       .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
 
     const shimPath = path.join(shimsDir, `${toolInfo.tool}.cmd`);
     fs.writeFileSync(shimPath, shimContent, "utf-8");
+    created++;
   }
 
   ui.writeInformation(
-    `Created ${knownAikidoTools.length} Windows shim(s) in ${shimsDir}`
+    `Created ${created} Windows shim(s) in ${shimsDir}`
   );
 }
 
