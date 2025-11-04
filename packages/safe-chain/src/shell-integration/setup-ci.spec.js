@@ -146,5 +146,66 @@ describe("Setup CI shell integration", () => {
       const unixNpmShim = path.join(mockShimsDir, "npm");
       assert.ok(!fs.existsSync(unixNpmShim), "Unix npm shim should not exist on Windows");
     });
+
+    it("should create python and python3 shims from unix-python wrapper template", async () => {
+      // Add unix-python wrapper template to mock templates
+      const unixPythonTemplatePath = path.join(
+        mockTemplateDir,
+        "path-wrappers",
+        "templates",
+        "unix-python-wrapper.template.sh"
+      );
+      fs.writeFileSync(
+        unixPythonTemplatePath,
+        "#!/bin/bash\n# Python wrapper\nexec aikido-pip \"$@\"\n",
+        "utf-8"
+      );
+
+      await setupCi();
+
+      // Check if python shim was created
+      const pythonShimPath = path.join(mockShimsDir, "python");
+      assert.ok(fs.existsSync(pythonShimPath), "python shim should exist");
+      // Check if python3 shim was created
+      const python3ShimPath = path.join(mockShimsDir, "python3");
+      assert.ok(fs.existsSync(python3ShimPath), "python3 shim should exist");
+      // Check content of python shim
+      const pythonShimContent = fs.readFileSync(pythonShimPath, "utf-8");
+      assert.ok(pythonShimContent.includes("Python wrapper"), "python shim should use unix-python wrapper template");
+      // Check content of python3 shim
+      const python3ShimContent = fs.readFileSync(python3ShimPath, "utf-8");
+      assert.ok(python3ShimContent.includes("Python wrapper"), "python3 shim should use unix-python wrapper template");
+    });
+
+    it("should create python.cmd and python3.cmd shims from windows-python wrapper template on win32 platform", async () => {
+      mockPlatform = "win32";
+      // Add windows-python wrapper template to mock templates
+      const windowsPythonTemplatePath = path.join(
+        mockTemplateDir,
+        "path-wrappers",
+        "templates",
+        "windows-python-wrapper.template.cmd"
+      );
+      fs.writeFileSync(
+        windowsPythonTemplatePath,
+        "@echo off\nREM Python wrapper\n{{AIKIDO_COMMAND}} %*\n",
+        "utf-8"
+      );
+
+      await setupCi();
+
+      // Check if python.cmd shim was created
+      const pythonCmdShimPath = path.join(mockShimsDir, "python.cmd");
+      assert.ok(fs.existsSync(pythonCmdShimPath), "python.cmd shim should exist");
+      // Check if python3.cmd shim was created
+      const python3CmdShimPath = path.join(mockShimsDir, "python3.cmd");
+      assert.ok(fs.existsSync(python3CmdShimPath), "python3.cmd shim should exist");
+      // Check content of python.cmd shim
+      const pythonCmdShimContent = fs.readFileSync(pythonCmdShimPath, "utf-8");
+      assert.ok(pythonCmdShimContent.includes("Python wrapper"), "python.cmd should use windows-python wrapper template");
+      // Check content of python3.cmd shim
+      const python3CmdShimContent = fs.readFileSync(python3CmdShimPath, "utf-8");
+      assert.ok(python3CmdShimContent.includes("Python wrapper"), "python3.cmd should use windows-python wrapper template");
+    });
   });
 });
