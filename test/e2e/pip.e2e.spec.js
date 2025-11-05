@@ -28,7 +28,7 @@ describe("E2E: pip coverage", () => {
 
   it(`successfully installs known safe packages with pip3`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("pip3 install requests");
+    const result = await shell.runCommand("pip3 install --break-system-packages requests");
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -38,7 +38,7 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 download`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("pip3 download requests");
+    const result = await shell.runCommand("pip3 download --break-system-packages requests");
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -48,7 +48,7 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 .whl`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("pip3 wheel requests");
+    const result = await shell.runCommand("pip3 wheel --break-system-packagesrequests");
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -58,7 +58,7 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 install --dry-run is respected by scanner`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("pip3 install --dry-run requests");
+    const result = await shell.runCommand("pip3 install --dry-run --break-system-packages requests");
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -68,7 +68,7 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 install with extras such as requests[socks]`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand('pip3 install "requests[socks]==2.32.3"');
+    const result = await shell.runCommand('pip3 install --break-system-packages "requests[socks]==2.32.3"');
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -78,7 +78,7 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 install with range version specifier`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand('pip3 install "Jinja2>=3.1,<3.2"');
+    const result = await shell.runCommand('pip3 install --break-system-packages "Jinja2>=3.1,<3.2"');
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -88,7 +88,7 @@ describe("E2E: pip coverage", () => {
 
   it(`python3 -m pip install routes through safe-chain`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand('python3 -m pip install requests');
+    const result = await shell.runCommand('python3 -m pip install --break-system-packages requests');
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -98,7 +98,7 @@ describe("E2E: pip coverage", () => {
 
   it(`python3 -m pip download routes through safe-chain`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand('python3 -m pip download requests');
+    const result = await shell.runCommand('python3 -m pip download --break-system-packagesrequests');
 
     assert.ok(
       result.output.includes("no malicious packages found."),
