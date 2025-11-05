@@ -21,6 +21,22 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
     }
   });
 
+  describe("E2E: pip CI support", () => {
+    it("does not intercept python3 --version", async () => {
+      const shell = await container.openShell("zsh");
+      const result = await shell.runCommand("python3 --version");
+      assert.ok(result.output.match(/Python \d+\.\d+\.\d+/), `Output was: ${result.output}`);
+      assert.ok(!result.output.includes("Safe-chain"), "Safe Chain should not intercept generic python3 command");
+    });
+
+    it("does not intercept python3 -c 'print(\"hello\")'", async () => {
+      const shell = await container.openShell("zsh");
+      const result = await shell.runCommand("python3 -c 'print(\"hello\")'");
+      assert.ok(result.output.includes("hello"), `Output was: ${result.output}`);
+      assert.ok(!result.output.includes("Safe-chain"), "Safe Chain should not intercept generic python3 -c command");
+    });
+  });
+
   for (let shell of ["bash", "zsh"]) {
     it(`safe-chain setup-ci wraps pip3 command with PATH shim after installation for ${shell}`, async () => {
       // Setup safe-chain CI shims
