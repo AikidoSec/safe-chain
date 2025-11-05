@@ -19,7 +19,7 @@ test("createPipPackageManager", async (t) => {
 
   await t.test("should support install, download, and wheel commands", () => {
     const pm = createPipPackageManager();
-    // With MITM-only approach, pip does not pre-scan by args
+    // MITM-only approach, pip does not scan args
     assert.strictEqual(pm.isSupportedCommand(["install", "requests"]), false);
     assert.strictEqual(pm.isSupportedCommand(["download", "requests"]), false);
     assert.strictEqual(pm.isSupportedCommand(["wheel", "requests"]), false);
@@ -35,7 +35,6 @@ test("createPipPackageManager", async (t) => {
 
   await t.test("should extract packages from install command", () => {
     const pm = createPipPackageManager();
-    // MITM-only: no dependency extraction from args
     const result = pm.getDependencyUpdatesForCommand(["install", "requests==2.28.0"]);
     assert.ok(Array.isArray(result));
     assert.strictEqual(result.length, 0);
