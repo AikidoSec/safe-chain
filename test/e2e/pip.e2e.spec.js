@@ -38,7 +38,7 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 download`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("pip3 download --break-system-packages requests");
+    const result = await shell.runCommand("pip3 download requests");
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -48,7 +48,7 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 .whl`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("pip3 wheel --break-system-packagesrequests");
+    const result = await shell.runCommand("pip3 wheel requests");
 
     assert.ok(
       result.output.includes("no malicious packages found."),
@@ -98,7 +98,7 @@ describe("E2E: pip coverage", () => {
 
   it(`python3 -m pip download routes through safe-chain`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand('python3 -m pip download --break-system-packagesrequests');
+    const result = await shell.runCommand('python3 -m pip download requests');
 
     assert.ok(
       result.output.includes("no malicious packages found."),
