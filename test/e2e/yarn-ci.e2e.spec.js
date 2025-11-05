@@ -36,7 +36,7 @@ describe("E2E: yarn coverage", () => {
     const result = await shell.runCommand("yarn add axios");
 
     assert.ok(
-      result.output.includes("no malicious packages found."),
+      result.output.includes("no malware found."),
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });

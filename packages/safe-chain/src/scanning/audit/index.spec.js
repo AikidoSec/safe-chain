@@ -35,10 +35,10 @@ describe("audit/index", async () => {
     it("should return audit stats object with correct structure", () => {
       const stats = getAuditStats();
 
-      assert.ok(stats.hasOwnProperty("verifiedPackages"));
+      assert.ok(stats.hasOwnProperty("totalPackages"));
       assert.ok(stats.hasOwnProperty("safePackages"));
       assert.ok(stats.hasOwnProperty("malwarePackages"));
-      assert.equal(typeof stats.verifiedPackages, "number");
+      assert.equal(typeof stats.totalPackages, "number");
       assert.equal(typeof stats.safePackages, "number");
       assert.equal(typeof stats.malwarePackages, "number");
     });
@@ -120,11 +120,11 @@ describe("audit/index", async () => {
       assert.equal(mockIsMalware.mock.calls.length, 2);
     });
 
-    it("should increment verifiedPackages counter for each package", async () => {
+    it("should increment totalPackages counter for each package", async () => {
       mockIsMalware.mock.mockImplementation(() => false);
 
       const statsBefore = getAuditStats();
-      const initialCount = statsBefore.verifiedPackages;
+      const initialCount = statsBefore.totalPackages;
 
       const changes = [
         { name: "pkg1", version: "1.0.0", type: "add" },
@@ -134,7 +134,7 @@ describe("audit/index", async () => {
       await auditChanges(changes);
 
       const statsAfter = getAuditStats();
-      assert.equal(statsAfter.verifiedPackages, initialCount + 3);
+      assert.equal(statsAfter.totalPackages, initialCount + 3);
     });
 
     it("should increment safePackages counter for safe packages", async () => {
@@ -173,7 +173,7 @@ describe("audit/index", async () => {
       mockIsMalware.mock.mockImplementation(() => false);
 
       const statsBefore = getAuditStats();
-      const initialVerified = statsBefore.verifiedPackages;
+      const initialCount = statsBefore.totalPackages;
 
       // First call
       await auditChanges([{ name: "pkg1", version: "1.0.0", type: "add" }]);
@@ -182,7 +182,7 @@ describe("audit/index", async () => {
       await auditChanges([{ name: "pkg2", version: "2.0.0", type: "add" }]);
 
       const statsAfter = getAuditStats();
-      assert.equal(statsAfter.verifiedPackages, initialVerified + 2);
+      assert.equal(statsAfter.totalPackages, initialCount + 2);
     });
   });
 });

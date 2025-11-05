@@ -63,11 +63,11 @@ export async function main(args) {
     }
 
     const auditStats = getAuditStats();
-    if (auditStats.verifiedPackages > 0) {
+    if (auditStats.totalPackages > 0) {
       ui.emptyLine();
       ui.writeInformation(
         `${chalk.green("✔")} Safe-chain: Scanned ${
-          auditStats.verifiedPackages
+          auditStats.totalPackages
         } packages, no malware found.`
       );
     }

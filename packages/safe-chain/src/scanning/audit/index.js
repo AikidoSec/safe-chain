@@ -20,7 +20,7 @@ import {
 
 /**
  * @typedef {Object} AuditStats
- * @property {number} verifiedPackages
+ * @property {number} totalPackages
  * @property {number} safePackages
  * @property {number} malwarePackages
  */
@@ -29,7 +29,7 @@ import {
  * @type AuditStats
  */
 const auditStats = {
-  verifiedPackages: 0,
+  totalPackages: 0,
   safePackages: 0,
   malwarePackages: 0,
 };
@@ -77,7 +77,7 @@ export async function auditChanges(changes) {
       allowedChanges.push(change);
     }
 
-    auditStats.verifiedPackages += 1;
+    auditStats.totalPackages += 1;
   }
 
   const auditResults = {
