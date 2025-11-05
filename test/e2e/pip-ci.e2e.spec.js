@@ -42,13 +42,13 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
 
       const hasExpectedOutput = result.output.includes(
-        "Scanning for malicious packages..."
+        "no malware found."
       );
       assert.ok(
         hasExpectedOutput,
         hasExpectedOutput
           ? "Expected pip3 command to be wrapped by safe-chain"
-          : `Output did not contain \"Scanning for malicious packages...\": \n${result.output}`
+          : `Output did not contain \"no malware found.\": \n${result.output}`
       );
     });
 
@@ -68,7 +68,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
 
       assert.ok(
-        result.output.includes("Scanning for malicious packages..."),
+        result.output.includes("no malware found."),
         `Output did not contain scan message. Output was:\n${result.output}`
       );
     });
@@ -89,7 +89,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
 
       assert.ok(
-        result.output.includes("Scanning for malicious packages..."),
+        result.output.includes("no malware found."),
         `Output did not contain scan message. Output was:\n${result.output}`
       );
     });
@@ -110,7 +110,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
 
       assert.ok(
-        result.output.includes("Scanning for malicious packages..."),
+        result.output.includes("no malware found."),
         `Output did not contain scan message. Output was:\n${result.output}`
       );
     });
@@ -131,7 +131,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
 
       assert.ok(
-        result.output.includes("Scanning for malicious packages..."),
+        result.output.includes("no malware found."),
         `Output did not contain scan message. Output was:\n${result.output}`
       );
     });
