@@ -6,6 +6,7 @@ import { getPackageManager } from "./packagemanager/currentPackageManager.js";
 import { initializeCliArguments } from "./config/cliArguments.js";
 import { createSafeChainProxy } from "./registryProxy/registryProxy.js";
 import chalk from "chalk";
+import { getAuditStats } from "./scanning/audit/index.js";
 
 /**
  * @param {string[]} args
@@ -61,12 +62,15 @@ export async function main(args) {
       return 1;
     }
 
-    ui.emptyLine();
-    ui.writeInformation(
-      `${chalk.green(
-        "✔"
-      )} Safe-chain: Command completed, no malicious packages found.`
-    );
+    const auditStats = getAuditStats();
+    if (auditStats.totalPackages > 0) {
+      ui.emptyLine();
+      ui.writeInformation(
+        `${chalk.green("✔")} Safe-chain: Scanned ${
+          auditStats.totalPackages
+        } packages, no malware found.`
+      );
+    }
 
     // Returning the exit code back to the caller allows the promise
     //  to be awaited in the bin files and return the correct exit code

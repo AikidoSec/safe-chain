@@ -19,6 +19,29 @@ import {
  */
 
 /**
+ * @typedef {Object} AuditStats
+ * @property {number} totalPackages
+ * @property {number} safePackages
+ * @property {number} malwarePackages
+ */
+
+/**
+ * @type AuditStats
+ */
+const auditStats = {
+  totalPackages: 0,
+  safePackages: 0,
+  malwarePackages: 0,
+};
+
+/**
+ * @returns {AuditStats}
+ */
+export function getAuditStats() {
+  return auditStats;
+}
+
+/**
  * @param {PackageChange[]} changes
  *
  * @returns {Promise<AuditResult>}
@@ -39,16 +62,20 @@ export async function auditChanges(changes) {
     );
 
     if (malwarePackage) {
+      auditStats.malwarePackages += 1;
       ui.writeVerbose(
         `Safe-chain: Package ${change.name}@${change.version} is marked as malware: ${malwarePackage.status}`
       );
       disallowedChanges.push({ ...change, reason: malwarePackage.status });
     } else {
+      auditStats.safePackages += 1;
       ui.writeVerbose(
         `Safe-chain: Package ${change.name}@${change.version} is clean`
       );
       allowedChanges.push(change);
     }
+
+    auditStats.totalPackages += 1;
   }
 
   const auditResults = {
