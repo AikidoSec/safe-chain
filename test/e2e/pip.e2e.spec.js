@@ -96,7 +96,7 @@ describe("E2E: pip coverage", () => {
 
   it(`python3 -m pip install routes through safe-chain`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("python3 -m pip install requests");
+    const result = await shell.runCommand("python3 -m pip install --break-system-packages requests");
 
     assert.ok(
       result.output.includes("no malware found."),
