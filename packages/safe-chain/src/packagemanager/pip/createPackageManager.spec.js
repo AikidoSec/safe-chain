@@ -19,10 +19,10 @@ test("createPipPackageManager", async (t) => {
 
   await t.test("should support install, download, and wheel commands", () => {
     const pm = createPipPackageManager();
-    
-    assert.strictEqual(pm.isSupportedCommand(["install", "requests"]), true);
-    assert.strictEqual(pm.isSupportedCommand(["download", "requests"]), true);
-    assert.strictEqual(pm.isSupportedCommand(["wheel", "requests"]), true);
+    // With MITM-only approach, pip does not pre-scan by args
+    assert.strictEqual(pm.isSupportedCommand(["install", "requests"]), false);
+    assert.strictEqual(pm.isSupportedCommand(["download", "requests"]), false);
+    assert.strictEqual(pm.isSupportedCommand(["wheel", "requests"]), false);
   });
 
   await t.test("should not support uninstall and info commands", () => {
@@ -35,12 +35,10 @@ test("createPipPackageManager", async (t) => {
 
   await t.test("should extract packages from install command", () => {
     const pm = createPipPackageManager();
-    
+    // MITM-only: no dependency extraction from args
     const result = pm.getDependencyUpdatesForCommand(["install", "requests==2.28.0"]);
     assert.ok(Array.isArray(result));
-    assert.strictEqual(result.length, 1);
-    assert.strictEqual(result[0].name, "requests");
-    assert.strictEqual(result[0].version, "2.28.0");
+    assert.strictEqual(result.length, 0);
   });
 
   await t.test("should return empty array for unsupported commands", () => {
