@@ -71,8 +71,6 @@ function createUnixShims(shimsDir) {
   );
 }
 
-
-
 /**
  * @param {string} shimsDir
  *

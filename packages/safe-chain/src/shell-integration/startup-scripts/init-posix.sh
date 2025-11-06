@@ -21,6 +21,7 @@ function wrapSafeChainCommand() {
   else
     # If the aikido command is not available, print a warning and run the original command
     printSafeChainWarning "$original_cmd"
+
     command "$original_cmd" "$@"
   fi
 }

@@ -1,4 +1,3 @@
-// Constant for pip package manager name
 export const PIP_PACKAGE_MANAGER = "pip";
 
 // Enum of possible Python/pip invocations for Safe Chain interception

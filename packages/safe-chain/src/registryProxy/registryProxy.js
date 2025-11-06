@@ -145,6 +145,7 @@ function handleConnect(req, clientSocket, head) {
   if (isKnownRegistry) {
     mitmConnect(req, clientSocket, isAllowedUrl);
   } else {
+    // For other hosts, just tunnel the request to the destination tcp socket
     ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
     tunnelRequest(req, clientSocket, head);
   }

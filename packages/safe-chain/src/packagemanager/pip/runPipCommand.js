@@ -26,11 +26,11 @@ export async function runPip(command, args) {
     });
     return { status: result.status };
   } catch (/** @type any */ error) {
-    ui.writeError(`Error executing command: ${error.message}`);
-    ui.writeError(`Is '${command}' installed and available on your system?`);
     if (error.status) {
       return { status: error.status };
     } else {
+      ui.writeError(`Error executing command: ${error.message}`);
+      ui.writeError(`Is '${command}' installed and available on your system?`);
       return { status: 1 };
     }
   }

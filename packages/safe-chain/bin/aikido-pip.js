@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-
 import { main } from "../src/main.js";
 import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
 import { setEcoSystem, ECOSYSTEM_PY } from "../src/config/settings.js";
