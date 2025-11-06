@@ -26,10 +26,10 @@ export async function runPip(command, args) {
     });
     return { status: result.status };
   } catch (/** @type any */ error) {
+    ui.writeError("Error executing command:", error.message);
     if (error.status) {
       return { status: error.status };
     } else {
-      ui.writeError("Error executing command:", error.message);
       return { status: 1 };
     }
   }

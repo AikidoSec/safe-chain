@@ -161,46 +161,10 @@ describe("E2E: pip coverage", () => {
     );
   });
 
-  it(`python -m pip3 routes to aikido-pip3 (uses pip3 command)`, async () => {
-    const shell = await container.openShell("zsh");
-    const result = await shell.runCommand(
-      "python -m pip3 install --break-system-packages requests"
-    );
-
-    assert.ok(
-      result.output.includes("no malware found."),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-    // Verify it completed successfully (would fail if routing was incorrect)
-    assert.ok(
-      result.output.includes("Successfully installed") ||
-        result.output.includes("Requirement already satisfied"),
-      `Installation did not succeed. Output was:\n${result.output}`
-    );
-  });
-
   it(`python3 -m pip routes to aikido-pip3 (uses pip3 command)`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
       "python3 -m pip install --break-system-packages requests"
-    );
-
-    assert.ok(
-      result.output.includes("no malware found."),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-    // Verify it completed successfully (would fail if routing was incorrect)
-    assert.ok(
-      result.output.includes("Successfully installed") ||
-        result.output.includes("Requirement already satisfied"),
-      `Installation did not succeed. Output was:\n${result.output}`
-    );
-  });
-
-  it(`python3 -m pip3 routes to aikido-pip3 (uses pip3 command)`, async () => {
-    const shell = await container.openShell("zsh");
-    const result = await shell.runCommand(
-      "python3 -m pip3 install --break-system-packages requests"
     );
 
     assert.ok(

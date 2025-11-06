@@ -53,6 +53,7 @@ RUN curl -fsSL https://bun.sh/install | bash
 # Install Python and pip (pip3)
 RUN apt-get update && apt-get install -y python${PYTHON_VERSION} python3-pip && \
     ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python3 && \
+    ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python && \
     ln -sf /usr/bin/pip3 /usr/local/bin/pip3
 
 # Copy and install Safe chain

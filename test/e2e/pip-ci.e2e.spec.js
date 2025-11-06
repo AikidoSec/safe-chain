@@ -35,6 +35,22 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       assert.ok(result.output.includes("hello"), `Output was: ${result.output}`);
       assert.ok(!result.output.includes("Safe-chain"), "Safe Chain should not intercept generic python3 -c command");
     });
+
+    it("does not intercept python3 test.py", async () => {
+      const shell = await container.openShell("zsh");
+      await shell.runCommand("echo 'print(\"Hello from test.py!\")' > test.py");
+      const result = await shell.runCommand("python3 test.py");
+      assert.ok(result.output.includes("Hello from test.py!"), `Output was: ${result.output}`);
+      assert.ok(!result.output.includes("Safe-chain"), "Safe Chain should not intercept generic python3 script execution");
+    });
+
+    it("does not intercept python test.py", async () => {
+      const shell = await container.openShell("zsh");
+      await shell.runCommand("echo 'print(\"Hello from test.py!\")' > test.py");
+      const result = await shell.runCommand("python test.py");
+      assert.ok(result.output.includes("Hello from test.py!"), `Output was: ${result.output}`);
+      assert.ok(!result.output.includes("Safe-chain"), "Safe Chain should not intercept generic python script execution");
+    });
   });
 
   for (let shell of ["bash", "zsh"]) {
@@ -89,27 +105,6 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
     });
 
-    it(`setup-ci routes python -m pip3 through safe-chain for ${shell}`, async () => {
-      const installationShell = await container.openShell(shell);
-      await installationShell.runCommand("safe-chain setup-ci");
-      await installationShell.runCommand(
-        "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.zshrc"
-      );
-      await installationShell.runCommand(
-        "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.bashrc"
-      );
-
-      const projectShell = await container.openShell(shell);
-      const result = await projectShell.runCommand(
-        "python -m pip3 install --break-system-packages certifi"
-      );
-
-      assert.ok(
-        result.output.includes("no malware found."),
-        `Output did not contain scan message. Output was:\n${result.output}`
-      );
-    });
-
     it(`setup-ci routes python3 -m pip through safe-chain for ${shell}`, async () => {
       const installationShell = await container.openShell(shell);
       await installationShell.runCommand("safe-chain setup-ci");
@@ -131,7 +126,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
     });
 
-    it(`setup-ci routes python3 -m pip3 through safe-chain for ${shell}`, async () => {
+    it(`setup-ci routes pip through safe-chain for ${shell}`, async () => {
       const installationShell = await container.openShell(shell);
       await installationShell.runCommand("safe-chain setup-ci");
       await installationShell.runCommand(
@@ -143,7 +138,28 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
 
       const projectShell = await container.openShell(shell);
       const result = await projectShell.runCommand(
-        "python3 -m pip3 install --break-system-packages certifi"
+        "pip install --break-system-packages certifi"
+      );
+
+      assert.ok(
+        result.output.includes("no malware found."),
+        `Output did not contain scan message. Output was:\n${result.output}`
+      );
+    });
+
+    it(`setup-ci routes pip3 through safe-chain for ${shell}`, async () => {
+      const installationShell = await container.openShell(shell);
+      await installationShell.runCommand("safe-chain setup-ci");
+      await installationShell.runCommand(
+        "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.zshrc"
+      );
+      await installationShell.runCommand(
+        "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.bashrc"
+      );
+
+      const projectShell = await container.openShell(shell);
+      const result = await projectShell.runCommand(
+        "pip3 install --break-system-packages certifi"
       );
 
       assert.ok(
