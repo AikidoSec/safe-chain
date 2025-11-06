@@ -1,6 +1,6 @@
 export const PIP_PACKAGE_MANAGER = "pip";
 
-// Enum of possible Python/pip invocations for Safe Chain interception
+// All supported python/pip invocations for Safe Chain interception
 export const PIP_INVOCATIONS = {
   PIP: { command: "pip", args: [] },
   PIP3: { command: "pip3", args: [] },
