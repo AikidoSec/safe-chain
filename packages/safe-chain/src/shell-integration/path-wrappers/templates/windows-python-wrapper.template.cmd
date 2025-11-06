@@ -20,12 +20,18 @@ goto FALLBACK
 :CALL_PIP3
 shift
 shift
-set "PATH=%CLEAN_PATH%" & aikido-pip3 %1 %2 %3 %4 %5 %6 %7 %8 %9
+REM Note on argument forwarding:
+REM - We cannot use %* here because SHIFT does not update %* (it still contains the original argv).
+REM - CMD only exposes nine positional parameters at a time: %1 .. %9. %10 is parsed as %1 followed by '0'.
+\set "PATH=%CLEAN_PATH%" & aikido-pip3 %1 %2 %3 %4 %5 %6 %7 %8 %9
 goto :eof
 
 :CALL_PIP
 shift
 shift
+REM Note on argument forwarding:
+REM - We cannot use %* here because SHIFT does not update %* (it still contains the original argv).
+REM - CMD only exposes nine positional parameters at a time: %1 .. %9. %10 is parsed as %1 followed by '0'.
 if /I "%INVOKED%"=="python3" (
   set "PATH=%CLEAN_PATH%" & aikido-pip3 %1 %2 %3 %4 %5 %6 %7 %8 %9
 ) else (
