@@ -10,12 +10,12 @@ setEcoSystem(ECOSYSTEM_PY);
 
 // Strip nodejs and wrapper script from args
 let argv = process.argv.slice(2);
-if (argv[0] === '-m' && argv[1] === 'pip') {
+// If no args are passed, argv[0] and argv[1] are undefined, so this condition just evaluates to false and does not throw.
+if (argv[0] === '-m' && (argv[1] === 'pip' || argv[1] === 'pip3')) {
 	setEcoSystem(ECOSYSTEM_PY);
-	setCurrentPipInvocation(PIP_INVOCATIONS.PY3_PIP);
+	setCurrentPipInvocation(argv[1] === 'pip3' ? PIP_INVOCATIONS.PY3_PIP : PIP_INVOCATIONS.PY_PIP);
 	initializePackageManager(PIP_PACKAGE_MANAGER);
-  // Strip '-m pip' or '-m pip3' from args if present
-  argv = argv.slice(2);
+	argv = argv.slice(2);
 	var exitCode = await main(argv);
 	process.exit(exitCode);
 } else {

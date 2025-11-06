@@ -50,6 +50,7 @@ RUN volta install pnpm@${PNPM_VERSION}
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
 
+
 # Install Python and pip (pip3)
 RUN apt-get update && apt-get install -y python${PYTHON_VERSION} python3-pip && \
     ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python3 && \
