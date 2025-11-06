@@ -7,8 +7,6 @@ remove_shim_from_path() {
     echo "$PATH" | sed "s|$HOME/.safe-chain/shims:||g"
 }
 
-echo "[safe-chain debug] command -v {{AIKIDO_COMMAND}} (raw PATH): $(command -v {{AIKIDO_COMMAND}} 2>/dev/null || echo notfound)" >&2
-echo "[safe-chain debug] PATH (raw): $PATH" >&2
 if command -v {{AIKIDO_COMMAND}} >/dev/null 2>&1; then
   # Remove shim directory from PATH when calling {{AIKIDO_COMMAND}} to prevent infinite loops
   PATH=$(remove_shim_from_path) exec {{AIKIDO_COMMAND}} "$@"
