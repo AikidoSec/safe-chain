@@ -142,9 +142,6 @@ function handleConnect(req, clientSocket, head) {
     isKnownRegistry = knownPipRegistries.some((reg) => url.includes(reg));
   }
 
-  // Debug: log CONNECT request URL and MITM/tunnel decision
-  ui.writeVerbose(`[Safe-chain debug] CONNECT request: url=${url}, ecosystem=${ecosystem}, isKnownRegistry=${isKnownRegistry}`);
-
   if (isKnownRegistry) {
     mitmConnect(req, clientSocket, isAllowedUrl);
   } else {
