@@ -4,10 +4,19 @@ import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
 import { getCaCertPath } from "./certUtils.js";
 import { auditChanges } from "../scanning/audit/index.js";
-import { knownJsRegistries, knownPipRegistries, parsePackageFromUrl } from "./parsePackageFromUrl.js";
-import { getEcoSystem, ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
+import {
+  knownJsRegistries,
+  knownPipRegistries,
+  parsePackageFromUrl,
+} from "./parsePackageFromUrl.js";
+import {
+  getEcoSystem,
+  ECOSYSTEM_JS,
+  ECOSYSTEM_PY,
+} from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
+import { createInterceptorBuilder } from "./interceptors/interceptorBuilder.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
@@ -143,12 +152,28 @@ function handleConnect(req, clientSocket, head) {
   }
 
   if (isKnownRegistry) {
-    mitmConnect(req, clientSocket, isAllowedUrl);
+    mitmConnect(req, clientSocket, createMitmInterceptor());
   } else {
     // For other hosts, just tunnel the request to the destination tcp socket
     ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
     tunnelRequest(req, clientSocket, head);
   }
+}
+
+/**
+ *
+ * @returns {import("./interceptors/interceptorBuilder.js").Interceptor}
+ */
+function createMitmInterceptor() {
+  const builder = createInterceptorBuilder();
+
+  builder.onRequest(async (req) => {
+    if (!(await isAllowedUrl(req.targetUrl))) {
+      req.blockRequest(403, "Forbidden - blocked by safe-chain");
+    }
+  });
+
+  return builder.build();
 }
 
 /**
