@@ -13,7 +13,7 @@ let argv = process.argv.slice(2);
 // If no args are passed, argv[0] and argv[1] are undefined, so this condition just evaluates to false and does not throw.
 if (argv[0] === '-m' && (argv[1] === 'pip' || argv[1] === 'pip3')) {
 	setEcoSystem(ECOSYSTEM_PY);
-	setCurrentPipInvocation(argv[1] === 'pip3' ? PIP_INVOCATIONS.PY3_PIP : PIP_INVOCATIONS.PY_PIP);
+	setCurrentPipInvocation(argv[1] === 'pip3' ? PIP_INVOCATIONS.PY_PIP3 : PIP_INVOCATIONS.PY_PIP);
 	initializePackageManager(PIP_PACKAGE_MANAGER);
 	argv = argv.slice(2);
 	var exitCode = await main(argv);
