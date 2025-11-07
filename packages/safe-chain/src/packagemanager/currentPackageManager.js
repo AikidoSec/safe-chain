@@ -52,8 +52,8 @@ export function initializePackageManager(packageManagerName) {
     state.packageManagerName = createBunPackageManager();
   } else if (packageManagerName === "bunx") {
     state.packageManagerName = createBunxPackageManager();
-  } else if (packageManagerName === "pip" || packageManagerName === "pip3") {
-    state.packageManagerName = createPipPackageManager(packageManagerName);
+  } else if (packageManagerName === "pip") {
+    state.packageManagerName = createPipPackageManager();
   } else {
     throw new Error("Unsupported package manager: " + packageManagerName);
   }
