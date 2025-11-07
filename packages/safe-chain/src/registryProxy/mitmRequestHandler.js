@@ -69,7 +69,7 @@ function createHttpsServer(hostname, interceptor) {
     const targetUrl = `https://${hostname}${pathAndQuery}`;
 
     const interceptorResult = await interceptor.handleRequest(targetUrl);
-    const blockResponse = interceptorResult?.blockResponse;
+    const blockResponse = interceptorResult.blockResponse;
 
     if (blockResponse) {
       ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);

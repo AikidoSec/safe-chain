@@ -3,20 +3,9 @@ import { tunnelRequest } from "./tunnelRequestHandler.js";
 import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
 import { getCaCertPath } from "./certUtils.js";
-import { auditChanges } from "../scanning/audit/index.js";
-import {
-  knownJsRegistries,
-  knownPipRegistries,
-  parsePackageFromUrl,
-} from "./parsePackageFromUrl.js";
-import {
-  getEcoSystem,
-  ECOSYSTEM_JS,
-  ECOSYSTEM_PY,
-} from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
-import { createInterceptorBuilder } from "./interceptors/interceptorBuilder.js";
+import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
@@ -141,64 +130,15 @@ function handleConnect(req, clientSocket, head) {
   // CONNECT method is used for HTTPS requests
   // It establishes a tunnel to the server identified by the request URL
 
-  const ecosystem = getEcoSystem();
-  const url = req.url || "";
+  const interceptor = createInterceptorForUrl(req.url || "");
 
-  let isKnownRegistry = false;
-  if (ecosystem === ECOSYSTEM_JS) {
-    isKnownRegistry = knownJsRegistries.some((reg) => url.includes(reg));
-  } else if (ecosystem === ECOSYSTEM_PY) {
-    isKnownRegistry = knownPipRegistries.some((reg) => url.includes(reg));
-  }
-
-  if (isKnownRegistry) {
-    mitmConnect(req, clientSocket, createMitmInterceptor());
+  if (interceptor) {
+    mitmConnect(req, clientSocket, interceptor);
   } else {
     // For other hosts, just tunnel the request to the destination tcp socket
     ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
     tunnelRequest(req, clientSocket, head);
   }
-}
-
-/**
- *
- * @returns {import("./interceptors/interceptorBuilder.js").Interceptor}
- */
-function createMitmInterceptor() {
-  const builder = createInterceptorBuilder();
-
-  builder.onRequest(async (req) => {
-    if (!(await isAllowedUrl(req.targetUrl))) {
-      req.blockRequest(403, "Forbidden - blocked by safe-chain");
-    }
-  });
-
-  return builder.build();
-}
-
-/**
- * @param {string} url
- * @returns {Promise<boolean>}
- */
-async function isAllowedUrl(url) {
-  const { packageName, version } = parsePackageFromUrl(url);
-
-  // packageName and version are undefined when the URL is not a package download
-  // In that case, we can allow the request to proceed
-  if (!packageName || !version) {
-    return true;
-  }
-
-  const auditResult = await auditChanges([
-    { name: packageName, version, type: "add" },
-  ]);
-
-  if (!auditResult.isAllowed) {
-    state.blockedRequests.push({ packageName, version, url });
-    return false;
-  }
-
-  return true;
 }
 
 function verifyNoMaliciousPackages() {
