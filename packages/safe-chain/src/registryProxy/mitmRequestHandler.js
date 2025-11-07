@@ -5,6 +5,7 @@ import { ui } from "../environment/userInteraction.js";
 
 /**
  * @typedef {import("./interceptors/interceptorBuilder.js").Interceptor} Interceptor
+ * @typedef {import("./interceptors/requestInterceptorBuilder.js").RequestInterceptor} RequestInterceptor
  */
 
 /**
@@ -68,18 +69,20 @@ function createHttpsServer(hostname, interceptor) {
     const pathAndQuery = getRequestPathAndQuery(req.url);
     const targetUrl = `https://${hostname}${pathAndQuery}`;
 
-    const interceptorResult = await interceptor.handleRequest(targetUrl);
-    const blockResponse = interceptorResult.blockResponse;
+    const requestInterceptor = await interceptor.handleRequest(targetUrl);
 
-    if (blockResponse) {
+    if (requestInterceptor.blockResponse) {
       ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);
-      res.writeHead(blockResponse.statusCode, blockResponse.message);
-      res.end(blockResponse.message);
+      res.writeHead(
+        requestInterceptor.blockResponse.statusCode,
+        requestInterceptor.blockResponse.message
+      );
+      res.end(requestInterceptor.blockResponse.message);
       return;
     }
 
     // Collect request body
-    forwardRequest(req, hostname, res);
+    forwardRequest(req, hostname, res, requestInterceptor);
   }
 
   const server = https.createServer(
@@ -109,9 +112,10 @@ function getRequestPathAndQuery(url) {
  * @param {import("http").IncomingMessage} req
  * @param {string} hostname
  * @param {import("http").ServerResponse} res
+ * @param {RequestInterceptor} requestInterceptor
  */
-function forwardRequest(req, hostname, res) {
-  const proxyReq = createProxyRequest(hostname, req, res);
+function forwardRequest(req, hostname, res, requestInterceptor) {
+  const proxyReq = createProxyRequest(hostname, req, res, requestInterceptor);
 
   proxyReq.on("error", (err) => {
     ui.writeVerbose(
@@ -142,10 +146,17 @@ function forwardRequest(req, hostname, res) {
  * @param {string} hostname
  * @param {import("http").IncomingMessage} req
  * @param {import("http").ServerResponse} res
+ * @param {RequestInterceptor} requestInterceptor
  *
  * @returns {import("http").ClientRequest}
  */
-function createProxyRequest(hostname, req, res) {
+function createProxyRequest(hostname, req, res, requestInterceptor) {
+  const headers = { ...req.headers };
+  if (headers.host) {
+    delete headers.host;
+  }
+  requestInterceptor.modifyRequestHeaders(headers);
+
   /** @type {import("http").RequestOptions} */
   const options = {
     hostname: hostname,
@@ -154,10 +165,6 @@ function createProxyRequest(hostname, req, res) {
     method: req.method,
     headers: { ...req.headers },
   };
-
-  if (options.headers && "host" in options.headers) {
-    delete options.headers.host;
-  }
 
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
   if (httpsProxy) {
@@ -183,7 +190,13 @@ function createProxyRequest(hostname, req, res) {
     }
 
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
-    proxyRes.pipe(res);
+
+    if (!requestInterceptor.modifiesResponse) {
+      // If the response is not being modified, we can
+      // just pipe without the need for
+      proxyRes.pipe(res);
+    } else {
+    }
   });
 
   return proxyReq;

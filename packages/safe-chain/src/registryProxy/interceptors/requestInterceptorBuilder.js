@@ -3,10 +3,13 @@
  * @property {string} targetUrl
  * @property {(statusCode: number, message: string) => void} blockRequest
  * @property {(packageName: string | undefined, version: string | undefined, url: string) => void} blockMalware
+ * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => void) => void} modifyRequestHeaders
  * @property {() => RequestInterceptor} build
  *
  * @typedef {Object} RequestInterceptor
  * @property {{statusCode: number, message: string} | undefined} blockResponse
+ * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => void} modifyRequestHeaders
+ * @property {() => boolean} modifiesResponse
  */
 
 /**
@@ -17,6 +20,15 @@
 export function createRequestInterceptorBuilder(targetUrl, eventEmitter) {
   /** @type {{statusCode: number, message: string} | undefined}  */
   let blockResponse = undefined;
+
+  /**
+   * @type {{
+   *   requestHeaders: Array<(headers: NodeJS.Dict<string | string[]>) => void>
+   * }}
+   */
+  let modificationFuncs = {
+    requestHeaders: [],
+  };
 
   /**
    * @param {number} statusCode
@@ -47,10 +59,43 @@ export function createRequestInterceptorBuilder(targetUrl, eventEmitter) {
     targetUrl,
     blockRequest,
     blockMalware,
+    modifyRequestHeaders(modificationFunc) {
+      modificationFuncs.requestHeaders.push(modificationFunc);
+    },
     build() {
-      return {
+      return createRequestInterceptor(
         blockResponse,
-      };
+        modificationFuncs.requestHeaders
+      );
     },
   };
+}
+
+/**
+ * @param {{statusCode: number, message: string} | undefined} blockResponse
+ * @param {Array<(headers: NodeJS.Dict<string | string[]>) => void>} requestHeadersModficationFuncs
+ * @returns {RequestInterceptor}
+ */
+function createRequestInterceptor(
+  blockResponse,
+  requestHeadersModficationFuncs
+) {
+  /**
+   * @param {NodeJS.Dict<string | string[]> | undefined} headers
+   */
+  function modifyRequestHeaders(headers) {
+    if (!headers) {
+      return;
+    }
+
+    for (const modificationFunc of requestHeadersModficationFuncs) {
+      modificationFunc(headers);
+    }
+  }
+
+  function modifiesResponse() {
+    return false;
+  }
+
+  return { blockResponse, modifyRequestHeaders, modifiesResponse };
 }

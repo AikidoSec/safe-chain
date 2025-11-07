@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { isMalwarePackage } from "../../scanning/audit/index.js";
 import { createInterceptorBuilder } from "./interceptorBuilder.js";
 
@@ -32,6 +33,15 @@ function buildNpmInterceptor(registry) {
     if (await isMalwarePackage(packageName, version)) {
       req.blockMalware(packageName, version, req.targetUrl);
     }
+
+    req.modifyRequestHeaders((headers) => {
+      if (headers["accept"]?.includes("application/vnd.npm.install-v1+json")) {
+        // The npm registry sometimes serves a more compact format that lacks
+        // the time metadata we need to filter out too new packages.
+        // Force the registry to return the full metadata by changing the Accept header.
+        headers["accept"] = "application/json";
+      }
+    });
   });
 
   return builder.build();
