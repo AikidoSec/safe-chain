@@ -6,7 +6,6 @@ import { getCaCertPath } from "./certUtils.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
-import { on } from "events";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
