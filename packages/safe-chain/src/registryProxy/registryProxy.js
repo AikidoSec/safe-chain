@@ -6,6 +6,7 @@ import { getCaCertPath } from "./certUtils.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
+import { on } from "events";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
@@ -133,12 +134,27 @@ function handleConnect(req, clientSocket, head) {
   const interceptor = createInterceptorForUrl(req.url || "");
 
   if (interceptor) {
+    // Subscribe to malware blocked events
+    interceptor.on("malwareBlocked", (event) => {
+      onMalwareBlocked(event.packageName, event.version, event.url);
+    });
+
     mitmConnect(req, clientSocket, interceptor);
   } else {
     // For other hosts, just tunnel the request to the destination tcp socket
     ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
     tunnelRequest(req, clientSocket, head);
   }
+}
+
+/**
+ *
+ * @param {string} packageName
+ * @param {string} version
+ * @param {string} url
+ */
+function onMalwareBlocked(packageName, version, url) {
+  state.blockedRequests.push({ packageName, version, url });
 }
 
 function verifyNoMaliciousPackages() {

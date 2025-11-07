@@ -30,7 +30,7 @@ function buildNpmInterceptor(registry) {
       registry
     );
     if (await isMalwarePackage(packageName, version)) {
-      req.blockRequest(403, "Forbidden - blocked by safe-chain");
+      req.blockMalware(packageName, version, req.targetUrl);
     }
   });
 
@@ -42,7 +42,7 @@ function buildNpmInterceptor(registry) {
  * @param {string} registry
  * @returns {{packageName: string | undefined, version: string | undefined}}
  */
-export function parseNpmPackageUrl(url, registry) {
+function parseNpmPackageUrl(url, registry) {
   let packageName, version;
   if (!registry || !url.endsWith(".tgz")) {
     return { packageName, version };

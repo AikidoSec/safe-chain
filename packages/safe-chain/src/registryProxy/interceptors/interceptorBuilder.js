@@ -8,8 +8,11 @@
  *
  * @typedef {Object} Interceptor
  * @property {(targetUrl: string) => Promise<RequestInterceptor>} handleRequest
+ * @property {(event: string, listener: (...args: any[]) => void) => Interceptor} on
+ * @property {(event: string, ...args: any[]) => boolean} emit
  */
 
+import { EventEmitter } from "events";
 import { createRequestInterceptorBuilder } from "./requestInterceptorBuilder.js";
 
 /**
@@ -36,15 +39,27 @@ export function createInterceptorBuilder() {
  * @returns {Interceptor}
  */
 function buildInterceptor(requestHandlers) {
+  const eventEmitter = new EventEmitter();
+
   return {
     async handleRequest(targetUrl) {
-      const reqInterceptorBuilder = createRequestInterceptorBuilder(targetUrl);
+      const reqInterceptorBuilder = createRequestInterceptorBuilder(
+        targetUrl,
+        eventEmitter
+      );
 
       for (const handler of requestHandlers) {
         await handler(reqInterceptorBuilder);
       }
 
       return reqInterceptorBuilder.build();
+    },
+    on(event, listener) {
+      eventEmitter.on(event, listener);
+      return this;
+    },
+    emit(event, ...args) {
+      return eventEmitter.emit(event, ...args);
     },
   };
 }

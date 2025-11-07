@@ -35,7 +35,7 @@ function buildPipInterceptor(registry) {
       registry
     );
     if (await isMalwarePackage(packageName, version)) {
-      req.blockRequest(403, "Forbidden - blocked by safe-chain");
+      req.blockMalware(packageName, version, req.targetUrl);
     }
   });
 
