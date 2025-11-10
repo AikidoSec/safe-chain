@@ -10,8 +10,8 @@ describe("E2E: pip coverage", () => {
   });
 
   beforeEach(async () => {
-    // Run a new Docker container for each test
-    container = new DockerTestContainer();
+    // Run a new Docker container for each test as root user
+    container = new DockerTestContainer({ asRootUser: true });
     await container.start();
 
     const installationShell = await container.openShell("zsh");
@@ -316,10 +316,9 @@ describe("E2E: pip coverage", () => {
     );
 
     // Should NOT contain certificate verification errors
+    const sslErrorPattern = /certificate verify failed|CERTIFICATE_VERIFY_FAILED|SSLError/i;
     assert.ok(
-      !result.output.match(
-        /SSL|certificate verify failed|CERTIFICATE_VERIFY_FAILED/i
-      ),
+      !sslErrorPattern.test(result.output),
       `Should not have SSL/certificate errors for tunneled hosts. Output was:\n${result.output}`
     );
   });

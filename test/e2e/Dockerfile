@@ -30,8 +30,8 @@ ARG PYTHON_VERSION=3
 SHELL ["/bin/bash", "-c"]
 ENV BASH_ENV=~/.bashrc
 
-# Install a proxy
-RUN apt-get update && apt-get install tinyproxy -y
+# Install a proxy and sudo
+RUN apt-get update && apt-get install -y tinyproxy sudo
 
 # Install zsh
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.2.1/zsh-in-docker.sh)"

@@ -16,11 +16,12 @@ const yarnVersion = process.env.YARN_VERSION || "latest";
 const pnpmVersion = process.env.PNPM_VERSION || "latest";
 
 export class DockerTestContainer {
-  constructor() {
+  constructor({ asRootUser = false } = {}) {
     this.containerName = `safe-chain-test-${Math.random()
       .toString(36)
       .substring(2, 15)}`;
     this.isRunning = false;
+    this.asRootUser = asRootUser;
   }
 
   static buildImage() {
@@ -50,8 +51,9 @@ export class DockerTestContainer {
 
     try {
       // Start a long-running container that we can exec commands into
+      const userFlag = this.asRootUser ? "--user root" : "";
       execSync(
-        `docker run -d --name ${this.containerName} ${imageName} sleep infinity`,
+        `docker run -d --name ${this.containerName} ${userFlag} ${imageName} sleep infinity`,
         { stdio: "ignore" }
       );
       this.isRunning = true;
