@@ -160,14 +160,7 @@ export async function installSafeChainCA() {
     }
     if (platform === "darwin") {
       // macOS: use security CLI
-      await safeSpawn("sudo", [
-        "security",
-        "add-trusted-cert",
-        "-d",
-        "-r", "trustRoot",
-        "-k", DARWIN_CA_PATH,
-        caPath
-      ], { stdio: "inherit" });
+      await safeSpawn("sudo", ["security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", DARWIN_CA_PATH, caPath], { stdio: "inherit" });
     } else if (platform === "linux") {
       // Linux: use update-ca-certificates
       await safeSpawn("sudo", ["cp", caPath, LINUX_CA_PATH], { stdio: "inherit" });
