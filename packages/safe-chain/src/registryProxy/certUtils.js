@@ -11,6 +11,7 @@ const ca = loadCa();
 
 const certCache = new Map();
 
+// Known return values for os.platform()
 const OS_DARWIN = "darwin";
 const OS_LINUX = "linux";
 const OS_WINDOWS = "win32";
@@ -131,19 +132,19 @@ function generateCa() {
 export async function isSafeChainCAInstalled() {
   const platform = os.platform();
   try {
-    if (platform === "darwin") {
+    if (platform === OS_DARWIN) {
       // macOS: check System Keychain for cert
       const res = await safeSpawn("security", ["find-certificate", "-c", SAFE_CHAIN_CA_COMMON_NAME, DARWIN_CA_PATH], { stdio: "pipe" });
       return res.stdout.includes(SAFE_CHAIN_CA_COMMON_NAME);
-    } else if (platform === "linux") {
+    } else if (platform === OS_LINUX) {
       // Linux: check for CA file
       return fs.existsSync(LINUX_CA_PATH);
-    } else if (platform === "win32") {
+    } else if (platform === OS_WINDOWS) {
       // Windows: check Root store for cert
       return await safeSpawn("certutil", ["-store", "Root", SAFE_CHAIN_CA_COMMON_NAME], { stdio: "pipe" }).then(res => res.stdout.includes(SAFE_CHAIN_CA_COMMON_NAME));
     }
   } catch (/** @type any */ error) {
-    // If check fails, assume not installed
+    ui.writeVerbose(`Safe-chain: CA check failed: ${error?.message || error}`);
     return false;
   }
   return false;
@@ -163,14 +164,14 @@ export async function installSafeChainCA() {
       ui.writeVerbose("Safe-chain: CA already installed in OS trust store.");
       return;
     }
-    if (platform === "darwin") {
+    if (platform === OS_DARWIN) {
       // macOS: use security CLI
       await safeSpawn("sudo", ["security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", DARWIN_CA_PATH, caPath], { stdio: "inherit" });
-    } else if (platform === "linux") {
+    } else if (platform === OS_LINUX) {
       // Linux: use update-ca-certificates
       await safeSpawn("sudo", ["cp", caPath, LINUX_CA_PATH], { stdio: "inherit" });
       await safeSpawn("sudo", ["update-ca-certificates"], { stdio: "inherit" });
-    } else if (platform === "win32") {
+    } else if (platform === OS_WINDOWS) {
       // Windows: use certutil
       await safeSpawn("certutil", ["-addstore", "-f", "Root", caPath], { stdio: "inherit" });
     } else {
