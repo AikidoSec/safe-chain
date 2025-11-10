@@ -168,22 +168,27 @@ export async function installSafeChainCA() {
       ui.writeVerbose("Safe-chain: CA already installed in OS trust store.");
       return;
     }
+
+    ui.writeInformation("Safe-chain: Installing CA certificate to system trust store.");
+    ui.writeInformation("Safe-chain: You may be prompted for your password to authorize this installation.");
+
     if (platform === OS_DARWIN) {
-      // macOS: use security CLI
+      // macOS: use security CLI with sudo (will prompt for password)
       await safeSpawn("sudo", ["security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", DARWIN_CA_PATH, caPath], { stdio: "inherit" });
     } else if (platform === OS_LINUX) {
-      // Linux: use update-ca-certificates
+      // Linux: use update-ca-certificates with sudo (will prompt for password)
       await safeSpawn("sudo", ["cp", caPath, LINUX_CA_PATH], { stdio: "inherit" });
       await safeSpawn("sudo", ["update-ca-certificates"], { stdio: "inherit" });
     } else if (platform === OS_WINDOWS) {
-      // Windows: use certutil
-      await safeSpawn("certutil", ["-addstore", "-f", "Root", caPath], { stdio: "inherit" });
+      // Windows: use certutil with UAC elevation prompt
+      const psCommand = `Start-Process -FilePath certutil -ArgumentList '-addstore','-f','Root','${caPath}' -Verb RunAs -Wait`;
+      await safeSpawn("powershell", ["-Command", psCommand], { stdio: "inherit" });
     } else {
       throw new Error("Unsupported OS for automatic CA installation. Please install manually.");
     }
-    ui.writeVerbose("Safe-chain: CA installed in OS trust store.");
+    ui.writeVerbose("Safe-chain: CA certificate successfully installed in OS trust store.");
   } catch (/** @type any */ error) {
-    ui.writeError("Failed to install safe-chain: CA:", error.message);
+    ui.writeError("Failed to install Safe-chain CA certificate:", error.message);
     throw error;
   }
 }
