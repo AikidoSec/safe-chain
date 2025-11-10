@@ -61,11 +61,7 @@ export function getCombinedCaBundlePath() {
   const safeChainPath = getCaCertPath();
   try {
     const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
-    if (isParsable(safeChainPem))
-      {
-        parts.push(safeChainPem.trim());
-        console.log("[Safe Chain] Loaded Safe Chain CA from:", safeChainPath);
-      } 
+    if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
   } catch {
     // Ignore if Safe Chain CA is not available
   }
@@ -95,6 +91,5 @@ export function getCombinedCaBundlePath() {
   const target = path.join(os.tmpdir(), "safe-chain-ca-bundle.pem");
   fs.writeFileSync(target, combined, { encoding: "utf8" });
   cachedPath = target;
-  console.log(`Created combined CA bundle at: ${cachedPath}`);
   return cachedPath;
 }
