@@ -40,8 +40,5 @@ export const LOGGING_SILENT = "silent";
 export const LOGGING_NORMAL = "normal";
 export const LOGGING_VERBOSE = "verbose";
 
-// OS trust store paths
-export const DARWIN_CA_PATH = "/Library/Keychains/System.keychain";
-export const LINUX_CA_PATH = "/usr/local/share/ca-certificates/safe-chain-ca.crt";
 export const SAFE_CHAIN_CA_COMMON_NAME = "safe-chain proxy";
 

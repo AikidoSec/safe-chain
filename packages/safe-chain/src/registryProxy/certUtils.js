@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import { safeSpawn } from "../utils/safeSpawn.js";
-import { DARWIN_CA_PATH, LINUX_CA_PATH, SAFE_CHAIN_CA_COMMON_NAME } from "../config/settings.js";
+import { SAFE_CHAIN_CA_COMMON_NAME } from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
@@ -15,6 +15,10 @@ const certCache = new Map();
 const OS_DARWIN = "darwin";
 const OS_LINUX = "linux";
 const OS_WINDOWS = "win32";
+
+// OS trust store paths
+const DARWIN_CA_PATH = "/Library/Keychains/System.keychain";
+const LINUX_CA_PATH = "/usr/local/share/ca-certificates/safe-chain-ca.crt";
 
 export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
