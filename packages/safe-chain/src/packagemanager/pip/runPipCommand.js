@@ -4,6 +4,26 @@ import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/reg
 import { installSafeChainCA } from "../../registryProxy/certUtils.js";
 
 /**
+ * Returns true if the pip command needs the Safe-chain CA installed.
+ * @param {string[]} args
+ * @returns {boolean}
+ */
+function needsCaInstalled(args) {
+  const known = new Set(["install", "wheel", "download"]);
+  let startIdx = 0;
+  if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
+    startIdx = 2;
+  }
+  for (let i = startIdx; i < args.length; i++) {
+    const token = args[i];
+    if (!token) continue;
+    if (token.startsWith("-")) continue; // skip flags
+    if (known.has(token)) return true;
+  }
+  return false;
+}
+
+/**
  * @param {string} command
  * @param {string[]} args
  *
@@ -11,9 +31,11 @@ import { installSafeChainCA } from "../../registryProxy/certUtils.js";
  */
 export async function runPip(command, args) {
   try {
-    // Install Safe Chain CA in OS trust store before running pip
-    // Py 3.14 requires that certs are properly installed in the OS trust store
-    await installSafeChainCA();
+    // Only install CA for commands that download or build packages.
+    // This minimizes privilege prompts for read-only operations like 'list' or 'show'.
+    if (needsCaInstalled(args)) {
+      await installSafeChainCA();
+    }
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
     const result = await safeSpawn(command, args, {
       stdio: "inherit",
