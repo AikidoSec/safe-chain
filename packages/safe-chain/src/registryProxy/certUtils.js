@@ -138,7 +138,7 @@ export async function isSafeChainCAInstalled() {
       // Windows: check Root store for cert
       return await safeSpawn("certutil", ["-store", "Root", "safe-chain proxy"], { stdio: "pipe" }).then(res => res.stdout.includes("safe-chain proxy"));
     }
-  } catch (err) {
+  } catch (/** @type any */ error) {
     // If check fails, assume not installed
     return false;
   }
