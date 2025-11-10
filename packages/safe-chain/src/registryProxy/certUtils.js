@@ -3,13 +3,17 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import { safeSpawn } from "../utils/safeSpawn.js";
-import { DARWIN_CA_PATH, LINUX_CA_PATH } from "../config/settings.js";
+import { DARWIN_CA_PATH, LINUX_CA_PATH, SAFE_CHAIN_CA_COMMON_NAME } from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
 
 const certCache = new Map();
+
+const OS_DARWIN = "darwin";
+const OS_LINUX = "linux";
+const OS_WINDOWS = "win32";
 
 export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
@@ -97,7 +101,7 @@ function generateCa() {
   cert.validity.notAfter = new Date();
   cert.validity.notAfter.setDate(cert.validity.notBefore.getDate() + 1);
 
-  const attrs = [{ name: "commonName", value: "safe-chain proxy" }];
+  const attrs = [{ name: "commonName", value: SAFE_CHAIN_CA_COMMON_NAME }];
   cert.setSubject(attrs);
   cert.setIssuer(attrs);
   cert.setExtensions([
@@ -129,14 +133,14 @@ export async function isSafeChainCAInstalled() {
   try {
     if (platform === "darwin") {
       // macOS: check System Keychain for cert
-      const res = await safeSpawn("security", ["find-certificate", "-c", "safe-chain proxy", DARWIN_CA_PATH], { stdio: "pipe" });
-      return res.stdout.includes("safe-chain proxy");
+      const res = await safeSpawn("security", ["find-certificate", "-c", SAFE_CHAIN_CA_COMMON_NAME, DARWIN_CA_PATH], { stdio: "pipe" });
+      return res.stdout.includes(SAFE_CHAIN_CA_COMMON_NAME);
     } else if (platform === "linux") {
       // Linux: check for CA file
       return fs.existsSync(LINUX_CA_PATH);
     } else if (platform === "win32") {
       // Windows: check Root store for cert
-      return await safeSpawn("certutil", ["-store", "Root", "safe-chain proxy"], { stdio: "pipe" }).then(res => res.stdout.includes("safe-chain proxy"));
+      return await safeSpawn("certutil", ["-store", "Root", SAFE_CHAIN_CA_COMMON_NAME], { stdio: "pipe" }).then(res => res.stdout.includes(SAFE_CHAIN_CA_COMMON_NAME));
     }
   } catch (/** @type any */ error) {
     // If check fails, assume not installed
