@@ -56,6 +56,8 @@ You can check the installed version by running:
 safe-chain --version
 ```
 
+> **Note:** When using pip or pip3, Safe Chain may need to install a CA certificate in your OS trust store to enable secure MITM protection. This operation requires root (administrator) permissions. You may be prompted for your password when running pip commands for the first time.
+
 ## How it works
 
 The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, `pip`, or `pip3` commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.

@@ -4,6 +4,7 @@ import fs from "fs";
 import os from "os";
 import { safeSpawn } from "../utils/safeSpawn.js";
 import { DARWIN_CA_PATH, LINUX_CA_PATH } from "../config/settings.js";
+import { ui } from "../environment/userInteraction.js";
 
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
@@ -155,7 +156,7 @@ export async function installSafeChainCA() {
   try {
     const alreadyInstalled = await isSafeChainCAInstalled();
     if (alreadyInstalled) {
-      console.log("Safe Chain CA already installed in OS trust store.");
+      ui.writeVerbose("Safe-chain: CA already installed in OS trust store.");
       return;
     }
     if (platform === "darwin") {
@@ -171,9 +172,9 @@ export async function installSafeChainCA() {
     } else {
       throw new Error("Unsupported OS for automatic CA installation. Please install manually.");
     }
-    console.log("Safe Chain CA installed in OS trust store.");
+    ui.writeVerbose("Safe-chain: CA installed in OS trust store.");
   } catch (/** @type any */ error) {
-    console.error("Failed to install Safe Chain CA:", error.message);
+    ui.writeError("Failed to install safe-chain: CA:", error.message);
     throw error;
   }
 }

@@ -3,10 +3,6 @@ import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { installSafeChainCA } from "../../registryProxy/certUtils.js";
 
-function shouldMockCAInstall() {
-  return process.env.SAFE_CHAIN_TEST_SKIP_CA_INSTALL === "1";
-}
-
 /**
  * @param {string} command
  * @param {string[]} args
@@ -15,10 +11,9 @@ function shouldMockCAInstall() {
  */
 export async function runPip(command, args) {
   try {
-    // Install Safe Chain CA in OS trust store before running pip, unless in test mode
-    if (!shouldMockCAInstall()) {
-      await installSafeChainCA();
-    }
+    // Install Safe Chain CA in OS trust store before running pip
+    // Py 3.14 requires that certs are properly installed in the OS trust store
+    await installSafeChainCA();
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
     const result = await safeSpawn(command, args, {
       stdio: "inherit",
