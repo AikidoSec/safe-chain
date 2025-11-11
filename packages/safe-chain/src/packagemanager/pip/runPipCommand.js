@@ -24,18 +24,16 @@ export async function runPip(command, args) {
     if (!env.REQUESTS_CA_BUNDLE) {
       env.REQUESTS_CA_BUNDLE = combinedCaPath;
     }
-
     if (!env.SSL_CERT_FILE) {
       env.SSL_CERT_FILE = combinedCaPath;
     }
-    
+
     // To counter behavior that is sometimes seen where pip ignores REQUESTS_CA_BUNDLE/SSL_CERT_FILE,
     // We will set additional env vars for pip
+
     if (!env.PIP_CERT) {
       env.PIP_CERT = combinedCaPath;
     }
-
-    // Only create and set PIP_CONFIG_FILE if not already set
     if (!env.PIP_CONFIG_FILE) {
       const tmpDir = os.tmpdir();
       const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
