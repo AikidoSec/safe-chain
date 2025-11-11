@@ -169,18 +169,22 @@ export async function installSafeChainCA() {
       return;
     }
 
-    ui.writeInformation("Safe-chain: Installing CA certificate to system trust store.");
-    ui.writeInformation("Safe-chain: You may be prompted for your password to authorize this installation.");
+    ui.writeInformation("Safe-chain: Installing CA certificate to trust store.");
 
     if (platform === OS_DARWIN) {
-      // macOS: use security CLI with sudo (will prompt for password)
-      await safeSpawn("sudo", ["security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", DARWIN_CA_PATH, caPath], { stdio: "inherit" });
+      // macOS: Install into user trust store
+      const securityCmd = ["add-trusted-cert", "-r", "trustRoot", caPath];
+      const result = await safeSpawn("security", securityCmd, { stdio: "inherit" });
+      if (result.status !== 0) {
+        throw new Error(`Failed to install CA certificate into user trust store (exit code ${result.status}).`);
+      }
+      ui.writeVerbose("Safe-chain: CA certificate installed in user trust settings (no admin prompt).");
     } else if (platform === OS_LINUX) {
-      // Linux: use update-ca-certificates with sudo (will prompt for password)
+      // Linux: use update-ca-certificates
       await safeSpawn("sudo", ["cp", caPath, LINUX_CA_PATH], { stdio: "inherit" });
       await safeSpawn("sudo", ["update-ca-certificates"], { stdio: "inherit" });
     } else if (platform === OS_WINDOWS) {
-      // Windows: use certutil with UAC elevation prompt
+      // Windows: use certutil (with UAC elevation prompt)
       const psCommand = `Start-Process -FilePath certutil -ArgumentList '-addstore','-f','Root','${caPath}' -Verb RunAs -Wait`;
       await safeSpawn("powershell", ["-Command", psCommand], { stdio: "inherit" });
     } else {
