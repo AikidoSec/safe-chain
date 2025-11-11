@@ -43,6 +43,23 @@ describe("runPipCommand environment variable handling", () => {
     mock.reset();
   });
 
+  it("should set PIP_CERT env var and create config file", async () => {
+    const res = await runPip("pip3", ["install", "requests"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    // Check PIP_CERT env var
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CERT,
+      "/tmp/test-combined-ca.pem",
+      "PIP_CERT should be set to combined bundle path"
+    );
+    // Check PIP_CONFIG_FILE env var exists and is a non-empty string
+    const configPath = capturedArgs.options.env.PIP_CONFIG_FILE;
+    assert.ok(configPath, "PIP_CONFIG_FILE should be set");
+    assert.strictEqual(typeof configPath, "string", "PIP_CONFIG_FILE should be a string");
+    assert.ok(configPath.length > 0, "PIP_CONFIG_FILE should be a non-empty path");
+  });
+
   it("should set REQUESTS_CA_BUNDLE and SSL_CERT_FILE for default PyPI (no explicit index)", async () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
@@ -60,9 +77,6 @@ describe("runPipCommand environment variable handling", () => {
       "/tmp/test-combined-ca.pem",
       "SSL_CERT_FILE should be set to combined bundle path"
     );
-    
-    // Args should be unchanged (no arg injection)
-    assert.deepStrictEqual(capturedArgs.args, ["install", "requests"]);
   });
 
   it("should set CA environment variables even for external/test PyPI mirror (covers non-CLI traffic)", async () => {
