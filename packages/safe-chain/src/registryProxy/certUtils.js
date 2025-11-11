@@ -156,7 +156,6 @@ export async function isSafeChainCAInstalled() {
 
 /**
  * Installs the Safe Chain CA certificate in the OS trust store.
- * Uses platform-specific commands. Optionally uses npm packages if available.
  * @returns {Promise<void>}
  */
 export async function installSafeChainCA() {
@@ -169,7 +168,7 @@ export async function installSafeChainCA() {
       return;
     }
 
-    ui.writeInformation("Safe-chain: Installing CA certificate to trust store.");
+    ui.writeInformation("Safe-chain: Installing CA certificate to trust store. This may require elevated permissions.");
 
     if (platform === OS_DARWIN) {
       // macOS: Install into user trust store
