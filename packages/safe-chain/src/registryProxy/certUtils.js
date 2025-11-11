@@ -177,13 +177,13 @@ export async function installSafeChainCA() {
       if (result.status !== 0) {
         throw new Error(`Failed to install CA certificate into user trust store (exit code ${result.status}).`);
       }
-      ui.writeVerbose("Safe-chain: CA certificate installed in user trust settings (no admin prompt).");
+      ui.writeVerbose("Safe-chain: CA certificate was installed in user trust settings.");
     } else if (platform === OS_LINUX) {
       // Linux: use update-ca-certificates
       await safeSpawn("sudo", ["cp", caPath, LINUX_CA_PATH], { stdio: "inherit" });
       await safeSpawn("sudo", ["update-ca-certificates"], { stdio: "inherit" });
     } else if (platform === OS_WINDOWS) {
-      // Windows: use certutil (with UAC elevation prompt)
+      // Windows: use certutil (will cause UAC elevation prompt)
       const psCommand = `Start-Process -FilePath certutil -ArgumentList '-addstore','-f','Root','${caPath}' -Verb RunAs -Wait`;
       await safeSpawn("powershell", ["-Command", psCommand], { stdio: "inherit" });
     } else {

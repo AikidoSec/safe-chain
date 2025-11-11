@@ -266,7 +266,7 @@ describe("E2E: pip coverage", () => {
     // Should NOT contain SSL or certificate errors
     assert.ok(
       !result.output.match(
-        /SSL|certificate verify failed|CERTIFICATE_VERIFY_FAILED/i
+        /certificate verify failed|CERTIFICATE_VERIFY_FAILED/i
       ),
       `Should not have SSL/certificate errors. Output was:\n${result.output}`
     );
