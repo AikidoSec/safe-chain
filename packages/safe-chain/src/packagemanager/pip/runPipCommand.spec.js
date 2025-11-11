@@ -4,6 +4,7 @@ import assert from "node:assert";
 describe("runPipCommand environment variable handling", () => {
   let runPip;
   let capturedArgs = null;
+  let customEnv = null;
 
   beforeEach(async () => {
     capturedArgs = null;
@@ -18,11 +19,12 @@ describe("runPipCommand environment variable handling", () => {
       },
     });
 
-    // Mock proxy env merge
+    // Mock proxy env merge, allow custom env override
     mock.module("../../registryProxy/registryProxy.js", {
       namedExports: {
         mergeSafeChainProxyEnvironmentVariables: (env) => ({
           ...env,
+          ...(customEnv || {}),
           HTTPS_PROXY: "http://localhost:8080",
         }),
       },
@@ -41,6 +43,25 @@ describe("runPipCommand environment variable handling", () => {
 
   afterEach(() => {
     mock.reset();
+  });
+
+  it("should not overwrite existing env vars for certs and config", async () => {
+    // Set custom env vars before merge
+    customEnv = {
+      REQUESTS_CA_BUNDLE: "/custom/ca-bundle.pem",
+      SSL_CERT_FILE: "/custom/ssl-cert.pem",
+      PIP_CERT: "/custom/pip-cert.pem",
+      PIP_CONFIG_FILE: "/custom/pip.conf"
+    };
+    const res = await runPip("pip3", ["install", "requests"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    // Should preserve custom env vars
+    assert.strictEqual(capturedArgs.options.env.REQUESTS_CA_BUNDLE, "/custom/ca-bundle.pem");
+    assert.strictEqual(capturedArgs.options.env.SSL_CERT_FILE, "/custom/ssl-cert.pem");
+    assert.strictEqual(capturedArgs.options.env.PIP_CERT, "/custom/pip-cert.pem");
+    assert.strictEqual(capturedArgs.options.env.PIP_CONFIG_FILE, "/custom/pip.conf");
+    customEnv = null;
   });
 
   it("should set PIP_CERT env var and create config file", async () => {

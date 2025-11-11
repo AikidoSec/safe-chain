@@ -20,29 +20,39 @@ export async function runPip(command, args) {
     // so that any network request made by pip, including those outside explicit CLI args,
     // validates correctly under both MITM'd and tunneled HTTPS.
     const combinedCaPath = getCombinedCaBundlePath();
-    env.REQUESTS_CA_BUNDLE = combinedCaPath;
-    env.SSL_CERT_FILE = combinedCaPath;
 
+    if (!env.REQUESTS_CA_BUNDLE) {
+      env.REQUESTS_CA_BUNDLE = combinedCaPath;
+    }
+
+    if (!env.SSL_CERT_FILE) {
+      env.SSL_CERT_FILE = combinedCaPath;
+    }
+    
     // To counter behavior that is sometimes seen where pip ignores REQUESTS_CA_BUNDLE/SSL_CERT_FILE,
     // We will set additional env vars for pip
-    env.PIP_CERT = combinedCaPath;
+    if (!env.PIP_CERT) {
+      env.PIP_CERT = combinedCaPath;
+    }
 
-    // Create a temporary pip config file
-    const tmpDir = os.tmpdir();
-    const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
+    // Only create and set PIP_CONFIG_FILE if not already set
+    if (!env.PIP_CONFIG_FILE) {
+      const tmpDir = os.tmpdir();
+      const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
 
-    // Proxy settings
-    const httpProxy = env.HTTP_PROXY || '';
-    const httpsProxy = env.HTTPS_PROXY || '';
+      // Proxy settings
+      const httpProxy = env.HTTP_PROXY || '';
+      const httpsProxy = env.HTTPS_PROXY || '';
 
-    // Build pip config INI
-    let pipConfig = '[global]\n';
-    pipConfig += `cert = ${combinedCaPath}\n`;
-    if (httpProxy) pipConfig += `proxy = ${httpProxy}\n`;
-    if (httpsProxy) pipConfig += `proxy = ${httpsProxy}\n`;
+      // Build pip config INI
+      let pipConfig = '[global]\n';
+      pipConfig += `cert = ${combinedCaPath}\n`;
+      if (httpProxy) pipConfig += `proxy = ${httpProxy}\n`;
+      if (httpsProxy) pipConfig += `proxy = ${httpsProxy}\n`;
 
-    await fs.writeFile(pipConfigPath, pipConfig);
-    env.PIP_CONFIG_FILE = pipConfigPath;
+      await fs.writeFile(pipConfigPath, pipConfig);
+      env.PIP_CONFIG_FILE = pipConfigPath;
+    }
 
     const result = await safeSpawn(command, args, {
       stdio: "inherit",
