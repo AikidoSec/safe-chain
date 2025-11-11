@@ -24,7 +24,7 @@ describe("runPipCommand environment variable handling", () => {
       namedExports: {
         mergeSafeChainProxyEnvironmentVariables: (env) => ({
           ...env,
-          ...(customEnv || {}),
+          ...customEnv,
           HTTPS_PROXY: "http://localhost:8080",
         }),
       },
