@@ -1,5 +1,5 @@
 import { isMalwarePackage } from "../../scanning/audit/index.js";
-import { createInterceptorBuilder } from "./interceptorBuilder.js";
+import { interceptRequests } from "./interceptorBuilder.js";
 
 const knownJsRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
 
@@ -22,19 +22,15 @@ export function npmInterceptorForUrl(url) {
  * @returns {import("./interceptorBuilder.js").Interceptor | undefined}
  */
 function buildNpmInterceptor(registry) {
-  const builder = createInterceptorBuilder();
-
-  builder.onRequest(async (req) => {
+  return interceptRequests(async (reqContext) => {
     const { packageName, version } = parseNpmPackageUrl(
-      req.targetUrl,
+      reqContext.targetUrl,
       registry
     );
     if (await isMalwarePackage(packageName, version)) {
-      req.blockMalware(packageName, version, req.targetUrl);
+      reqContext.blockMalware(packageName, version);
     }
   });
-
-  return builder.build();
 }
 
 /**
