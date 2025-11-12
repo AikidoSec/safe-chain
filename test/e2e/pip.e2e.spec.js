@@ -96,7 +96,7 @@ describe("E2E: pip coverage", () => {
 
   it(`python3 -m pip install routes through safe-chain`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("python3 -m pip install requests");
+    const result = await shell.runCommand("python3 -m pip install --break-system-packages requests");
 
     assert.ok(
       result.output.includes("no malware found."),
@@ -322,5 +322,13 @@ describe("E2E: pip coverage", () => {
       ),
       `Should not have SSL/certificate errors for tunneled hosts. Output was:\n${result.output}`
     );
+  });
+
+  it(`pip3 install requests with --safe-chain-logging=verbose`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand(
+      "pip3 install --break-system-packages requests --safe-chain-logging=verbose"
+    );
+    assert.ok(result.output.includes("no malware found."), `Output did not include expected text. Output was:\n${result.output}`);
   });
 });

@@ -53,7 +53,19 @@ RUN curl -fsSL https://bun.sh/install | bash
 # Install Python and pip (pip3)
 RUN apt-get update && apt-get install -y python${PYTHON_VERSION} python3-pip && \
     ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python3 && \
-    ln -sf /usr/bin/pip3 /usr/local/bin/pip3
+    ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/local/bin/pip3 && \
+    cat <<'EOF' > /usr/lib/python3/dist-packages/pip3.py
+"""
+Shim module so 'python[3] -m pip3 …' resolves to pip's CLI entry point.
+"""
+try:
+    import pip._internal
+    pip._internal.main()
+except Exception as exc:
+    print("pip3 module shim failed:", exc)
+    raise
+EOF
 
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/

@@ -29,7 +29,8 @@ export async function runPip(command, args) {
     if (error.status) {
       return { status: error.status };
     } else {
-      ui.writeError("Error executing command:", error.message);
+      ui.writeError(`Error executing command: ${error.message}`);
+      ui.writeError(`Is '${command}' installed and available on your system?`);
       return { status: 1 };
     }
   }

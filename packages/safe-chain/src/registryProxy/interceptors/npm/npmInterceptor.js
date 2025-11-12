@@ -1,9 +1,7 @@
-import chalk from "chalk";
 import { getMinimumPackageAgeHours } from "../../../config/settings.js";
 import { isMalwarePackage } from "../../../scanning/audit/index.js";
-import { createInterceptorBuilder } from "../interceptorBuilder.js";
+import { interceptRequests } from "../interceptorBuilder.js";
 import { ui } from "../../../environment/userInteraction.js";
-import { writeFileSync } from "node:fs";
 
 const knownJsRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
 
@@ -23,22 +21,20 @@ export function npmInterceptorForUrl(url) {
 
 /**
  * @param {string} registry
- * @returns {import("../interceptorBuilder.js").Interceptor | undefined}
+ * @returns {import("../interceptorBuilder.js").Interceptor}
  */
 function buildNpmInterceptor(registry) {
-  const builder = createInterceptorBuilder();
-
-  builder.onRequest(async (req) => {
+  return interceptRequests(async (reqContext) => {
     const { packageName, version } = parseNpmPackageUrl(
-      req.targetUrl,
+      reqContext.targetUrl,
       registry
     );
     if (await isMalwarePackage(packageName, version)) {
-      req.blockMalware(packageName, version, req.targetUrl);
+      reqContext.blockMalware(packageName, version);
     }
 
-    if (isPackageInfoUrl(req.targetUrl)) {
-      req.modifyRequestHeaders((headers) => {
+    if (isPackageInfoUrl(reqContext.targetUrl)) {
+      reqContext.modifyRequestHeaders((headers) => {
         if (
           headers["accept"]?.includes("application/vnd.npm.install-v1+json")
         ) {
@@ -49,13 +45,11 @@ function buildNpmInterceptor(registry) {
         }
       });
 
-      req.modifyResponse((res) => {
+      reqContext.modifyResponse((res) => {
         res.modifyBody(modifyNpmInfoRequestBody);
       });
     }
   });
-
-  return builder.build();
 }
 
 /**
