@@ -24,6 +24,7 @@ export async function runPip(command, args) {
     if (!env.REQUESTS_CA_BUNDLE) {
       env.REQUESTS_CA_BUNDLE = combinedCaPath;
     }
+    
     if (!env.SSL_CERT_FILE) {
       env.SSL_CERT_FILE = combinedCaPath;
     }
@@ -33,6 +34,8 @@ export async function runPip(command, args) {
     if (!env.PIP_CERT) {
       env.PIP_CERT = combinedCaPath;
     }
+
+    // PIP_CONFIG file is created to ensure proxy and cert settings are applied even if env vars are ignored for certificates (e.g. Python 3.11 and up).
     if (!env.PIP_CONFIG_FILE) {
       const tmpDir = os.tmpdir();
       const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);

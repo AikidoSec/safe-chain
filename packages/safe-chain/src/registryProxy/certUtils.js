@@ -49,6 +49,12 @@ export function generateCertForHost(hostname) {
       keyEncipherment: true,
     },
     {
+      /*
+        extKeyUsage serverAuth is required for TLS server authentication.
+        This is especially important for Python venv environments, which use their own
+        certificate validation logic and will reject certificates lacking the serverAuth EKU.
+        Adding serverAuth does not impact other usages
+      */
       name: "extKeyUsage",
       serverAuth: true,
     },
