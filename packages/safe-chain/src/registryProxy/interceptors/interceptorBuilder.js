@@ -62,19 +62,14 @@ function createRequestContext(targetUrl, eventEmitter) {
   let blockResponse = undefined;
 
   /**
-   * @param {number} statusCode
-   * @param {string} message
-   */
-  function blockRequest(statusCode, message) {
-    blockResponse = { statusCode, message };
-  }
-
-  /**
    * @param {string | undefined} packageName
    * @param {string | undefined} version
    */
   function blockMalware(packageName, version) {
-    blockRequest(403, "Forbidden - blocked by safe-chain");
+    blockResponse = {
+      statusCode: 403,
+      message: "Forbidden - blocked by safe-chain",
+    };
 
     // Emit the malwareBlocked event
     eventEmitter.emit("malwareBlocked", {
