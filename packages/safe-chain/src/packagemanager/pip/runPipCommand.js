@@ -29,13 +29,12 @@ export async function runPip(command, args) {
       env.SSL_CERT_FILE = combinedCaPath;
     }
 
-    // To counter behavior that is sometimes seen where pip ignores REQUESTS_CA_BUNDLE/SSL_CERT_FILE,
-    // We will set additional env vars for pip
+    // https://pip.pypa.io/en/stable/topics/https-certificates/ explains that the --cert option (which we're providing via both INI and PIP_CERT)
+    // is necessary for pip to use custom certs for later versions.
     if (!env.PIP_CERT) {
       env.PIP_CERT = combinedCaPath;
     }
 
-    // PIP_CONFIG file is created to ensure proxy and cert settings are applied even if env vars are ignored for certificates (e.g. Python 3.11 and up).
     if (!env.PIP_CONFIG_FILE) {
       const tmpDir = os.tmpdir();
       const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
