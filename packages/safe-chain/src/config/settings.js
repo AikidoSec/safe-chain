@@ -1,5 +1,9 @@
 import * as cliArguments from "./cliArguments.js";
 
+export const LOGGING_SILENT = "silent";
+export const LOGGING_NORMAL = "normal";
+export const LOGGING_VERBOSE = "verbose";
+
 export function getLoggingLevel() {
   const level = cliArguments.getLoggingLevel();
 
@@ -13,9 +17,6 @@ export function getLoggingLevel() {
 
   return LOGGING_NORMAL;
 }
-
-export const MALWARE_ACTION_BLOCK = "block";
-export const MALWARE_ACTION_PROMPT = "prompt";
 
 export const ECOSYSTEM_JS = "js";
 export const ECOSYSTEM_PY = "py";
@@ -36,6 +37,6 @@ export function setEcoSystem(setting) {
   ecosystemSettings.ecoSystem = setting;
 }
 
-export const LOGGING_SILENT = "silent";
-export const LOGGING_NORMAL = "normal";
-export const LOGGING_VERBOSE = "verbose";
+export function getMinimumPackageAgeHours() {
+  return 24 * 6;
+}

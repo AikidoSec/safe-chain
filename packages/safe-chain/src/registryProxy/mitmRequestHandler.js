@@ -2,6 +2,7 @@ import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
+import { gunzipSync, gzipSync } from "zlib";
 
 /**
  * @typedef {import("./interceptors/interceptorBuilder.js").Interceptor} Interceptor
@@ -188,14 +189,36 @@ function createProxyRequest(hostname, req, res, requestInterceptor) {
       res.end("Internal Server Error");
       return;
     }
-
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
 
-    if (!requestInterceptor.modifiesResponse) {
-      // If the response is not being modified, we can
-      // just pipe without the need for
-      proxyRes.pipe(res);
+    if (requestInterceptor.modifiesResponse()) {
+      const responseInterceptor = requestInterceptor.handleResponse();
+
+      /** @type {Array<any>} */
+      let chunks = [];
+
+      proxyRes.on("data", (chunk) => chunks.push(chunk));
+
+      proxyRes.on("end", () => {
+        /** @type {Buffer} */
+        let buffer = Buffer.concat(chunks);
+
+        if (proxyRes.headers["content-encoding"] === "gzip") {
+          buffer = gunzipSync(buffer);
+        }
+
+        buffer = responseInterceptor.modifyBody(buffer);
+
+        if (proxyRes.headers["content-encoding"] === "gzip") {
+          buffer = gzipSync(buffer);
+        }
+
+        res.end(buffer);
+      });
     } else {
+      // If the response is not being modified, we can
+      // just pipe without the need for buffering the output
+      proxyRes.pipe(res);
     }
   });
 

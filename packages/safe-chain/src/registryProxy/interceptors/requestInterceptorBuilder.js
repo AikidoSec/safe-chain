@@ -4,13 +4,17 @@
  * @property {(statusCode: number, message: string) => void} blockRequest
  * @property {(packageName: string | undefined, version: string | undefined, url: string) => void} blockMalware
  * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => void) => void} modifyRequestHeaders
+ * @property {(requestFunc: (responseInterceptorBuilder: import('./responseInterceptorBuilder.js').ResponseInterceptorBuilder) => void) => void} modifyResponse
  * @property {() => RequestInterceptor} build
  *
  * @typedef {Object} RequestInterceptor
  * @property {{statusCode: number, message: string} | undefined} blockResponse
  * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => void} modifyRequestHeaders
+ * @property {() => import("./responseInterceptorBuilder.js").ResponseInterceptor} handleResponse
  * @property {() => boolean} modifiesResponse
  */
+
+import { createResponseInterceptorBuilder } from "./responseInterceptorBuilder.js";
 
 /**
  * @param {string} targetUrl
@@ -20,15 +24,10 @@
 export function createRequestInterceptorBuilder(targetUrl, eventEmitter) {
   /** @type {{statusCode: number, message: string} | undefined}  */
   let blockResponse = undefined;
-
-  /**
-   * @type {{
-   *   requestHeaders: Array<(headers: NodeJS.Dict<string | string[]>) => void>
-   * }}
-   */
-  let modificationFuncs = {
-    requestHeaders: [],
-  };
+  /** @type {Array<(headers: NodeJS.Dict<string | string[]>) => void>} */
+  let requestHeaderFuncs = [];
+  /** @type {Array<(requestFunc: import('./responseInterceptorBuilder.js').ResponseInterceptorBuilder) => void>} */
+  let responseModifierFuncs = [];
 
   /**
    * @param {number} statusCode
@@ -60,12 +59,16 @@ export function createRequestInterceptorBuilder(targetUrl, eventEmitter) {
     blockRequest,
     blockMalware,
     modifyRequestHeaders(modificationFunc) {
-      modificationFuncs.requestHeaders.push(modificationFunc);
+      requestHeaderFuncs.push(modificationFunc);
+    },
+    modifyResponse(modificationFunc) {
+      responseModifierFuncs.push(modificationFunc);
     },
     build() {
       return createRequestInterceptor(
         blockResponse,
-        modificationFuncs.requestHeaders
+        requestHeaderFuncs,
+        responseModifierFuncs
       );
     },
   };
@@ -74,11 +77,13 @@ export function createRequestInterceptorBuilder(targetUrl, eventEmitter) {
 /**
  * @param {{statusCode: number, message: string} | undefined} blockResponse
  * @param {Array<(headers: NodeJS.Dict<string | string[]>) => void>} requestHeadersModficationFuncs
+ * @param {Array<(requestFunc: import('./responseInterceptorBuilder.js').ResponseInterceptorBuilder) => void>} responseModifierFuncs
  * @returns {RequestInterceptor}
  */
 function createRequestInterceptor(
   blockResponse,
-  requestHeadersModficationFuncs
+  requestHeadersModficationFuncs,
+  responseModifierFuncs
 ) {
   /**
    * @param {NodeJS.Dict<string | string[]> | undefined} headers
@@ -94,8 +99,23 @@ function createRequestInterceptor(
   }
 
   function modifiesResponse() {
-    return false;
+    return responseModifierFuncs.length > 0;
   }
 
-  return { blockResponse, modifyRequestHeaders, modifiesResponse };
+  function handleResponse() {
+    const responseInterceptorBuilder = createResponseInterceptorBuilder();
+
+    for (const func of responseModifierFuncs) {
+      func(responseInterceptorBuilder);
+    }
+
+    return responseInterceptorBuilder.build();
+  }
+
+  return {
+    blockResponse,
+    modifyRequestHeaders,
+    modifiesResponse,
+    handleResponse,
+  };
 }
