@@ -30,7 +30,6 @@ export async function runPip(command, args) {
 
     // To counter behavior that is sometimes seen where pip ignores REQUESTS_CA_BUNDLE/SSL_CERT_FILE,
     // We will set additional env vars for pip
-
     if (!env.PIP_CERT) {
       env.PIP_CERT = combinedCaPath;
     }
@@ -38,15 +37,13 @@ export async function runPip(command, args) {
       const tmpDir = os.tmpdir();
       const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
 
-      // Proxy settings
-      const httpProxy = env.HTTP_PROXY || '';
-      const httpsProxy = env.HTTPS_PROXY || '';
+      // Proxy settings: prefer GLOBAL_AGENT_HTTP_PROXY, then HTTPS_PROXY, then HTTP_PROXY
+      const proxy = env.GLOBAL_AGENT_HTTP_PROXY || env.HTTPS_PROXY || env.HTTP_PROXY || '';
 
       // Build pip config INI
       let pipConfig = '[global]\n';
       pipConfig += `cert = ${combinedCaPath}\n`;
-      if (httpProxy) pipConfig += `proxy = ${httpProxy}\n`;
-      if (httpsProxy) pipConfig += `proxy = ${httpsProxy}\n`;
+      if (proxy) pipConfig += `proxy = ${proxy}\n`;
 
       await fs.writeFile(pipConfigPath, pipConfig);
       env.PIP_CONFIG_FILE = pipConfigPath;

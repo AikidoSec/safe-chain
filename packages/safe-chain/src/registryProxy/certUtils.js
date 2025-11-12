@@ -48,6 +48,10 @@ export function generateCertForHost(hostname) {
       digitalSignature: true,
       keyEncipherment: true,
     },
+    {
+      name: "extKeyUsage",
+      serverAuth: true,
+    },
   ]);
   cert.sign(ca.privateKey, forge.md.sha256.create());
 
