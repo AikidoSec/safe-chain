@@ -42,6 +42,22 @@ export function getAuditStats() {
 }
 
 /**
+ *
+ * @param {string | undefined} name
+ * @param {string | undefined} version
+ * @returns {Promise<boolean>}
+ */
+export async function isMalwarePackage(name, version) {
+  if (!name || !version) {
+    return false;
+  }
+
+  const auditResult = await auditChanges([{ name, version, type: "add" }]);
+
+  return !auditResult.isAllowed;
+}
+
+/**
  * @param {PackageChange[]} changes
  *
  * @returns {Promise<AuditResult>}

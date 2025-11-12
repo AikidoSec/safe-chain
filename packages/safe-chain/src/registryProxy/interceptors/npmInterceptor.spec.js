@@ -1,14 +1,22 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, mock } from "node:test";
 import assert from "node:assert";
-import { parsePackageFromUrl } from "./parsePackageFromUrl.js";
-import { setEcoSystem, ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
 
-describe("parsePackageFromUrl", () => {
-  beforeEach(() => {
-    setEcoSystem(ECOSYSTEM_JS);
+describe("npmInterceptor", async () => {
+  let lastPackage;
+  let malwareResponse = false;
+
+  mock.module("../../scanning/audit/index.js", {
+    namedExports: {
+      isMalwarePackage: async (packageName, version) => {
+        lastPackage = { packageName, version };
+        return malwareResponse;
+      },
+    },
   });
 
-  const testCases = [
+  const { npmInterceptorForUrl } = await import("./npmInterceptor.js");
+
+  const parserCases = [
     // Regular packages
     {
       url: "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
@@ -83,11 +91,6 @@ describe("parsePackageFromUrl", () => {
       url: "https://registry.yarnpkg.com/@babel/core/-/core-7.21.4.tgz",
       expected: { packageName: "@babel/core", version: "7.21.4" },
     },
-    // Invalid URLs should return undefined values
-    {
-      url: "https://example.com/package.tgz",
-      expected: { packageName: undefined, version: undefined },
-    },
     // URL to get package info, not tarball
     {
       url: "https://registry.npmjs.org/lodash",
@@ -110,92 +113,51 @@ describe("parsePackageFromUrl", () => {
     },
   ];
 
-  testCases.forEach(({ url, expected }, index) => {
-    it(`should parse URL ${index + 1}: ${url}`, () => {
-      const result = parsePackageFromUrl(url);
-      assert.deepEqual(result, expected);
+  parserCases.forEach(({ url, expected }, index) => {
+    it(`should parse URL ${index + 1}: ${url}`, async () => {
+      const interceptor = npmInterceptorForUrl(url);
+      assert.ok(
+        interceptor,
+        "Interceptor should be created for known npm registry"
+      );
+
+      await interceptor.handleRequest(url);
+
+      assert.deepEqual(lastPackage, expected);
     });
   });
-});
 
-describe("parsePackageFromUrl - pip URLs", () => {
-  beforeEach(() => {
-    setEcoSystem(ECOSYSTEM_PY);
+  it("should not create interceptor for unknown registry", () => {
+    const url = "https://example.com/some-package/-/some-package-1.0.0.tgz";
+
+    const interceptor = npmInterceptorForUrl(url);
+
+    assert.equal(
+      interceptor,
+      undefined,
+      "Interceptor should be undefined for unknown registry"
+    );
   });
 
-  const pipTestCases = [
-    // Valid pip URLs
-    {
-      url: "https://files.pythonhosted.org/packages/xx/yy/foobar-1.2.3.tar.gz",
-      expected: { packageName: "foobar", version: "1.2.3" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foobar/foobar-1.2.3.tar.gz",
-      expected: { packageName: "foobar", version: "1.2.3" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo-bar/foo-bar-0.9.0.tar.gz",
-      expected: { packageName: "foo-bar", version: "0.9.0" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0-py3-none-any.whl",
-      expected: { packageName: "foo_bar", version: "2.0.0" },
-    },
-    {
-      url: "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl",
-      expected: { packageName: "foo_bar", version: "2.0.0" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo.bar/foo.bar-1.0.0.tar.gz",
-      expected: { packageName: "foo.bar", version: "1.0.0" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0b1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0b1" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0rc1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0rc1" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0.post1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0.post1" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0.dev1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0.dev1" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0a1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0a1" },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0-cp38-cp38-manylinux1_x86_64.whl",
-      expected: { packageName: "foo_bar", version: "2.0.0" },
-    },
-    // Invalid pip URLs
-    {
-      url: "https://pypi.org/simple/",
-      expected: { packageName: undefined, version: undefined },
-    },
-    {
-      url: "https://pypi.org/project/foobar/",
-      expected: { packageName: undefined, version: undefined },
-    },
-    {
-      url: "https://files.pythonhosted.org/packages/xx/yy/foobar-latest.tar.gz",
-      expected: { packageName: undefined, version: undefined },
-    },
-    {
-      url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-latest.tar.gz",
-      expected: { packageName: undefined, version: undefined },
-    },
-  ];
+  it("should block malicious package", async () => {
+    const url =
+      "https://registry.npmjs.org/malicious-package/-/malicious-package-1.0.0.tgz";
+    malwareResponse = true;
 
-  pipTestCases.forEach(({ url, expected }, index) => {
-    it(`should parse pip URL ${index + 1}: ${url}`, () => {
-      const result = parsePackageFromUrl(url);
-      assert.deepEqual(result, expected);
-    });
+    const interceptor = npmInterceptorForUrl(url);
+
+    const result = await interceptor.handleRequest(url);
+
+    assert.ok(result.blockResponse, "Should contain a blockResponse");
+    assert.equal(
+      result.blockResponse.statusCode,
+      403,
+      "Block response should have status code 403"
+    );
+    assert.equal(
+      result.blockResponse.message,
+      "Forbidden - blocked by safe-chain",
+      "Block response should have correct status message"
+    );
   });
 });
