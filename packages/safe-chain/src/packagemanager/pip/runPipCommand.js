@@ -24,13 +24,14 @@ export async function runPip(command, args) {
     if (!env.REQUESTS_CA_BUNDLE) {
       env.REQUESTS_CA_BUNDLE = combinedCaPath;
     }
+
+    // https://pip.pypa.io/en/stable/topics/https-certificates/ explains that the --cert option (which we're providing via both INI and PIP_CERT)
+    // Testing has shown that REQUESTS_CA_BUNDLE alone is not sufficient; PIP_CERT, SSL_CERT_FILE, or pip config cert is also needed in some cases.
     
     if (!env.SSL_CERT_FILE) {
       env.SSL_CERT_FILE = combinedCaPath;
     }
 
-    // https://pip.pypa.io/en/stable/topics/https-certificates/ explains that the --cert option (which we're providing via both INI and PIP_CERT)
-    // is necessary for pip to use custom certs for later versions.
     if (!env.PIP_CERT) {
       env.PIP_CERT = combinedCaPath;
     }
