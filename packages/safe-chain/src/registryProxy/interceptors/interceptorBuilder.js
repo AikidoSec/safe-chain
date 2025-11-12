@@ -1,3 +1,5 @@
+import { EventEmitter } from "events";
+
 /**
  * @typedef {Object} Interceptor
  * @property {(targetUrl: string) => Promise<RequestInterceptionHandler>} handleRequest
@@ -14,8 +16,6 @@
  * @typedef {Object} RequestInterceptionHandler
  * @property {{statusCode: number, message: string} | undefined} blockResponse
  */
-
-import { EventEmitter } from "events";
 
 /**
  * @param {(requestHandlerBuilder: RequestInterceptionContext) => Promise<void>} requestInterceptionFunc
@@ -34,16 +34,13 @@ function buildInterceptor(requestHandlers) {
 
   return {
     async handleRequest(targetUrl) {
-      const reqInterceptorBuilder = createRequestContext(
-        targetUrl,
-        eventEmitter
-      );
+      const requestContext = createRequestContext(targetUrl, eventEmitter);
 
       for (const handler of requestHandlers) {
-        await handler(reqInterceptorBuilder);
+        await handler(requestContext);
       }
 
-      return reqInterceptorBuilder.build();
+      return requestContext.build();
     },
     on(event, listener) {
       eventEmitter.on(event, listener);
