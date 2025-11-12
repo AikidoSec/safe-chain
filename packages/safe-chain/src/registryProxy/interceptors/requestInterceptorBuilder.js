@@ -1,7 +1,6 @@
 /**
  * @typedef {Object} RequestInterceptorBuilder
  * @property {string} targetUrl
- * @property {(statusCode: number, message: string) => void} blockRequest
  * @property {(packageName: string | undefined, version: string | undefined, url: string) => void} blockMalware
  * @property {() => RequestInterceptor} build
  *
@@ -45,7 +44,6 @@ export function createRequestInterceptorBuilder(targetUrl, eventEmitter) {
 
   return {
     targetUrl,
-    blockRequest,
     blockMalware,
     build() {
       return {
