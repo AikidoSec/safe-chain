@@ -45,7 +45,6 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    ```
 
    For Python (beta):
-
    ```shell
    pip3 install safe-chain-pi-test
    ```
