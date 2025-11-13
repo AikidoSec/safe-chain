@@ -46,6 +46,7 @@
     "semver": "7.7.2"
   },
   "devDependencies": {
+  "@types/ini": "^4.1.1",
     "@types/make-fetch-happen": "^10.0.4",
     "@types/node": "^18.19.130",
     "@types/npm-registry-fetch": "^8.0.9",
