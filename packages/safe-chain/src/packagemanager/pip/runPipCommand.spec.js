@@ -29,7 +29,10 @@ describe("runPipCommand environment variable handling", () => {
         mergeSafeChainProxyEnvironmentVariables: (env) => ({
           ...env,
           ...customEnv,
+          // Force deterministic proxy for tests regardless of ambient env
+          GLOBAL_AGENT_HTTP_PROXY: "http://localhost:8080",
           HTTPS_PROXY: "http://localhost:8080",
+          HTTP_PROXY: "",
         }),
       },
     });
