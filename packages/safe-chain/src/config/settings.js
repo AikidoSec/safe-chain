@@ -42,6 +42,13 @@ export function getMinimumPackageAgeHours() {
   return defaultMinimumPackageAge;
 }
 
+const defaultSkipMinimumPackageAge = false;
 export function skipMinimumPackageAge() {
-  return false;
+  const cliValue = cliArguments.getSkipMinimumPackageAge();
+
+  if (cliValue === true) {
+    return true;
+  }
+
+  return defaultSkipMinimumPackageAge;
 }
