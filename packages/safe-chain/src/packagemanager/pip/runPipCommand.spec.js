@@ -1,5 +1,9 @@
 import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import ini from "ini";
 
 describe("runPipCommand environment variable handling", () => {
   let runPip;
@@ -144,5 +148,131 @@ describe("runPipCommand environment variable handling", () => {
       "http://localhost:8080",
       "HTTPS_PROXY should be set by proxy merge"
     );
+  });
+
+  it("should create a new temp config when existing config exists (original file untouched)", async () => {
+    const tmpDir = os.tmpdir();
+    const userCfgPath = path.join(tmpDir, `safe-chain-test-pip-${Date.now()}.ini`);
+    const initial = "[global]\nindex-url = https://example.com/simple\n";
+    await fs.writeFile(userCfgPath, initial, "utf-8");
+
+    customEnv = { PIP_CONFIG_FILE: userCfgPath };
+    const res = await runPip("pip3", ["install", "requests"]);
+    assert.strictEqual(res.status, 0);
+    const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
+    assert.notStrictEqual(newCfgPath, userCfgPath, "should point to a new temp config file");
+
+    // Original file unchanged
+    const originalContent = await fs.readFile(userCfgPath, "utf-8");
+    const originalParsed = ini.parse(originalContent);
+    assert.strictEqual(originalParsed.global.cert, undefined, "original file should not gain cert");
+
+    // New file has merged settings
+    const newContent = await fs.readFile(newCfgPath, "utf-8");
+    const newParsed = ini.parse(newContent);
+    assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "new config should include cert");
+    assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "new config should include proxy from env");
+    assert.strictEqual(newParsed.global["index-url"], "https://example.com/simple", "index-url should be preserved");
+    customEnv = null;
+  });
+
+  it("should create new config with proxy set from env (ini-validated)", async () => {
+    // No PIP_CONFIG_FILE in env => creation path
+    const res = await runPip("pip3", ["install", "requests"]);
+    assert.strictEqual(res.status, 0);
+
+    const configPath = capturedArgs.options.env.PIP_CONFIG_FILE;
+    const content = await fs.readFile(configPath, "utf-8");
+    const parsed = ini.parse(content);
+    assert.ok(parsed.global, "[global] should exist after creation");
+    assert.strictEqual(
+      parsed.global.proxy,
+      "http://localhost:8080",
+      "proxy should be set from merged env"
+    );
+    assert.strictEqual(
+      parsed.global.cert,
+      "/tmp/test-combined-ca.pem",
+      "cert should be set during creation"
+    );
+  });
+
+  it("should create new temp config adding cert but preserving existing proxy (original file unchanged)", async () => {
+    const tmpDir = os.tmpdir();
+    const userCfgPath = path.join(tmpDir, `safe-chain-test-pip-${Date.now()}.ini`);
+    const initial = "[global]\nproxy = http://original:9999\n";
+    await fs.writeFile(userCfgPath, initial, "utf-8");
+
+    customEnv = { PIP_CONFIG_FILE: userCfgPath };
+    const res = await runPip("pip3", ["install", "requests"]);
+    assert.strictEqual(res.status, 0);
+    const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
+    assert.notStrictEqual(newCfgPath, userCfgPath, "should use a new temp config file");
+
+    // Original file unchanged
+    const originalParsed = ini.parse(await fs.readFile(userCfgPath, "utf-8"));
+    assert.strictEqual(originalParsed.global.cert, undefined, "original file should not gain cert");
+    assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy remains");
+
+    // New file merged: cert added (was missing), proxy preserved (was present)
+    const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
+    assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "new cert injected");
+    assert.strictEqual(newParsed.global.proxy, "http://original:9999", "existing proxy should be preserved in new file");
+    customEnv = null;
+  });
+
+  it("should create new temp config preserving existing cert and proxy while leaving original file unchanged", async () => {
+    const tmpDir = os.tmpdir();
+    const cfgPath = path.join(tmpDir, `safe-chain-test-pip-${Date.now()}.ini`);
+    const initialIni = [
+      "[global]",
+      "cert = /path/to/existing.pem",
+      "proxy = http://original:9999",
+      ""
+    ].join("\n");
+    await fs.writeFile(cfgPath, initialIni, "utf-8");
+
+    customEnv = { PIP_CONFIG_FILE: cfgPath };
+    const res = await runPip("pip3", ["install", "requests"]);
+    assert.strictEqual(res.status, 0, "execution should succeed");
+    const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
+    assert.notStrictEqual(newCfgPath, cfgPath, "should use a newly generated temp config file");
+
+    // Original file stays untouched
+    const originalContent = await fs.readFile(cfgPath, "utf-8");
+    const originalParsed = ini.parse(originalContent);
+    assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert preserved");
+    assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy preserved");
+
+    // New temp config preserves existing values (no override when already set)
+    const newContent = await fs.readFile(newCfgPath, "utf-8");
+    const newParsed = ini.parse(newContent);
+    assert.strictEqual(newParsed.global.cert, "/path/to/existing.pem", "existing cert preserved in new temp config");
+    assert.strictEqual(newParsed.global.proxy, "http://original:9999", "existing proxy preserved in new temp config");
+    customEnv = null;
+  });
+
+  it("should create new temp config preserving existing cert and adding missing proxy", async () => {
+    const tmpDir = os.tmpdir();
+    const userCfgPath = path.join(tmpDir, `safe-chain-test-pip-${Date.now()}.ini`);
+    const initial = "[global]\ncert = /path/to/existing.pem\n";
+    await fs.writeFile(userCfgPath, initial, "utf-8");
+
+    customEnv = { PIP_CONFIG_FILE: userCfgPath };
+    const res = await runPip("pip3", ["install", "requests"]);
+    assert.strictEqual(res.status, 0);
+    const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
+    assert.notStrictEqual(newCfgPath, userCfgPath, "should produce a new temp config file");
+
+    // Original remains unchanged
+    const originalParsed = ini.parse(await fs.readFile(userCfgPath, "utf-8"));
+    assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert unchanged");
+    assert.strictEqual(originalParsed.global.proxy, undefined, "original proxy still missing");
+
+    // New file preserves existing cert and adds proxy (since it was missing)
+    const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
+    assert.strictEqual(newParsed.global.cert, "/path/to/existing.pem", "existing cert preserved (not overridden)");
+    assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy added from env");
+    customEnv = null;
   });
 });

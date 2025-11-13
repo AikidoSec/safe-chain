@@ -33,7 +33,7 @@ export class DockerTestContainer {
       ].join(" ");
 
       execSync(
-        `docker build -t ${imageName} -f ${dockerFile} ${contextPath} ${buildArgs}`,
+        `docker build --no-cache -t ${imageName} -f ${dockerFile} ${contextPath} ${buildArgs}`,
         {
           stdio: "ignore",
         }
