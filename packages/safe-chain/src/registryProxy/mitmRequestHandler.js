@@ -4,11 +4,15 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
 
 /**
+ * @typedef {import("./interceptors/interceptorBuilder.js").Interceptor} Interceptor
+ */
+
+/**
  * @param {import("http").IncomingMessage} req
  * @param {import("http").ServerResponse} clientSocket
- * @param {(target: string) => Promise<boolean>} isAllowed
+ * @param {Interceptor} interceptor
  */
-export function mitmConnect(req, clientSocket, isAllowed) {
+export function mitmConnect(req, clientSocket, interceptor) {
   ui.writeVerbose(`Safe-chain: Set up MITM tunnel for ${req.url}`);
   const { hostname } = new URL(`http://${req.url}`);
 
@@ -21,7 +25,7 @@ export function mitmConnect(req, clientSocket, isAllowed) {
     // Not subscribing to 'close' event will cause node to throw and crash.
   });
 
-  const server = createHttpsServer(hostname, isAllowed);
+  const server = createHttpsServer(hostname, interceptor);
 
   server.on("error", (err) => {
     ui.writeError(`Safe-chain: HTTPS server error: ${err.message}`);
@@ -41,10 +45,10 @@ export function mitmConnect(req, clientSocket, isAllowed) {
 
 /**
  * @param {string} hostname
- * @param {(target: string) => Promise<boolean>} isAllowed
+ * @param {Interceptor} interceptor
  * @returns {import("https").Server}
  */
-function createHttpsServer(hostname, isAllowed) {
+function createHttpsServer(hostname, interceptor) {
   const cert = generateCertForHost(hostname);
 
   /**
@@ -64,10 +68,13 @@ function createHttpsServer(hostname, isAllowed) {
     const pathAndQuery = getRequestPathAndQuery(req.url);
     const targetUrl = `https://${hostname}${pathAndQuery}`;
 
-    if (!(await isAllowed(targetUrl))) {
+    const interceptorResult = await interceptor.handleRequest(targetUrl);
+    const blockResponse = interceptorResult.blockResponse;
+
+    if (blockResponse) {
       ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);
-      res.writeHead(403, "Forbidden - blocked by safe-chain");
-      res.end("Blocked by safe-chain");
+      res.writeHead(blockResponse.statusCode, blockResponse.message);
+      res.end(blockResponse.message);
       return;
     }
 
