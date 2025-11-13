@@ -23,7 +23,7 @@ export async function runPip(command, args) {
     // validates correctly under both MITM'd and tunneled HTTPS.
     const combinedCaPath = getCombinedCaBundlePath();
 
-    // https://pip.pypa.io/en/stable/topics/https-certificates/ explains that the --cert option (which we're providing via INI file)
+    // https://pip.pypa.io/en/stable/topics/https-certificates/ explains that the 'cert' param (which we're providing via INI file)
     // will tell pip to use the provided CA bundle for HTTPS verification.
 
     // Proxy settings: prefer GLOBAL_AGENT_HTTP_PROXY, then HTTPS_PROXY, then HTTP_PROXY
@@ -46,9 +46,8 @@ export async function runPip(command, args) {
     } else if (fsSync.existsSync(env.PIP_CONFIG_FILE)) {
       // Existing pip config file present and exists on disk.
       // Lets merge in our cert and proxy settings if not already present
-      const userConfig = env.PIP_CONFIG_FILE;
-      
       ui.writeVerbose("Safe-chain: Merging user provided PIP_CONFIG_FILE with safe-chain certificate and proxy settings.");
+      const userConfig = env.PIP_CONFIG_FILE;
 
       // Read the existing config without modifying it
       let content = await fs.readFile(userConfig, "utf-8");
