@@ -70,7 +70,9 @@ export async function runPip(command, args) {
       parsed.global = parsed.global || {};
 
       // Adding CERT and PROXY
-      // If either is already set, there's no neeed to throw an error; mitm might fail and throw later if the proxy config is invalid
+      // If either is already set, there's no neeed to throw an error
+      // MITM might fail and throw later if the proxy config is invalid
+      // This ensures that no malware will be installed by safe-chain
 
       // Cert
       if (typeof parsed.global.cert === "undefined") {
