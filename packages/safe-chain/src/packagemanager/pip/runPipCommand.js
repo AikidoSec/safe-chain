@@ -1,7 +1,27 @@
 import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
-import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
+import { installSafeChainCA } from "../../registryProxy/certUtils.js";
+
+/**
+ * Returns true if the pip command needs the Safe-chain CA installed.
+ * @param {string[]} args
+ * @returns {boolean}
+ */
+function needsCaInstalled(args) {
+  const known = new Set(["install", "wheel", "download"]);
+  let startIdx = 0;
+  if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
+    startIdx = 2;
+  }
+  for (let i = startIdx; i < args.length; i++) {
+    const token = args[i];
+    if (!token) continue;
+    if (token.startsWith("-")) continue; // skip flags
+    if (known.has(token)) return true;
+  }
+  return false;
+}
 
 /**
  * @param {string} command
@@ -11,15 +31,12 @@ import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
  */
 export async function runPip(command, args) {
   try {
+    // Only install CA for commands that download or build packages.
+    // This minimizes privilege prompts for read-only operations like 'list' or 'show'.
+    if (needsCaInstalled(args)) {
+      await installSafeChainCA();
+    }
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
-
-    // Always provide Python with a complete CA bundle (Safe Chain CA + Mozilla + Node built-in roots)
-    // so that any network request made by pip, including those outside explicit CLI args,
-    // validates correctly under both MITM'd and tunneled HTTPS.
-    const combinedCaPath = getCombinedCaBundlePath();
-    env.REQUESTS_CA_BUNDLE = combinedCaPath;
-    env.SSL_CERT_FILE = combinedCaPath;
-
     const result = await safeSpawn(command, args, {
       stdio: "inherit",
       env,

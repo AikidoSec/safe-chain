@@ -10,7 +10,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
   });
 
   beforeEach(async () => {
-    container = new DockerTestContainer();
+    container = new DockerTestContainer({ asRootUser: true });
     await container.start();
   });
 

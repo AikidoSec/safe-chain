@@ -39,3 +39,6 @@ export function setEcoSystem(setting) {
 export const LOGGING_SILENT = "silent";
 export const LOGGING_NORMAL = "normal";
 export const LOGGING_VERBOSE = "verbose";
+
+export const SAFE_CHAIN_CA_COMMON_NAME = "safe-chain proxy";
+

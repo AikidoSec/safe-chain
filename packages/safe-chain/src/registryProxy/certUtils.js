@@ -2,11 +2,23 @@ import forge from "node-forge";
 import path from "path";
 import fs from "fs";
 import os from "os";
+import { safeSpawn } from "../utils/safeSpawn.js";
+import { SAFE_CHAIN_CA_COMMON_NAME } from "../config/settings.js";
+import { ui } from "../environment/userInteraction.js";
 
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
 
 const certCache = new Map();
+
+// Known return values for os.platform()
+const OS_DARWIN = "darwin";
+const OS_LINUX = "linux";
+const OS_WINDOWS = "win32";
+
+// OS trust store paths
+const DARWIN_CA_PATH = "/Library/Keychains/System.keychain";
+const LINUX_CA_PATH = "/usr/local/share/ca-certificates/safe-chain-ca.crt";
 
 export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
@@ -94,7 +106,7 @@ function generateCa() {
   cert.validity.notAfter = new Date();
   cert.validity.notAfter.setDate(cert.validity.notBefore.getDate() + 1);
 
-  const attrs = [{ name: "commonName", value: "safe-chain proxy" }];
+  const attrs = [{ name: "commonName", value: SAFE_CHAIN_CA_COMMON_NAME }];
   cert.setSubject(attrs);
   cert.setIssuer(attrs);
   cert.setExtensions([
@@ -115,4 +127,71 @@ function generateCa() {
     privateKey: keys.privateKey,
     certificate: cert,
   };
+}
+
+/**
+ * Checks if the Safe Chain CA certificate is already installed in the OS trust store.
+ * @returns {Promise<boolean>}
+ */
+export async function isSafeChainCAInstalled() {
+  const platform = os.platform();
+  try {
+    if (platform === OS_DARWIN) {
+      // macOS: check System Keychain for cert
+      const res = await safeSpawn("security", ["find-certificate", "-c", SAFE_CHAIN_CA_COMMON_NAME, DARWIN_CA_PATH], { stdio: "pipe" });
+      return res.stdout.includes(SAFE_CHAIN_CA_COMMON_NAME);
+    } else if (platform === OS_LINUX) {
+      // Linux: check for CA file
+      return fs.existsSync(LINUX_CA_PATH);
+    } else if (platform === OS_WINDOWS) {
+      // Windows: check Root store for cert
+      return await safeSpawn("certutil", ["-store", "Root", SAFE_CHAIN_CA_COMMON_NAME], { stdio: "pipe" }).then(res => res.stdout.includes(SAFE_CHAIN_CA_COMMON_NAME));
+    }
+  } catch (/** @type any */ error) {
+    ui.writeVerbose(`Safe-chain: CA check failed: ${error?.message || error}`);
+    return false;
+  }
+  return false;
+}
+
+/**
+ * Installs the Safe Chain CA certificate in the OS trust store.
+ * @returns {Promise<void>}
+ */
+export async function installSafeChainCA() {
+  const caPath = getCaCertPath();
+  const platform = os.platform();
+  try {
+    const alreadyInstalled = await isSafeChainCAInstalled();
+    if (alreadyInstalled) {
+      ui.writeVerbose("Safe-chain: CA already installed in OS trust store.");
+      return;
+    }
+
+    ui.writeInformation("Safe-chain: Installing CA certificate to trust store. This may require elevated permissions.");
+
+    if (platform === OS_DARWIN) {
+      // macOS: Install into user trust store
+      const securityCmd = ["add-trusted-cert", "-r", "trustRoot", caPath];
+      const result = await safeSpawn("security", securityCmd, { stdio: "inherit" });
+      if (result.status !== 0) {
+        throw new Error(`Failed to install CA certificate into user trust store (exit code ${result.status}).`);
+      }
+      ui.writeVerbose("Safe-chain: CA certificate was installed in user trust settings.");
+    } else if (platform === OS_LINUX) {
+      // Linux: use update-ca-certificates
+      await safeSpawn("sudo", ["cp", caPath, LINUX_CA_PATH], { stdio: "inherit" });
+      await safeSpawn("sudo", ["update-ca-certificates"], { stdio: "inherit" });
+    } else if (platform === OS_WINDOWS) {
+      // Windows: use certutil (will cause UAC elevation prompt)
+      const psCommand = `Start-Process -FilePath certutil -ArgumentList '-addstore','-f','Root','${caPath}' -Verb RunAs -Wait`;
+      await safeSpawn("powershell", ["-Command", psCommand], { stdio: "inherit" });
+    } else {
+      throw new Error("Unsupported OS for automatic CA installation. Please install manually.");
+    }
+    ui.writeVerbose("Safe-chain: CA certificate successfully installed in OS trust store.");
+  } catch (/** @type any */ error) {
+    ui.writeError("Failed to install Safe-chain CA certificate:", error.message);
+    throw error;
+  }
 }
