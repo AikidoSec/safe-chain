@@ -37,6 +37,7 @@ export function setEcoSystem(setting) {
   ecosystemSettings.ecoSystem = setting;
 }
 
+const defaultMinimumPackageAge = 24;
 export function getMinimumPackageAgeHours() {
-  return 24 * 6;
+  return defaultMinimumPackageAge;
 }

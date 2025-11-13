@@ -1,5 +1,6 @@
 import { describe, it, mock } from "node:test";
 import assert from "node:assert";
+import { buffer } from "node:stream/consumers";
 
 describe("npmInterceptor minimum package age", async () => {
   let minimumPackageAgeSettings = 48;
@@ -14,6 +15,19 @@ describe("npmInterceptor minimum package age", async () => {
     namedExports: {
       isMalwarePackage: async () => {
         return false;
+      },
+    },
+  });
+  mock.module("../../../environment/userInteraction.js", {
+    namedExports: {
+      ui: {
+        startProcess: () => {},
+        writeError: () => {},
+        writeInformation: () => {},
+        writeWarning: () => {},
+        writeVerbose: () => {},
+        writeExitWithoutInstallingMaliciousPackages: () => {},
+        emptyLine: () => {},
       },
     },
   });
@@ -128,6 +142,7 @@ describe("npmInterceptor minimum package age", async () => {
         },
         time: {
           created: getDate(-365 * 24),
+          modified: getDate(-3),
           ["1.0.0"]: getDate(-7),
           // cutoff-date here
           ["2.0.0"]: getDate(-4),
@@ -138,7 +153,7 @@ describe("npmInterceptor minimum package age", async () => {
 
     const modifiedJson = JSON.parse(modifiedBody);
 
-    assert.equal(Object.keys(modifiedJson.time).length, 2);
+    assert.equal(Object.keys(modifiedJson.time).length, 3);
     assert.equal(Object.keys(modifiedJson.versions).length, 1);
     assert.ok(Object.keys(modifiedJson.time).includes("1.0.0"));
     assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
@@ -166,6 +181,7 @@ describe("npmInterceptor minimum package age", async () => {
         },
         time: {
           created: getDate(-365 * 24),
+          modified: getDate(-3),
           ["1.0.0"]: getDate(-7),
           ["0.0.1"]: getDate(-8), // package order: this package is older than 1.0.0, it should not be considered latest
           ["2.0.0-alpha"]: getDate(-6), //package is a pre-release, it should not be latest
@@ -200,6 +216,7 @@ describe("npmInterceptor minimum package age", async () => {
         },
         time: {
           created: getDate(-365 * 24),
+          modified: getDate(-4),
           ["1.0.0"]: getDate(-7),
           // cutoff-date here
           ["2.0.0-alpha"]: getDate(-4),
@@ -220,12 +237,14 @@ describe("npmInterceptor minimum package age", async () => {
    */
   async function runModifyNpmInfoRequest(url, body) {
     const interceptor = npmInterceptorForUrl(url);
-    const requestInterceptor = await interceptor.handleRequest(url);
-    const responseInterceptor = requestInterceptor.handleResponse();
+    const requestHandler = await interceptor.handleRequest(url);
 
-    const modifiedBuffer = responseInterceptor.modifyBody(Buffer.from(body));
+    if (requestHandler.modifiesResponse()) {
+      const modifiedBuffer = requestHandler.modifyBody(Buffer.from(body));
+      return modifiedBuffer.toString("utf8");
+    }
 
-    return modifiedBuffer.toString("utf8");
+    return buffer;
   }
 
   function getDate(plusHours) {

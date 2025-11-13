@@ -10,11 +10,16 @@ import { EventEmitter } from "events";
  * @typedef {Object} RequestInterceptionContext
  * @property {string} targetUrl
  * @property {(packageName: string | undefined, version: string | undefined) => void} blockMalware
+ * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => void) => void} modifyRequestHeaders
+ * @property {(modificationFunc: (body: Buffer) => Buffer) => void} modifyBody
  * @property {() => RequestInterceptionHandler} build
  *
  *
  * @typedef {Object} RequestInterceptionHandler
  * @property {{statusCode: number, message: string} | undefined} blockResponse
+ * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => void} modifyRequestHeaders
+ * @property {() => boolean} modifiesResponse
+ * @property {(body: Buffer) => Buffer} modifyBody
  */
 
 /**
@@ -60,12 +65,16 @@ function buildInterceptor(requestHandlers) {
 function createRequestContext(targetUrl, eventEmitter) {
   /** @type {{statusCode: number, message: string} | undefined}  */
   let blockResponse = undefined;
+  /** @type {Array<(headers: NodeJS.Dict<string | string[]>) => void>} */
+  let reqheaderModificationFuncs = [];
+  /** @type {Array<(body: Buffer) => Buffer>} */
+  let modifyBodyFuncs = [];
 
   /**
    * @param {string | undefined} packageName
    * @param {string | undefined} version
    */
-  function blockMalware(packageName, version) {
+  function blockMalwareSetup(packageName, version) {
     blockResponse = {
       statusCode: 403,
       message: "Forbidden - blocked by safe-chain",
@@ -80,13 +89,44 @@ function createRequestContext(targetUrl, eventEmitter) {
     });
   }
 
+  /** @returns {RequestInterceptionHandler} */
+  function build() {
+    /** @param {NodeJS.Dict<string | string[]> | undefined} headers */
+    function modifyRequestHeaders(headers) {
+      if (!headers) return;
+
+      for (const func of reqheaderModificationFuncs) {
+        func(headers);
+      }
+    }
+
+    /**
+     * @param {Buffer} body
+     * @returns {Buffer}
+     */
+    function modifyBody(body) {
+      let modifiedBody = body;
+
+      for (var func of modifyBodyFuncs) {
+        modifiedBody = func(body);
+      }
+
+      return modifiedBody;
+    }
+
+    return {
+      blockResponse,
+      modifyRequestHeaders: modifyRequestHeaders,
+      modifiesResponse: () => modifyBodyFuncs.length > 0,
+      modifyBody,
+    };
+  }
+
   return {
     targetUrl,
-    blockMalware,
-    build() {
-      return {
-        blockResponse,
-      };
-    },
+    blockMalware: blockMalwareSetup,
+    modifyRequestHeaders: (func) => reqheaderModificationFuncs.push(func),
+    modifyBody: (func) => modifyBodyFuncs.push(func),
+    build,
   };
 }

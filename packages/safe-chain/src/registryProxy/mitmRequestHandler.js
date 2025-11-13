@@ -6,7 +6,6 @@ import { gunzipSync, gzipSync } from "zlib";
 
 /**
  * @typedef {import("./interceptors/interceptorBuilder.js").Interceptor} Interceptor
- * @typedef {import("./interceptors/requestInterceptorBuilder.js").RequestInterceptor} RequestInterceptor
  */
 
 /**
@@ -113,10 +112,10 @@ function getRequestPathAndQuery(url) {
  * @param {import("http").IncomingMessage} req
  * @param {string} hostname
  * @param {import("http").ServerResponse} res
- * @param {RequestInterceptor} requestInterceptor
+ * @param {import("./interceptors/interceptorBuilder.js").RequestInterceptionHandler} requestHandler
  */
-function forwardRequest(req, hostname, res, requestInterceptor) {
-  const proxyReq = createProxyRequest(hostname, req, res, requestInterceptor);
+function forwardRequest(req, hostname, res, requestHandler) {
+  const proxyReq = createProxyRequest(hostname, req, res, requestHandler);
 
   proxyReq.on("error", (err) => {
     ui.writeVerbose(
@@ -147,16 +146,16 @@ function forwardRequest(req, hostname, res, requestInterceptor) {
  * @param {string} hostname
  * @param {import("http").IncomingMessage} req
  * @param {import("http").ServerResponse} res
- * @param {RequestInterceptor} requestInterceptor
+ * @param {import("./interceptors/interceptorBuilder.js").RequestInterceptionHandler} requestHandler
  *
  * @returns {import("http").ClientRequest}
  */
-function createProxyRequest(hostname, req, res, requestInterceptor) {
+function createProxyRequest(hostname, req, res, requestHandler) {
   const headers = { ...req.headers };
   if (headers.host) {
     delete headers.host;
   }
-  requestInterceptor.modifyRequestHeaders(headers);
+  requestHandler.modifyRequestHeaders(headers);
 
   /** @type {import("http").RequestOptions} */
   const options = {
@@ -191,9 +190,7 @@ function createProxyRequest(hostname, req, res, requestInterceptor) {
     }
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
 
-    if (requestInterceptor.modifiesResponse()) {
-      const responseInterceptor = requestInterceptor.handleResponse();
-
+    if (requestHandler.modifiesResponse()) {
       /** @type {Array<any>} */
       let chunks = [];
 
@@ -207,7 +204,7 @@ function createProxyRequest(hostname, req, res, requestInterceptor) {
           buffer = gunzipSync(buffer);
         }
 
-        buffer = responseInterceptor.modifyBody(buffer);
+        buffer = requestHandler.modifyBody(buffer);
 
         if (proxyRes.headers["content-encoding"] === "gzip") {
           buffer = gzipSync(buffer);
