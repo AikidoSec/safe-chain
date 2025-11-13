@@ -188,7 +188,8 @@ function createProxyRequest(hostname, req, res, requestHandler) {
       res.end("Internal Server Error");
       return;
     }
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+
+    const { statusCode, headers } = proxyRes;
 
     if (requestHandler.modifiesResponse()) {
       /** @type {Array<any>} */
@@ -204,17 +205,19 @@ function createProxyRequest(hostname, req, res, requestHandler) {
           buffer = gunzipSync(buffer);
         }
 
-        buffer = requestHandler.modifyBody(buffer);
+        buffer = requestHandler.modifyBody(buffer, headers);
 
         if (proxyRes.headers["content-encoding"] === "gzip") {
           buffer = gzipSync(buffer);
         }
 
+        res.writeHead(statusCode, headers);
         res.end(buffer);
       });
     } else {
       // If the response is not being modified, we can
       // just pipe without the need for buffering the output
+      res.writeHead(statusCode, headers);
       proxyRes.pipe(res);
     }
   });

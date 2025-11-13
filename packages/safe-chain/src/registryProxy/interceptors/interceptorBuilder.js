@@ -11,7 +11,7 @@ import { EventEmitter } from "events";
  * @property {string} targetUrl
  * @property {(packageName: string | undefined, version: string | undefined) => void} blockMalware
  * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => void) => void} modifyRequestHeaders
- * @property {(modificationFunc: (body: Buffer) => Buffer) => void} modifyBody
+ * @property {(modificationFunc: (body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer) => void} modifyBody
  * @property {() => RequestInterceptionHandler} build
  *
  *
@@ -19,7 +19,7 @@ import { EventEmitter } from "events";
  * @property {{statusCode: number, message: string} | undefined} blockResponse
  * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => void} modifyRequestHeaders
  * @property {() => boolean} modifiesResponse
- * @property {(body: Buffer) => Buffer} modifyBody
+ * @property {(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer} modifyBody
  */
 
 /**
@@ -67,7 +67,7 @@ function createRequestContext(targetUrl, eventEmitter) {
   let blockResponse = undefined;
   /** @type {Array<(headers: NodeJS.Dict<string | string[]>) => void>} */
   let reqheaderModificationFuncs = [];
-  /** @type {Array<(body: Buffer) => Buffer>} */
+  /** @type {Array<(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer>} */
   let modifyBodyFuncs = [];
 
   /**
@@ -102,13 +102,14 @@ function createRequestContext(targetUrl, eventEmitter) {
 
     /**
      * @param {Buffer} body
+     * @param {NodeJS.Dict<string | string[]> | undefined} headers
      * @returns {Buffer}
      */
-    function modifyBody(body) {
+    function modifyBody(body, headers) {
       let modifiedBody = body;
 
       for (var func of modifyBodyFuncs) {
-        modifiedBody = func(body);
+        modifiedBody = func(body, headers);
       }
 
       return modifiedBody;

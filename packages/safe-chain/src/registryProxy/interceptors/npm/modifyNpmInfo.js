@@ -34,9 +34,10 @@ export function isPackageInfoUrl(url) {
 /**
  *
  * @param {Buffer} body
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
  * @returns Buffer
  */
-export function modifyNpmInfoResponse(body) {
+export function modifyNpmInfoResponse(body, headers) {
   try {
     if (body.byteLength === 0) {
       return body;
@@ -70,6 +71,11 @@ export function modifyNpmInfoResponse(body) {
 
       if (timestamp > cutOff) {
         deleteVersionFromJson(bodyJson, version);
+        if (headers) {
+          // When modifying the response, the etag no longer matches the content
+          // so the etag needs to be removed before sending the response.
+          delete headers["etag"];
+        }
         continue;
       }
     }
