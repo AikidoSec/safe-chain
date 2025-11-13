@@ -1,3 +1,4 @@
+import { skipMinimumPackageAge } from "../../../config/settings.js";
 import { isMalwarePackage } from "../../../scanning/audit/index.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import {
@@ -38,7 +39,7 @@ function buildNpmInterceptor(registry) {
       reqContext.blockMalware(packageName, version);
     }
 
-    if (isPackageInfoUrl(reqContext.targetUrl)) {
+    if (!skipMinimumPackageAge() && isPackageInfoUrl(reqContext.targetUrl)) {
       reqContext.modifyRequestHeaders(modifyNpmInfoRequestHeaders);
       reqContext.modifyBody(modifyNpmInfoResponse);
     }

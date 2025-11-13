@@ -41,3 +41,7 @@ const defaultMinimumPackageAge = 24;
 export function getMinimumPackageAgeHours() {
   return defaultMinimumPackageAge;
 }
+
+export function skipMinimumPackageAge() {
+  return false;
+}

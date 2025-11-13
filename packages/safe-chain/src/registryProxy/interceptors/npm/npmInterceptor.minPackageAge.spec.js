@@ -1,13 +1,14 @@
 import { describe, it, mock } from "node:test";
 import assert from "node:assert";
-import { buffer } from "node:stream/consumers";
 
 describe("npmInterceptor minimum package age", async () => {
   let minimumPackageAgeSettings = 48;
+  let skipMinimumPackageAgeSetting = false;
 
   mock.module("../../../config/settings.js", {
     namedExports: {
       getMinimumPackageAgeHours: () => minimumPackageAgeSettings,
+      skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
     },
   });
 
@@ -244,8 +245,50 @@ describe("npmInterceptor minimum package age", async () => {
       return modifiedBuffer.toString("utf8");
     }
 
-    return buffer;
+    return body;
   }
+
+  it("Should not filter packages when skipMinimumPackageAge is enabled", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = true;
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const originalBody = JSON.stringify({
+      name: "lodash",
+      ["dist-tags"]: {
+        latest: "3.0.0",
+      },
+      versions: {
+        ["1.0.0"]: {},
+        ["2.0.0"]: {},
+        ["3.0.0"]: {},
+      },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-3),
+        ["1.0.0"]: getDate(-7),
+        // cutoff-date here
+        ["2.0.0"]: getDate(-4),
+        ["3.0.0"]: getDate(-3),
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      originalBody
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // All versions should remain unchanged
+    assert.equal(Object.keys(modifiedJson.versions).length, 3);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("2.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("3.0.0"));
+
+    // Latest should remain unchanged
+    assert.equal(modifiedJson["dist-tags"]["latest"], "3.0.0");
+  });
 
   function getDate(plusHours) {
     const date = new Date();
