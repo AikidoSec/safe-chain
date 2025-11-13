@@ -81,7 +81,7 @@ export function modifyNpmInfoResponse(body) {
     }
 
     return Buffer.from(JSON.stringify(bodyJson));
-  } catch (err) {
+  } catch (/** @type {any} */ err) {
     ui.writeVerbose(
       `Safe-chain: Package metadata not in expected format - bypassing modification. Error: ${err.message}`
     );
