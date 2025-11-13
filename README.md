@@ -1,6 +1,6 @@
 # Aikido Safe Chain
 
-The Aikido Safe Chain **prevents developers from installing malware** on their workstations while developing in the Python ecosystem (through pip or pip3, including `python -m pip[...]` and `python3 -m pip[...]` where available) or in the Javascript ecosystem (through npm, npx, yarn, pnpm, pnpx, bun and bunx). It's **free** to use and does not require any token.
+The Aikido Safe Chain **prevents developers from installing malware** on their workstations while developing in the Javascript ecosystem (through npm, npx, yarn, pnpm, pnpx, bun and bunx). It's **free** to use and does not require any token.
 
 The Aikido Safe Chain wraps around the [npm cli](https://github.com/npm/cli), [npx](https://github.com/npm/cli/blob/latest/docs/content/commands/npx.md), [yarn](https://yarnpkg.com/), [pnpm](https://pnpm.io/), [pnpx](https://pnpm.io/cli/dlx), [bun](https://bun.sh/), [bunx](https://bun.sh/docs/cli/bunx), and [pip](https://pip.pypa.io/) to provide extra checks before installing new packages. This tool will detect when a package contains malware and prompt you to exit, preventing npm, npx, yarn, pnpm, pnpx, bun, bunx, or pip/pip3 from downloading or running the malware.
 
@@ -15,8 +15,8 @@ Aikido Safe Chain works on Node.js version 18 and above and supports the followi
 - ✅ **pnpx**
 - ✅ **bun**
 - ✅ **bunx**
-- ✅ **pip**
-- ✅ **pip3**
+- ✅ **pip** (beta)
+- ✅ **pip3** (beta)
 
 # Usage
 
@@ -41,7 +41,7 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    npm install safe-chain-test
    ```
 
-   For Python:
+   For Python (beta):
    ```shell
    pip3 install safe-chain-pi-test
    ```
