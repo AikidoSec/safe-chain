@@ -72,6 +72,19 @@ export async function main(args) {
       );
     }
 
+    if (proxy.hasSuppressedVersions()) {
+      ui.writeInformation(
+        `${chalk.yellow(
+          "ℹ"
+        )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`
+      );
+      ui.writeInformation(
+        `  To disable this check, use: ${chalk.cyan(
+          "--safe-chain-skip-minimum-package-age"
+        )}`
+      );
+    }
+
     // Returning the exit code back to the caller allows the promise
     //  to be awaited in the bin files and return the correct exit code
     return packageManagerResult.status;
