@@ -66,9 +66,9 @@ The Aikido Safe Chain runs a lightweight proxy server that intercepts package do
 
 ### Minimum package age (npm only)
 
-**⚠️ This feature only applies to npm-based package managers (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to PyPI/pip.**
-
 For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can bypass this protection for specific installs using the `--safe-chain-skip-minimum-package-age` flag.
+
+⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to PyPI/pip.
 
 ### Shell Integration
 
