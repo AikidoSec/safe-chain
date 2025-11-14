@@ -231,23 +231,6 @@ describe("npmInterceptor minimum package age", async () => {
     assert.equal(modifiedJson["dist-tags"]["alpha"], undefined);
   });
 
-  /**
-   * @param {import("../interceptorBuilder.js").Interceptor} interceptor
-   * @param {string} body
-   * @returns {Promise<string>}
-   */
-  async function runModifyNpmInfoRequest(url, body) {
-    const interceptor = npmInterceptorForUrl(url);
-    const requestHandler = await interceptor.handleRequest(url);
-
-    if (requestHandler.modifiesResponse()) {
-      const modifiedBuffer = requestHandler.modifyBody(Buffer.from(body));
-      return modifiedBuffer.toString("utf8");
-    }
-
-    return body;
-  }
-
   it("Should not filter packages when skipMinimumPackageAge is enabled", async () => {
     minimumPackageAgeSettings = 5;
     skipMinimumPackageAgeSetting = true;
@@ -295,5 +278,24 @@ describe("npmInterceptor minimum package age", async () => {
     date.setHours(date.getHours() + plusHours);
 
     return date;
+  }
+
+  /**
+   * @param {import("../interceptorBuilder.js").Interceptor} interceptor
+   * @param {string} body
+   * @returns {Promise<string>}
+   */
+  async function runModifyNpmInfoRequest(url, body) {
+    const interceptor = npmInterceptorForUrl(url);
+    const requestHandler = await interceptor.handleRequest(url);
+
+    if (requestHandler.modifiesResponse()) {
+      const modifiedBuffer = requestHandler.modifyBody(Buffer.from(body), {
+        ["content-type"]: "application/json",
+      });
+      return modifiedBuffer.toString("utf8");
+    }
+
+    return body;
   }
 });

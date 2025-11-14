@@ -7,7 +7,8 @@ let hasSuppressedVersions = false;
  * @param {NodeJS.Dict<string | string[]>} headers
  */
 export function modifyNpmInfoRequestHeaders(headers) {
-  if (headers["accept"]?.includes("application/vnd.npm.install-v1+json")) {
+  const accept = getHeaderValueAsString(headers, "accept");
+  if (accept?.includes("application/vnd.npm.install-v1+json")) {
     // The npm registry sometimes serves a more compact format that lacks
     // the time metadata we need to filter out too new packages.
     // Force the registry to return the full metadata by changing the Accept header.
@@ -41,6 +42,11 @@ export function isPackageInfoUrl(url) {
  */
 export function modifyNpmInfoResponse(body, headers) {
   try {
+    const contentType = getHeaderValueAsString(headers, "content-type");
+    if (!contentType?.toLowerCase().includes("application/json")) {
+      return body;
+    }
+
     if (body.byteLength === 0) {
       return body;
     }
@@ -74,9 +80,10 @@ export function modifyNpmInfoResponse(body, headers) {
       if (timestamp > cutOff) {
         deleteVersionFromJson(bodyJson, version);
         if (headers) {
-          // When modifying the response, the etag no longer matches the content
-          // so the etag needs to be removed before sending the response.
+          // When modifying the response, the etag and last-modified headers
+          // no longer match the content so they needs to be removed before sending the response.
           delete headers["etag"];
+          delete headers["last-modified"];
         }
         continue;
       }
@@ -162,4 +169,22 @@ function getMostRecentTag(tagList) {
  */
 export function getHasSuppressedVersions() {
   return hasSuppressedVersions;
+}
+
+/**
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @param {string} headerName
+ */
+function getHeaderValueAsString(headers, headerName) {
+  if (!headers) {
+    return undefined;
+  }
+
+  let header = headers[headerName];
+
+  if (Array.isArray(header)) {
+    return header.join(", ");
+  }
+
+  return header;
 }
