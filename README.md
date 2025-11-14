@@ -33,15 +33,19 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    safe-chain setup
    ```
 3. **❗Restart your terminal** to start using the Aikido Safe Chain.
-  - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip/pip3 are loaded correctly. If you do not restart your terminal, the aliases will not be available.
+
+- This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip/pip3 are loaded correctly. If you do not restart your terminal, the aliases will not be available.
+
 4. **Verify the installation** by running one of the following commands:
 
    For JavaScript/Node.js:
+
    ```shell
    npm install safe-chain-test
    ```
 
    For Python (beta):
+
    ```shell
    pip3 install safe-chain-pi-test
    ```
@@ -58,7 +62,17 @@ safe-chain --version
 
 ## How it works
 
-The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, `pip`, or `pip3` commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
+### Malware Blocking
+
+The Aikido Safe Chain runs a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, `pip`, or `pip3` commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
+
+### Minimum package age (npm only)
+
+**⚠️ This feature only applies to npm-based package managers (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to PyPI/pip.**
+
+For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can bypass this protection for specific installs using the `--safe-chain-skip-minimum-package-age` flag.
+
+### Shell Integration
 
 The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip commands. It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:
 
