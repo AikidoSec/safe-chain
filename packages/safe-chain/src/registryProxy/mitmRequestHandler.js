@@ -163,7 +163,7 @@ function createProxyRequest(hostname, req, res, requestHandler) {
     port: 443,
     path: req.url,
     method: req.method,
-    headers: { ...req.headers },
+    headers: { ...headers },
   };
 
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
