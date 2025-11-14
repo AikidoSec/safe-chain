@@ -5,7 +5,7 @@ describe("npmInterceptor", async () => {
   let lastPackage;
   let malwareResponse = false;
 
-  mock.module("../../scanning/audit/index.js", {
+  mock.module("../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
         lastPackage = { packageName, version };
