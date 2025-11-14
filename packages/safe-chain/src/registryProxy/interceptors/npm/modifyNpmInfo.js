@@ -1,7 +1,9 @@
 import { getMinimumPackageAgeHours } from "../../../config/settings.js";
 import { ui } from "../../../environment/userInteraction.js";
 
-let hasSuppressedVersions = false;
+const state = {
+  hasSuppressedVersions: false,
+};
 
 /**
  * @param {NodeJS.Dict<string | string[]>} headers
@@ -109,7 +111,7 @@ export function modifyNpmInfoResponse(body, headers) {
  * @param {string} version
  */
 function deleteVersionFromJson(json, version) {
-  hasSuppressedVersions = true;
+  state.hasSuppressedVersions = true;
 
   ui.writeVerbose(
     `Safe-chain: ${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`
@@ -168,7 +170,7 @@ function getMostRecentTag(tagList) {
  * @returns {boolean}
  */
 export function getHasSuppressedVersions() {
-  return hasSuppressedVersions;
+  return state.hasSuppressedVersions;
 }
 
 /**
