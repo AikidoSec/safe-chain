@@ -86,3 +86,22 @@ function npm {
     
     Invoke-WrappedCommand "npm" "aikido-npm" $args
 }
+
+function pip {
+    Invoke-WrappedCommand "pip" "aikido-pip" $args
+}
+
+function pip3 {
+    Invoke-WrappedCommand "pip3" "aikido-pip3" $args
+}
+
+# `python -m pip`, `python -m pip3`.
+function python {
+    Invoke-WrappedCommand 'python' 'aikido-python' $args
+}
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3 {
+    Invoke-WrappedCommand 'python3' 'aikido-python3' $args
+}
+
