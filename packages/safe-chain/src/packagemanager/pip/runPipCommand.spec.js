@@ -52,25 +52,6 @@ describe("runPipCommand environment variable handling", () => {
     mock.reset();
   });
 
-  it("should not overwrite existing env vars for certs and config", async () => {
-    // Set custom env vars before merge
-    customEnv = {
-      REQUESTS_CA_BUNDLE: "/custom/ca-bundle.pem",
-      SSL_CERT_FILE: "/custom/ssl-cert.pem",
-      PIP_CERT: "/custom/pip-cert.pem",
-      PIP_CONFIG_FILE: "/custom/pip.conf"
-    };
-    const res = await runPip("pip3", ["install", "requests"]);
-    assert.strictEqual(res.status, 0);
-    assert.ok(capturedArgs, "safeSpawn should have been called");
-    // Should preserve custom env vars
-    assert.strictEqual(capturedArgs.options.env.REQUESTS_CA_BUNDLE, "/custom/ca-bundle.pem");
-    assert.strictEqual(capturedArgs.options.env.SSL_CERT_FILE, "/custom/ssl-cert.pem");
-    assert.strictEqual(capturedArgs.options.env.PIP_CERT, "/custom/pip-cert.pem");
-    assert.strictEqual(capturedArgs.options.env.PIP_CONFIG_FILE, "/custom/pip.conf");
-    customEnv = null;
-  });
-
   it("should set PIP_CERT env var and create config file", async () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
@@ -276,6 +257,37 @@ describe("runPipCommand environment variable handling", () => {
   const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
   assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
   assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
+    customEnv = null;
+  });
+
+  it("should log warnings when cert and proxy are already set in user config file", async () => {
+    const tmpDir = os.tmpdir();
+    const cfgPath = path.join(tmpDir, `safe-chain-test-pip-warn-${Date.now()}.ini`);
+    const initialIni = [
+      "[global]",
+      "cert = /user/cert.pem",
+      "proxy = http://user-proxy:9999",
+      ""
+    ].join("\n");
+    await fs.writeFile(cfgPath, initialIni, "utf-8");
+
+    process.env.PIP_CONFIG_FILE = cfgPath;
+    const mod = await import("./runPipCommand.js");
+    // Capture stdout/stderr
+    let output = "";
+    const originalWrite = process.stdout.write;
+    const originalError = process.stderr.write;
+    process.stdout.write = (chunk, ...args) => { output += chunk; return originalWrite.apply(process.stdout, [chunk, ...args]); };
+    process.stderr.write = (chunk, ...args) => { output += chunk; return originalError.apply(process.stderr, [chunk, ...args]); };
+
+    await mod.runPip("pip3", ["install", "requests"]);
+
+    process.stdout.write = originalWrite;
+    process.stderr.write = originalError;
+
+    assert.ok(output.includes("cert found in PIP_CONFIG_FILE"), "Should warn about cert overwrite in output");
+    assert.ok(output.includes("proxy found in PIP_CONFIG_FILE"), "Should warn about proxy overwrite in output");
+    delete process.env.PIP_CONFIG_FILE;
     customEnv = null;
   });
 });
