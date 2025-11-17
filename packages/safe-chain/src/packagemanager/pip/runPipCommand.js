@@ -32,8 +32,7 @@ export async function runPip(command, args) {
     const tmpDir = os.tmpdir();
     const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
 
-    if (!env.PIP_CONFIG_FILE) {
-      // Build pip config INI
+    if (!env.PIP_CONFIG_FILE) { // Build pip config INI
       /** @type {{ global: { cert: string, proxy?: string } }} */
       const configObj = { global: { cert: combinedCaPath } };
       if (proxy) {
@@ -43,9 +42,7 @@ export async function runPip(command, args) {
       await fs.writeFile(pipConfigPath, pipConfig);
       env.PIP_CONFIG_FILE = pipConfigPath;
 
-    } else if (fsSync.existsSync(env.PIP_CONFIG_FILE)) {
-      // Existing pip config file present and exists on disk.
-      // Lets merge in our cert and proxy settings if not already present
+    } else if (fsSync.existsSync(env.PIP_CONFIG_FILE)) { // Merge pip config INI
       ui.writeVerbose("Safe-chain: Merging user provided PIP_CONFIG_FILE with safe-chain certificate and proxy settings.");
       const userConfig = env.PIP_CONFIG_FILE;
 
@@ -56,24 +53,20 @@ export async function runPip(command, args) {
       // Ensure [global] section exists
       parsed.global = parsed.global || {};
 
-      // Adding CERT and PROXY
-      // If either is already set, there's no neeed to throw an error
-      // MITM might fail and throw later if the proxy config is invalid
-
       // Cert
-      if (typeof parsed.global.cert === "undefined") {
-        ui.writeVerbose("Safe-chain: Adding cert to temporary PIP_CONFIG_FILE.");
-        parsed.global.cert = combinedCaPath;
+      if (typeof parsed.global.cert !== "undefined") {
+        ui.writeWarning("Safe-chain: User defined cert found in PIP_CONFIG_FILE. It will be overwritten in the temporary config.");
       }
+      parsed.global.cert = combinedCaPath;
 
       // Proxy
-      if (typeof parsed.global.proxy === "undefined") {
-        if (proxy) {
-          ui.writeVerbose("Safe-chain: Adding proxy to temporary PIP_CONFIG_FILE.");
-          parsed.global.proxy = proxy;
-        }
+      if (typeof parsed.global.proxy !== "undefined") {
+        ui.writeWarning("Safe-chain: User defined proxy found in PIP_CONFIG_FILE. It will be overwritten in the temporary config.");
       }
-
+      if (proxy) {
+        parsed.global.proxy = proxy;
+      }
+ 
       const updated = ini.stringify(parsed);
 
       // Save to a new temp file to avoid overwriting user's original config
@@ -86,15 +79,20 @@ export async function runPip(command, args) {
     }
 
     // REQUESTS_CA_BUNDLE, SSL_CERT_FILE and PIP_CERT as extra safety nets.
-    if (!env.REQUESTS_CA_BUNDLE) {
-      env.REQUESTS_CA_BUNDLE = combinedCaPath;
+    if (env.REQUESTS_CA_BUNDLE) {
+      ui.writeWarning("Safe-chain: User defined REQUESTS_CA_BUNDLE found in environment. It will be overwritten.");
     }
-    if (!env.SSL_CERT_FILE) {
-      env.SSL_CERT_FILE = combinedCaPath;
+    env.REQUESTS_CA_BUNDLE = combinedCaPath;
+
+    if (env.SSL_CERT_FILE) {
+      ui.writeWarning("Safe-chain: User defined SSL_CERT_FILE found in environment. It will be overwritten.");
     }
-    if (!env.PIP_CERT) {
-      env.PIP_CERT = combinedCaPath;
+    env.SSL_CERT_FILE = combinedCaPath;
+
+    if (env.PIP_CERT) {
+      ui.writeWarning("Safe-chain: User defined PIP_CERT found in environment. It will be overwritten.");
     }
+    env.PIP_CERT = combinedCaPath;
 
     const result = await safeSpawn(command, args, {
       stdio: "inherit",

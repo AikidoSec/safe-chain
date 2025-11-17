@@ -217,10 +217,10 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(originalParsed.global.cert, undefined, "original file should not gain cert");
     assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy remains");
 
-    // New file merged: cert added (was missing), proxy preserved (was present)
+    // New file: cert and proxy always overwritten
     const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
-    assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "new cert injected");
-    assert.strictEqual(newParsed.global.proxy, "http://original:9999", "existing proxy should be preserved in new file");
+    assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
+    assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
     customEnv = null;
   });
 
@@ -247,11 +247,11 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert preserved");
     assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy preserved");
 
-    // New temp config preserves existing values (no override when already set)
-    const newContent = await fs.readFile(newCfgPath, "utf-8");
-    const newParsed = ini.parse(newContent);
-    assert.strictEqual(newParsed.global.cert, "/path/to/existing.pem", "existing cert preserved in new temp config");
-    assert.strictEqual(newParsed.global.proxy, "http://original:9999", "existing proxy preserved in new temp config");
+  // New temp config: cert and proxy always overwritten
+  const newContent = await fs.readFile(newCfgPath, "utf-8");
+  const newParsed = ini.parse(newContent);
+  assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
+  assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
     customEnv = null;
   });
 
@@ -272,10 +272,10 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert unchanged");
     assert.strictEqual(originalParsed.global.proxy, undefined, "original proxy still missing");
 
-    // New file preserves existing cert and adds proxy (since it was missing)
-    const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
-    assert.strictEqual(newParsed.global.cert, "/path/to/existing.pem", "existing cert preserved (not overridden)");
-    assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy added from env");
+  // New file: cert and proxy always overwritten
+  const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
+  assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
+  assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
     customEnv = null;
   });
 });
