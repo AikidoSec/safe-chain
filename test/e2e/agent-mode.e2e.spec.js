@@ -2,20 +2,24 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { parseShellOutput } from "./parseShellOutput.js";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(__dirname, "../..");
+
 const SAFE_CHAIN_BIN = join(
-  process.cwd(),
+  REPO_ROOT,
   "packages/safe-chain/bin/safe-chain.js"
 );
 const AIKIDO_NPM_BIN = join(
-  process.cwd(),
+  REPO_ROOT,
   "packages/safe-chain/bin/aikido-npm.js"
 );
 const AIKIDO_PIP_BIN = join(
-  process.cwd(),
+  REPO_ROOT,
   "packages/safe-chain/bin/aikido-pip3.js"
 );
 const PROXY_STATE_FILE = join(homedir(), ".safe-chain/proxy-state.json");
@@ -38,12 +42,15 @@ async function startAgentMode(args = []) {
     const onData = (data) => {
       output += data.toString();
       
+      // Strip ANSI color codes for parsing
+      const strippedOutput = output.replace(/\x1b\[[0-9;]*m/g, '');
+      
       // Look for port and pid - they might arrive in separate chunks
-      const portMatch = output.match(/Port:\s+(\d+)/);
-      const pidMatch = output.match(/PID:\s+(\d+)/);
+      const portMatch = strippedOutput.match(/Port:\s+(\d+)/);
+      const pidMatch = strippedOutput.match(/PID:\s+(\d+)/);
       
       // Also check for the success checkmark as confirmation
-      const hasSuccess = output.includes("Safe Chain proxy started successfully");
+      const hasSuccess = strippedOutput.includes("Safe Chain proxy started successfully");
       
       if (portMatch && pidMatch && hasSuccess && !hasResolved) {
         hasResolved = true;
