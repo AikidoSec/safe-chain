@@ -28,6 +28,9 @@
     },
     "./scanning": {
       "default": "./src/scanning/audit/index.js"
+    },
+    "./agent": {
+      "default": "./src/agent/standaloneProxy.js"
     }
   },
   "keywords": [],

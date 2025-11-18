@@ -6,6 +6,7 @@ import { ui } from "../src/environment/userInteraction.js";
 import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
+import { runCommand } from "../src/agent/runCommand.js";
 
 if (process.argv.length < 3) {
   ui.writeError("No command provided. Please provide a command to execute.");
@@ -27,6 +28,10 @@ if (command === "setup") {
   teardown();
 } else if (command === "setup-ci") {
   setupCi();
+} else if (command === "run") {
+  // Pass remaining arguments to runCommand
+  const runArgs = process.argv.slice(3);
+  runCommand(runArgs);
 } else if (command === "--version" || command === "-v" || command === "-v") {
   ui.writeInformation(`Current safe-chain version: ${getVersion()}`);
 } else {
@@ -46,9 +51,9 @@ function writeHelp() {
   ui.writeInformation(
     `Available commands: ${chalk.cyan("setup")}, ${chalk.cyan(
       "teardown"
-    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("help")}, ${chalk.cyan(
-      "--version"
-    )}`
+    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("run")}, ${chalk.cyan(
+      "help"
+    )}, ${chalk.cyan("--version")}`
   );
   ui.emptyLine();
   ui.writeInformation(
@@ -65,6 +70,11 @@ function writeHelp() {
     `- ${chalk.cyan(
       "safe-chain setup-ci"
     )}: This will setup safe-chain for CI environments by creating shims and modifying the PATH.`
+  );
+  ui.writeInformation(
+    `- ${chalk.cyan(
+      "safe-chain run"
+    )}: Run the proxy as a standalone service. Options: --all (default), --js, --py, --ecosystem=<type>`
   );
   ui.writeInformation(
     `- ${chalk.cyan(
