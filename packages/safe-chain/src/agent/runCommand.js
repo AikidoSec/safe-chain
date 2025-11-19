@@ -4,8 +4,6 @@ import chalk from "chalk";
 import { initializeCliArguments } from "../config/cliArguments.js";
 import { writeProxyState, clearProxyState } from "./proxyState.js";
 import { getCaCertPath } from "../registryProxy/certUtils.js";
-import { setup } from "../shell-integration/setup.js";
-import { teardown } from "../shell-integration/teardown.js";
 
 /**
  * Run the Safe Chain proxy as a standalone service
@@ -26,9 +24,9 @@ export async function runCommand(args) {
   // Initialize logging from args
   initializeCliArguments(processedArgs);
 
-  // Automatically set up shell integration
-  await setup();
-  ui.emptyLine();
+  // Note: We no longer call setup() here because the installer sets up
+  // system-wide proxy environment variables via LaunchAgent on macOS
+  // or systemd on Linux. The certificate is also installed at install time.
 
   const service = new StandaloneProxyService({ 
     autoVerify: false 
@@ -54,11 +52,14 @@ export async function runCommand(args) {
     ui.writeInformation(`  PID: ${chalk.cyan(process.pid)}`);
     ui.emptyLine();
     
-    ui.writeInformation(chalk.bold("How to Use:"));
-    ui.writeInformation(chalk.dim("  Restart your terminal, then run package managers normally:"));
-    ui.writeInformation(chalk.cyan("    npm install <package>"));
-    ui.writeInformation(chalk.cyan("    yarn add <package>"));
-    ui.writeInformation(chalk.cyan("    pip3 install <package>"));
+    ui.writeInformation(chalk.bold("Environment Variables Set:"));
+    ui.writeInformation(`  ${chalk.cyan("HTTPS_PROXY")}: http://localhost:${port}`);
+    ui.writeInformation(`  ${chalk.cyan("GLOBAL_AGENT_HTTP_PROXY")}: http://localhost:${port}`);
+    ui.writeInformation(`  ${chalk.cyan("NODE_EXTRA_CA_CERTS")}: ${getCaCertPath()}`);
+    ui.emptyLine();
+    
+    ui.writeInformation(chalk.bold("Package managers will use the proxy automatically."));
+    ui.writeInformation(chalk.dim("  No shell wrappers or aliases needed."));
     ui.emptyLine();
     
     ui.writeInformation(
@@ -104,9 +105,8 @@ export async function runCommand(args) {
     try {
       await service.stop();
       
-      // Remove shell integration
-      ui.emptyLine();
-      await teardown();
+      // Note: We no longer call teardown() here because the environment
+      // variables are managed by the system service (LaunchAgent/systemd)
       
       process.exit(0);
     } catch (/** @type {any} */ error) {

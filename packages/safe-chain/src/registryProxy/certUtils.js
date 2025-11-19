@@ -116,3 +116,15 @@ function generateCa() {
     certificate: cert,
   };
 }
+
+/**
+ * Generate CA certificate and return as PEM strings
+ * @returns {{cert: string, key: string}}
+ */
+export function generateCACertificate() {
+  const { privateKey, certificate } = generateCa();
+  return {
+    cert: forge.pki.certificateToPem(certificate),
+    key: forge.pki.privateKeyToPem(privateKey),
+  };
+}

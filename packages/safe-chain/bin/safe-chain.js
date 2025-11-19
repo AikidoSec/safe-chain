@@ -2,11 +2,15 @@
 
 import chalk from "chalk";
 import { createRequire } from "module";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { ui } from "../src/environment/userInteraction.js";
 import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { runCommand } from "../src/agent/runCommand.js";
+import { generateCertCommand } from "../src/agent/generateCert.js";
 
 if (process.argv.length < 3) {
   ui.writeError("No command provided. Please provide a command to execute.");
@@ -32,6 +36,10 @@ if (command === "setup") {
   // Pass remaining arguments to runCommand
   const runArgs = process.argv.slice(3);
   runCommand(runArgs);
+} else if (command === "generate-cert") {
+  // Pass remaining arguments to generateCertCommand
+  const certArgs = process.argv.slice(3);
+  generateCertCommand(certArgs);
 } else if (command === "--version" || command === "-v" || command === "-v") {
   ui.writeInformation(`Current safe-chain version: ${getVersion()}`);
 } else {
@@ -52,8 +60,8 @@ function writeHelp() {
     `Available commands: ${chalk.cyan("setup")}, ${chalk.cyan(
       "teardown"
     )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("run")}, ${chalk.cyan(
-      "help"
-    )}, ${chalk.cyan("--version")}`
+      "generate-cert"
+    )}, ${chalk.cyan("help")}, ${chalk.cyan("--version")}`
   );
   ui.emptyLine();
   ui.writeInformation(
@@ -74,7 +82,12 @@ function writeHelp() {
   ui.writeInformation(
     `- ${chalk.cyan(
       "safe-chain run"
-    )}: Run the proxy as a standalone service. Options: --all (default), --js, --py, --ecosystem=<type>`
+    )}: Run the proxy as a standalone service. Sets system-wide proxy environment variables. Options: --verbose`
+  );
+  ui.writeInformation(
+    `- ${chalk.cyan(
+      "safe-chain generate-cert"
+    )}: Generate CA certificate for MITM proxy. Options: --output <directory>`
   );
   ui.writeInformation(
     `- ${chalk.cyan(
@@ -85,7 +98,15 @@ function writeHelp() {
 }
 
 function getVersion() {
-  const require = createRequire(import.meta.url);
-  const packageJson = require("../package.json");
-  return packageJson.version;
+  try {
+    // Try to load package.json from the expected location
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const packageJsonPath = join(__dirname, '../package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    return packageJson.version;
+  } catch (error) {
+    // Fallback for bundled version
+    return '1.0.0';
+  }
 }

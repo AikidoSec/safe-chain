@@ -64,5 +64,18 @@
     "type": "git",
     "url": "git+https://github.com/AikidoSec/safe-chain.git",
     "directory": "packages/safe-chain"
+  },
+  "pkg": {
+    "assets": [
+      "src/**/*.js",
+      "node_modules/**/*"
+    ],
+    "targets": [
+      "node20-macos-arm64",
+      "node20-macos-x64",
+      "node20-linux-x64",
+      "node20-linux-arm64",
+      "node20-win-x64"
+    ]
   }
 }

@@ -1,0 +1,22 @@
+{
+  "name": "@aikidosec/safe-chain-installer",
+  "version": "1.0.0",
+  "description": "Installer for Aikido Safe Chain - creates standalone binaries and installs system certificates",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "build:macos": "node build.js --platform=macos",
+    "build:linux": "node build.js --platform=linux",
+    "build:windows": "node build.js --platform=windows",
+    "build:all": "node build.js --platform=all"
+  },
+  "keywords": [],
+  "author": "Aikido Security",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@yao-pkg/pkg": "^5.15.0",
+    "esbuild": "^0.24.0"
+  },
+  "devDependencies": {}
+}
