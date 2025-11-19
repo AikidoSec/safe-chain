@@ -7,7 +7,6 @@ import { initializeCliArguments } from "./config/cliArguments.js";
 import { createSafeChainProxy } from "./registryProxy/registryProxy.js";
 import chalk from "chalk";
 import { getAuditStats } from "./scanning/audit/index.js";
-import { readProxyState } from "./agent/proxyState.js";
 
 /**
  * @param {string[]} args
@@ -18,32 +17,15 @@ export async function main(args) {
   process.on("SIGTERM", handleProcessTermination);
 
   // Check if a proxy is already running from 'safe-chain run'
-  const existingProxy = readProxyState();
-  const usingExistingProxy = existingProxy !== null;
+  // In the new agent architecture, we rely on system-wide environment variables
+  // so we don't need to detect or connect to an existing proxy here.
+  // The 'main' function is now only used when running 'aikido-npm' etc. directly
+  // (legacy wrapper mode) or when running 'safe-chain run' (which doesn't call main() directly)
   
   let proxy;
-  if (usingExistingProxy) {
-    // Use the existing proxy - don't start a new one
-    ui.writeInformation(`Safe-chain: Using existing proxy at ${existingProxy.url}`);
-    // Create a proxy object that uses the existing proxy
-    // We need to set the environment variables to point to the existing proxy
-    const url = new URL(existingProxy.url);
-    const port = parseInt(url.port);
-    
-    // Import and set the proxy state so getSafeChainProxyEnvironmentVariables works
-    const { setProxyState } = await import("./registryProxy/registryProxy.js");
-    setProxyState(port, existingProxy.certPath);
-    
-    proxy = {
-      verifyNoMaliciousPackages: () => true, // Existing proxy handles this
-      getBlockedRequests: () => [], // Can't access blocked requests from existing proxy
-      stopServer: async () => {}, // Don't stop the existing proxy
-    };
-  } else {
-    // No existing proxy, start one inline
-    proxy = createSafeChainProxy();
-    await proxy.startServer();
-  }
+  // No existing proxy logic needed anymore as we don't wrap commands when using the agent
+  proxy = createSafeChainProxy();
+  await proxy.startServer();
 
   // Global error handlers to log unhandled errors
   process.on("uncaughtException", (error) => {
@@ -91,19 +73,11 @@ export async function main(args) {
     const auditStats = getAuditStats();
     if (auditStats.totalPackages > 0) {
       ui.emptyLine();
-      if (usingExistingProxy) {
-        ui.writeInformation(
-          `${chalk.green("✔")} Safe-chain: Scanned ${
-            auditStats.totalPackages
-          } packages via proxy, no malware found.`
-        );
-      } else {
-        ui.writeInformation(
-          `${chalk.green("✔")} Safe-chain: Scanned ${
-            auditStats.totalPackages
-          } packages, no malware found.`
-        );
-      }
+      ui.writeInformation(
+        `${chalk.green("✔")} Safe-chain: Scanned ${
+          auditStats.totalPackages
+        } packages, no malware found.`
+      );
     }
 
     // Returning the exit code back to the caller allows the promise
@@ -116,10 +90,7 @@ export async function main(args) {
     //  to be awaited in the bin files and return the correct exit code
     return 1;
   } finally {
-    // Only stop the proxy if we started it (not using existing proxy)
-    if (!usingExistingProxy) {
-      await proxy.stopServer();
-    }
+    await proxy.stopServer();
   }
 }
 

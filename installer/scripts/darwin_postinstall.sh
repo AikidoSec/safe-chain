@@ -3,6 +3,12 @@ set -e
 
 echo "Installing Safe Chain..."
 
+# Get the actual user (console user)
+ACTUAL_USER=$(stat -f '%Su' /dev/console)
+if [ -z "$ACTUAL_USER" ] || [ "$ACTUAL_USER" = "root" ]; then
+    echo "Warning: Could not detect console user, defaulting to root ownership might cause issues."
+fi
+
 # The binary is installed to the location specified by --install-location
 # which is passed as $3 (installation volume/mountpoint)
 INSTALL_LOCATION="${3}/tmp/safe-chain-install"
@@ -53,8 +59,6 @@ fi
 echo "Starting Safe Chain proxy service..."
 
 # Get the actual user to install the LaunchAgent in their home
-# (We still need this for the LaunchAgent, but not for file permissions)
-ACTUAL_USER=$(stat -f '%Su' /dev/console)
 USER_HOME=$(eval echo "~${ACTUAL_USER}")
 
 # Create LaunchAgent for auto-start on login

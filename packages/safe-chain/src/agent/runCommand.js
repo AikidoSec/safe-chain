@@ -2,7 +2,6 @@ import { StandaloneProxyService } from "./standaloneProxy.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { initializeCliArguments } from "../config/cliArguments.js";
-import { writeProxyState, clearProxyState } from "./proxyState.js";
 import { getCaCertPath } from "../registryProxy/certUtils.js";
 
 /**
@@ -34,15 +33,6 @@ export async function runCommand(args) {
 
   // Setup event listeners
   service.on("started", ({ port, url }) => {
-    // Write proxy state to file so shell integration can detect it
-    writeProxyState({
-      port,
-      url,
-      pid: process.pid,
-      ecosystem: 'all',
-      certPath: getCaCertPath(),
-    });
-
     ui.emptyLine();
     ui.writeInformation(chalk.green("✔") + " Safe Chain proxy started successfully!");
     ui.emptyLine();
@@ -68,9 +58,6 @@ export async function runCommand(args) {
   });
 
   service.on("stopped", ({ blockedPackages }) => {
-    // Clear proxy state file
-    clearProxyState();
-    
     ui.emptyLine();
     ui.writeInformation(chalk.yellow("Proxy stopped."));
     

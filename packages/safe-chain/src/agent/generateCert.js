@@ -1,8 +1,3 @@
-/**
- * Generate certificate command for Safe Chain
- * Creates CA certificate and key for MITM proxy
- */
-
 import { generateCACertificate } from "../registryProxy/certUtils.js";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -12,6 +7,7 @@ import chalk from "chalk";
 
 /**
  * Generate certificate command
+ * Allows us to call this independently, for instance from the installer.
  * @param {string[]} args - Command line arguments
  */
 export async function generateCertCommand(args) {
@@ -26,9 +22,6 @@ export async function generateCertCommand(args) {
   }
   
   try {
-    ui.writeInformation(chalk.bold("Generating Safe Chain CA certificate..."));
-    ui.emptyLine();
-    
     // Create output directory
     mkdirSync(outputDir, { recursive: true });
     
@@ -41,20 +34,7 @@ export async function generateCertCommand(args) {
     
     writeFileSync(certPath, cert);
     writeFileSync(keyPath, key);
-    
-    ui.writeInformation(chalk.green("✓") + " Certificate generated successfully!");
-    ui.emptyLine();
-    ui.writeInformation(chalk.bold("Files created:"));
-    ui.writeInformation(`  Certificate: ${chalk.cyan(certPath)}`);
-    ui.writeInformation(`  Private Key: ${chalk.cyan(keyPath)}`);
-    ui.emptyLine();
-    ui.writeInformation(chalk.dim("To install this certificate in your system trust store:"));
-    ui.writeInformation(chalk.dim("  macOS:   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain " + certPath));
-    ui.writeInformation(chalk.dim("  Linux:   sudo cp " + certPath + " /usr/local/share/ca-certificates/ && sudo update-ca-certificates"));
-    ui.writeInformation(chalk.dim("  Windows: certutil -addstore -f ROOT " + certPath));
-    ui.emptyLine();
   } catch (/** @type {any} */ error) {
-    ui.writeError(`Failed to generate certificate: ${error.message}`);
     process.exit(1);
   }
 }
