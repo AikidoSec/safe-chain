@@ -36,7 +36,8 @@ if (command === "setup") {
   // Pass remaining arguments to runCommand
   const runArgs = process.argv.slice(3);
   runCommand(runArgs);
-} else if (command === "generate-cert") {
+} else if (command === "_generate-cert") {
+  // Internal command for installer
   // Pass remaining arguments to generateCertCommand
   const certArgs = process.argv.slice(3);
   generateCertCommand(certArgs);
@@ -59,9 +60,7 @@ function writeHelp() {
   ui.writeInformation(
     `Available commands: ${chalk.cyan("setup")}, ${chalk.cyan(
       "teardown"
-    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("run")}, ${chalk.cyan(
-      "generate-cert"
-    )}, ${chalk.cyan("help")}, ${chalk.cyan("--version")}`
+    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("run")}, ${chalk.cyan("help")}, ${chalk.cyan("--version")}`
   );
   ui.emptyLine();
   ui.writeInformation(
@@ -83,11 +82,6 @@ function writeHelp() {
     `- ${chalk.cyan(
       "safe-chain run"
     )}: Run the proxy as a standalone service. Sets system-wide proxy environment variables. Options: --verbose`
-  );
-  ui.writeInformation(
-    `- ${chalk.cyan(
-      "safe-chain generate-cert"
-    )}: Generate CA certificate for MITM proxy. Options: --output <directory>`
   );
   ui.writeInformation(
     `- ${chalk.cyan(

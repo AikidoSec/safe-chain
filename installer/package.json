@@ -1,7 +1,7 @@
 {
   "name": "@aikidosec/safe-chain-installer",
   "version": "1.0.0",
-  "description": "Installer for Aikido Safe Chain - creates standalone binaries and installs system certificates",
+  "description": "Installer for Aikido Safe Chain - creates standalone binaries and contains pre- and post install functionality",
   "private": true,
   "type": "module",
   "scripts": {

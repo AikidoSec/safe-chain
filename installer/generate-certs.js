@@ -11,7 +11,7 @@ import { join } from 'node:path';
 
 /**
  * Generate certificate files (simple version for installer build)
- * For the full CLI version with nice output, use: safe-chain generate-cert
+ * For the full CLI version with nice output, use: safe-chain _generate-cert
  * 
  * @param {string} outputDir - Directory to save certificate files
  * @returns {Promise<{certPath: string, keyPath: string}>}

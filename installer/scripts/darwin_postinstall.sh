@@ -12,32 +12,32 @@ mkdir -p /usr/local/bin
 cp "${INSTALL_LOCATION}/safe-chain" /usr/local/bin/safe-chain
 chmod +x /usr/local/bin/safe-chain
 
-# Setup certificate directory in user's home
-# The proxy will use ~/.safe-chain/certs/ so we need to ensure it exists
-# and install the certificate from there
-# Get the actual user (not root) who invoked the installer
-# When using 'installer' command, SUDO_USER is not set, so we use the console user
-ACTUAL_USER=$(stat -f '%Su' /dev/console)
-
-# Get the home directory of the actual user
-USER_HOME=$(eval echo "~${ACTUAL_USER}")
-
-CERT_DIR="${USER_HOME}/.safe-chain/certs"
+# Setup system-wide certificate directory
+# We use a shared location so we don't need to worry about which user is running the agent
+CERT_DIR="/usr/local/share/safe-chain/certs"
 mkdir -p "${CERT_DIR}"
-# Set ownership immediately after creating directory
-chown -R "${ACTUAL_USER}:staff" "${USER_HOME}/.safe-chain"
 
 # Generate certificate if it doesn't exist
-# This ensures the same cert is used by both the proxy and system trust store
 if [ ! -f "${CERT_DIR}/ca-cert.pem" ]; then
   echo "Generating Safe Chain CA certificate..."
-  # Run as the actual user with their HOME set, not root
-  sudo -u "${ACTUAL_USER}" HOME="${USER_HOME}" /usr/local/bin/safe-chain generate-cert --output "${CERT_DIR}"
+  # Run as root (installer context) - no need to switch users
+  /usr/local/bin/safe-chain _generate-cert --output "${CERT_DIR}"
 fi
 
-# Set correct ownership (important since installer runs as root)
-# Do this AFTER generating certificates so they get the right ownership too
-chown -R "${ACTUAL_USER}:staff" "${USER_HOME}/.safe-chain"
+# Set permissions so any user can read the certs (required for the agent to load them)
+# Directory is executable/readable by all
+chmod 755 "/usr/local/share/safe-chain"
+chmod 755 "${CERT_DIR}"
+
+# PUBLIC Certificate: Readable by everyone (644)
+chmod 644 "${CERT_DIR}/ca-cert.pem"
+
+# PRIVATE Key: Readable ONLY by the owner (600)
+# This is critical for security.
+chmod 600 "${CERT_DIR}/ca-key.pem"
+
+# Ensure the actual user owns the files so the agent (running as user) can read them
+chown -R "${ACTUAL_USER}:staff" "/usr/local/share/safe-chain"
 
 # Install certificate in system trust store
 echo "Installing Safe Chain CA certificate in system trust store..."
@@ -52,9 +52,15 @@ fi
 # Start safe-chain as a background service
 echo "Starting Safe Chain proxy service..."
 
+# Get the actual user to install the LaunchAgent in their home
+# (We still need this for the LaunchAgent, but not for file permissions)
+ACTUAL_USER=$(stat -f '%Su' /dev/console)
+USER_HOME=$(eval echo "~${ACTUAL_USER}")
+
 # Create LaunchAgent for auto-start on login
 LAUNCH_AGENT_DIR="${USER_HOME}/Library/LaunchAgents"
 mkdir -p "${LAUNCH_AGENT_DIR}"
+chown "${ACTUAL_USER}:staff" "${LAUNCH_AGENT_DIR}"
 
 PLIST_PATH="${LAUNCH_AGENT_DIR}/com.aikido.safe-chain.plist"
 cat > "${PLIST_PATH}" << EOF
@@ -77,6 +83,8 @@ cat > "${PLIST_PATH}" << EOF
         <string>http://localhost:8080</string>
         <key>NODE_EXTRA_CA_CERTS</key>
         <string>${CERT_DIR}/ca-cert.pem</string>
+        <key>SAFE_CHAIN_CERT_DIR</key>
+        <string>${CERT_DIR}</string>
     </dict>
     <key>RunAtLoad</key>
     <true/>
@@ -89,9 +97,6 @@ cat > "${PLIST_PATH}" << EOF
 </dict>
 </plist>
 EOF
-
-# Set correct ownership for plist
-chown "${ACTUAL_USER}:staff" "${PLIST_PATH}"
 
 # Set correct ownership for plist
 chown "${ACTUAL_USER}:staff" "${PLIST_PATH}"

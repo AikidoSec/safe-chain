@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
-const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
+const certFolder = process.env.SAFE_CHAIN_CERT_DIR || path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
 
 const certCache = new Map();

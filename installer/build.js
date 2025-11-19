@@ -65,6 +65,11 @@ async function bundleWithEsbuild() {
     loader: {
       '.json': 'json', // Inline JSON files
     },
+    // We need to inject a polyfill because:
+    // source code is ESM (uses import.meta.url)
+    // target is CommonJS (required by pkg)
+    // CommonJS doesn't have import.meta.url, and ESM doesn't have __filename/__dirname
+    // create a fake import.meta.url from __filename
     banner: {
       js: `// Polyfill for import.meta.url in CommonJS
 var __filename = __filename || (() => {
@@ -85,13 +90,10 @@ var import_meta_url = typeof __filename !== 'undefined' ? require('url').pathToF
     sourcemap: false,
   });
   
-  console.log('✓ Bundle created at:', outputFile);
+  console.log('Bundle created at:', outputFile);
   return outputFile;
 }
 
-/**
- * Build macOS binary and installer
- */
 async function buildMacOS() {
   console.log('Building macOS binary...');
   
@@ -195,12 +197,27 @@ async function createMacOSInstaller(binaryPath) {
   writeFileSync(join(scriptsDir, 'preinstall'), preinstallScript, { mode: 0o755 });
   writeFileSync(join(scriptsDir, 'postinstall'), postinstallScript, { mode: 0o755 });
   writeFileSync(join(installerDir, 'uninstall.sh'), uninstallScript, { mode: 0o755 });
+
+  // Run pkgbuild to create the .pkg file
+  console.log('Running pkgbuild...');
+  const pkgName = 'SafeChain.pkg';
+  const pkgPath = join(installerDir, pkgName);
   
-  console.log('✓ macOS installer package created at:', installerDir);
-  console.log('');
-  console.log('To create a .pkg installer, run:');
-  console.log(`  cd ${installerDir}`);
-  console.log('  pkgbuild --root resources --scripts scripts --identifier com.aikido.safe-chain --version 1.0.0 --install-location /tmp/safe-chain-install SafeChain.pkg');
+  // Get version from package.json
+  const packageJson = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8'));
+  const version = packageJson.version;
+
+  const pkgbuildArgs = [
+    '--root', resourcesDir,
+    '--scripts', scriptsDir,
+    '--identifier', 'com.aikido.safe-chain',
+    '--version', version,
+    '--install-location', '/tmp/safe-chain-install',
+    pkgPath
+  ];
+
+  await execAsync(`pkgbuild ${pkgbuildArgs.join(' ')}`);
+  console.log(`Mac OS Installer created at: ${pkgPath}`);
 }
 
 /**
