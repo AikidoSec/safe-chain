@@ -2,8 +2,6 @@ import { generateCACertificate } from "../registryProxy/certUtils.js";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { ui } from "../environment/userInteraction.js";
-import chalk from "chalk";
 
 /**
  * Generate certificate command
@@ -34,7 +32,7 @@ export async function generateCertCommand(args) {
     
     writeFileSync(certPath, cert);
     writeFileSync(keyPath, key);
-  } catch (/** @type {any} */ error) {
+  } catch {
     process.exit(1);
   }
 }

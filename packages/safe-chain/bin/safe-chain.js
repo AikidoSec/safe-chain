@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import chalk from "chalk";
-import { createRequire } from "module";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -81,7 +80,7 @@ function writeHelp() {
   ui.writeInformation(
     `- ${chalk.cyan(
       "safe-chain run"
-    )}: Run the proxy as a standalone service. Sets system-wide proxy environment variables. Options: --verbose`
+    )}: Run the proxy as a standalone service. (Used by the background agent). Options: --verbose`
   );
   ui.writeInformation(
     `- ${chalk.cyan(
@@ -99,7 +98,7 @@ function getVersion() {
     const packageJsonPath = join(__dirname, '../package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
     return packageJson.version;
-  } catch (error) {
+  } catch {
     // Fallback for bundled version
     return '1.0.0';
   }

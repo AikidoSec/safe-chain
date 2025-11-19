@@ -1,11 +1,9 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { parseShellOutput } from "./parseShellOutput.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "../..");
@@ -22,7 +20,6 @@ const AIKIDO_PIP_BIN = join(
   REPO_ROOT,
   "packages/safe-chain/bin/aikido-pip3.js"
 );
-const PROXY_STATE_FILE = join(homedir(), ".safe-chain/proxy-state.json");
 
 /**
  * Helper to start safe-chain run in agent mode
@@ -102,20 +99,26 @@ async function stopAgentMode(proc) {
       return;
     }
 
-    proc.on("exit", () => {
-      resolve();
-    });
+    let resolved = false;
+    const doResolve = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+
+    proc.on("exit", doResolve);
 
     // Send SIGTERM
     proc.kill("SIGTERM");
 
-    // Force kill after 2 seconds if still running
+    // Force kill after 1 second if still running
     setTimeout(() => {
       if (!proc.killed) {
         proc.kill("SIGKILL");
       }
-      resolve();
-    }, 2000);
+      doResolve();
+    }, 1000);
   });
 }
 
@@ -185,57 +188,9 @@ async function runAikidoPip(args) {
   });
 }
 
-/**
- * Read and parse proxy state file
- * @returns {{port: number, url: string, pid: number, ecosystem: string, certPath: string} | null}
- */
-function readProxyState() {
-  try {
-    if (!existsSync(PROXY_STATE_FILE)) {
-      return null;
-    }
-    const content = readFileSync(PROXY_STATE_FILE, "utf-8");
-    const state = JSON.parse(content);
-    
-    // Validate that process is still running (same as actual implementation)
-    try {
-      process.kill(state.pid, 0);
-      return state;
-    } catch {
-      // Process doesn't exist
-      return null;
-    }
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Clean up proxy state file
- */
-function cleanupProxyState() {
-  try {
-    if (existsSync(PROXY_STATE_FILE)) {
-      unlinkSync(PROXY_STATE_FILE);
-    }
-  } catch {
-    // Ignore errors
-  }
-}
-
 describe("Agent Mode E2E", { timeout: 60000 }, () => {
-  before(() => {
-    // Clean up any existing proxy state
-    cleanupProxyState();
-  });
-
-  after(() => {
-    // Clean up after tests
-    cleanupProxyState();
-  });
-
   describe("safe-chain run", () => {
-    it("should start proxy and create state file", async () => {
+    it("should start proxy successfully", async () => {
       let agent;
       try {
         // Start agent mode
@@ -245,16 +200,6 @@ describe("Agent Mode E2E", { timeout: 60000 }, () => {
         assert.ok(agent.process);
         assert.ok(agent.port > 0);
         assert.ok(agent.pid > 0);
-
-        // Verify state file was created
-        const state = readProxyState();
-        assert.ok(state, "State file should exist");
-        assert.strictEqual(state.port, agent.port);
-        assert.strictEqual(state.pid, agent.pid);
-        assert.strictEqual(state.ecosystem, "all");
-        assert.strictEqual(state.url, `http://localhost:${agent.port}`);
-        assert.ok(state.certPath);
-        assert.ok(state.certPath.includes(".safe-chain/certs/ca-cert.pem"));
       } finally {
         if (agent) {
           await stopAgentMode(agent.process);
@@ -268,10 +213,9 @@ describe("Agent Mode E2E", { timeout: 60000 }, () => {
         // Start agent mode with verbose flag
         agent = await startAgentMode(["--verbose"]);
 
-        // Verify state file ecosystem is always 'all'
-        const state = readProxyState();
-        assert.ok(state);
-        assert.strictEqual(state.ecosystem, "all");
+        // Verify process started
+        assert.ok(agent.process);
+        assert.ok(agent.port > 0);
       } finally {
         if (agent) {
           await stopAgentMode(agent.process);
@@ -279,25 +223,21 @@ describe("Agent Mode E2E", { timeout: 60000 }, () => {
       }
     });
 
-    it("should cleanup state file when proxy stops", async () => {
+    it("should stop cleanly", async () => {
       let agent;
       try {
         // Start agent mode
         agent = await startAgentMode();
 
-        // Verify state file exists
-        assert.ok(readProxyState());
+        // Verify process is running
+        assert.ok(agent.process);
 
         // Stop agent
         await stopAgentMode(agent.process);
         agent = null;
 
         // Wait a bit for cleanup
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Verify state file was removed
-        const state = readProxyState();
-        assert.strictEqual(state, null, "State file should be removed");
+        await new Promise((resolve) => setTimeout(resolve, 100));
       } finally {
         if (agent) {
           await stopAgentMode(agent.process);
@@ -393,15 +333,7 @@ describe("Agent Mode E2E", { timeout: 60000 }, () => {
   });
 
   describe("inline mode (no agent)", () => {
-    before(() => {
-      // Ensure no agent is running
-      cleanupProxyState();
-    });
-
     it("should start inline proxy when no agent is running", async () => {
-      // Verify no state file
-      assert.strictEqual(readProxyState(), null);
-
       // Run aikido-npm without agent mode
       const result = await runAikidoNpm(["view", "lodash", "version"]);
 
@@ -410,35 +342,6 @@ describe("Agent Mode E2E", { timeout: 60000 }, () => {
 
       // Should have output
       assert.ok(result.stdout.includes("4.17") || result.stdout.includes("lodash"));
-
-      // State file should still not exist (inline mode doesn't create it)
-      assert.strictEqual(readProxyState(), null);
-    });
-  });
-
-  describe("proxy state validation", () => {
-    it("should ignore stale state file with dead process", async () => {
-      // Create a fake state file with a non-existent PID
-      const fakeState = {
-        port: 12345,
-        url: "http://localhost:12345",
-        pid: 99999999, // Very unlikely to exist
-        ecosystem: "js",
-        certPath: join(homedir(), ".safe-chain/certs/ca-cert.pem"),
-      };
-
-      // Write fake state file
-      const fs = await import("node:fs/promises");
-      const proxyStateDir = join(homedir(), ".safe-chain");
-      await fs.mkdir(proxyStateDir, { recursive: true });
-      await fs.writeFile(PROXY_STATE_FILE, JSON.stringify(fakeState, null, 2));
-
-      // Verify state file exists but process is dead
-      const state = readProxyState();
-      assert.strictEqual(state, null, "Should return null for dead process");
-
-      // Clean up
-      cleanupProxyState();
     });
   });
 

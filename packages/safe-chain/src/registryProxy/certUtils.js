@@ -3,10 +3,33 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
-const certFolder = process.env.SAFE_CHAIN_CERT_DIR || path.join(os.homedir(), ".safe-chain", "certs");
+const certFolder = determineCertFolder();
 const ca = loadCa();
 
 const certCache = new Map();
+
+/**
+ * Determine the certificate folder location
+ * Priority:
+ * 1. SAFE_CHAIN_CERT_DIR environment variable (set by installer/LaunchAgent)
+ * 2. System-wide installation directory (if certificates exist there)
+ * 3. User home directory (fallback for CLI wrapper mode and development)
+ */
+function determineCertFolder() {
+  // 1. Explicit env var takes precedence (set by LaunchAgent)
+  if (process.env.SAFE_CHAIN_CERT_DIR) {
+    return process.env.SAFE_CHAIN_CERT_DIR;
+  }
+
+  // 2. Check if system-wide installation exists (macOS/Linux standard location)
+  const systemCertDir = "/usr/local/share/safe-chain/certs";
+  if (fs.existsSync(path.join(systemCertDir, "ca-cert.pem"))) {
+    return systemCertDir;
+  }
+
+  // 3. Fallback to user home directory (CLI wrapper mode, development)
+  return path.join(os.homedir(), ".safe-chain", "certs");
+}
 
 export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
