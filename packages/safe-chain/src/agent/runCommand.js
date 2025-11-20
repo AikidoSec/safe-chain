@@ -3,6 +3,9 @@ import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { initializeCliArguments } from "../config/cliArguments.js";
 import { getCaCertPath } from "../registryProxy/certUtils.js";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 /**
  * Run the Safe Chain proxy as a standalone service
@@ -42,6 +45,17 @@ export async function runCommand(args) {
     ui.writeInformation(`  PID: ${chalk.cyan(process.pid)}`);
     ui.emptyLine();
     
+    // Write port to a well-known location for the installer to read
+    // This allows launchctl setenv to use the actual dynamically-assigned port
+    const portFilePath = path.join(os.homedir(), ".safe-chain", "port");
+    try {
+      fs.mkdirSync(path.dirname(portFilePath), { recursive: true });
+      fs.writeFileSync(portFilePath, String(port), "utf8");
+    } catch (/** @type {any} */ error) {
+      // Non-fatal, just log
+      ui.writeWarning(`Could not write port file: ${error.message}`);
+    }
+    
     ui.writeInformation(chalk.bold("Environment Variables Set:"));
     ui.writeInformation(`  ${chalk.cyan("HTTPS_PROXY")}: http://localhost:${port}`);
     ui.writeInformation(`  ${chalk.cyan("GLOBAL_AGENT_HTTP_PROXY")}: http://localhost:${port}`);
@@ -60,6 +74,17 @@ export async function runCommand(args) {
   service.on("stopped", ({ blockedPackages }) => {
     ui.emptyLine();
     ui.writeInformation(chalk.yellow("Proxy stopped."));
+    
+    // Clean up port file
+    const portFilePath = path.join(os.homedir(), ".safe-chain", "port");
+    try {
+      if (fs.existsSync(portFilePath)) {
+        fs.unlinkSync(portFilePath);
+      }
+    } catch (/** @type {any} */ error) {
+      // Non-fatal
+      ui.writeWarning(`Could not remove port file: ${error.message}`);
+    }
     
     if (blockedPackages.length > 0) {
       ui.emptyLine();

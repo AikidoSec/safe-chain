@@ -101,17 +101,27 @@ if ! plutil -lint "${PLIST_PATH}" > /dev/null 2>&1; then
 fi
 
 # Load the LaunchAgent to start the service now
-# Need to run as the actual user, not root
+# Need to run as the actual user
 sudo -u "${ACTUAL_USER}" launchctl load "${PLIST_PATH}" 2>/dev/null || true
 
-# Give it a moment to start
-sleep 2
+# Give it a moment to start and write the port file
+sleep 3
+
+# Read the dynamically-assigned port from the port file
+PORT_FILE="${USER_HOME}/.safe-chain/port"
+if [ -f "${PORT_FILE}" ]; then
+  PROXY_PORT=$(cat "${PORT_FILE}")
+  echo "Detected proxy running on port: ${PROXY_PORT}"
+else
+  echo "⚠ Warning: Could not detect proxy port, using default 8080"
+  PROXY_PORT=8080
+fi
 
 # Set system-wide environment variables so all processes can use the proxy
 # These affect all processes for the user, not just the LaunchAgent
 echo "Setting system-wide proxy environment variables..."
-sudo -u "${ACTUAL_USER}" launchctl setenv HTTPS_PROXY "http://localhost:8080"
-sudo -u "${ACTUAL_USER}" launchctl setenv GLOBAL_AGENT_HTTP_PROXY "http://localhost:8080"
+sudo -u "${ACTUAL_USER}" launchctl setenv HTTPS_PROXY "http://localhost:${PROXY_PORT}"
+sudo -u "${ACTUAL_USER}" launchctl setenv GLOBAL_AGENT_HTTP_PROXY "http://localhost:${PROXY_PORT}"
 sudo -u "${ACTUAL_USER}" launchctl setenv NODE_EXTRA_CA_CERTS "${CERT_DIR}/ca-cert.pem"
 sudo -u "${ACTUAL_USER}" launchctl setenv SAFE_CHAIN_CERT_DIR "${CERT_DIR}"
 
