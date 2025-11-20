@@ -79,17 +79,6 @@ cat > "${PLIST_PATH}" << EOF
         <string>/usr/local/bin/safe-chain</string>
         <string>run</string>
     </array>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>HTTPS_PROXY</key>
-        <string>http://localhost:8080</string>
-        <key>GLOBAL_AGENT_HTTP_PROXY</key>
-        <string>http://localhost:8080</string>
-        <key>NODE_EXTRA_CA_CERTS</key>
-        <string>${CERT_DIR}/ca-cert.pem</string>
-        <key>SAFE_CHAIN_CERT_DIR</key>
-        <string>${CERT_DIR}</string>
-    </dict>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
@@ -105,6 +94,12 @@ EOF
 # Set correct ownership for plist
 chown "${ACTUAL_USER}:staff" "${PLIST_PATH}"
 
+# Validate plist syntax
+if ! plutil -lint "${PLIST_PATH}" > /dev/null 2>&1; then
+  echo "⚠ Warning: Generated plist has invalid syntax"
+  exit 1
+fi
+
 # Load the LaunchAgent to start the service now
 # Need to run as the actual user, not root
 sudo -u "${ACTUAL_USER}" launchctl load "${PLIST_PATH}" 2>/dev/null || true
@@ -118,6 +113,7 @@ echo "Setting system-wide proxy environment variables..."
 sudo -u "${ACTUAL_USER}" launchctl setenv HTTPS_PROXY "http://localhost:8080"
 sudo -u "${ACTUAL_USER}" launchctl setenv GLOBAL_AGENT_HTTP_PROXY "http://localhost:8080"
 sudo -u "${ACTUAL_USER}" launchctl setenv NODE_EXTRA_CA_CERTS "${CERT_DIR}/ca-cert.pem"
+sudo -u "${ACTUAL_USER}" launchctl setenv SAFE_CHAIN_CERT_DIR "${CERT_DIR}"
 
 echo "✓ Safe Chain installed successfully!"
 echo ""

@@ -36,6 +36,7 @@ echo "Removing proxy environment variables..."
 sudo -u "${ACTUAL_USER}" launchctl unsetenv HTTPS_PROXY 2>/dev/null || true
 sudo -u "${ACTUAL_USER}" launchctl unsetenv GLOBAL_AGENT_HTTP_PROXY 2>/dev/null || true
 sudo -u "${ACTUAL_USER}" launchctl unsetenv NODE_EXTRA_CA_CERTS 2>/dev/null || true
+sudo -u "${ACTUAL_USER}" launchctl unsetenv SAFE_CHAIN_CERT_DIR 2>/dev/null || true
 
 # Remove binary
 rm -f /usr/local/bin/safe-chain
