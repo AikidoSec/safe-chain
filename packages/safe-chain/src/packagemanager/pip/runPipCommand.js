@@ -39,9 +39,9 @@ function setFallbackCaBundleEnvironmentVariables(env, combinedCaPath) {
 /**
  * Runs a pip command with safe-chain's certificate bundle and proxy configuration.
  * 
- * Creates a temporary pip config file (cleaned up automatically after execution) to configure:
- * - Certificate bundle for HTTPS verification
- * - Proxy settings if available
+ * Creates a temporary pip config file to configure:
+ * - Cert bundle for HTTPS verification
+ * - Proxy settings
  * 
  * If the user has an existing PIP_CONFIG_FILE, a new temporary config is created that merges
  * their settings with safe-chain's, leaving the original file unchanged.
