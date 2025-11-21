@@ -32,7 +32,7 @@ export async function runPip(command, args) {
     const tmpDir = os.tmpdir();
     const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
 
-    if (!env.PIP_CONFIG_FILE) { // Build pip config INI
+    if (!env.PIP_CONFIG_FILE) {
       /** @type {{ global: { cert: string, proxy?: string } }} */
       const configObj = { global: { cert: combinedCaPath } };
       if (proxy) {
@@ -42,7 +42,7 @@ export async function runPip(command, args) {
       await fs.writeFile(pipConfigPath, pipConfig);
       env.PIP_CONFIG_FILE = pipConfigPath;
 
-    } else if (fsSync.existsSync(env.PIP_CONFIG_FILE)) { // Merge pip config INI
+    } else if (fsSync.existsSync(env.PIP_CONFIG_FILE)) {
       ui.writeVerbose("Safe-chain: Merging user provided PIP_CONFIG_FILE with safe-chain certificate and proxy settings.");
       const userConfig = env.PIP_CONFIG_FILE;
 
