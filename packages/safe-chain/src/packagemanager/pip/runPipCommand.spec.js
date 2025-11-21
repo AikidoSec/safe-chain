@@ -9,15 +9,25 @@ describe("runPipCommand environment variable handling", () => {
   let runPip;
   let capturedArgs = null;
   let customEnv = null;
+  let capturedConfigContent = null; // Capture config file content before cleanup
 
   beforeEach(async () => {
     capturedArgs = null;
+    capturedConfigContent = null;
 
-    // Mock safeSpawn to capture args
+    // Mock safeSpawn to capture args and config file content before cleanup
     mock.module("../../utils/safeSpawn.js", {
       namedExports: {
         safeSpawn: async (command, args, options) => {
           capturedArgs = { command, args, options };
+          // Capture the config file content before the function cleans it up
+          if (options.env.PIP_CONFIG_FILE) {
+            try {
+              capturedConfigContent = await fs.readFile(options.env.PIP_CONFIG_FILE, "utf-8");
+            } catch (e) {
+              // Ignore if file doesn't exist or can't be read
+            }
+          }
           return { status: 0 };
         },
       },
@@ -151,9 +161,9 @@ describe("runPipCommand environment variable handling", () => {
     const originalParsed = ini.parse(originalContent);
     assert.strictEqual(originalParsed.global.cert, undefined, "original file should not gain cert");
 
-    // New file has merged settings
-    const newContent = await fs.readFile(newCfgPath, "utf-8");
-    const newParsed = ini.parse(newContent);
+    // New file has merged settings (read from captured content before cleanup)
+    assert.ok(capturedConfigContent, "config content should have been captured");
+    const newParsed = ini.parse(capturedConfigContent);
     assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "new config should include cert");
     assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "new config should include proxy from env");
     assert.strictEqual(newParsed.global["index-url"], "https://example.com/simple", "index-url should be preserved");
@@ -166,8 +176,8 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(res.status, 0);
 
     const configPath = capturedArgs.options.env.PIP_CONFIG_FILE;
-    const content = await fs.readFile(configPath, "utf-8");
-    const parsed = ini.parse(content);
+    assert.ok(capturedConfigContent, "config content should have been captured");
+    const parsed = ini.parse(capturedConfigContent);
     assert.ok(parsed.global, "[global] should exist after creation");
     assert.strictEqual(
       parsed.global.proxy,
@@ -198,8 +208,9 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(originalParsed.global.cert, undefined, "original file should not gain cert");
     assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy remains");
 
-    // New file: cert and proxy always overwritten
-    const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
+    // New file: cert and proxy always overwritten (read from captured content)
+    assert.ok(capturedConfigContent, "config content should have been captured");
+    const newParsed = ini.parse(capturedConfigContent);
     assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
     assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
     customEnv = null;
@@ -228,9 +239,9 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert preserved");
     assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy preserved");
 
-  // New temp config: cert and proxy always overwritten
-  const newContent = await fs.readFile(newCfgPath, "utf-8");
-  const newParsed = ini.parse(newContent);
+  // New temp config: cert and proxy always overwritten (read from captured content)
+  assert.ok(capturedConfigContent, "config content should have been captured");
+  const newParsed = ini.parse(capturedConfigContent);
   assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
   assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
     customEnv = null;
@@ -253,8 +264,9 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert unchanged");
     assert.strictEqual(originalParsed.global.proxy, undefined, "original proxy still missing");
 
-  // New file: cert and proxy always overwritten
-  const newParsed = ini.parse(await fs.readFile(newCfgPath, "utf-8"));
+  // New file: cert and proxy always overwritten (read from captured content)
+  assert.ok(capturedConfigContent, "config content should have been captured");
+  const newParsed = ini.parse(capturedConfigContent);
   assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
   assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
     customEnv = null;
@@ -271,8 +283,8 @@ describe("runPipCommand environment variable handling", () => {
     ].join("\n");
     await fs.writeFile(cfgPath, initialIni, "utf-8");
 
-    process.env.PIP_CONFIG_FILE = cfgPath;
-    const mod = await import("./runPipCommand.js");
+    customEnv = { PIP_CONFIG_FILE: cfgPath };
+    
     // Capture stdout/stderr
     let output = "";
     const originalWrite = process.stdout.write;
@@ -280,14 +292,13 @@ describe("runPipCommand environment variable handling", () => {
     process.stdout.write = (chunk, ...args) => { output += chunk; return originalWrite.apply(process.stdout, [chunk, ...args]); };
     process.stderr.write = (chunk, ...args) => { output += chunk; return originalError.apply(process.stderr, [chunk, ...args]); };
 
-    await mod.runPip("pip3", ["install", "requests"]);
+    await runPip("pip3", ["install", "requests"]);
 
     process.stdout.write = originalWrite;
     process.stderr.write = originalError;
 
     assert.ok(output.includes("cert found in PIP_CONFIG_FILE"), "Should warn about cert overwrite in output");
     assert.ok(output.includes("proxy found in PIP_CONFIG_FILE"), "Should warn about proxy overwrite in output");
-    delete process.env.PIP_CONFIG_FILE;
     customEnv = null;
   });
 });

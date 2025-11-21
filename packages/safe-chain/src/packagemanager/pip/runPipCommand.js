@@ -9,10 +9,46 @@ import path from "node:path";
 import ini from "ini";
 
 /**
- * @param {string} command
- * @param {string[]} args
- *
- * @returns {Promise<{status: number}>}
+ * Sets fallback CA bundle environment variables used by Python libraries.
+ * These are applied in addition to the PIP_CONFIG_FILE to ensure all Python
+ * network libraries respect the combined CA bundle, even if they don't read pip's config.
+ * 
+ * @param {NodeJS.ProcessEnv} env - Environment object to modify
+ * @param {string} combinedCaPath - Path to the combined CA bundle
+ */
+function setFallbackCaBundleEnvironmentVariables(env, combinedCaPath) {
+  // REQUESTS_CA_BUNDLE: Used by the popular 'requests' library
+  if (env.REQUESTS_CA_BUNDLE) {
+    ui.writeWarning("Safe-chain: User defined REQUESTS_CA_BUNDLE found in environment. It will be overwritten.");
+  }
+  env.REQUESTS_CA_BUNDLE = combinedCaPath;
+
+  // SSL_CERT_FILE: Used by some Python SSL libraries and urllib
+  if (env.SSL_CERT_FILE) {
+    ui.writeWarning("Safe-chain: User defined SSL_CERT_FILE found in environment. It will be overwritten.");
+  }
+  env.SSL_CERT_FILE = combinedCaPath;
+
+  // PIP_CERT: Pip's own environment variable for certificate verification
+  if (env.PIP_CERT) {
+    ui.writeWarning("Safe-chain: User defined PIP_CERT found in environment. It will be overwritten.");
+  }
+  env.PIP_CERT = combinedCaPath;
+}
+
+/**
+ * Runs a pip command with safe-chain's certificate bundle and proxy configuration.
+ * 
+ * Creates a temporary pip config file (cleaned up automatically after execution) to configure:
+ * - Certificate bundle for HTTPS verification
+ * - Proxy settings if available
+ * 
+ * If the user has an existing PIP_CONFIG_FILE, a new temporary config is created that merges
+ * their settings with safe-chain's, leaving the original file unchanged.
+ * 
+ * @param {string} command - The pip command to execute (e.g., 'pip3')
+ * @param {string[]} args - Command line arguments to pass to pip
+ * @returns {Promise<{status: number}>} Exit status of the pip command
  */
 export async function runPip(command, args) {
   try {
@@ -26,12 +62,15 @@ export async function runPip(command, args) {
     // https://pip.pypa.io/en/stable/topics/https-certificates/ explains that the 'cert' param (which we're providing via INI file)
     // will tell pip to use the provided CA bundle for HTTPS verification.
 
-    // Proxy settings: prefer GLOBAL_AGENT_HTTP_PROXY, then HTTPS_PROXY, then HTTP_PROXY
+    // Proxy settings: GLOBAL_AGENT_HTTP_PROXY is our safe-chain proxy (if active),
+    // otherwise fall back to user-defined HTTPS_PROXY or HTTP_PROXY environment variables
     const proxy = env.GLOBAL_AGENT_HTTP_PROXY || env.HTTPS_PROXY || env.HTTP_PROXY || '';
 
     const tmpDir = os.tmpdir();
     const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
+    let cleanupConfigPath = null; // Track temp file for cleanup
 
+    // Note: Setting PIP_CONFIG_FILE overrides all pip config levels (Global/User/Site) per pip's loading order
     if (!env.PIP_CONFIG_FILE) {
       /** @type {{ global: { cert: string, proxy?: string } }} */
       const configObj = { global: { cert: combinedCaPath } };
@@ -41,6 +80,7 @@ export async function runPip(command, args) {
       const pipConfig = ini.stringify(configObj);
       await fs.writeFile(pipConfigPath, pipConfig);
       env.PIP_CONFIG_FILE = pipConfigPath;
+      cleanupConfigPath = pipConfigPath;
 
     } else if (fsSync.existsSync(env.PIP_CONFIG_FILE)) {
       ui.writeVerbose("Safe-chain: Merging user provided PIP_CONFIG_FILE with safe-chain certificate and proxy settings.");
@@ -72,32 +112,31 @@ export async function runPip(command, args) {
       // Save to a new temp file to avoid overwriting user's original config
       await fs.writeFile(pipConfigPath, updated, "utf-8");
       env.PIP_CONFIG_FILE = pipConfigPath;
+      cleanupConfigPath = pipConfigPath;
 
     } else {
       // The user provided PIP_CONFIG_FILE does not exist on disk
       // PIP will handle this as an error and inform the user
     }
 
-    // REQUESTS_CA_BUNDLE, SSL_CERT_FILE and PIP_CERT as extra safety nets.
-    if (env.REQUESTS_CA_BUNDLE) {
-      ui.writeWarning("Safe-chain: User defined REQUESTS_CA_BUNDLE found in environment. It will be overwritten.");
-    }
-    env.REQUESTS_CA_BUNDLE = combinedCaPath;
-
-    if (env.SSL_CERT_FILE) {
-      ui.writeWarning("Safe-chain: User defined SSL_CERT_FILE found in environment. It will be overwritten.");
-    }
-    env.SSL_CERT_FILE = combinedCaPath;
-
-    if (env.PIP_CERT) {
-      ui.writeWarning("Safe-chain: User defined PIP_CERT found in environment. It will be overwritten.");
-    }
-    env.PIP_CERT = combinedCaPath;
+    // Set fallback CA bundle environment variables for Python libraries that don't read pip config
+    setFallbackCaBundleEnvironmentVariables(env, combinedCaPath);
 
     const result = await safeSpawn(command, args, {
       stdio: "inherit",
       env,
     });
+
+    // Cleanup temporary config file if we created one
+    if (cleanupConfigPath) {
+      try {
+        await fs.unlink(cleanupConfigPath);
+      } catch (error) {
+        // Ignore cleanup errors - the file may have already been deleted or is inaccessible
+        // Temp files in os.tmpdir() may eventually be cleaned by the OS, but timing varies by platform
+      }
+    }
+
     return { status: result.status };
   } catch (/** @type any */ error) {
     if (error.status) {
