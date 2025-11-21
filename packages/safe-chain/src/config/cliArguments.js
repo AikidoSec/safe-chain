@@ -1,8 +1,9 @@
 /**
- * @type {{loggingLevel: string | undefined}}
+ * @type {{loggingLevel: string | undefined, includePython: boolean}}
  */
 const state = {
   loggingLevel: undefined,
+  includePython: false,
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
@@ -27,6 +28,7 @@ export function initializeCliArguments(args) {
   }
 
   setLoggingLevel(safeChainArgs);
+  setIncludePython(args);
 
   return remainingArgs;
 }
@@ -63,4 +65,32 @@ function setLoggingLevel(args) {
 
 export function getLoggingLevel() {
   return state.loggingLevel;
+}
+
+/**
+ * @param {string[]} args
+ */
+function setIncludePython(args) {
+  // This flag doesn't have the --safe-chain- prefix because
+  // it is only used for the safe-chain command itself and
+  // not when wrapped around package manager commands.
+  state.includePython = hasFlagArg(args, "--include-python");
+}
+
+export function includePython() {
+  return state.includePython;
+}
+
+/**
+ * @param {string[]} args
+ * @param {string} flagName
+ * @returns {boolean}
+ */
+function hasFlagArg(args, flagName) {
+  for (const arg of args) {
+    if (arg.toLowerCase() === flagName.toLowerCase()) {
+      return true;
+    }
+  }
+  return false;
 }

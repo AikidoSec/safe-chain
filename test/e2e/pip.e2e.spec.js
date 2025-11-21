@@ -15,7 +15,7 @@ describe("E2E: pip coverage", () => {
     await container.start();
 
     const installationShell = await container.openShell("zsh");
-    await installationShell.runCommand("safe-chain setup");
+    await installationShell.runCommand("safe-chain setup --include-python");
   });
 
   afterEach(async () => {
@@ -96,7 +96,9 @@ describe("E2E: pip coverage", () => {
 
   it(`python3 -m pip install routes through safe-chain`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("python3 -m pip install --break-system-packages requests");
+    const result = await shell.runCommand(
+      "python3 -m pip install --break-system-packages requests"
+    );
 
     assert.ok(
       result.output.includes("no malware found."),
@@ -329,6 +331,9 @@ describe("E2E: pip coverage", () => {
     const result = await shell.runCommand(
       "pip3 install --break-system-packages requests --safe-chain-logging=verbose"
     );
-    assert.ok(result.output.includes("no malware found."), `Output did not include expected text. Output was:\n${result.output}`);
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
   });
 });

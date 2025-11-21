@@ -1,10 +1,12 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
-import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
+import { getPackageManagerList, knownAikidoTools } from "./helpers.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
+import { includePython } from "../config/cliArguments.js";
+import { ECOSYSTEM_PY } from "../config/settings.js";
 
 /**
  * Loops over the detected shells and calls the setup function for each.
@@ -53,7 +55,7 @@ function createUnixShims(shimsDir) {
 
   // Create a shim for each tool
   let created = 0;
-  for (const toolInfo of knownAikidoTools) {
+  for (const toolInfo of getToolsToSetup()) {
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
       .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
@@ -66,9 +68,7 @@ function createUnixShims(shimsDir) {
     created++;
   }
 
-  ui.writeInformation(
-    `Created ${created} Unix shim(s) in ${shimsDir}`
-  );
+  ui.writeInformation(`Created ${created} Unix shim(s) in ${shimsDir}`);
 }
 
 /**
@@ -96,19 +96,17 @@ function createWindowsShims(shimsDir) {
 
   // Create a shim for each tool
   let created = 0;
-  for (const toolInfo of knownAikidoTools) {
+  for (const toolInfo of getToolsToSetup()) {
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
       .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
 
-  const shimPath = `${shimsDir}/${toolInfo.tool}.cmd`;
+    const shimPath = `${shimsDir}/${toolInfo.tool}.cmd`;
     fs.writeFileSync(shimPath, shimContent, "utf-8");
     created++;
   }
 
-  ui.writeInformation(
-    `Created ${created} Windows shim(s) in ${shimsDir}`
-  );
+  ui.writeInformation(`Created ${created} Windows shim(s) in ${shimsDir}`);
 }
 
 /**
@@ -143,5 +141,13 @@ function modifyPathForCi(shimsDir) {
     //  ##vso[task.prependpath]/path/to/add
     // Logging this to stdout will cause the Azure Pipelines agent to pick it up
     ui.writeInformation("##vso[task.prependpath]" + shimsDir);
+  }
+}
+
+function getToolsToSetup() {
+  if (includePython()) {
+    return knownAikidoTools;
+  } else {
+    return knownAikidoTools.filter((tool) => tool.ecoSystem !== ECOSYSTEM_PY);
   }
 }
