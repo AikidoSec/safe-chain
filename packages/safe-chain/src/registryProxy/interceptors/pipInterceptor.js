@@ -32,6 +32,11 @@ function buildPipInterceptor(registry) {
       reqContext.targetUrl,
       registry
     );
+    
+    if (packageName && version) {
+      reqContext.packageChecked(packageName, version);
+    }
+    
     if (await isMalwarePackage(packageName, version)) {
       reqContext.blockMalware(packageName, version);
     }

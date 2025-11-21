@@ -9,6 +9,7 @@ import { EventEmitter } from "events";
  *
  * @typedef {Object} RequestInterceptionContext
  * @property {string} targetUrl
+ * @property {(packageName: string | undefined, version: string | undefined) => void} packageChecked
  * @property {(packageName: string | undefined, version: string | undefined) => void} blockMalware
  * @property {() => RequestInterceptionHandler} build
  *
@@ -65,6 +66,20 @@ function createRequestContext(targetUrl, eventEmitter) {
    * @param {string | undefined} packageName
    * @param {string | undefined} version
    */
+  function packageChecked(packageName, version) {
+    // Emit event for any package being checked
+    eventEmitter.emit("packageChecked", {
+      packageName,
+      version,
+      targetUrl,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * @param {string | undefined} packageName
+   * @param {string | undefined} version
+   */
   function blockMalware(packageName, version) {
     blockResponse = {
       statusCode: 403,
@@ -82,6 +97,7 @@ function createRequestContext(targetUrl, eventEmitter) {
 
   return {
     targetUrl,
+    packageChecked,
     blockMalware,
     build() {
       return {

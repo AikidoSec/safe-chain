@@ -8,21 +8,67 @@ import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
+
 /**
- * @type {{port: number | null, blockedRequests: {packageName: string, version: string, url: string}[]}}
+ * @type {{port: number | null, blockedRequests: {packageName: string, version: string, url: string}[], keepAlive: boolean, certPath: string | null}}
  */
 const state = {
   port: null,
   blockedRequests: [],
+  keepAlive: true, // By default, keep process alive
+  certPath: null,
 };
 
-export function createSafeChainProxy() {
+/**
+ * Set the proxy state (used when connecting to an existing proxy)
+ * @param {number} port - The port number
+ * @param {string} certPath - The certificate path
+ */
+export function setProxyState(port, certPath) {
+  state.port = port;
+  state.certPath = certPath;
+}
+
+/**
+ * @typedef {Object} ProxyOptions
+ * @property {boolean} [keepAlive=true] - Whether to keep the Node.js process alive
+ */
+
+/**
+ * @typedef {Object} ProxyControl
+ * @property {() => Promise<void>} startServer - Start the proxy server
+ * @property {() => Promise<void>} stopServer - Stop the proxy server
+ * @property {() => boolean} verifyNoMaliciousPackages - Verify no malicious packages were blocked
+ * @property {() => number | null} getPort - Get the proxy server port
+ * @property {() => string | null} getProxyUrl - Get the proxy URL
+ * @property {() => Record<string, string>} getEnvironmentVariables - Get environment variables for the proxy
+ * @property {() => Array<{packageName: string, version: string, url: string}>} getBlockedRequests - Get blocked package requests
+ * @property {(keepAlive: boolean) => void} setKeepAlive - Set whether to keep process alive
+ */
+
+/**
+ * @param {ProxyOptions} [options={}] - Configuration options
+ * @returns {ProxyControl} Proxy control object
+ */
+export function createSafeChainProxy(options = {}) {
   const server = createProxyServer();
+
+  // Initialize keepAlive from options if provided
+  if (options.keepAlive !== undefined) {
+    state.keepAlive = options.keepAlive;
+  }
 
   return {
     startServer: () => startServer(server),
     stopServer: () => stopServer(server),
     verifyNoMaliciousPackages,
+    getPort: () => state.port,
+    getProxyUrl: () => (state.port ? `http://localhost:${state.port}` : null),
+    getEnvironmentVariables: () => getSafeChainProxyEnvironmentVariables(),
+    getBlockedRequests: () => [...state.blockedRequests],
+    setKeepAlive: (/** @type {boolean} */ keepAlive) => {
+      state.keepAlive = keepAlive;
+    },
   };
 }
 
@@ -34,10 +80,12 @@ function getSafeChainProxyEnvironmentVariables() {
     return {};
   }
 
+  const certPath = state.certPath || getCaCertPath();
+
   return {
     HTTPS_PROXY: `http://localhost:${state.port}`,
     GLOBAL_AGENT_HTTP_PROXY: `http://localhost:${state.port}`,
-    NODE_EXTRA_CA_CERTS: getCaCertPath(),
+    NODE_EXTRA_CA_CERTS: certPath,
   };
 }
 
@@ -89,6 +137,10 @@ function startServer(server) {
       const address = server.address();
       if (address && typeof address === "object") {
         state.port = address.port;
+        // Only unref if keepAlive is false (for tests)
+        if (!state.keepAlive) {
+          server.unref();
+        }
         resolve();
       } else {
         reject(new Error("Failed to start proxy server"));
@@ -133,6 +185,13 @@ function handleConnect(req, clientSocket, head) {
   const interceptor = createInterceptorForUrl(req.url || "");
 
   if (interceptor) {
+    // Subscribe to package checked events
+    interceptor.on("packageChecked", (event) => {
+      ui.writeVerbose(
+        `Safe-chain: Checking package ${event.packageName}@${event.version}`
+      );
+    });
+
     // Subscribe to malware blocked events
     interceptor.on("malwareBlocked", (event) => {
       onMalwareBlocked(event.packageName, event.version, event.url);

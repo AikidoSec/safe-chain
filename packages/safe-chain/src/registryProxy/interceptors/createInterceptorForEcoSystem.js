@@ -21,5 +21,8 @@ export function createInterceptorForUrl(url) {
     return pipInterceptorForUrl(url);
   }
 
-  return undefined;
+  // For agent mode or any other case, try both interceptors
+  // The correct one will match based on the URL
+  return npmInterceptorForUrl(url) || pipInterceptorForUrl(url);
 }
+

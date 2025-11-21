@@ -16,7 +16,15 @@ export async function main(args) {
   process.on("SIGINT", handleProcessTermination);
   process.on("SIGTERM", handleProcessTermination);
 
-  const proxy = createSafeChainProxy();
+  // Check if a proxy is already running from 'safe-chain run'
+  // In the new agent architecture, we rely on system-wide environment variables
+  // so we don't need to detect or connect to an existing proxy here.
+  // The 'main' function is now only used when running 'aikido-npm' etc. directly
+  // (legacy wrapper mode) or when running 'safe-chain run' (which doesn't call main() directly)
+  
+  let proxy;
+  // No existing proxy logic needed anymore as we don't wrap commands when using the agent
+  proxy = createSafeChainProxy();
   await proxy.startServer();
 
   // Global error handlers to log unhandled errors
