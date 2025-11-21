@@ -24,7 +24,7 @@ describe("runPipCommand environment variable handling", () => {
           if (options.env.PIP_CONFIG_FILE) {
             try {
               capturedConfigContent = await fs.readFile(options.env.PIP_CONFIG_FILE, "utf-8");
-            } catch (e) {
+            } catch {
               // Ignore if file doesn't exist or can't be read
             }
           }
@@ -175,7 +175,6 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
 
-    const configPath = capturedArgs.options.env.PIP_CONFIG_FILE;
     assert.ok(capturedConfigContent, "config content should have been captured");
     const parsed = ini.parse(capturedConfigContent);
     assert.ok(parsed.global, "[global] should exist after creation");

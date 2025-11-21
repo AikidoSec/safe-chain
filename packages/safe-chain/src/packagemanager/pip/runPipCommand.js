@@ -131,7 +131,7 @@ export async function runPip(command, args) {
     if (cleanupConfigPath) {
       try {
         await fs.unlink(cleanupConfigPath);
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors - the file may have already been deleted or is inaccessible
         // Temp files in os.tmpdir() may eventually be cleaned by the OS, but timing varies by platform
       }
