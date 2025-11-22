@@ -3,7 +3,7 @@ import {
   ECOSYSTEM_PY,
   getEcoSystem,
 } from "../../config/settings.js";
-import { npmInterceptorForUrl } from "./npmInterceptor.js";
+import { npmInterceptorForUrl } from "./npm/npmInterceptor.js";
 import { pipInterceptorForUrl } from "./pipInterceptor.js";
 
 /**

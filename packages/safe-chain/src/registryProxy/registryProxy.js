@@ -6,6 +6,7 @@ import { getCaCertPath } from "./certUtils.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
+import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
@@ -23,6 +24,7 @@ export function createSafeChainProxy() {
     startServer: () => startServer(server),
     stopServer: () => stopServer(server),
     verifyNoMaliciousPackages,
+    hasSuppressedVersions: getHasSuppressedVersions,
   };
 }
 
