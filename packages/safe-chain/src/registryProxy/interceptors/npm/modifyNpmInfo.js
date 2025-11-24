@@ -87,7 +87,8 @@ export function modifyNpmInfoResponse(body, headers) {
           // no longer match the content so they needs to be removed before sending the response.
           delete headers["etag"];
           delete headers["last-modified"];
-          // Todo: add comment
+          // Removing the cache-control header will prevent the package manager from caching
+          // the modified response.
           delete headers["cache-control"];
         }
       }
