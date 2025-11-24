@@ -10,11 +10,16 @@ import { EventEmitter } from "events";
  * @typedef {Object} RequestInterceptionContext
  * @property {string} targetUrl
  * @property {(packageName: string | undefined, version: string | undefined) => void} blockMalware
+ * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => NodeJS.Dict<string | string[]>) => void} modifyRequestHeaders
+ * @property {(modificationFunc: (body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer) => void} modifyBody
  * @property {() => RequestInterceptionHandler} build
  *
  *
  * @typedef {Object} RequestInterceptionHandler
  * @property {{statusCode: number, message: string} | undefined} blockResponse
+ * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => NodeJS.Dict<string | string[]> | undefined} modifyRequestHeaders
+ * @property {() => boolean} modifiesResponse
+ * @property {(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer} modifyBody
  */
 
 /**
@@ -60,12 +65,16 @@ function buildInterceptor(requestHandlers) {
 function createRequestContext(targetUrl, eventEmitter) {
   /** @type {{statusCode: number, message: string} | undefined}  */
   let blockResponse = undefined;
+  /** @type {Array<(headers: NodeJS.Dict<string | string[]>) => NodeJS.Dict<string | string[]>>} */
+  let reqheaderModificationFuncs = [];
+  /** @type {Array<(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer>} */
+  let modifyBodyFuncs = [];
 
   /**
    * @param {string | undefined} packageName
    * @param {string | undefined} version
    */
-  function blockMalware(packageName, version) {
+  function blockMalwareSetup(packageName, version) {
     blockResponse = {
       statusCode: 403,
       message: "Forbidden - blocked by safe-chain",
@@ -80,13 +89,52 @@ function createRequestContext(targetUrl, eventEmitter) {
     });
   }
 
+  /** @returns {RequestInterceptionHandler} */
+  function build() {
+    /**
+     * @param {NodeJS.Dict<string | string[]> | undefined} headers
+     * @returns {NodeJS.Dict<string | string[]> | undefined}
+     */
+    function modifyRequestHeaders(headers) {
+      if (headers) {
+        for (const func of reqheaderModificationFuncs) {
+          func(headers);
+        }
+      }
+
+      return headers;
+    }
+
+    /**
+     * @param {Buffer} body
+     * @param {NodeJS.Dict<string | string[]> | undefined} headers
+     * @returns {Buffer}
+     */
+    function modifyBody(body, headers) {
+      let modifiedBody = body;
+
+      for (var func of modifyBodyFuncs) {
+        modifiedBody = func(body, headers);
+      }
+
+      return modifiedBody;
+    }
+
+    // These functions are invoked in the proxy, allowing to apply the configured modifications
+    return {
+      blockResponse,
+      modifyRequestHeaders: modifyRequestHeaders,
+      modifiesResponse: () => modifyBodyFuncs.length > 0,
+      modifyBody,
+    };
+  }
+
+  // These functions are used to setup the modifications
   return {
     targetUrl,
-    blockMalware,
-    build() {
-      return {
-        blockResponse,
-      };
-    },
+    blockMalware: blockMalwareSetup,
+    modifyRequestHeaders: (func) => reqheaderModificationFuncs.push(func),
+    modifyBody: (func) => modifyBodyFuncs.push(func),
+    build,
   };
 }

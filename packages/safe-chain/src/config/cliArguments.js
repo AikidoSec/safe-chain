@@ -1,8 +1,9 @@
 /**
- * @type {{loggingLevel: string | undefined, includePython: boolean}}
+ * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, includePython: boolean}}
  */
 const state = {
   loggingLevel: undefined,
+  skipMinimumPackageAge: undefined,
   includePython: false,
 };
 
@@ -15,6 +16,7 @@ const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
 export function initializeCliArguments(args) {
   // Reset state on each call
   state.loggingLevel = undefined;
+  state.skipMinimumPackageAge = undefined;
 
   const safeChainArgs = [];
   const remainingArgs = [];
@@ -28,6 +30,7 @@ export function initializeCliArguments(args) {
   }
 
   setLoggingLevel(safeChainArgs);
+  setSkipMinimumPackageAge(safeChainArgs);
   setIncludePython(args);
 
   return remainingArgs;
@@ -65,6 +68,22 @@ function setLoggingLevel(args) {
 
 export function getLoggingLevel() {
   return state.loggingLevel;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setSkipMinimumPackageAge(args) {
+  const flagName = SAFE_CHAIN_ARG_PREFIX + "skip-minimum-package-age";
+
+  if (hasFlagArg(args, flagName)) {
+    state.skipMinimumPackageAge = true;
+  }
+}
+
+export function getSkipMinimumPackageAge() {
+  return state.skipMinimumPackageAge;
 }
 
 /**

@@ -1,6 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
-import { initializeCliArguments, getLoggingLevel } from "./cliArguments.js";
+import {
+  initializeCliArguments,
+  getLoggingLevel,
+  getSkipMinimumPackageAge,
+} from "./cliArguments.js";
 
 describe("initializeCliArguments", () => {
   it("should return all args when no safe-chain args are present", () => {
@@ -117,5 +121,61 @@ describe("initializeCliArguments", () => {
 
     assert.deepEqual(result, ["install"]);
     assert.strictEqual(getLoggingLevel(), "silent");
+  });
+
+  it("should not set skipMinimumPackageAge when flag is absent", () => {
+    const args = ["install", "express", "--save"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getSkipMinimumPackageAge(), undefined);
+  });
+
+  it("should set skipMinimumPackageAge to true when flag is present", () => {
+    const args = ["--safe-chain-skip-minimum-package-age", "install", "lodash"];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "lodash"]);
+    assert.strictEqual(getSkipMinimumPackageAge(), true);
+  });
+
+  it("should handle skip-minimum-package-age flag case-insensitively", () => {
+    const args = ["--SAFE-CHAIN-SKIP-MINIMUM-PACKAGE-AGE", "install"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getSkipMinimumPackageAge(), true);
+  });
+
+  it("should filter out skip-minimum-package-age flag from returned args", () => {
+    const args = [
+      "install",
+      "--safe-chain-skip-minimum-package-age",
+      "express",
+      "--save",
+    ];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "express", "--save"]);
+  });
+
+  it("should handle skip-minimum-package-age with other safe-chain arguments", () => {
+    const args = [
+      "--safe-chain-logging=verbose",
+      "--safe-chain-skip-minimum-package-age",
+      "install",
+      "lodash",
+    ];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "lodash"]);
+    assert.strictEqual(getLoggingLevel(), "verbose");
+    assert.strictEqual(getSkipMinimumPackageAge(), true);
+  });
+
+  it("should handle skip-minimum-package-age flag in different positions", () => {
+    const args = ["install", "lodash", "--safe-chain-skip-minimum-package-age"];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "lodash"]);
+    assert.strictEqual(getSkipMinimumPackageAge(), true);
   });
 });

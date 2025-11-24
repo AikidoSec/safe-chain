@@ -1,44 +1,9 @@
-import { isMalwarePackage } from "../../scanning/audit/index.js";
-import { interceptRequests } from "./interceptorBuilder.js";
-
-const knownJsRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
-
-/**
- * @param {string} url
- * @returns {import("./interceptorBuilder.js").Interceptor | undefined}
- */
-export function npmInterceptorForUrl(url) {
-  const registry = knownJsRegistries.find((reg) => url.includes(reg));
-
-  if (registry) {
-    return buildNpmInterceptor(registry);
-  }
-
-  return undefined;
-}
-
-/**
- * @param {string} registry
- * @returns {import("./interceptorBuilder.js").Interceptor | undefined}
- */
-function buildNpmInterceptor(registry) {
-  return interceptRequests(async (reqContext) => {
-    const { packageName, version } = parseNpmPackageUrl(
-      reqContext.targetUrl,
-      registry
-    );
-    if (await isMalwarePackage(packageName, version)) {
-      reqContext.blockMalware(packageName, version);
-    }
-  });
-}
-
 /**
  * @param {string} url
  * @param {string} registry
  * @returns {{packageName: string | undefined, version: string | undefined}}
  */
-function parseNpmPackageUrl(url, registry) {
+export function parseNpmPackageUrl(url, registry) {
   let packageName, version;
   if (!registry || !url.endsWith(".tgz")) {
     return { packageName, version };

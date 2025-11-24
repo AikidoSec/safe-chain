@@ -2,6 +2,7 @@ import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
+import { gunzipSync, gzipSync } from "zlib";
 
 /**
  * @typedef {import("./interceptors/interceptorBuilder.js").Interceptor} Interceptor
@@ -68,8 +69,8 @@ function createHttpsServer(hostname, interceptor) {
     const pathAndQuery = getRequestPathAndQuery(req.url);
     const targetUrl = `https://${hostname}${pathAndQuery}`;
 
-    const interceptorResult = await interceptor.handleRequest(targetUrl);
-    const blockResponse = interceptorResult.blockResponse;
+    const requestInterceptor = await interceptor.handleRequest(targetUrl);
+    const blockResponse = requestInterceptor.blockResponse;
 
     if (blockResponse) {
       ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);
@@ -79,7 +80,7 @@ function createHttpsServer(hostname, interceptor) {
     }
 
     // Collect request body
-    forwardRequest(req, hostname, res);
+    forwardRequest(req, hostname, res, requestInterceptor);
   }
 
   const server = https.createServer(
@@ -109,9 +110,10 @@ function getRequestPathAndQuery(url) {
  * @param {import("http").IncomingMessage} req
  * @param {string} hostname
  * @param {import("http").ServerResponse} res
+ * @param {import("./interceptors/interceptorBuilder.js").RequestInterceptionHandler} requestHandler
  */
-function forwardRequest(req, hostname, res) {
-  const proxyReq = createProxyRequest(hostname, req, res);
+function forwardRequest(req, hostname, res, requestHandler) {
+  const proxyReq = createProxyRequest(hostname, req, res, requestHandler);
 
   proxyReq.on("error", (err) => {
     ui.writeVerbose(
@@ -142,22 +144,28 @@ function forwardRequest(req, hostname, res) {
  * @param {string} hostname
  * @param {import("http").IncomingMessage} req
  * @param {import("http").ServerResponse} res
+ * @param {import("./interceptors/interceptorBuilder.js").RequestInterceptionHandler} requestHandler
  *
  * @returns {import("http").ClientRequest}
  */
-function createProxyRequest(hostname, req, res) {
+function createProxyRequest(hostname, req, res, requestHandler) {
+  /** @type {NodeJS.Dict<string | string[]> | undefined} */
+  let headers = { ...req.headers };
+  // Remove the host header from the incoming request before forwarding.
+  // Node's http module sets the correct host header for the target hostname automatically.
+  if (headers.host) {
+    delete headers.host;
+  }
+  headers = requestHandler.modifyRequestHeaders(headers);
+
   /** @type {import("http").RequestOptions} */
   const options = {
     hostname: hostname,
     port: 443,
     path: req.url,
     method: req.method,
-    headers: { ...req.headers },
+    headers: { ...headers },
   };
-
-  if (options.headers && "host" in options.headers) {
-    delete options.headers.host;
-  }
 
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
   if (httpsProxy) {
@@ -182,8 +190,37 @@ function createProxyRequest(hostname, req, res) {
       return;
     }
 
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
-    proxyRes.pipe(res);
+    const { statusCode, headers } = proxyRes;
+
+    if (requestHandler.modifiesResponse()) {
+      /** @type {Array<any>} */
+      let chunks = [];
+
+      proxyRes.on("data", (chunk) => chunks.push(chunk));
+
+      proxyRes.on("end", () => {
+        /** @type {Buffer} */
+        let buffer = Buffer.concat(chunks);
+
+        if (proxyRes.headers["content-encoding"] === "gzip") {
+          buffer = gunzipSync(buffer);
+        }
+
+        buffer = requestHandler.modifyBody(buffer, headers);
+
+        if (proxyRes.headers["content-encoding"] === "gzip") {
+          buffer = gzipSync(buffer);
+        }
+
+        res.writeHead(statusCode, headers);
+        res.end(buffer);
+      });
+    } else {
+      // If the response is not being modified, we can
+      // just pipe without the need for buffering the output
+      res.writeHead(statusCode, headers);
+      proxyRes.pipe(res);
+    }
   });
 
   return proxyReq;
