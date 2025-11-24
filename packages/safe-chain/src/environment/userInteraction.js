@@ -1,6 +1,5 @@
 // oxlint-disable no-console
 import chalk from "chalk";
-import ora from "ora";
 import { isCi } from "./environment.js";
 import {
   getLoggingLevel,
@@ -121,36 +120,18 @@ function startProcess(message) {
     };
   }
 
-  if (isCi()) {
-    return {
-      succeed: (message) => {
-        writeInformation(message);
-      },
-      fail: (message) => {
-        writeError(message);
-      },
-      stop: () => {},
-      setText: (message) => {
-        writeInformation(message);
-      },
-    };
-  } else {
-    const spinner = ora(message).start();
-    return {
-      succeed: (message) => {
-        spinner.succeed(message);
-      },
-      fail: (message) => {
-        spinner.fail(message);
-      },
-      stop: () => {
-        spinner.stop();
-      },
-      setText: (message) => {
-        spinner.text = message;
-      },
-    };
-  }
+  return {
+    succeed: (message) => {
+      writeInformation(message);
+    },
+    fail: (message) => {
+      writeError(message);
+    },
+    stop: () => {},
+    setText: (message) => {
+      writeInformation(message);
+    },
+  };
 }
 
 function startBufferingLogs() {
