@@ -54,20 +54,6 @@ function getLastArgEqualsValue(args, prefix) {
 
 /**
  * @param {string[]} args
- * @param {string} flagName
- * @returns {boolean}
- */
-function hasFlagArg(args, flagName) {
-  for (const arg of args) {
-    if (arg.toLowerCase() === flagName.toLowerCase()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * @param {string[]} args
  * @returns {void}
  */
 function setLoggingLevel(args) {
