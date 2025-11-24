@@ -67,7 +67,7 @@ export function modifyNpmInfoResponse(body, headers) {
 
     const cutOff = new Date(
       new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
-    ).toISOString();
+    );
 
     const hasLatestTag = !!bodyJson["dist-tags"]["latest"];
 
@@ -79,13 +79,8 @@ export function modifyNpmInfoResponse(body, headers) {
       .filter((x) => x.version !== "created" && x.version !== "modified");
 
     for (const { version, timestamp } of versions) {
-      if (version === "created" || version === "modified") {
-        continue;
-      }
-
-      // Timestamps are compared as strings.
-      // This can be done because they are formatted in ISO8601, which is sortable.
-      if (timestamp > cutOff) {
+      const timestampValue = new Date(timestamp);
+      if (timestampValue > cutOff) {
         deleteVersionFromJson(bodyJson, version);
         if (headers) {
           // When modifying the response, the etag and last-modified headers
@@ -93,7 +88,6 @@ export function modifyNpmInfoResponse(body, headers) {
           delete headers["etag"];
           delete headers["last-modified"];
         }
-        continue;
       }
     }
 
