@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+build/
+dist/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp

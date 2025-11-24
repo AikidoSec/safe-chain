@@ -20,20 +20,24 @@ export function getLoggingLevel() {
 
 export const ECOSYSTEM_JS = "js";
 export const ECOSYSTEM_PY = "py";
+export const ECOSYSTEM_ALL = "all";
 
 // Default to JavaScript ecosystem
 const ecosystemSettings = {
   ecoSystem: ECOSYSTEM_JS,
 };
 
-/** @returns {string} - The current ecosystem setting (ECOSYSTEM_JS or ECOSYSTEM_PY) */
+/** @returns {string} - The current ecosystem setting (ECOSYSTEM_JS, ECOSYSTEM_PY, or ECOSYSTEM_ALL) */
 export function getEcoSystem() {
   return ecosystemSettings.ecoSystem;
 }
 /**
- * @param {string} setting - The ecosystem to set (ECOSYSTEM_JS or ECOSYSTEM_PY)
+ * @param {string} setting - The ecosystem to set (ECOSYSTEM_JS, ECOSYSTEM_PY, or ECOSYSTEM_ALL)
  */
 export function setEcoSystem(setting) {
+  if (![ECOSYSTEM_JS, ECOSYSTEM_PY, ECOSYSTEM_ALL].includes(setting)) {
+    throw new Error(`Invalid ecosystem: ${setting}. Must be one of: ${ECOSYSTEM_JS}, ${ECOSYSTEM_PY}, ${ECOSYSTEM_ALL}`);
+  }
   ecosystemSettings.ecoSystem = setting;
 }
 
