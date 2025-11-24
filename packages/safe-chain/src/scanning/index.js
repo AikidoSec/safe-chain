@@ -1,9 +1,12 @@
 import { auditChanges } from "./audit/index.js";
 import { getScanTimeout } from "../config/configFile.js";
-import { setTimeout } from "timers/promises";
+import { promisify } from "util";
 import chalk from "chalk";
 import { getPackageManager } from "../packagemanager/currentPackageManager.js";
 import { ui } from "../environment/userInteraction.js";
+
+// node 14 compat
+const setTimeout = promisify(setTimeout);
 
 /**
  * @param {string[]} args
