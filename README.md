@@ -29,16 +29,19 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    npm install -g @aikidosec/safe-chain
    ```
 2. **Setup the shell integration** by running:
+
    ```shell
    safe-chain setup
    ```
 
    To enable Python (pip/pip3) support (beta), use the `--include-python` flag:
+
    ```shell
    safe-chain setup --include-python
    ```
 
 3. **❗Restart your terminal** to start using the Aikido Safe Chain.
+
    - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip/pip3 are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
 4. **Verify the installation** by running one of the following commands:
@@ -50,6 +53,7 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    ```
 
    For Python (beta):
+
    ```shell
    pip3 install safe-chain-pi-test
    ```
@@ -68,7 +72,7 @@ safe-chain --version
 
 ### Malware Blocking
 
-The Aikido Safe Chain runs a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, `pip`, or `pip3` commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
+The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, `pip`, or `pip3` commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
 
 ### Minimum package age (npm only)
 
