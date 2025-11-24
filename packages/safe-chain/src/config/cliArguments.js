@@ -1,9 +1,10 @@
 /**
- * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined}}
+ * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, includePython: boolean}}
  */
 const state = {
   loggingLevel: undefined,
   skipMinimumPackageAge: undefined,
+  includePython: false,
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
@@ -30,6 +31,7 @@ export function initializeCliArguments(args) {
 
   setLoggingLevel(safeChainArgs);
   setSkipMinimumPackageAge(safeChainArgs);
+  setIncludePython(args);
 
   return remainingArgs;
 }
@@ -96,4 +98,32 @@ function setSkipMinimumPackageAge(args) {
 
 export function getSkipMinimumPackageAge() {
   return state.skipMinimumPackageAge;
+}
+
+/**
+ * @param {string[]} args
+ */
+function setIncludePython(args) {
+  // This flag doesn't have the --safe-chain- prefix because
+  // it is only used for the safe-chain command itself and
+  // not when wrapped around package manager commands.
+  state.includePython = hasFlagArg(args, "--include-python");
+}
+
+export function includePython() {
+  return state.includePython;
+}
+
+/**
+ * @param {string[]} args
+ * @param {string} flagName
+ * @returns {boolean}
+ */
+function hasFlagArg(args, flagName) {
+  for (const arg of args) {
+    if (arg.toLowerCase() === flagName.toLowerCase()) {
+      return true;
+    }
+  }
+  return false;
 }

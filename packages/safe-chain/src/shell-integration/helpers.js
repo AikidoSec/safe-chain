@@ -2,28 +2,30 @@ import { spawnSync } from "child_process";
 import * as os from "os";
 import fs from "fs";
 import path from "path";
+import { ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
 
 /**
  * @typedef {Object} AikidoTool
  * @property {string} tool
  * @property {string} aikidoCommand
+ * @property {string} ecoSystem
  */
 
 /**
  * @type {AikidoTool[]}
  */
 export const knownAikidoTools = [
-  { tool: "npm", aikidoCommand: "aikido-npm" },
-  { tool: "npx", aikidoCommand: "aikido-npx" },
-  { tool: "yarn", aikidoCommand: "aikido-yarn" },
-  { tool: "pnpm", aikidoCommand: "aikido-pnpm" },
-  { tool: "pnpx", aikidoCommand: "aikido-pnpx" },
-  { tool: "bun", aikidoCommand: "aikido-bun" },
-  { tool: "bunx", aikidoCommand: "aikido-bunx" },
-  { tool: "pip", aikidoCommand: "aikido-pip" },
-  { tool: "pip3", aikidoCommand: "aikido-pip3" },
-  { tool: "python", aikidoCommand: "aikido-python" },
-  { tool: "python3", aikidoCommand: "aikido-python3" },
+  { tool: "npm", aikidoCommand: "aikido-npm", ecoSystem: ECOSYSTEM_JS },
+  { tool: "npx", aikidoCommand: "aikido-npx", ecoSystem: ECOSYSTEM_JS },
+  { tool: "yarn", aikidoCommand: "aikido-yarn", ecoSystem: ECOSYSTEM_JS },
+  { tool: "pnpm", aikidoCommand: "aikido-pnpm", ecoSystem: ECOSYSTEM_JS },
+  { tool: "pnpx", aikidoCommand: "aikido-pnpx", ecoSystem: ECOSYSTEM_JS },
+  { tool: "bun", aikidoCommand: "aikido-bun", ecoSystem: ECOSYSTEM_JS },
+  { tool: "bunx", aikidoCommand: "aikido-bunx", ecoSystem: ECOSYSTEM_JS },
+  { tool: "pip", aikidoCommand: "aikido-pip", ecoSystem: ECOSYSTEM_PY },
+  { tool: "pip3", aikidoCommand: "aikido-pip3", ecoSystem: ECOSYSTEM_PY },
+  { tool: "python", aikidoCommand: "aikido-python", ecoSystem: ECOSYSTEM_PY },
+  { tool: "python3", aikidoCommand: "aikido-python3", ecoSystem: ECOSYSTEM_PY },
   // When adding a new tool here, also update the documentation for the new tool in the README.md
 ];
 
