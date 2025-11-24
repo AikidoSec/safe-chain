@@ -1,5 +1,6 @@
 import { getMinimumPackageAgeHours } from "../../../config/settings.js";
 import { ui } from "../../../environment/userInteraction.js";
+import { getHeaderValueAsString } from "../../http-utils.js";
 
 const state = {
   hasSuppressedVersions: false,
@@ -80,6 +81,8 @@ export function modifyNpmInfoResponse(body, headers) {
         continue;
       }
 
+      // Timestamps are compared as strings.
+      // This can be done because they are formatted in ISO8601, which is sortable.
       if (timestamp > cutOff) {
         deleteVersionFromJson(bodyJson, version);
         if (headers) {
@@ -172,22 +175,4 @@ function getMostRecentTag(tagList) {
  */
 export function getHasSuppressedVersions() {
   return state.hasSuppressedVersions;
-}
-
-/**
- * @param {NodeJS.Dict<string | string[]> | undefined} headers
- * @param {string} headerName
- */
-function getHeaderValueAsString(headers, headerName) {
-  if (!headers) {
-    return undefined;
-  }
-
-  let header = headers[headerName];
-
-  if (Array.isArray(header)) {
-    return header.join(", ");
-  }
-
-  return header;
 }
