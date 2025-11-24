@@ -151,6 +151,8 @@ function forwardRequest(req, hostname, res, requestHandler) {
 function createProxyRequest(hostname, req, res, requestHandler) {
   /** @type {NodeJS.Dict<string | string[]> | undefined} */
   let headers = { ...req.headers };
+  // Remove the host header from the incoming request before forwarding.
+  // Node's http module sets the correct host header for the target hostname automatically.
   if (headers.host) {
     delete headers.host;
   }
