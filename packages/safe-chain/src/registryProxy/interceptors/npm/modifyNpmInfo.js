@@ -53,6 +53,7 @@ export function modifyNpmInfoResponse(body, headers) {
       return body;
     }
 
+    // utf-8 is default encoding for JSON, so we don't check if charset is defined in content-type header
     const bodyContent = body.toString("utf8");
     const bodyJson = JSON.parse(bodyContent);
 
