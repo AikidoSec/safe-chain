@@ -8,6 +8,7 @@ const state = {
 
 /**
  * @param {NodeJS.Dict<string | string[]>} headers
+ * @returns {NodeJS.Dict<string | string[]>}
  */
 export function modifyNpmInfoRequestHeaders(headers) {
   const accept = getHeaderValueAsString(headers, "accept");
@@ -17,6 +18,7 @@ export function modifyNpmInfoRequestHeaders(headers) {
     // Force the registry to return the full metadata by changing the Accept header.
     headers["accept"] = "application/json";
   }
+  return headers;
 }
 
 /**

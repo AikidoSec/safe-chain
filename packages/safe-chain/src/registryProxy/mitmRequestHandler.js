@@ -151,11 +151,12 @@ function forwardRequest(req, hostname, res, requestHandler) {
  * @returns {import("http").ClientRequest}
  */
 function createProxyRequest(hostname, req, res, requestHandler) {
-  const headers = { ...req.headers };
+  /** @type {NodeJS.Dict<string | string[]> | undefined} */
+  let headers = { ...req.headers };
   if (headers.host) {
     delete headers.host;
   }
-  requestHandler.modifyRequestHeaders(headers);
+  headers = requestHandler.modifyRequestHeaders(headers);
 
   /** @type {import("http").RequestOptions} */
   const options = {
