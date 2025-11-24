@@ -32,6 +32,12 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    ```shell
    safe-chain setup
    ```
+
+   To enable Python (pip/pip3) support (beta), use the `--include-python` flag:
+   ```shell
+   safe-chain setup --include-python
+   ```
+
 3. **❗Restart your terminal** to start using the Aikido Safe Chain.
   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip/pip3 are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 4. **Verify the installation** by running one of the following commands:
@@ -118,6 +124,12 @@ To use Aikido Safe Chain in CI/CD environments, run the following command after 
 
 ```shell
 safe-chain setup-ci
+```
+
+To enable Python (pip/pip3) support (beta) in CI/CD, use the `--include-python` flag:
+
+```shell
+safe-chain setup-ci --include-python
 ```
 
 This automatically configures your CI environment to use Aikido Safe Chain for all package manager commands.

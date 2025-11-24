@@ -68,3 +68,21 @@ function npm
 
     wrapSafeChainCommand "npm" "aikido-npm" $argv
 end
+
+function pip
+    wrapSafeChainCommand "pip" "aikido-pip" $argv
+end
+
+function pip3
+    wrapSafeChainCommand "pip3" "aikido-pip3" $argv
+end
+
+# `python -m pip`, `python -m pip3`.
+function python
+    wrapSafeChainCommand "python" "aikido-python" $argv
+end
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3
+    wrapSafeChainCommand "python3" "aikido-python3" $argv
+end
