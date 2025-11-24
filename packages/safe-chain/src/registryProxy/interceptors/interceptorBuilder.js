@@ -115,6 +115,7 @@ function createRequestContext(targetUrl, eventEmitter) {
       return modifiedBody;
     }
 
+    // These functions are invoked in the proxy, allowing to apply the configured modifications
     return {
       blockResponse,
       modifyRequestHeaders: modifyRequestHeaders,
@@ -123,6 +124,7 @@ function createRequestContext(targetUrl, eventEmitter) {
     };
   }
 
+  // These functions are used to setup the modifications
   return {
     targetUrl,
     blockMalware: blockMalwareSetup,
