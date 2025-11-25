@@ -33,7 +33,7 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    safe-chain setup
    ```
 
-   To enable Python (pip/pip3) support (beta), use the `--include-python` flag:
+   To enable Python (pip/pip3/uv) support (beta), use the `--include-python` flag:
 
    ```shell
    safe-chain setup --include-python
