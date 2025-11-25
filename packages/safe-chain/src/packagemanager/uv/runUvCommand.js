@@ -5,15 +5,11 @@ import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
 
 /**
  * Sets CA bundle environment variables used by Python libraries and uv.
- * These are applied to ensure all Python network libraries respect the combined CA bundle.
  * 
- * @param {NodeJS.ProcessEnv} env - Environment object to modify
+ * @param {NodeJS.ProcessEnv} env - Env object
  * @param {string} combinedCaPath - Path to the combined CA bundle
  */
 function setUvCaBundleEnvironmentVariables(env, combinedCaPath) {
-  // UV_NATIVE_TLS: Use system-provided TLS certificates (default is true)
-  // But we also need to provide our CA bundle for MITM'd connections
-  
   // SSL_CERT_FILE: Used by Python SSL libraries and underlying HTTP clients
   if (env.SSL_CERT_FILE) {
     ui.writeWarning("Safe-chain: User defined SSL_CERT_FILE found in environment. It will be overwritten.");
@@ -40,6 +36,9 @@ function setUvCaBundleEnvironmentVariables(env, combinedCaPath) {
  * - HTTP_PROXY / HTTPS_PROXY: Proxy settings
  * - SSL_CERT_FILE / REQUESTS_CA_BUNDLE: CA bundle for TLS verification
  * 
+ * Unlike pip (which requires a temporary config file for cert configuration), uv directly
+ * honors environment variables, so no config/ini file is needed.
+ * 
  * @param {string} command - The uv command to execute (typically 'uv')
  * @param {string[]} args - Command line arguments to pass to uv
  * @returns {Promise<{status: number}>} Exit status of the uv command
@@ -48,11 +47,7 @@ export async function runUv(command, args) {
   try {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
 
-    // Provide uv with a complete CA bundle (Safe Chain CA + Mozilla + Node built-in roots)
-    // so that network requests validate correctly under both MITM'd and tunneled HTTPS.
     const combinedCaPath = getCombinedCaBundlePath();
-
-    // Set CA bundle environment variables for uv and underlying Python libraries
     setUvCaBundleEnvironmentVariables(env, combinedCaPath);
 
     // Note: uv uses HTTPS_PROXY and HTTP_PROXY environment variables for proxy configuration

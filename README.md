@@ -141,7 +141,7 @@ To use Aikido Safe Chain in CI/CD environments, run the following command after 
 safe-chain setup-ci
 ```
 
-To enable Python (pip/pip3) support (beta) in CI/CD, use the `--include-python` flag:
+To enable Python (pip/pip3/uv) support (beta) in CI/CD, use the `--include-python` flag:
 
 ```shell
 safe-chain setup-ci --include-python
