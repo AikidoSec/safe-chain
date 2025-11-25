@@ -12,7 +12,7 @@ export function createUvPackageManager() {
       // uv is always invoked as 'uv' - no invocation variations like pip
       return runUv("uv", args);
     },
-    // For uv, rely solely on MITM proxy to detect/deny downloads from PyPI.
+    // For uv, rely solely on MITM
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
   };
