@@ -29,7 +29,7 @@ launchctl load -w "$LAUNCHD_PLIST" || {
   echo "Warning: Failed to start agent. You may need to restart your computer."
 }
 
-echo "✅ Aikido Safe Chain Agent installed successfully!"
+echo "Aikido Safe Chain Agent installed successfully!"
 echo ""
 echo "The agent is now running in the background and will protect"
 echo "all package installations on this system."

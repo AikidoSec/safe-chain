@@ -96,7 +96,7 @@ function saveOriginalSettings(services) {
   }
 
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(settings, null, 2));
-  console.log(`✅ Saved original proxy settings to ${CONFIG_FILE}`);
+  console.log(`Saved original proxy settings to ${CONFIG_FILE}`);
 }
 
 /**
@@ -104,7 +104,7 @@ function saveOriginalSettings(services) {
  */
 function loadOriginalSettings() {
   if (!fs.existsSync(CONFIG_FILE)) {
-    console.warn("⚠️  No saved settings found");
+    console.warn("No saved settings found");
     return null;
   }
 
@@ -151,10 +151,10 @@ function configureProxyForService(service) {
       stdio: "ignore",
     });
 
-    console.log(`  ✅ Configured: ${service}`);
+    console.log(`  Configured: ${service}`);
     return true;
   } catch (error) {
-    console.error(`  ❌ Failed to configure ${service}:`, error.message);
+    console.error(`  Failed to configure ${service}:`, error.message);
     return false;
   }
 }
@@ -196,10 +196,10 @@ function restoreProxyForService(service, settings) {
       });
     }
 
-    console.log(`  ✅ Restored: ${service}`);
+    console.log(`  Restored: ${service}`);
     return true;
   } catch (error) {
-    console.error(`  ❌ Failed to restore ${service}:`, error.message);
+    console.error(`  Failed to restore ${service}:`, error.message);
     return false;
   }
 }
@@ -213,7 +213,7 @@ function install() {
   const services = getNetworkServices();
 
   if (services.length === 0) {
-    console.error("❌ No network services found");
+    console.error("No network services found");
     process.exit(1);
   }
 
@@ -230,7 +230,7 @@ function install() {
     }
   }
 
-  console.log(`\n✅ Configured proxy for ${successCount}/${services.length} network services`);
+  console.log(`\nConfigured proxy for ${successCount}/${services.length} network services`);
   console.log(`\nProxy settings:`);
   console.log(`  HTTP Proxy:  ${PROXY_HOST}:${PROXY_PORT}`);
   console.log(`  HTTPS Proxy: ${PROXY_HOST}:${PROXY_PORT}`);
@@ -241,7 +241,7 @@ function install() {
  * Uninstall: Restore original proxy settings
  */
 function uninstall() {
-  console.log("🔧 Restoring original proxy settings...\n");
+  console.log("Restoring original proxy settings...\n");
 
   const savedSettings = loadOriginalSettings();
 
@@ -258,9 +258,9 @@ function uninstall() {
         execSync(`networksetup -setsecurewebproxystate "${service}" off`, {
           stdio: "ignore",
         });
-        console.log(`  ✅ Disabled proxy for: ${service}`);
+        console.log(`Disabled proxy for: ${service}`);
       } catch (error) {
-        console.error(`  ❌ Failed to disable proxy for ${service}`);
+        console.error(`Failed to disable proxy for ${service}`);
       }
     }
   } else {
@@ -273,15 +273,12 @@ function uninstall() {
         successCount++;
       }
     }
-
-    console.log(`\n✅ Restored ${successCount}/${serviceNames.length} network services`);
-
     // Remove config file
     try {
       fs.unlinkSync(CONFIG_FILE);
-      console.log(`✅ Removed configuration file`);
+      console.log(`Removed configuration file`);
     } catch (error) {
-      console.warn(`⚠️  Failed to remove config file: ${error.message}`);
+      console.warn(`Failed to remove config file: ${error.message}`);
     }
   }
 }
@@ -290,8 +287,6 @@ function uninstall() {
  * Status: Show current proxy configuration
  */
 function status() {
-  console.log("📊 Current proxy configuration:\n");
-
   const services = getNetworkServices();
 
   for (const service of services) {
@@ -299,10 +294,10 @@ function status() {
     const settings = getCurrentProxySettings(service);
 
     if (settings) {
-      console.log(`  HTTP:  ${settings.http.enabled ? "✅" : "❌"} ${settings.http.server || "None"}:${settings.http.port || 0}`);
-      console.log(`  HTTPS: ${settings.https.enabled ? "✅" : "❌"} ${settings.https.server || "None"}:${settings.https.port || 0}`);
+      console.log(`  HTTP:  ${settings.http.enabled ? "OK" : "NOK"} ${settings.http.server || "None"}:${settings.http.port || 0}`);
+      console.log(`  HTTPS: ${settings.https.enabled ? "OK" : "NOK"} ${settings.https.server || "None"}:${settings.https.port || 0}`);
     } else {
-      console.log("  ❌ Failed to get settings");
+      console.log("Failed to get settings");
     }
     console.log();
   }
@@ -322,16 +317,16 @@ function status() {
   });
 
   if (aikidoConfigured) {
-    console.log("✅ Aikido Safe Chain proxy is configured");
+    console.log("Aikido Safe Chain proxy is configured");
   } else {
-    console.log("❌ Aikido Safe Chain proxy is NOT configured");
+    console.log("Aikido Safe Chain proxy is NOT configured");
   }
 
   // Check if saved settings exist
   if (fs.existsSync(CONFIG_FILE)) {
-    console.log(`✅ Original settings saved at: ${CONFIG_FILE}`);
+    console.log(`Original settings saved at: ${CONFIG_FILE}`);
   } else {
-    console.log(`⚠️  No saved settings found`);
+    console.log(`No saved settings found`);
   }
 }
 
