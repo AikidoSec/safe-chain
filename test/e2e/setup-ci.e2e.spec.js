@@ -41,9 +41,7 @@ describe("E2E: safe-chain setup-ci command", () => {
       const projectShell = await container.openShell(shell);
       const result = await projectShell.runCommand("npm i axios");
 
-      const hasExpectedOutput = result.output.includes(
-        "Scanning for malicious packages..."
-      );
+      const hasExpectedOutput = result.output.includes("Safe-chain: Scanned");
       assert.ok(
         hasExpectedOutput,
         hasExpectedOutput
