@@ -420,4 +420,142 @@ describe("E2E: uv coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
+
+  it(`uv tool install installs a global tool`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand(
+      "uv tool install ruff"
+    );
+
+    assert.ok(
+      result.output.includes("no malware found.") || result.output.includes("Installed"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`safe-chain blocks malicious packages via uv tool install`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand(
+      "uv tool install safe-chain-pi-test"
+    );
+
+    assert.ok(
+      result.output.includes("blocked 1 malicious package downloads:"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("safe_chain_pi_test@0.0.1"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`uv run --with installs ephemeral dependency`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Create a simple Python script
+    await shell.runCommand("echo 'import requests; print(requests.__version__)' > test_script.py");
+    
+    const result = await shell.runCommand(
+      "uv run --with requests test_script.py"
+    );
+
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`safe-chain blocks malicious packages via uv run --with`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Create a simple Python script
+    await shell.runCommand("echo 'print(\"test\")' > test_script2.py");
+    
+    const result = await shell.runCommand(
+      "uv run --with safe-chain-pi-test test_script2.py"
+    );
+
+    assert.ok(
+      result.output.includes("blocked 1 malicious package downloads:"),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`uv sync syncs project dependencies`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Initialize a new uv project, add a dependency, remove venv, and sync in one command chain
+    const result = await shell.runCommand(
+      "uv init test-sync-project && cd test-sync-project && uv add requests && rm -rf .venv && uv sync"
+    );
+
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`uv add from git URL`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Initialize a new uv project
+    await shell.runCommand("uv init test-git-add");
+    
+    const result = await shell.runCommand(
+      "cd test-git-add && uv add git+https://github.com/psf/requests.git@v2.32.3"
+    );
+
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`uv add with --optional group`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Initialize a new uv project
+    await shell.runCommand("uv init test-optional");
+    
+    const result = await shell.runCommand(
+      "cd test-optional && uv add --optional dev pytest"
+    );
+
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`uv run --with-requirements installs from requirements file`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Create requirements file and script
+    await shell.runCommand("echo 'requests' > run_requirements.txt");
+    await shell.runCommand("echo 'import requests; print(requests.__version__)' > run_script.py");
+    
+    const result = await shell.runCommand(
+      "uv run --with-requirements run_requirements.txt run_script.py"
+    );
+
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
+
+  it(`uv sync --all-extras syncs all optional dependencies`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Initialize project with optional dependency and sync in one command chain
+    const result = await shell.runCommand(
+      "uv init test-extras && cd test-extras && uv add --optional dev pytest && uv sync --all-extras"
+    );
+
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Output did not include expected text. Output was:\n${result.output}`
+    );
+  });
 });
+
