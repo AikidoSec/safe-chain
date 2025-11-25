@@ -14,8 +14,13 @@
 
 import { execSync } from 'child_process';
 import fs from 'fs';
+import https from 'https';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { pipeline } from 'stream/promises';
+import { createWriteStream, createReadStream } from 'fs';
+import { createGunzip } from 'zlib';
+import * as tar from 'tar';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,19 +86,94 @@ console.log(`\nInstaller: ${path.join(buildDir, 'AikidoSafeChain.pkg')}`);
 console.log(`Uninstaller: ${path.join(buildDir, 'uninstall.sh')}\n`);
 
 /**
- * Bundle Node.js runtime from current installation
+ * Download a file from URL
+ */
+async function downloadFile(url, destPath) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (response) => {
+      if (response.statusCode === 302 || response.statusCode === 301) {
+        // Follow redirect
+        downloadFile(response.headers.location, destPath).then(resolve).catch(reject);
+        return;
+      }
+      
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to download: ${response.statusCode}`));
+        return;
+      }
+      
+      const fileStream = createWriteStream(destPath);
+      response.pipe(fileStream);
+      
+      fileStream.on('finish', () => {
+        fileStream.close();
+        resolve();
+      });
+      
+      fileStream.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+/**
+ * Bundle Node.js runtime - downloads official binary for target architecture
  */
 async function bundleNodeRuntime() {
   const binDir = path.join(installRoot, 'bin');
   fs.mkdirSync(binDir, { recursive: true });
   
-  // Copy current Node.js binary
-  const nodePath = process.execPath;
-  const targetNodePath = path.join(binDir, 'node');
-  fs.copyFileSync(nodePath, targetNodePath);
-  fs.chmodSync(targetNodePath, 0o755);
+  // Detect target architecture (prefer arm64 for Apple Silicon)
+  const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+  const nodeVersion = process.version; // e.g., v20.10.0
   
-  console.log(`   Copied Node.js ${process.version} to ${targetNodePath}`);
+  console.log(`   Downloading Node.js ${nodeVersion} for macOS-${arch}...`);
+  
+  // Download official Node.js binary from nodejs.org
+  const downloadUrl = `https://nodejs.org/dist/${nodeVersion}/node-${nodeVersion}-darwin-${arch}.tar.gz`;
+  const tarballPath = path.join(buildDir, 'node.tar.gz');
+  
+  try {
+    await downloadFile(downloadUrl, tarballPath);
+    console.log(`   Downloaded Node.js tarball`);
+    
+    // Extract node binary from tarball
+    const extractDir = path.join(buildDir, 'node-extract');
+    fs.mkdirSync(extractDir, { recursive: true });
+    
+    await tar.extract({
+      file: tarballPath,
+      cwd: extractDir,
+      strip: 2,
+      filter: (path) => path.endsWith('/bin/node')
+    });
+    
+    // Move extracted node binary to target location
+    const extractedNode = path.join(extractDir, 'node');
+    const targetNodePath = path.join(binDir, 'node');
+    
+    if (fs.existsSync(extractedNode)) {
+      fs.copyFileSync(extractedNode, targetNodePath);
+      fs.chmodSync(targetNodePath, 0o755);
+      console.log(`   Installed Node.js ${nodeVersion} (${arch}) to ${targetNodePath}`);
+    } else {
+      throw new Error('Failed to extract node binary from tarball');
+    }
+    
+    // Cleanup
+    fs.rmSync(tarballPath);
+    fs.rmSync(extractDir, { recursive: true });
+    
+  } catch (error) {
+    console.warn(`   Failed to download Node.js: ${error.message}`);
+    console.warn(`   Falling back to current Node.js binary (may not match target architecture)`);
+    
+    // Fallback to copying current Node.js binary
+    const nodePath = process.execPath;
+    const targetNodePath = path.join(binDir, 'node');
+    fs.copyFileSync(nodePath, targetNodePath);
+    fs.chmodSync(targetNodePath, 0o755);
+    console.log(`   Copied Node.js ${process.version} (${process.arch}) from ${nodePath}`);
+  }
 }
 
 /**

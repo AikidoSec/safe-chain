@@ -28,6 +28,10 @@ if [ -f "$INSTALL_DIR/agent/configure-proxy.js" ]; then
   }
 fi
 
+# Remove pip configuration
+echo "Removing pip configuration..."
+rm -f "/Library/Application Support/pip/pip.conf"
+
 # Remove files
 echo "Removing files..."
 rm -rf "$INSTALL_DIR"
