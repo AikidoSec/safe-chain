@@ -76,10 +76,6 @@ console.log('Building .pkg installer...');
 await buildPackage();
 console.log('Package built\n');
 
-// Step 9: Sign package (optional)
-console.log('Signing package...');
-await signPackage();
-
 console.log('Build complete!');
 console.log(`\nInstaller: ${path.join(buildDir, 'AikidoSafeChain.pkg')}`);
 console.log(`Uninstaller: ${path.join(buildDir, 'uninstall.sh')}\n`);
@@ -310,45 +306,6 @@ async function buildPackage() {
   execSync(productbuildCmd, { stdio: 'inherit' });
   
   console.log(`   Package created: ${finalPkg}`);
-}
-
-/**
- * Sign the package (optional, requires Developer ID certificate)
- */
-async function signPackage() {
-  try {
-    const finalPkg = path.join(buildDir, 'AikidoSafeChain.pkg');
-    
-    // Check if signing identity exists
-    const identities = execSync('security find-identity -v -p codesigning', { 
-      encoding: 'utf-8' 
-    });
-    
-    const developerIdMatch = identities.match(/Developer ID Installer: ([^"]+)/);
-    
-    if (!developerIdMatch) {
-      console.log('   ⚠️  No Developer ID Installer certificate found. Skipping signing.');
-      console.log('   Package will work but may show "unidentified developer" warning.');
-      return;
-    }
-    
-    const identity = developerIdMatch[0];
-    console.log(`   Found signing identity: ${identity}`);
-    
-    const signedPkg = path.join(buildDir, 'AikidoSafeChain-signed.pkg');
-    
-    execSync(`productsign --sign "${identity}" "${finalPkg}" "${signedPkg}"`, {
-      stdio: 'inherit'
-    });
-    
-    // Replace unsigned with signed
-    fs.renameSync(signedPkg, finalPkg);
-    
-    console.log('   ✅ Package signed successfully');
-  } catch (error) {
-    console.log(`   ⚠️  Signing failed: ${error.message}`);
-    console.log('   Package will work but may show "unidentified developer" warning.');
-  }
 }
 
 /**
