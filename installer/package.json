@@ -1,0 +1,25 @@
+{
+  "name": "@aikidosec/safe-chain-installer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "macOS installer for Aikido Safe Chain system-wide agent",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/darwin-build-installer.js",
+    "clean": "rm -rf build dist node_modules",
+    "bundle-agent": "node scripts/bundle-agent.js",
+    "bundle-node": "node scripts/bundle-node.js",
+    "create-pkg": "node scripts/create-pkg.js",
+    "test-install": "sudo installer -pkg build/AikidoSafeChain.pkg -target /",
+    "test-uninstall": "sudo bash build/uninstall.sh"
+  },
+  "dependencies": {
+    "node-forge": "1.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.130",
+    "typescript": "^5.9.3"
+  },
+  "author": "Aikido Security",
+  "license": "AGPL-3.0-or-later"
+}

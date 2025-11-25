@@ -95,16 +95,27 @@ function loadCa() {
   return { privateKey, certificate };
 }
 
-function generateCa() {
+/**
+ * Generate a CA certificate with optional custom attributes and validity
+ * @param {Object} options - Certificate options
+ * @param {Array<{name: string, value: string}>} [options.attrs] - Certificate attributes
+ * @param {number} [options.validityDays] - Number of days the certificate is valid (default: 1)
+ * @returns {{privateKey: any, certificate: any}} Private key and certificate objects
+ */
+export function generateCa(options = {}) {
+  const {
+    attrs = [{ name: "commonName", value: "safe-chain proxy" }],
+    validityDays = 1,
+  } = options;
+
   const keys = forge.pki.rsa.generateKeyPair(2048);
   const cert = forge.pki.createCertificate();
   cert.publicKey = keys.publicKey;
   cert.serialNumber = "01";
   cert.validity.notBefore = new Date();
   cert.validity.notAfter = new Date();
-  cert.validity.notAfter.setDate(cert.validity.notBefore.getDate() + 1);
+  cert.validity.notAfter.setDate(cert.validity.notBefore.getDate() + validityDays);
 
-  const attrs = [{ name: "commonName", value: "safe-chain proxy" }];
   cert.setSubject(attrs);
   cert.setIssuer(attrs);
   cert.setExtensions([

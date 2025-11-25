@@ -1,0 +1,20 @@
+{
+  "name": "@aikidosec/safe-chain-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Long-running macOS agent for system-wide malware protection",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "chalk": "5.4.1",
+    "certifi": "^14.5.15",
+    "https-proxy-agent": "7.0.6",
+    "ini": "^6.0.0",
+    "make-fetch-happen": "14.0.3",
+    "node-forge": "1.3.1",
+    "npm-registry-fetch": "18.0.2",
+    "semver": "7.7.2"
+  },
+  "author": "Aikido Security",
+  "license": "AGPL-3.0-or-later"
+}
