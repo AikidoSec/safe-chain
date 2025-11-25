@@ -5,6 +5,10 @@ on:
     tags:
       - "*"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,6 +54,4 @@ jobs:
       - name: Publish to npm
         run: |
           echo "Publishing version ${{ steps.get_version.outputs.tag }} to NPM"
-          npm publish --workspace=packages/safe-chain --access public
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          npm publish --workspace=packages/safe-chain --access public --provenance
