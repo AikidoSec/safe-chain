@@ -77,6 +77,10 @@ function pip3
     wrapSafeChainCommand "pip3" "aikido-pip3" $argv
 end
 
+function uv
+    wrapSafeChainCommand "uv" "aikido-uv" $argv
+end
+
 # `python -m pip`, `python -m pip3`.
 function python
     wrapSafeChainCommand "python" "aikido-python" $argv

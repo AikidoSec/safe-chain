@@ -67,6 +67,10 @@ except Exception as exc:
     raise
 EOF
 
+# Install uv (Astral's fast Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    echo 'source $HOME/.local/bin/env' >> ~/.bashrc
+
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/
 RUN npm install -g /pkgs/*.tgz

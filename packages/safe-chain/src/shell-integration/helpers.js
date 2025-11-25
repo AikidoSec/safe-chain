@@ -22,6 +22,7 @@ export const knownAikidoTools = [
   { tool: "pnpx", aikidoCommand: "aikido-pnpx", ecoSystem: ECOSYSTEM_JS },
   { tool: "bun", aikidoCommand: "aikido-bun", ecoSystem: ECOSYSTEM_JS },
   { tool: "bunx", aikidoCommand: "aikido-bunx", ecoSystem: ECOSYSTEM_JS },
+  { tool: "uv", aikidoCommand: "aikido-uv", ecoSystem: ECOSYSTEM_PY },
   { tool: "pip", aikidoCommand: "aikido-pip", ecoSystem: ECOSYSTEM_PY },
   { tool: "pip3", aikidoCommand: "aikido-pip3", ecoSystem: ECOSYSTEM_PY },
   { tool: "python", aikidoCommand: "aikido-python", ecoSystem: ECOSYSTEM_PY },
