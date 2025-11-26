@@ -273,6 +273,89 @@ describe("npmInterceptor minimum package age", async () => {
     assert.equal(modifiedJson["dist-tags"]["latest"], "3.0.0");
   });
 
+  it("Should use custom minimum package age of 48 hours", async () => {
+    minimumPackageAgeSettings = 48;
+    skipMinimumPackageAgeSetting = false;
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      JSON.stringify({
+        name: "lodash",
+        ["dist-tags"]: {
+          latest: "4.0.0",
+        },
+        versions: {
+          ["1.0.0"]: {},
+          ["2.0.0"]: {},
+          ["3.0.0"]: {},
+          ["4.0.0"]: {},
+        },
+        time: {
+          created: getDate(-365 * 24),
+          modified: getDate(-24),
+          ["1.0.0"]: getDate(-72), // 3 days old - should remain
+          ["2.0.0"]: getDate(-50), // ~2 days old - should remain
+          // 48-hour cutoff here
+          ["3.0.0"]: getDate(-40), // ~1.7 days old - should be removed
+          ["4.0.0"]: getDate(-24), // 1 day old - should be removed
+        },
+      })
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // Versions older than 48 hours should remain
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("2.0.0"));
+
+    // Versions newer than 48 hours should be removed
+    assert.ok(!Object.keys(modifiedJson.versions).includes("3.0.0"));
+    assert.ok(!Object.keys(modifiedJson.versions).includes("4.0.0"));
+
+    // Latest should be recalculated to 2.0.0
+    assert.equal(modifiedJson["dist-tags"]["latest"], "2.0.0");
+
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+  });
+
+  it("Should use very small minimum package age of 1 hour", async () => {
+    minimumPackageAgeSettings = 1;
+    skipMinimumPackageAgeSetting = false;
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      JSON.stringify({
+        name: "lodash",
+        ["dist-tags"]: {
+          latest: "3.0.0",
+        },
+        versions: {
+          ["1.0.0"]: {},
+          ["2.0.0"]: {},
+          ["3.0.0"]: {},
+        },
+        time: {
+          created: getDate(-48),
+          modified: getDate(0),
+          ["1.0.0"]: getDate(-3), // 3 hours old - should remain
+          ["2.0.0"]: getDate(-2), // 2 hours old - should remain
+          // 1-hour cutoff here
+          ["3.0.0"]: getDate(0), // just published - should be removed
+        },
+      })
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("2.0.0"));
+    assert.ok(!Object.keys(modifiedJson.versions).includes("3.0.0"));
+    assert.equal(modifiedJson["dist-tags"]["latest"], "2.0.0");
+  });
+
   function getDate(plusHours) {
     const date = new Date();
     date.setHours(date.getHours() + plusHours);

@@ -170,3 +170,116 @@ describe("getScanTimeout", () => {
     assert.strictEqual(timeout, 10000);
   });
 });
+
+describe("getMinimumPackageAgeHours", () => {
+  let fsMock;
+  let getMinimumPackageAgeHours;
+
+  beforeEach(async () => {
+    // Mock fs module
+    fsMock = {
+      existsSync: mock.fn(() => false),
+      readFileSync: mock.fn(() => "{}"),
+      writeFileSync: mock.fn(),
+      mkdirSync: mock.fn(),
+    };
+
+    mock.module("fs", {
+      namedExports: fsMock,
+    });
+
+    // Re-import the module to get the mocked version
+    const configFileModule = await import(
+      `./configFile.js?update=${Date.now()}`
+    );
+    getMinimumPackageAgeHours = configFileModule.getMinimumPackageAgeHours;
+  });
+
+  afterEach(() => {
+    // Reset all mocks
+    mock.restoreAll();
+  });
+
+  it("should return null when config file doesn't exist", () => {
+    fsMock.existsSync.mock.mockImplementation(() => false);
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, undefined);
+  });
+
+  it("should return null when config file exists but minimumPackageAgeHours is not set", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ scanTimeout: 5000 })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, undefined);
+  });
+
+  it("should return value from config file when set to valid number", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: 48 })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, 48);
+  });
+
+  it("should handle string numbers in config file", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: "72" })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, 72);
+  });
+
+  it("should handle decimal values", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: 1.5 })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, 1.5);
+  });
+
+  it("should return null for non-numeric strings", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: "invalid" })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, undefined);
+  });
+
+  it("should return null for values with units suffix", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: "48h" })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, undefined);
+  });
+
+  it("should handle malformed JSON and return null", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() => "{ invalid json");
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, undefined);
+  });
+});

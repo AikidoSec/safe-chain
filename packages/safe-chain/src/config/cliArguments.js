@@ -1,9 +1,10 @@
 /**
- * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, includePython: boolean}}
+ * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined, includePython: boolean}}
  */
 const state = {
   loggingLevel: undefined,
   skipMinimumPackageAge: undefined,
+  minimumPackageAgeHours: undefined,
   includePython: false,
 };
 
@@ -17,6 +18,7 @@ export function initializeCliArguments(args) {
   // Reset state on each call
   state.loggingLevel = undefined;
   state.skipMinimumPackageAge = undefined;
+  state.minimumPackageAgeHours = undefined;
 
   const safeChainArgs = [];
   const remainingArgs = [];
@@ -31,6 +33,7 @@ export function initializeCliArguments(args) {
 
   setLoggingLevel(safeChainArgs);
   setSkipMinimumPackageAge(safeChainArgs);
+  setMinimumPackageAgeHours(safeChainArgs);
   setIncludePython(args);
 
   return remainingArgs;
@@ -84,6 +87,26 @@ function setSkipMinimumPackageAge(args) {
 
 export function getSkipMinimumPackageAge() {
   return state.skipMinimumPackageAge;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setMinimumPackageAgeHours(args) {
+  const argName = SAFE_CHAIN_ARG_PREFIX + "minimum-package-age-hours=";
+
+  const value = getLastArgEqualsValue(args, argName);
+  if (value) {
+    state.minimumPackageAgeHours = value;
+  }
+}
+
+/**
+ * @returns {string | undefined}
+ */
+export function getMinimumPackageAgeHours() {
+  return state.minimumPackageAgeHours;
 }
 
 /**
