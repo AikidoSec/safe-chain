@@ -156,26 +156,6 @@ You can set the minimum package age through multiple sources (in order of priori
    }
    ```
 
-### Examples
-
-- **Set to 48 hours for extra caution:**
-
-  ```shell
-  npm install express --safe-chain-minimum-package-age-hours=48
-  ```
-
-- **Set to 1 hour for faster access to new packages:**
-
-  ```shell
-  npm install express --safe-chain-minimum-package-age-hours=1
-  ```
-
-- **Completely bypass the age check for a specific install:**
-
-  ```shell
-  npm install express --safe-chain-skip-minimum-package-age
-  ```
-
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.
