@@ -25,6 +25,7 @@ export const knownAikidoTools = [
   { tool: "uv", aikidoCommand: "aikido-uv", ecoSystem: ECOSYSTEM_PY },
   { tool: "pip", aikidoCommand: "aikido-pip", ecoSystem: ECOSYSTEM_PY },
   { tool: "pip3", aikidoCommand: "aikido-pip3", ecoSystem: ECOSYSTEM_PY },
+  { tool: "poetry", aikidoCommand: "aikido-poetry", ecoSystem: ECOSYSTEM_PY },
   { tool: "python", aikidoCommand: "aikido-python", ecoSystem: ECOSYSTEM_PY },
   { tool: "python3", aikidoCommand: "aikido-python3", ecoSystem: ECOSYSTEM_PY },
   // When adding a new tool here, also update the documentation for the new tool in the README.md

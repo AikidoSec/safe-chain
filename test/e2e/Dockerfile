@@ -71,6 +71,11 @@ EOF
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     echo 'source $HOME/.local/bin/env' >> ~/.bashrc
 
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+    echo 'export PATH="/root/.local/bin:$PATH"' >> ~/.bashrc && \
+    /root/.local/bin/poetry config virtualenvs.in-project true
+
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/
 RUN npm install -g /pkgs/*.tgz

@@ -73,6 +73,10 @@ function uv() {
   wrapSafeChainCommand "uv" "aikido-uv" "$@"
 }
 
+function poetry() {
+  wrapSafeChainCommand "poetry" "aikido-poetry" "$@"
+}
+
 # `python -m pip`, `python -m pip3`.
 function python() {
   wrapSafeChainCommand "python" "aikido-python" "$@"
