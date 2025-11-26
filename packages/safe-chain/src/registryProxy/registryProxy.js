@@ -38,17 +38,9 @@ function getSafeChainProxyEnvironmentVariables() {
 
   const proxyUrl = `http://127.0.0.1:${state.port}`;
   return {
-    // Uppercase variants (standard)
-    HTTP_PROXY: proxyUrl,
     HTTPS_PROXY: proxyUrl,
     GLOBAL_AGENT_HTTP_PROXY: proxyUrl,
     NODE_EXTRA_CA_CERTS: getCaCertPath(),
-    // Lowercase variants (some tools like Poetry/requests prefer these)
-    http_proxy: proxyUrl,
-    https_proxy: proxyUrl,
-    // Clear NO_PROXY to ensure all requests go through our proxy
-    NO_PROXY: "",
-    no_proxy: "",
   };
 }
 
