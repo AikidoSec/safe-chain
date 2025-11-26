@@ -144,7 +144,7 @@ You can set the minimum package age through multiple sources (in order of priori
 2. **Environment Variable**:
 
    ```shell
-   export AIKIDO_MINIMUM_PACKAGE_AGE_HOURS=48
+   export SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS=48
    npm install express
    ```
 

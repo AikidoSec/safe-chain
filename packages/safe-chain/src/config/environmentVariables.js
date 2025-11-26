@@ -3,5 +3,5 @@
  * @returns {string | undefined}
  */
 export function getMinimumPackageAgeHours() {
-  return process.env.AIKIDO_MINIMUM_PACKAGE_AGE_HOURS;
+  return process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS;
 }
