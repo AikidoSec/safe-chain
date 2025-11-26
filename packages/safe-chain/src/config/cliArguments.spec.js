@@ -4,6 +4,7 @@ import {
   initializeCliArguments,
   getLoggingLevel,
   getSkipMinimumPackageAge,
+  getMinimumPackageAgeHours,
 } from "./cliArguments.js";
 
 describe("initializeCliArguments", () => {
@@ -177,5 +178,97 @@ describe("initializeCliArguments", () => {
 
     assert.deepEqual(result, ["install", "lodash"]);
     assert.strictEqual(getSkipMinimumPackageAge(), true);
+  });
+
+  it("should return undefined when no minimum-package-age-hours argument is passed", () => {
+    const args = ["install", "express", "--save"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getMinimumPackageAgeHours(), undefined);
+  });
+
+  it("should parse minimum-package-age-hours value and set state", () => {
+    const args = [
+      "--safe-chain-minimum-package-age-hours=48",
+      "install",
+      "lodash",
+    ];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "lodash"]);
+    assert.strictEqual(getMinimumPackageAgeHours(), "48");
+  });
+
+  it("should handle minimum-package-age-hours with zero value", () => {
+    const args = ["--safe-chain-minimum-package-age-hours=0", "install"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getMinimumPackageAgeHours(), "0");
+  });
+
+  it("should handle minimum-package-age-hours with decimal values", () => {
+    const args = ["--safe-chain-minimum-package-age-hours=1.5", "install"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getMinimumPackageAgeHours(), "1.5");
+  });
+
+  it("should handle minimum-package-age-hours case-insensitively", () => {
+    const args = ["--SAFE-CHAIN-MINIMUM-PACKAGE-AGE-HOURS=72", "install"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getMinimumPackageAgeHours(), "72");
+  });
+
+  it("should use the last minimum-package-age-hours argument when multiple are provided", () => {
+    const args = [
+      "--safe-chain-minimum-package-age-hours=12",
+      "--safe-chain-minimum-package-age-hours=36",
+      "install",
+    ];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getMinimumPackageAgeHours(), "36");
+  });
+
+  it("should filter out minimum-package-age-hours argument from returned args", () => {
+    const args = [
+      "install",
+      "--safe-chain-minimum-package-age-hours=48",
+      "express",
+      "--save",
+    ];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "express", "--save"]);
+  });
+
+  it("should handle minimum-package-age-hours with other safe-chain arguments", () => {
+    const args = [
+      "--safe-chain-logging=verbose",
+      "--safe-chain-minimum-package-age-hours=96",
+      "install",
+      "lodash",
+    ];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "lodash"]);
+    assert.strictEqual(getLoggingLevel(), "verbose");
+    assert.strictEqual(getMinimumPackageAgeHours(), "96");
+  });
+
+  it("should handle non-numeric values without validation (validation in settings.js)", () => {
+    const args = ["--safe-chain-minimum-package-age-hours=invalid", "install"];
+    initializeCliArguments(args);
+
+    // cliArguments.js just captures the value; validation is in settings.js
+    assert.strictEqual(getMinimumPackageAgeHours(), "invalid");
+  });
+
+  it("should handle negative values as strings (validation in settings.js)", () => {
+    const args = ["--safe-chain-minimum-package-age-hours=-24", "install"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getMinimumPackageAgeHours(), "-24");
   });
 });

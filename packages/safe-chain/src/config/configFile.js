@@ -9,7 +9,8 @@ import { getEcoSystem } from "./settings.js";
  *
  * This should be a number, but can be anything because it is user-input.
  * We cannot trust the input and should add the necessary validations.
- * @property {any} scanTimeout
+ * @property {unknown} scanTimeout
+ * @property {unknown} minimumPackageAgeHours
  */
 
 /**
@@ -46,6 +47,35 @@ function validateTimeout(value) {
     return timeout;
   }
   return null;
+}
+
+/**
+ * @param {any} value
+ * @returns {number | undefined}
+ */
+function validateMinimumPackageAgeHours(value) {
+  const hours = Number(value);
+  if (!Number.isNaN(hours)) {
+    return hours;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the minimum package age in hours from config file only
+ * @returns {number | undefined}
+ */
+export function getMinimumPackageAgeHours() {
+  const config = readConfigFile();
+  if (config.minimumPackageAgeHours) {
+    const validated = validateMinimumPackageAgeHours(
+      config.minimumPackageAgeHours
+    );
+    if (validated !== undefined) {
+      return validated;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -111,6 +141,7 @@ function readConfigFile() {
   if (!fs.existsSync(configFilePath)) {
     return {
       scanTimeout: undefined,
+      minimumPackageAgeHours: undefined,
     };
   }
 
@@ -120,6 +151,7 @@ function readConfigFile() {
   } catch {
     return {
       scanTimeout: undefined,
+      minimumPackageAgeHours: undefined,
     };
   }
 }

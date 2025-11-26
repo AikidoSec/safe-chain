@@ -75,7 +75,7 @@ The Aikido Safe Chain works by running a lightweight proxy server that intercept
 
 ### Minimum package age (npm only)
 
-For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can bypass this protection for specific installs using the `--safe-chain-skip-minimum-package-age` flag.
+For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours (by default) until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
 ⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3).
 
@@ -125,6 +125,55 @@ You can control the output from Aikido Safe Chain using the `--safe-chain-loggin
 
   ```shell
   npm install express --safe-chain-logging=verbose
+  ```
+
+## Minimum Package Age
+
+You can configure how long packages must exist before Safe Chain allows their installation. By default, packages must be at least 24 hours old before they can be installed through npm-based package managers.
+
+### Configuration Options
+
+You can set the minimum package age through multiple sources (in order of priority):
+
+1. **CLI Argument** (highest priority):
+
+   ```shell
+   npm install express --safe-chain-minimum-package-age-hours=48
+   ```
+
+2. **Environment Variable**:
+
+   ```shell
+   export AIKIDO_MINIMUM_PACKAGE_AGE_HOURS=48
+   npm install express
+   ```
+
+3. **Config File** (`~/.aikido/config.json`):
+
+   ```json
+   {
+     "minimumPackageAgeHours": 48
+   }
+   ```
+
+### Examples
+
+- **Set to 48 hours for extra caution:**
+
+  ```shell
+  npm install express --safe-chain-minimum-package-age-hours=48
+  ```
+
+- **Set to 1 hour for faster access to new packages:**
+
+  ```shell
+  npm install express --safe-chain-minimum-package-age-hours=1
+  ```
+
+- **Completely bypass the age check for a specific install:**
+
+  ```shell
+  npm install express --safe-chain-skip-minimum-package-age
   ```
 
 # Usage in CI/CD

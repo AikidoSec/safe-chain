@@ -1,4 +1,6 @@
 import * as cliArguments from "./cliArguments.js";
+import * as configFile from "./configFile.js";
+import * as environmentVariables from "./environmentVariables.js";
 
 export const LOGGING_SILENT = "silent";
 export const LOGGING_NORMAL = "normal";
@@ -38,8 +40,52 @@ export function setEcoSystem(setting) {
 }
 
 const defaultMinimumPackageAge = 24;
+/** @returns {number} */
 export function getMinimumPackageAgeHours() {
+  // Priority 1: CLI argument
+  const cliValue = validateMinimumPackageAgeHours(
+    cliArguments.getMinimumPackageAgeHours()
+  );
+  if (cliValue !== undefined) {
+    return cliValue;
+  }
+
+  // Priority 2: Environment variable
+  const envValue = validateMinimumPackageAgeHours(
+    environmentVariables.getMinimumPackageAgeHours()
+  );
+  if (envValue !== undefined) {
+    return envValue;
+  }
+
+  // Priority 3: Config file
+  const configValue = configFile.getMinimumPackageAgeHours();
+  if (configValue !== undefined) {
+    return configValue;
+  }
+
   return defaultMinimumPackageAge;
+}
+
+/**
+ * @param {string | undefined} value
+ * @returns {number | undefined}
+ */
+function validateMinimumPackageAgeHours(value) {
+  if (!value) {
+    return undefined;
+  }
+
+  const numericValue = Number(value);
+  if (Number.isNaN(numericValue)) {
+    return undefined;
+  }
+
+  if (numericValue > 0) {
+    return numericValue;
+  }
+
+  return undefined;
 }
 
 const defaultSkipMinimumPackageAge = false;
