@@ -67,7 +67,7 @@ except Exception as exc:
     raise
 EOF
 
-# Install uv (Astral's fast Python package manager)
+# Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     echo 'source $HOME/.local/bin/env' >> ~/.bashrc
 

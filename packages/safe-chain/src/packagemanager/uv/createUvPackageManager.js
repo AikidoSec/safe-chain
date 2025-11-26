@@ -9,7 +9,6 @@ export function createUvPackageManager() {
      * @param {string[]} args
      */
     runCommand: (args) => {
-      // uv is always invoked as 'uv' - no invocation variations like pip
       return runUv("uv", args);
     },
     // For uv, rely solely on MITM
