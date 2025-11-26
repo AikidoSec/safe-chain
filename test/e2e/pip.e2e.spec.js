@@ -16,6 +16,9 @@ describe("E2E: pip coverage", () => {
 
     const installationShell = await container.openShell("zsh");
     await installationShell.runCommand("safe-chain setup --include-python");
+    
+    // Clear pip cache before each test to ensure fresh downloads through proxy
+    await installationShell.runCommand("pip3 cache purge");
   });
 
   afterEach(async () => {
@@ -118,9 +121,6 @@ describe("E2E: pip coverage", () => {
 
   it(`safe-chain blocks installation of malicious Python packages`, async () => {
     const shell = await container.openShell("zsh");
-    // Clear pip cache to ensure network download through proxy
-    await shell.runCommand("pip3 cache purge");
-
     const result = await shell.runCommand(
       "pip3 install --break-system-packages safe-chain-pi-test"
     );
@@ -247,9 +247,6 @@ describe("E2E: pip coverage", () => {
 
   it(`pip3 successfully validates certificates for HTTPS downloads`, async () => {
     const shell = await container.openShell("zsh");
-    // Clear cache to force network download through proxy
-    await shell.runCommand("pip3 cache purge");
-
     const result = await shell.runCommand(
       "pip3 install --break-system-packages certifi"
     );
