@@ -1,3 +1,5 @@
+![Aikido Safe Chain](./docs/banner.svg)
+
 # Aikido Safe Chain
 
 - ✅ **Block malware on developer laptops and CI/CD**
