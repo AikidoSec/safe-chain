@@ -13,6 +13,17 @@ export function getCaCertPath() {
 }
 
 /**
+ * @param {forge.pki.PublicKey} publicKey
+ * @returns {string}
+ */
+function createKeyIdentifier(publicKey) {
+  return forge.pki.getPublicKeyFingerprint(publicKey, {
+    encoding: "binary",
+    md: forge.md.sha1.create(),
+  });
+}
+
+/**
  * @param {string} hostname
  * @returns {{privateKey: string, certificate: string}}
  */
@@ -33,6 +44,7 @@ export function generateCertForHost(hostname) {
   const attrs = [{ name: "commonName", value: hostname }];
   cert.setSubject(attrs);
   cert.setIssuer(ca.certificate.subject.attributes);
+  const authorityKeyIdentifier = createKeyIdentifier(ca.certificate.publicKey);
   cert.setExtensions([
     {
       name: "subjectAltName",
@@ -57,6 +69,14 @@ export function generateCertForHost(hostname) {
       */
       name: "extKeyUsage",
       serverAuth: true,
+    },
+    {
+      name: "subjectKeyIdentifier",
+      subjectKeyIdentifier: createKeyIdentifier(cert.publicKey),
+    },
+    {
+      name: "authorityKeyIdentifier",
+      keyIdentifier: authorityKeyIdentifier,
     },
   ]);
   cert.sign(ca.privateKey, forge.md.sha256.create());
@@ -83,7 +103,23 @@ function loadCa() {
 
     // Don't return a cert that is valid for less than 1 hour
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
-    if (certificate.validity.notAfter > oneHourFromNow) {
+    /** @type {any} */
+    const basicConstraints = certificate.getExtension("basicConstraints");
+    const hasCriticalBasicConstraints = Boolean(
+      basicConstraints && basicConstraints.critical
+    );
+    const hasSubjectKeyIdentifier = Boolean(
+      certificate.getExtension("subjectKeyIdentifier")
+    );
+    const hasAuthorityKeyIdentifier = Boolean(
+      certificate.getExtension("authorityKeyIdentifier")
+    );
+    if (
+      certificate.validity.notAfter > oneHourFromNow &&
+      hasCriticalBasicConstraints &&
+      hasSubjectKeyIdentifier &&
+      hasAuthorityKeyIdentifier
+    ) {
       return { privateKey, certificate };
     }
   }
@@ -107,16 +143,26 @@ function generateCa() {
   const attrs = [{ name: "commonName", value: "safe-chain proxy" }];
   cert.setSubject(attrs);
   cert.setIssuer(attrs);
+  const keyIdentifier = createKeyIdentifier(cert.publicKey);
   cert.setExtensions([
     {
       name: "basicConstraints",
       cA: true,
+      critical: true,
     },
     {
       name: "keyUsage",
       keyCertSign: true,
       digitalSignature: true,
       keyEncipherment: true,
+    },
+    {
+      name: "subjectKeyIdentifier",
+      subjectKeyIdentifier: keyIdentifier,
+    },
+    {
+      name: "authorityKeyIdentifier",
+      keyIdentifier,
     },
   ]);
   cert.sign(keys.privateKey, forge.md.sha256.create());
