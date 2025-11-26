@@ -1,21 +1,22 @@
 # Aikido Safe Chain
 
-The Aikido Safe Chain **prevents developers from installing malware** on their workstations while developing in the Javascript and Python ecosystems (through npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, and pip). It's **free** to use and does not require any token.
-
-The Aikido Safe Chain wraps around the [npm cli](https://github.com/npm/cli), [npx](https://github.com/npm/cli/blob/latest/docs/content/commands/npx.md), [yarn](https://yarnpkg.com/), [pnpm](https://pnpm.io/), [pnpx](https://pnpm.io/cli/dlx), [bun](https://bun.sh/), [bunx](https://bun.sh/docs/cli/bunx), [uv](https://docs.astral.sh/uv/) (Python), and [pip](https://pip.pypa.io/) to provide extra checks before installing new packages. This tool will detect when a package contains malware and prompt you to exit, preventing npm, npx, yarn, pnpm, pnpx, bun, bunx, pip/pip3 or uv from downloading or running the malware.
+- ✅ **Block malware on developer laptops and CI/CD**
+- ✅ **Supports npm and PyPI** more package managers coming
+- ✅ **Blocks packages newer than 24 hours** without breaking your build
+- ✅ **Tokenless, free, no build data shared**
 
 Aikido Safe Chain works on Node.js version 16 and above and supports the following package managers:
 
-- ✅ **npm**
-- ✅ **npx**
-- ✅ **yarn**
-- ✅ **pnpm**
-- ✅ **pnpx**
-- ✅ **bun**
-- ✅ **bunx**
-- ✅ **pip** (beta)
-- ✅ **pip3** (beta)
-- ✅ **uv** (beta)
+- 📦 **npm**
+- 📦 **npx**
+- 📦 **yarn**
+- 📦 **pnpm**
+- 📦 **pnpx**
+- 📦 **bun**
+- 📦 **bunx**
+- 📦 **pip** (beta)
+- 📦 **pip3** (beta)
+- 📦 **uv** (beta)
 
 # Usage
 
