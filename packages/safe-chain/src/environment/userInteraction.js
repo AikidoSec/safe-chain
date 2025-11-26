@@ -1,6 +1,5 @@
 // oxlint-disable no-console
 import chalk from "chalk";
-import ora from "ora";
 import { isCi } from "./environment.js";
 import {
   getLoggingLevel,
@@ -98,61 +97,6 @@ function writeOrBuffer(messageFunction) {
   }
 }
 
-/**
- * @typedef {Object} Spinner
- * @property {(message: string) => void} succeed
- * @property {(message: string) => void} fail
- * @property {() => void} stop
- * @property {(message: string) => void} setText
- */
-
-/**
- * @param {string} message
- *
- * @returns {Spinner}
- */
-function startProcess(message) {
-  if (isSilentMode()) {
-    return {
-      succeed: () => {},
-      fail: () => {},
-      stop: () => {},
-      setText: () => {},
-    };
-  }
-
-  if (isCi()) {
-    return {
-      succeed: (message) => {
-        writeInformation(message);
-      },
-      fail: (message) => {
-        writeError(message);
-      },
-      stop: () => {},
-      setText: (message) => {
-        writeInformation(message);
-      },
-    };
-  } else {
-    const spinner = ora(message).start();
-    return {
-      succeed: (message) => {
-        spinner.succeed(message);
-      },
-      fail: (message) => {
-        spinner.fail(message);
-      },
-      stop: () => {
-        spinner.stop();
-      },
-      setText: (message) => {
-        spinner.text = message;
-      },
-    };
-  }
-}
-
 function startBufferingLogs() {
   state.bufferOutput = true;
   state.bufferedMessages = [];
@@ -173,7 +117,6 @@ export const ui = {
   writeError,
   writeExitWithoutInstallingMaliciousPackages,
   emptyLine,
-  startProcess,
   startBufferingLogs,
   writeBufferedLogsAndStopBuffering,
 };

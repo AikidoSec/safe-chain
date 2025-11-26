@@ -7,7 +7,7 @@
     "test/e2e"
   ],
   "scripts": {
-    "test": "npm run test --workspace=packages/safe-chain --workspace=packages/safe-chain-bun",
+    "test": "npm run test --workspace=packages/safe-chain",
     "test:e2e": "npm run test --workspace=test/e2e",
     "lint": "npm run lint --workspace=packages/safe-chain",
     "typecheck": "npm run typecheck --workspace=packages/safe-chain"

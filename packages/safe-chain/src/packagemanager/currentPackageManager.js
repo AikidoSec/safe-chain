@@ -10,6 +10,7 @@ import {
 } from "./pnpm/createPackageManager.js";
 import { createYarnPackageManager } from "./yarn/createPackageManager.js";
 import { createPipPackageManager } from "./pip/createPackageManager.js";
+import { createUvPackageManager } from "./uv/createUvPackageManager.js";
 
 /**
  * @type {{packageManagerName: PackageManager | null}}
@@ -54,6 +55,8 @@ export function initializePackageManager(packageManagerName) {
     state.packageManagerName = createBunxPackageManager();
   } else if (packageManagerName === "pip") {
     state.packageManagerName = createPipPackageManager();
+  } else if (packageManagerName === "uv") {
+    state.packageManagerName = createUvPackageManager();
   } else {
     throw new Error("Unsupported package manager: " + packageManagerName);
   }

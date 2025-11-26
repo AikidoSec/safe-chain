@@ -29,36 +29,19 @@ export async function scanCommand(args) {
   }
 
   let timedOut = false;
-
-  const spinner = ui.startProcess(
-    "Safe-chain: Scanning for malicious packages..."
-  );
   /** @type {import("./audit/index.js").AuditResult | undefined} */
   let audit;
 
   await Promise.race([
     (async () => {
-      try {
-        const packageManager = getPackageManager();
-        const changes = await packageManager.getDependencyUpdatesForCommand(
-          args
-        );
+      const packageManager = getPackageManager();
+      const changes = await packageManager.getDependencyUpdatesForCommand(args);
 
-        if (timedOut) {
-          return;
-        }
-
-        if (changes.length > 0) {
-          spinner.setText(
-            `Safe-chain: Scanning ${changes.length} package(s)...`
-          );
-        }
-
-        audit = await auditChanges(changes);
-      } catch (/** @type any */ error) {
-        spinner.fail(`Safe-chain: Error while scanning.`);
-        throw error;
+      if (timedOut) {
+        return;
       }
+
+      audit = await auditChanges(changes);
     })(),
     setTimeout(getScanTimeout()).then(() => {
       timedOut = true;
@@ -66,15 +49,13 @@ export async function scanCommand(args) {
   ]);
 
   if (timedOut) {
-    spinner.fail("Safe-chain: Timeout exceeded while scanning.");
     throw new Error("Timeout exceeded while scanning npm install command.");
   }
 
   if (!audit || audit.isAllowed) {
-    spinner.stop();
     return 0;
   } else {
-    printMaliciousChanges(audit.disallowedChanges, spinner);
+    printMaliciousChanges(audit.disallowedChanges);
     onMalwareFound();
     return 1;
   }
@@ -82,12 +63,12 @@ export async function scanCommand(args) {
 
 /**
  * @param {import("./audit/index.js").PackageChange[]} changes
- * @param spinner {import("../environment/userInteraction.js").Spinner}
- *
  * @return {void}
  */
-function printMaliciousChanges(changes, spinner) {
-  spinner.fail("Safe-chain: " + chalk.bold("Malicious changes detected:"));
+function printMaliciousChanges(changes) {
+  ui.writeInformation(
+    chalk.red("✖") + " Safe-chain: " + chalk.bold("Malicious changes detected:")
+  );
 
   for (const change of changes) {
     ui.writeInformation(` - ${change.name}@${change.version}`);
