@@ -95,6 +95,10 @@ function pip3 {
     Invoke-WrappedCommand "pip3" "aikido-pip3" $args
 }
 
+function uv {
+    Invoke-WrappedCommand "uv" "aikido-uv" $args
+}
+
 # `python -m pip`, `python -m pip3`.
 function python {
     Invoke-WrappedCommand 'python' 'aikido-python' $args
