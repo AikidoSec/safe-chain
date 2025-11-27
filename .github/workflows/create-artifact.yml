@@ -60,7 +60,7 @@ jobs:
           safe-chain setup-ci
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Create binary (Unix)
         if: matrix.os != 'win'
