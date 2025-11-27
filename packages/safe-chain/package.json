@@ -52,6 +52,7 @@
     "@types/node-forge": "^1.3.14",
     "@types/npm-registry-fetch": "^8.0.9",
     "@types/semver": "^7.7.1",
+    "esbuild": "^0.27.0",
     "typescript": "^5.9.3"
   },
   "main": "src/main.js",
@@ -63,5 +64,27 @@
     "type": "git",
     "url": "git+https://github.com/AikidoSec/safe-chain.git",
     "directory": "packages/safe-chain"
+  },
+  "pkg": {
+    "targets": [
+      "node22-linux-x64",
+      "node22-linux-arm64",
+      "node22-macos-x64",
+      "node22-macos-arm64",
+      "node22-win-x64",
+      "node22-win-arm64"
+    ],
+    "outputPath": "dist",
+    "assets": [
+      "node_modules/certifi/**/*"
+    ],
+    "scripts": [
+      "src/**/*.js",
+      "bin/**/*.js"
+    ],
+    "ignore": [
+      "**/*.spec.js",
+      "test/**"
+    ]
   }
 }

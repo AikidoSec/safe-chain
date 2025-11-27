@@ -9,6 +9,8 @@ setEcoSystem(ECOSYSTEM_PY);
 
 initializePackageManager("uv");
 
-// Pass through only user-supplied uv args
-var exitCode = await main(process.argv.slice(2));
-process.exit(exitCode);
+(async () => {
+  // Pass through only user-supplied uv args
+  var exitCode = await main(process.argv.slice(2));
+  process.exit(exitCode);
+})();

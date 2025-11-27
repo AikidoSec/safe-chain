@@ -43,6 +43,18 @@ jobs:
           name: safe-chain-package
           path: aikidosec-safe-chain-*.tgz
 
+      - name: Create binaries
+        run: |
+          npm i -g esbuild@0.27.0 @yao-pkg/pkg@6.10.1
+          mkdir "dist"
+          esbuild "./packages/safe-chain/bin/safe-chain.js" --bundle --platform=node --target=node22 > "./dist/safe-chain.cjs"
+          pkg "./dist/safe-chain.cjs" --targets node22-macos-x64 --output "./dist/macos-x64/safe-chain"
+          pkg "./dist/safe-chain.cjs" --targets node22-macos-arm64 --output "./dist/macos-arm64/safe-chain"
+          pkg "./dist/safe-chain.cjs" --targets node22-linux-x64 --output "./dist/linux-x64/safe-chain"
+          pkg "./dist/safe-chain.cjs" --targets node22-linux-arm64 --output "./dist/linux-arm64/safe-chain"
+          pkg "./dist/safe-chain.cjs" --targets node22-win-x64 --output "./dist/win-x64/safe-chain.exe"
+          pkg "./dist/safe-chain.cjs" --targets node22-win-arm64 --output "./dist/win-arm64/safe-chain.exe"
+
   e2e-tests:
     name: Run E2E tests
 

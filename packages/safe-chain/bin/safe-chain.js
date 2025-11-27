@@ -7,6 +7,9 @@ import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
+import { ECOSYSTEM_JS, setEcoSystem } from "../src/config/settings.js";
+import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
+import { main } from "../src/main.js";
 
 if (process.argv.length < 3) {
   ui.writeError("No command provided. Please provide a command to execute.");
@@ -19,12 +22,19 @@ initializeCliArguments(process.argv);
 
 const command = process.argv[2];
 
-if (command === "help" || command === "--help" || command === "-h") {
+const pkgManagerCommands = ["npm", "npx", "yarn"];
+
+if (pkgManagerCommands.includes(command)) {
+  setEcoSystem(ECOSYSTEM_JS);
+  initializePackageManager(command);
+  (async () => {
+    var exitCode = await main(process.argv.slice(3));
+    process.exit(exitCode);
+  })();
+} else if (command === "help" || command === "--help" || command === "-h") {
   writeHelp();
   process.exit(0);
-}
-
-if (command === "setup") {
+}else if (command === "setup") {
   setup();
 } else if (command === "teardown") {
   teardown();
