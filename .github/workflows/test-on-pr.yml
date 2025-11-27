@@ -59,8 +59,8 @@ jobs:
       - name: Upload safe-chain-binaries
         uses: actions/upload-artifact@v4
         with:
-          name: safe-chain-package
-          path: aikidosec-safe-chain-*.tgz
+          name: safe-chain-binaries
+          path: dist/*
 
   e2e-tests:
     name: Run E2E tests
