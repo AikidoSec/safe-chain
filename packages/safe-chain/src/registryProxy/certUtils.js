@@ -168,7 +168,16 @@ function loadCa() {
   }
 
   const { privateKey, certificate } = generateCa();
-  fs.mkdirSync(certFolder, { recursive: true });
+  
+  // Ensure directory exists before writing files
+  try {
+    fs.mkdirSync(certFolder, { recursive: true });
+  } catch (error) {
+    // Directory might already exist or there's a permission issue
+    if (/** @type {any} */(error).code !== 'EEXIST') {
+      throw error;
+    }
+  }
   
   // Write files and ensure they're flushed to disk
   const keyFd = fs.openSync(keyPath, 'w');
