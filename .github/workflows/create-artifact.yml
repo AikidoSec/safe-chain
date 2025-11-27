@@ -54,6 +54,7 @@ jobs:
           node-version: "lts/*"
 
       - name: Setup safe-chain
+        if: matrix.os != 'win'
         run: |
           npm i -g @aikidosec/safe-chain
           safe-chain setup-ci
