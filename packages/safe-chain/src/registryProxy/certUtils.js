@@ -138,11 +138,15 @@ function loadCa() {
   const keyPath = path.join(certFolder, "ca-key.pem");
   const certPath = path.join(certFolder, "ca-cert.pem");
 
+  let existingPrivateKey = null;
+
   if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
     const privateKeyPem = fs.readFileSync(keyPath, "utf8");
     const certPem = fs.readFileSync(certPath, "utf8");
     const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
     const certificate = forge.pki.certificateFromPem(certPem);
+    
+    existingPrivateKey = privateKey;
 
     // Don't return a cert that is valid for less than 1 hour
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
@@ -167,7 +171,7 @@ function loadCa() {
     }
   }
 
-  const { privateKey, certificate } = generateCa();
+  const { privateKey, certificate } = generateCa(existingPrivateKey || undefined);
   
   // Ensure directory exists before writing files
   try {
@@ -179,22 +183,26 @@ function loadCa() {
     }
   }
   
-  // Write files and ensure they're flushed to disk
-  const keyFd = fs.openSync(keyPath, 'w');
-  fs.writeSync(keyFd, forge.pki.privateKeyToPem(privateKey));
-  fs.fsyncSync(keyFd);
-  fs.closeSync(keyFd);
-  
-  const certFd = fs.openSync(certPath, 'w');
-  fs.writeSync(certFd, forge.pki.certificateToPem(certificate));
-  fs.fsyncSync(certFd);
-  fs.closeSync(certFd);
+  fs.writeFileSync(keyPath, forge.pki.privateKeyToPem(privateKey));
+  fs.writeFileSync(certPath, forge.pki.certificateToPem(certificate));
   
   return { privateKey, certificate };
 }
 
-function generateCa() {
-  const keys = forge.pki.rsa.generateKeyPair(2048);
+/**
+ * @param {forge.pki.PrivateKey} [existingPrivateKey]
+ */
+function generateCa(existingPrivateKey) {
+  const keys = existingPrivateKey 
+    ? { 
+        privateKey: existingPrivateKey, 
+        publicKey: forge.pki.setRsaPublicKey(
+          /** @type {any} */(existingPrivateKey).n, 
+          /** @type {any} */(existingPrivateKey).e
+        ) 
+      }
+    : forge.pki.rsa.generateKeyPair(2048);
+    
   const cert = forge.pki.createCertificate();
   cert.publicKey = keys.publicKey;
   cert.serialNumber = "01";
@@ -245,7 +253,7 @@ function generateCa() {
       keyIdentifier,
     },
   ]);
-  cert.sign(keys.privateKey, forge.md.sha256.create());
+  cert.sign(/** @type {any} */(keys.privateKey), forge.md.sha256.create());
 
   return {
     privateKey: keys.privateKey,
