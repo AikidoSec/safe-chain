@@ -99,7 +99,7 @@ export function generateCertForHost(hostname) {
       keyIdentifier: authorityKeyIdentifier,
     },
   ]);
-  cert.sign(ca.privateKey, forge.md.sha256.create());
+  cert.sign(/** @type {any} */ (ca.privateKey), forge.md.sha256.create());
 
   const result = {
     privateKey: forge.pki.privateKeyToPem(keys.privateKey),
