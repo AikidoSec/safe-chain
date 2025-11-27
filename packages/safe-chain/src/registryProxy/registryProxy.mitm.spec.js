@@ -1,4 +1,4 @@
-import { before, after, describe, it } from "node:test";
+import { before, after, describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import net from "net";
 import tls from "tls";
@@ -9,11 +9,23 @@ import {
 import { getCaCertPath } from "./certUtils.js";
 import { setEcoSystem, ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
 import fs from "fs";
+import path from "path";
+import os from "os";
 
 describe("registryProxy.mitm", () => {
   let proxy, proxyHost, proxyPort;
 
   before(async () => {
+    // Clean up any existing CA certificates to ensure fresh generation with new extensions
+    const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
+    try {
+      if (fs.existsSync(certFolder)) {
+        fs.rmSync(certFolder, { recursive: true, force: true });
+      }
+    } catch (error) {
+      // Ignore errors during cleanup
+    }
+    
     proxy = createSafeChainProxy();
     await proxy.startServer();
     const envVars = mergeSafeChainProxyEnvironmentVariables([]);

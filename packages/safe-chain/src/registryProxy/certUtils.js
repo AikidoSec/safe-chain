@@ -4,7 +4,19 @@ import fs from "fs";
 import os from "os";
 
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
-const ca = loadCa();
+/** @type {null | {certificate: any, privateKey: any}} */
+let ca = null;
+
+/**
+ * Get the CA certificate, loading it lazily on first access.
+ * @returns {{certificate: any, privateKey: any}}
+ */
+function getCa() {
+  if (!ca) {
+    ca = loadCa();
+  }
+  return ca;
+}
 
 const certCache = new Map();
 
@@ -20,6 +32,8 @@ function createKeyIdentifier(publicKey) {
 }
 
 export function getCaCertPath() {
+  // Ensure CA is loaded when cert path is requested
+  getCa();
   return path.join(certFolder, "ca-cert.pem");
 }
 
@@ -43,8 +57,10 @@ export function generateCertForHost(hostname) {
 
   const attrs = [{ name: "commonName", value: hostname }];
   cert.setSubject(attrs);
-  cert.setIssuer(ca.certificate.subject.attributes);
-  const authorityKeyIdentifier = createKeyIdentifier(ca.certificate.publicKey);
+  
+  const certAuthority = getCa();
+  cert.setIssuer(certAuthority.certificate.subject.attributes);
+  const authorityKeyIdentifier = createKeyIdentifier(certAuthority.certificate.publicKey);
   cert.setExtensions([
     {
       name: "subjectAltName",
@@ -99,7 +115,7 @@ export function generateCertForHost(hostname) {
       keyIdentifier: authorityKeyIdentifier,
     },
   ]);
-  cert.sign(ca.privateKey, forge.md.sha256.create());
+  cert.sign(certAuthority.privateKey, forge.md.sha256.create());
 
   const result = {
     privateKey: forge.pki.privateKeyToPem(keys.privateKey),
