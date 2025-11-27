@@ -36,7 +36,7 @@ function getSafeChainProxyEnvironmentVariables() {
     return {};
   }
 
-  const proxyUrl = `http://127.0.0.1:${state.port}`;
+  const proxyUrl = `http://localhost:${state.port}`;
   return {
     HTTPS_PROXY: proxyUrl,
     GLOBAL_AGENT_HTTP_PROXY: proxyUrl,
