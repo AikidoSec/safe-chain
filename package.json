@@ -20,5 +20,9 @@
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "oxlint": "^1.22.0"
+  },
+  "overrides": {
+    "node-forge@<=1.3.2": "1.3.2",
+    "glob@<=10.5.0": "10.5.0"
   }
 }
