@@ -32,9 +32,16 @@ function createKeyIdentifier(publicKey) {
 }
 
 export function getCaCertPath() {
-  // Ensure CA is loaded when cert path is requested
+  // Ensure CA is loaded and files are written when cert path is requested
   getCa();
-  return path.join(certFolder, "ca-cert.pem");
+  const certPath = path.join(certFolder, "ca-cert.pem");
+  
+  // Ensure the file exists (in case lazy loading just happened)
+  if (!fs.existsSync(certPath)) {
+    throw new Error(`CA certificate file not found at ${certPath}. This should not happen.`);
+  }
+  
+  return certPath;
 }
 
 /**
@@ -162,8 +169,18 @@ function loadCa() {
 
   const { privateKey, certificate } = generateCa();
   fs.mkdirSync(certFolder, { recursive: true });
-  fs.writeFileSync(keyPath, forge.pki.privateKeyToPem(privateKey));
-  fs.writeFileSync(certPath, forge.pki.certificateToPem(certificate));
+  
+  // Write files and ensure they're flushed to disk
+  const keyFd = fs.openSync(keyPath, 'w');
+  fs.writeSync(keyFd, forge.pki.privateKeyToPem(privateKey));
+  fs.fsyncSync(keyFd);
+  fs.closeSync(keyFd);
+  
+  const certFd = fs.openSync(certPath, 'w');
+  fs.writeSync(certFd, forge.pki.certificateToPem(certificate));
+  fs.fsyncSync(certFd);
+  fs.closeSync(certFd);
+  
   return { privateKey, certificate };
 }
 
