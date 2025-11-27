@@ -12,6 +12,10 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
   beforeEach(async () => {
     container = new DockerTestContainer();
     await container.start();
+    
+    // Clear pip cache before each test to ensure fresh downloads through proxy
+    const shell = await container.openShell("zsh");
+    await shell.runCommand("pip3 cache purge");
   });
 
   afterEach(async () => {

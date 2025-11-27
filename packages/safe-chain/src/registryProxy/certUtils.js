@@ -8,6 +8,17 @@ const ca = loadCa();
 
 const certCache = new Map();
 
+/**
+ * @param {forge.pki.PublicKey} publicKey
+ * @returns {string}
+ */
+function createKeyIdentifier(publicKey) {
+  return forge.pki.getPublicKeyFingerprint(publicKey, {
+    encoding: "binary",
+    md: forge.md.sha1.create(),
+  });
+}
+
 export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
 }
@@ -33,6 +44,7 @@ export function generateCertForHost(hostname) {
   const attrs = [{ name: "commonName", value: hostname }];
   cert.setSubject(attrs);
   cert.setIssuer(ca.certificate.subject.attributes);
+  const authorityKeyIdentifier = createKeyIdentifier(ca.certificate.publicKey);
   cert.setExtensions([
     {
       name: "subjectAltName",
@@ -50,16 +62,44 @@ export function generateCertForHost(hostname) {
     },
     {
       /*
-        extKeyUsage serverAuth is required for TLS server authentication.
-        This is especially important for Python venv environments, which use their own
-        certificate validation logic and will reject certificates lacking the serverAuth EKU.
-        Adding serverAuth does not impact other usages
+        Extended Key Usage (EKU) serverAuth extension
+
+        Needed for TLS server authentication. This extension indicates the certificate's
+        public key may be used for TLS WWW server authentication.
+        Python virtualenv environments (like pipx-installed Poetry) enforce this strictly
+        https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.12
       */
       name: "extKeyUsage",
       serverAuth: true,
     },
+    {
+      /*
+        Subject Key Identifier (SKI)
+        
+        Needed for Python virtualenv SSL validation and certificate chain building.
+        This extension provides a means of identifying certificates containing a particular public key.
+        Python virtualenv environments require this for proper certificate chain validation.
+        System Python installations may be more lenient.
+        https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.2
+      */
+      name: "subjectKeyIdentifier",
+      subjectKeyIdentifier: createKeyIdentifier(cert.publicKey),
+    },
+    {
+      /*
+        Authority Key Identifier (AKI)
+        
+        Needed for Python virtualenv SSL validation and certificate path validation.
+        This extension identifies the public key corresponding to the private key used to sign
+        this certificate. It links this certificate to its issuing CA certificate.
+        Without this, Python virtualenv certificate validation might fail
+        https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.1
+      */
+      name: "authorityKeyIdentifier",
+      keyIdentifier: authorityKeyIdentifier,
+    },
   ]);
-  cert.sign(ca.privateKey, forge.md.sha256.create());
+  cert.sign(/** @type {any} */ (ca.privateKey), forge.md.sha256.create());
 
   const result = {
     privateKey: forge.pki.privateKeyToPem(keys.privateKey),
@@ -75,28 +115,61 @@ function loadCa() {
   const keyPath = path.join(certFolder, "ca-key.pem");
   const certPath = path.join(certFolder, "ca-cert.pem");
 
+  let existingPrivateKey = null;
+
   if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
     const privateKeyPem = fs.readFileSync(keyPath, "utf8");
     const certPem = fs.readFileSync(certPath, "utf8");
     const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
     const certificate = forge.pki.certificateFromPem(certPem);
+    
+    existingPrivateKey = privateKey;
 
     // Don't return a cert that is valid for less than 1 hour
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
-    if (certificate.validity.notAfter > oneHourFromNow) {
+    /** @type {any} */
+    const basicConstraints = certificate.getExtension("basicConstraints");
+    const hasCriticalBasicConstraints = Boolean(
+      basicConstraints && basicConstraints.critical
+    );
+    const hasSubjectKeyIdentifier = Boolean(
+      certificate.getExtension("subjectKeyIdentifier")
+    );
+    const hasAuthorityKeyIdentifier = Boolean(
+      certificate.getExtension("authorityKeyIdentifier")
+    );
+    if (
+      certificate.validity.notAfter > oneHourFromNow &&
+      hasCriticalBasicConstraints &&
+      hasSubjectKeyIdentifier &&
+      hasAuthorityKeyIdentifier
+    ) {
       return { privateKey, certificate };
     }
   }
 
-  const { privateKey, certificate } = generateCa();
+  const { privateKey, certificate } = generateCa(existingPrivateKey || undefined);
   fs.mkdirSync(certFolder, { recursive: true });
   fs.writeFileSync(keyPath, forge.pki.privateKeyToPem(privateKey));
   fs.writeFileSync(certPath, forge.pki.certificateToPem(certificate));
+  
   return { privateKey, certificate };
 }
 
-function generateCa() {
-  const keys = forge.pki.rsa.generateKeyPair(2048);
+/**
+ * @param {forge.pki.PrivateKey} [existingPrivateKey]
+ */
+function generateCa(existingPrivateKey) {
+  const keys = existingPrivateKey 
+    ? { 
+        privateKey: existingPrivateKey, 
+        publicKey: forge.pki.setRsaPublicKey(
+          /** @type {any} */(existingPrivateKey).n, 
+          /** @type {any} */(existingPrivateKey).e
+        ) 
+      }
+    : forge.pki.rsa.generateKeyPair(2048);
+    
   const cert = forge.pki.createCertificate();
   cert.publicKey = keys.publicKey;
   cert.serialNumber = "01";
@@ -106,11 +179,13 @@ function generateCa() {
 
   const attrs = [{ name: "commonName", value: "safe-chain proxy" }];
   cert.setSubject(attrs);
-  cert.setIssuer(attrs);
+  cert.setIssuer(attrs); // Self-signed: issuer === subject
+  const keyIdentifier = createKeyIdentifier(cert.publicKey);
   cert.setExtensions([
     {
       name: "basicConstraints",
       cA: true,
+      critical: true,
     },
     {
       name: "keyUsage",
@@ -118,8 +193,34 @@ function generateCa() {
       digitalSignature: true,
       keyEncipherment: true,
     },
+    {
+      /*
+        Subject Key Identifier (SKI)
+        
+        Needed for Python virtualenv SSL validation and certificate chain building.
+        This extension provides a means of identifying certificates containing a particular public key.
+        Python virtualenv environments require this for proper certificate chain validation.
+        System Python installations may be more lenient.
+        https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.2
+      */
+      name: "subjectKeyIdentifier",
+      subjectKeyIdentifier: keyIdentifier,
+    },
+    {
+      /*
+        Authority Key Identifier (AKI)
+        
+        Needed for Python virtualenv SSL validation and certificate path validation.
+        This extension identifies the public key corresponding to the private key used to sign
+        this certificate. It links this certificate to its issuing CA certificate.
+        Without this, Python virtualenv certificate validation might fail
+        https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.1
+      */
+      name: "authorityKeyIdentifier",
+      keyIdentifier,
+    },
   ]);
-  cert.sign(keys.privateKey, forge.md.sha256.create());
+  cert.sign(/** @type {any} */(keys.privateKey), forge.md.sha256.create());
 
   return {
     privateKey: keys.privateKey,
