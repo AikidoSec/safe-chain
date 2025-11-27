@@ -4,19 +4,7 @@ import fs from "fs";
 import os from "os";
 
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
-/** @type {null | {certificate: any, privateKey: any}} */
-let ca = null;
-
-/**
- * Get the CA certificate, loading it lazily on first access.
- * @returns {{certificate: any, privateKey: any}}
- */
-function getCa() {
-  if (!ca) {
-    ca = loadCa();
-  }
-  return ca;
-}
+const ca = loadCa();
 
 const certCache = new Map();
 
@@ -32,16 +20,7 @@ function createKeyIdentifier(publicKey) {
 }
 
 export function getCaCertPath() {
-  // Ensure CA is loaded and files are written when cert path is requested
-  getCa();
-  const certPath = path.join(certFolder, "ca-cert.pem");
-  
-  // Ensure the file exists (in case lazy loading just happened)
-  if (!fs.existsSync(certPath)) {
-    throw new Error(`CA certificate file not found at ${certPath}. This should not happen.`);
-  }
-  
-  return certPath;
+  return path.join(certFolder, "ca-cert.pem");
 }
 
 /**
@@ -64,10 +43,8 @@ export function generateCertForHost(hostname) {
 
   const attrs = [{ name: "commonName", value: hostname }];
   cert.setSubject(attrs);
-  
-  const certAuthority = getCa();
-  cert.setIssuer(certAuthority.certificate.subject.attributes);
-  const authorityKeyIdentifier = createKeyIdentifier(certAuthority.certificate.publicKey);
+  cert.setIssuer(ca.certificate.subject.attributes);
+  const authorityKeyIdentifier = createKeyIdentifier(ca.certificate.publicKey);
   cert.setExtensions([
     {
       name: "subjectAltName",
@@ -122,7 +99,7 @@ export function generateCertForHost(hostname) {
       keyIdentifier: authorityKeyIdentifier,
     },
   ]);
-  cert.sign(certAuthority.privateKey, forge.md.sha256.create());
+  cert.sign(ca.privateKey, forge.md.sha256.create());
 
   const result = {
     privateKey: forge.pki.privateKeyToPem(keys.privateKey),
@@ -172,17 +149,7 @@ function loadCa() {
   }
 
   const { privateKey, certificate } = generateCa(existingPrivateKey || undefined);
-  
-  // Ensure directory exists before writing files
-  try {
-    fs.mkdirSync(certFolder, { recursive: true });
-  } catch (error) {
-    // Directory might already exist or there's a permission issue
-    if (/** @type {any} */(error).code !== 'EEXIST') {
-      throw error;
-    }
-  }
-  
+  fs.mkdirSync(certFolder, { recursive: true });
   fs.writeFileSync(keyPath, forge.pki.privateKeyToPem(privateKey));
   fs.writeFileSync(certPath, forge.pki.certificateToPem(certificate));
   

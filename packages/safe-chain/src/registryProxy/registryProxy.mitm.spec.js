@@ -1,4 +1,4 @@
-import { before, after, describe, it, beforeEach } from "node:test";
+import { before, after, describe, it } from "node:test";
 import assert from "node:assert";
 import net from "net";
 import tls from "tls";
