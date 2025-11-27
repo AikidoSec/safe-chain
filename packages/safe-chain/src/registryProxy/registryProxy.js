@@ -8,6 +8,15 @@ import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
 
+/**
+ * @typedef {Object} safeChainProxy
+ * @property {(port?: number) => Promise<void>} startServer
+ * @property {() => Promise<void>} stopServer
+ * @property {() => boolean} verifyNoMaliciousPackages
+ * @property {() => boolean} hasSuppressedVersions
+ * @property {() => number | null} getPort
+ */
+
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
  * @type {{port: number | null, blockedRequests: {packageName: string, version: string, url: string}[]}}
@@ -17,14 +26,17 @@ const state = {
   blockedRequests: [],
 };
 
+/**
+ * @returns {safeChainProxy} */
 export function createSafeChainProxy() {
   const server = createProxyServer();
 
   return {
-    startServer: () => startServer(server),
+    startServer: (port) => startServer(server, port),
     stopServer: () => stopServer(server),
     verifyNoMaliciousPackages,
     hasSuppressedVersions: getHasSuppressedVersions,
+    getPort: () => state.port,
   };
 }
 
@@ -45,7 +57,6 @@ function getSafeChainProxyEnvironmentVariables() {
 
 /**
  * @param {Record<string, string | undefined>} env
- *
  * @returns {Record<string, string>}
  */
 export function mergeSafeChainProxyEnvironmentVariables(env) {
@@ -81,13 +92,13 @@ function createProxyServer() {
 
 /**
  * @param {import("http").Server} server
- *
+ * @param {number} [port=0]
  * @returns {Promise<void>}
  */
-function startServer(server) {
+function startServer(server, port = 0) {
   return new Promise((resolve, reject) => {
     // Passing port 0 makes the OS assign an available port
-    server.listen(0, () => {
+    server.listen(port, () => {
       const address = server.address();
       if (address && typeof address === "object") {
         state.port = address.port;

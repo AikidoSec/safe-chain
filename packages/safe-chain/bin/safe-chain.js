@@ -7,6 +7,7 @@ import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
+import { runProxy } from "../src/run-proxy.js";
 
 if (process.argv.length < 3) {
   ui.writeError("No command provided. Please provide a command to execute.");
@@ -21,15 +22,14 @@ const command = process.argv[2];
 
 if (command === "help" || command === "--help" || command === "-h") {
   writeHelp();
-  process.exit(0);
-}
-
-if (command === "setup") {
+} else if (command === "setup") {
   setup();
 } else if (command === "teardown") {
   teardown();
 } else if (command === "setup-ci") {
   setupCi();
+} else if (command === "run-proxy") {
+  await runProxy(process.argv.slice(2));
 } else if (command === "--version" || command === "-v" || command === "-v") {
   ui.writeInformation(`Current safe-chain version: ${getVersion()}`);
 } else {
