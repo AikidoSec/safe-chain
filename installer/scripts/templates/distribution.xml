@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Aikido Safe Chain</title>
+    <organization>dev.aikido</organization>
+    <domains enable_localSystem="true"/>
+    <options customize="never" require-scripts="true" rootVolumeOnly="true" />
+    <welcome file="welcome.html"/>
+    <conclusion file="conclusion.html"/>
+    <pkg-ref id="dev.aikido.safe-chain"/>
+    <options customize="never" require-scripts="true"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="dev.aikido.safe-chain"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="dev.aikido.safe-chain" visible="false">
+        <pkg-ref id="dev.aikido.safe-chain"/>
+    </choice>
+    <pkg-ref id="dev.aikido.safe-chain" version="1.0.0" onConclusion="none">component.pkg</pkg-ref>
+</installer-gui-script>
