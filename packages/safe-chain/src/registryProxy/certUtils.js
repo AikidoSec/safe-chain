@@ -8,6 +8,17 @@ const ca = loadCa();
 
 const certCache = new Map();
 
+/**
+ * @param {forge.pki.PublicKey} publicKey
+ * @returns {string}
+ */
+function createKeyIdentifier(publicKey) {
+  return forge.pki.getPublicKeyFingerprint(publicKey, {
+    encoding: "binary",
+    md: forge.md.sha1.create(),
+  });
+}
+
 export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
 }
@@ -165,6 +176,7 @@ function generateCa() {
       digitalSignature: true,
       keyEncipherment: true,
     },
+    {
       /*
         Subject Key Identifier (SKI)
         
@@ -174,10 +186,10 @@ function generateCa() {
         System Python installations may be more lenient.
         https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.2
       */
-    {
       name: "subjectKeyIdentifier",
       subjectKeyIdentifier: keyIdentifier,
     },
+    {
       /*
         Authority Key Identifier (AKI)
         
@@ -187,7 +199,6 @@ function generateCa() {
         Without this, Python virtualenv certificate validation might fail
         https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.1
       */
-    {
       name: "authorityKeyIdentifier",
       keyIdentifier,
     },
@@ -198,15 +209,4 @@ function generateCa() {
     privateKey: keys.privateKey,
     certificate: cert,
   };
-}
-
-/**
- * @param {forge.pki.PublicKey} publicKey
- * @returns {string}
- */
-function createKeyIdentifier(publicKey) {
-  return forge.pki.getPublicKeyFingerprint(publicKey, {
-    encoding: "binary",
-    md: forge.md.sha1.create(),
-  });
 }
