@@ -15,6 +15,7 @@ if (!target) {
   await clearOutputFolder();
   await bundleSafeChain();
   await copyShellScripts();
+  await copyCertifi();
   await copyAndModifyPackageJson();
   await buildSafeChainBinary(target);
 })();
@@ -31,6 +32,7 @@ async function bundleSafeChain() {
     platform: "node",
     target: "node24",
     outfile: "./build/bin/safe-chain.cjs",
+    external: ["certifi"],
   });
 }
 
@@ -45,6 +47,15 @@ async function copyShellScripts() {
   await cp(
     "./packages/safe-chain/src/shell-integration/path-wrappers/",
     "./build/bin/path-wrappers",
+    { recursive: true }
+  );
+}
+
+async function copyCertifi() {
+  await mkdir("./build/node_modules/certifi", { recursive: true });
+  await cp(
+    "./node_modules/certifi/",
+    "./build/node_modules/certifi",
     { recursive: true }
   );
 }
