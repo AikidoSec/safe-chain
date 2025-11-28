@@ -15,7 +15,7 @@ if (!target) {
   await clearOutputFolder();
   await bundleSafeChain();
   await copyShellScripts();
-  await copyAndModifyPackageJson();
+  await copyAndModifyPackageJson(target);
   // await buildSafeChainBinary(target);
 })();
 
@@ -42,7 +42,7 @@ async function copyShellScripts() {
     { recursive: true }
   );
 }
-async function copyAndModifyPackageJson() {
+async function copyAndModifyPackageJson(target) {
   const packageJsonContent = await readFile(
     "./packages/safe-chain/package.json",
     "utf-8"
@@ -62,6 +62,7 @@ async function copyAndModifyPackageJson() {
   packageJson.pkg = {
     outputPath: "dist",
     assets: ["node_modules/certifi/**/*", "bin/startup-scripts/**/*"],
+    targets: [target],
   };
 
   await writeFile("./build/package.json", JSON.stringify(packageJson, null, 2));
