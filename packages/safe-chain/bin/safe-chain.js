@@ -12,6 +12,7 @@ import { main } from "../src/main.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { getCombinedCaBundlePath } from "../src/registryProxy/certBundle.js";
 
 /** @type {string} */
 let dirname;
@@ -56,6 +57,12 @@ if (pkgManagerCommands.includes(command)) {
   process.exit(0);
 } else if (command === "setup") {
   setup();
+} else if (command === "certificate") {
+  (async function () {
+    const path = getCombinedCaBundlePath();
+    const data = await fs.promises.readFile(path);
+    ui.writeInformation(data.toString("utf8"));
+  })();
 } else if (command === "teardown") {
   teardown();
 } else if (command === "setup-ci") {
