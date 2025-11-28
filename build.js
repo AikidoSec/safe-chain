@@ -71,13 +71,9 @@ async function copyAndModifyPackageJson() {
 
 function buildSafeChainBinary(target) {
   return new Promise((resolve, reject) => {
-    const pkg = spawn(
-      "npx",
-      ["pkg", "./build/package.json", `--target=${target}`],
-      {
-        stdio: "inherit",
-      }
-    );
+    const pkg = spawn("pkg", ["./build/package.json", `--target=${target}`], {
+      stdio: "inherit",
+    });
 
     pkg.on("close", (code) => {
       if (code !== 0) {
