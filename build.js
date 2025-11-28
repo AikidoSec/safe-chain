@@ -16,7 +16,7 @@ if (!target) {
   await bundleSafeChain();
   await copyShellScripts();
   await copyAndModifyPackageJson();
-  await buildSafeChainBinary(target);
+  // await buildSafeChainBinary(target);
 })();
 
 async function clearOutputFolder() {
@@ -73,7 +73,7 @@ function buildSafeChainBinary(target) {
   // eslint-disable-next-line no-console
   console.error("Target: " + target);
   return new Promise((resolve, reject) => {
-    const pkg = spawn("pkg", ["./build/package.json", "--targets", target], {
+    const pkg = spawn("pkg", ["./build/package.json", "-t", target], {
       stdio: "inherit",
       shell: true,
     });
