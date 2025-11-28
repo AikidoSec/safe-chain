@@ -32,7 +32,7 @@ async function bundleSafeChain() {
     platform: "node",
     target: "node24",
     outfile: "./build/bin/safe-chain.cjs",
-    external: ["certifi"],
+    external: ["certifi", "node-forge"],
   });
 }
 
@@ -53,11 +53,13 @@ async function copyShellScripts() {
 
 async function copyCertifi() {
   await mkdir("./build/node_modules/certifi", { recursive: true });
-  await cp(
-    "./node_modules/certifi/",
-    "./build/node_modules/certifi",
-    { recursive: true }
-  );
+  await mkdir("./build/node_modules/certifi", { recursive: true });
+  await cp("./node_modules/certifi/", "./build/node_modules/certifi", {
+    recursive: true,
+  });
+  await cp("./node_modules/node-forge/", "./build/node_modules/node-forge", {
+    recursive: true,
+  });
 }
 async function copyAndModifyPackageJson() {
   const packageJsonContent = await readFile(
@@ -80,6 +82,7 @@ async function copyAndModifyPackageJson() {
     outputPath: "dist",
     assets: [
       "node_modules/certifi/**/*",
+      "node_modules/node-forge/**/*",
       "bin/startup-scripts/**/*",
       "bin/path-wrappers/**/*",
     ],
