@@ -35,24 +35,7 @@ async function bundleSafeChain() {
     external: ["certifi"],
   });
 
-  // Post-process: Force node-forge to use pure JavaScript
-  // This prevents segmentation faults in pkg binaries on Linux
   let bundledContent = await readFile("./build/bin/safe-chain.cjs", "utf-8");
-
-  // 1. Set the option to true
-  bundledContent = bundledContent.replace(
-    /usePureJavaScript:\s*false/g,
-    "usePureJavaScript: true"
-  );
-
-  // 2. Replace all checks that would enable native crypto
-  // Change: if (!forge2.options.usePureJavaScript && ...)
-  // To:     if (false && ...)
-  // This makes the native crypto branches unreachable
-  bundledContent = bundledContent.replace(
-    /!forge2\.options\.usePureJavaScript/g,
-    "false"
-  );
 
   await writeFile("./build/bin/safe-chain.cjs", bundledContent);
 }
