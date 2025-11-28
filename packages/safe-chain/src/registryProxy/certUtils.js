@@ -97,11 +97,8 @@ function loadCa() {
 }
 
 function generateCa() {
-  ui.writeInformation("1");
   const keys = forge.pki.rsa.generateKeyPair(2048);
-  ui.writeInformation("2");
   const cert = forge.pki.createCertificate();
-  ui.writeInformation("3");
   cert.publicKey = keys.publicKey;
   cert.serialNumber = "01";
   cert.validity.notBefore = new Date();
@@ -124,7 +121,6 @@ function generateCa() {
     },
   ]);
   cert.sign(keys.privateKey, forge.md.sha256.create());
-  ui.writeInformation("4");
 
   return {
     privateKey: keys.privateKey,
