@@ -3,6 +3,11 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
+// Force node-forge to use pure JavaScript instead of native crypto
+// This prevents segmentation faults in pkg binaries on Linux
+// @ts-ignore - options exists but isn't in the type definitions
+forge.options.usePureJavaScript = true;
+
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
 
