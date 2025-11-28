@@ -4,9 +4,6 @@ import fs from "fs";
 import os from "os";
 import { ui } from "../environment/userInteraction.js";
 
-// @ts-ignore
-forge.options.usePureJavaScript = true;
-
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
 

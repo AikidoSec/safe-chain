@@ -26,6 +26,15 @@ async function clearOutputFolder() {
 }
 
 async function bundleSafeChain() {
+  // Read the forge.js file and modify it to use pure JavaScript
+  const forgeContent = await readFile("./node_modules/node-forge/lib/forge.js", "utf-8");
+  const modifiedForge = forgeContent.replace(
+    "usePureJavaScript: false",
+    "usePureJavaScript: true"
+  );
+  await mkdir("./build/temp", { recursive: true });
+  await writeFile("./build/temp/forge.js", modifiedForge);
+
   await build({
     entryPoints: ["./packages/safe-chain/bin/safe-chain.js"],
     bundle: true,
@@ -33,6 +42,9 @@ async function bundleSafeChain() {
     target: "node24",
     outfile: "./build/bin/safe-chain.cjs",
     external: ["certifi"],
+    alias: {
+      "node-forge/lib/forge": "./build/temp/forge.js",
+    },
   });
 }
 

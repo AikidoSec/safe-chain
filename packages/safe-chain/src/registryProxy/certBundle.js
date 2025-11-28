@@ -5,7 +5,7 @@ import path from "node:path";
 import certifi from "certifi";
 import tls from "node:tls";
 import { X509Certificate } from "node:crypto";
-// import { getCaCertPath } from "./certUtils.js";
+import { getCaCertPath } from "./certUtils.js";
 
 /**
  * Check if a PEM string contains only parsable cert blocks.
@@ -58,10 +58,10 @@ export function getCombinedCaBundlePath() {
   const parts = [];
 
   // 1) Safe Chain CA (for MITM'd registries)
-  // const safeChainPath = getCaCertPath();
+  const safeChainPath = getCaCertPath();
   try {
-    // const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
-    // if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
+    const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
+    if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
   } catch {
     // Ignore if Safe Chain CA is not available
   }
