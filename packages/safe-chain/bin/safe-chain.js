@@ -6,12 +6,18 @@ import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
-import { ECOSYSTEM_JS, setEcoSystem } from "../src/config/settings.js";
+import { setEcoSystem } from "../src/config/settings.js";
 import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
 import { main } from "../src/main.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { knownAikidoTools } from "../src/shell-integration/helpers.js";
+import {
+  PIP_INVOCATIONS,
+  PIP_PACKAGE_MANAGER,
+  setCurrentPipInvocation,
+} from "../src/packagemanager/pip/pipSettings.js";
 
 /** @type {string} */
 let dirname;
@@ -34,21 +40,18 @@ initializeCliArguments(process.argv);
 
 const command = process.argv[2];
 
-const pkgManagerCommands = [
-  "npm",
-  "npx",
-  "yarn",
-  "bun",
-  "bunx",
-  "pnpm",
-  "pnpx",
-];
+const tool = knownAikidoTools.find((tool) => tool.tool === command);
 
-if (pkgManagerCommands.includes(command)) {
-  setEcoSystem(ECOSYSTEM_JS);
-  initializePackageManager(command);
+if (tool && tool.internalPackageManagerName === PIP_PACKAGE_MANAGER) {
+  await executePip(tool);
+} else if (tool) {
+  const args = process.argv.slice(3);
+
+  setEcoSystem(tool.ecoSystem);
+  initializePackageManager(tool.internalPackageManagerName);
+
   (async () => {
-    var exitCode = await main(process.argv.slice(3));
+    var exitCode = await main(args);
     process.exit(exitCode);
   })();
 } else if (command === "help" || command === "--help" || command === "-h") {
@@ -130,4 +133,46 @@ async function getVersion() {
   }
 
   return "1.0.0";
+}
+
+/**
+ * @param {import("../src/shell-integration/helpers.js").AikidoTool} tool
+ */
+async function executePip(tool) {
+  let args = process.argv.slice(3);
+  setEcoSystem(tool.ecoSystem);
+  initializePackageManager(PIP_PACKAGE_MANAGER);
+
+  let shouldSkip = false;
+  if (tool.tool === "pip") {
+    setCurrentPipInvocation(PIP_INVOCATIONS.PIP);
+  } else if (tool.tool === "pip3") {
+    setCurrentPipInvocation(PIP_INVOCATIONS.PIP3);
+  } else if (tool.tool === "python") {
+    if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
+      setCurrentPipInvocation(
+        args[1] === "pip3" ? PIP_INVOCATIONS.PY_PIP3 : PIP_INVOCATIONS.PY_PIP
+      );
+      args = args.slice(2);
+    } else {
+      shouldSkip = true;
+    }
+  } else if (tool.tool === "python3") {
+    if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
+      setCurrentPipInvocation(
+        args[1] === "pip3" ? PIP_INVOCATIONS.PY3_PIP3 : PIP_INVOCATIONS.PY3_PIP
+      );
+      args = args.slice(2);
+    } else {
+      shouldSkip = true;
+    }
+  }
+
+  if (shouldSkip) {
+    const { spawn } = await import("child_process");
+    spawn(tool.tool, args, { stdio: "inherit" });
+  } else {
+    var exitCode = await main(args);
+    process.exit(exitCode);
+  }
 }

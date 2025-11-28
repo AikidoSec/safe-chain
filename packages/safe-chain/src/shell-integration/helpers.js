@@ -9,24 +9,85 @@ import { ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
  * @property {string} tool
  * @property {string} aikidoCommand
  * @property {string} ecoSystem
+ * @property {string} internalPackageManagerName
  */
 
 /**
  * @type {AikidoTool[]}
  */
 export const knownAikidoTools = [
-  { tool: "npm", aikidoCommand: "aikido-npm", ecoSystem: ECOSYSTEM_JS },
-  { tool: "npx", aikidoCommand: "aikido-npx", ecoSystem: ECOSYSTEM_JS },
-  { tool: "yarn", aikidoCommand: "aikido-yarn", ecoSystem: ECOSYSTEM_JS },
-  { tool: "pnpm", aikidoCommand: "aikido-pnpm", ecoSystem: ECOSYSTEM_JS },
-  { tool: "pnpx", aikidoCommand: "aikido-pnpx", ecoSystem: ECOSYSTEM_JS },
-  { tool: "bun", aikidoCommand: "aikido-bun", ecoSystem: ECOSYSTEM_JS },
-  { tool: "bunx", aikidoCommand: "aikido-bunx", ecoSystem: ECOSYSTEM_JS },
-  { tool: "uv", aikidoCommand: "aikido-uv", ecoSystem: ECOSYSTEM_PY },
-  { tool: "pip", aikidoCommand: "aikido-pip", ecoSystem: ECOSYSTEM_PY },
-  { tool: "pip3", aikidoCommand: "aikido-pip3", ecoSystem: ECOSYSTEM_PY },
-  { tool: "python", aikidoCommand: "aikido-python", ecoSystem: ECOSYSTEM_PY },
-  { tool: "python3", aikidoCommand: "aikido-python3", ecoSystem: ECOSYSTEM_PY },
+  {
+    tool: "npm",
+    aikidoCommand: "aikido-npm",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "npm",
+  },
+  {
+    tool: "npx",
+    aikidoCommand: "aikido-npx",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "npx",
+  },
+  {
+    tool: "yarn",
+    aikidoCommand: "aikido-yarn",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "yarn",
+  },
+  {
+    tool: "pnpm",
+    aikidoCommand: "aikido-pnpm",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "pnpm",
+  },
+  {
+    tool: "pnpx",
+    aikidoCommand: "aikido-pnpx",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "pnpx",
+  },
+  {
+    tool: "bun",
+    aikidoCommand: "aikido-bun",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "bun",
+  },
+  {
+    tool: "bunx",
+    aikidoCommand: "aikido-bunx",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "bunx",
+  },
+  {
+    tool: "uv",
+    aikidoCommand: "aikido-uv",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "uv",
+  },
+  {
+    tool: "pip",
+    aikidoCommand: "aikido-pip",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
+  {
+    tool: "pip3",
+    aikidoCommand: "aikido-pip3",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
+  {
+    tool: "python",
+    aikidoCommand: "aikido-python",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
+  {
+    tool: "python3",
+    aikidoCommand: "aikido-python3",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
   // When adding a new tool here, also update the documentation for the new tool in the README.md
 ];
 
