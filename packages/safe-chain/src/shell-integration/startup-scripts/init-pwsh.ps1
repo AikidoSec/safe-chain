@@ -1,3 +1,5 @@
+$env:PATH = "$env:PATH;$HOME/.safe-chain/bin"
+
 function Write-SafeChainWarning {
     param([string]$Command)
     

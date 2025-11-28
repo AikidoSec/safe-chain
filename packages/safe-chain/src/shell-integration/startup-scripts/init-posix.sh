@@ -1,3 +1,4 @@
+export PATH="$PATH:$HOME/.safe-chain/bin"
 
 function printSafeChainWarning() {
   # \033[43;30m is used to set the background color to yellow and text color to black

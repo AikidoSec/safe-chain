@@ -1,3 +1,5 @@
+set -gx PATH $PATH $HOME/.safe-chain/bin
+
 function printSafeChainWarning
     set original_cmd $argv[1]
     
