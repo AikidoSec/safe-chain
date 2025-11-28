@@ -50,7 +50,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "22.x"
+          node-version: "lts/*"
 
       - name: Setup safe-chain
         run: |
@@ -60,8 +60,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Create binary (Unix)
-        if: matrix.os != 'win'
+      - name: Create binary
         run: |
           node build.js ${{ matrix.target }}
 

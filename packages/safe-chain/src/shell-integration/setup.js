@@ -5,7 +5,6 @@ import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { fileURLToPath } from "url";
 import { includePython } from "../config/cliArguments.js";
 
 /**
