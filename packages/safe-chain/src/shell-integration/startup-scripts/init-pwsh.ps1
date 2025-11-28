@@ -39,12 +39,11 @@ function Invoke-RealCommand {
 function Invoke-WrappedCommand {
     param(
         [string]$OriginalCmd,
-        [string]$AikidoCmd,
         [string[]]$Arguments
     )
 
-    if (Test-CommandAvailable $AikidoCmd) {
-        & $AikidoCmd @Arguments
+    if (Test-CommandAvailable "safe-chain") {
+        & safe-chain $OriginalCmd @Arguments
     }
     else {
         Write-SafeChainWarning $OriginalCmd
@@ -53,27 +52,27 @@ function Invoke-WrappedCommand {
 }
 
 function npx {
-    Invoke-WrappedCommand "npx" "aikido-npx" $args
+    Invoke-WrappedCommand "npx" $args
 }
 
 function yarn {
-    Invoke-WrappedCommand "yarn" "aikido-yarn" $args
+    Invoke-WrappedCommand "yarn" $args
 }
 
 function pnpm {
-    Invoke-WrappedCommand "pnpm" "aikido-pnpm" $args
+    Invoke-WrappedCommand "pnpm" $args
 }
 
 function pnpx {
-    Invoke-WrappedCommand "pnpx" "aikido-pnpx" $args
+    Invoke-WrappedCommand "pnpx" $args
 }
 
 function bun {
-    Invoke-WrappedCommand "bun" "aikido-bun" $args
+    Invoke-WrappedCommand "bun" $args
 }
 
 function bunx {
-    Invoke-WrappedCommand "bunx" "aikido-bunx" $args
+    Invoke-WrappedCommand "bunx" $args
 }
 
 function npm {
@@ -83,6 +82,6 @@ function npm {
         Invoke-RealCommand "npm" $args
         return
     }
-    
-    Invoke-WrappedCommand "npm" "aikido-npm" $args
+
+    Invoke-WrappedCommand "npm" $args
 }
