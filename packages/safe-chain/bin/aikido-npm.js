@@ -7,6 +7,8 @@ import { setEcoSystem, ECOSYSTEM_JS } from "../src/config/settings.js";
 setEcoSystem(ECOSYSTEM_JS);
 const packageManagerName = "npm";
 initializePackageManager(packageManagerName);
-var exitCode = await main(process.argv.slice(2));
 
-process.exit(exitCode);
+(async () => {
+  var exitCode = await main(process.argv.slice(2));
+  process.exit(exitCode);
+})();

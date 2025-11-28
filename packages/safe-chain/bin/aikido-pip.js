@@ -13,6 +13,8 @@ setCurrentPipInvocation(PIP_INVOCATIONS.PIP);
 
 initializePackageManager(PIP_PACKAGE_MANAGER);
 
-// Pass through only user-supplied pip args
-var exitCode = await main(process.argv.slice(2));
-process.exit(exitCode);
+(async () => {
+  // Pass through only user-supplied pip args
+  var exitCode = await main(process.argv.slice(2));
+  process.exit(exitCode);
+})();

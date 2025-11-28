@@ -144,3 +144,7 @@ vite.config.ts.timestamp-*
 Claude.md
 .claude
 .reference
+
+# Build files
+build/
+dist/
