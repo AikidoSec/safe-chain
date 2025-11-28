@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import chalk from "chalk";
-import { createRequire } from "module";
 import { ui } from "../src/environment/userInteraction.js";
 import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
@@ -10,6 +9,8 @@ import { initializeCliArguments } from "../src/config/cliArguments.js";
 import { ECOSYSTEM_JS, setEcoSystem } from "../src/config/settings.js";
 import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
 import { main } from "../src/main.js";
+import path from "path";
+import fs from "fs";
 
 if (process.argv.length < 3) {
   ui.writeError("No command provided. Please provide a command to execute.");
@@ -25,6 +26,7 @@ const command = process.argv[2];
 const pkgManagerCommands = ["npm", "npx", "yarn"];
 
 if (pkgManagerCommands.includes(command)) {
+  ui.writeInformation(process.argv.join(", "));
   setEcoSystem(ECOSYSTEM_JS);
   initializePackageManager(command);
   (async () => {
@@ -34,14 +36,16 @@ if (pkgManagerCommands.includes(command)) {
 } else if (command === "help" || command === "--help" || command === "-h") {
   writeHelp();
   process.exit(0);
-}else if (command === "setup") {
+} else if (command === "setup") {
   setup();
 } else if (command === "teardown") {
   teardown();
 } else if (command === "setup-ci") {
   setupCi();
 } else if (command === "--version" || command === "-v" || command === "-v") {
-  ui.writeInformation(`Current safe-chain version: ${getVersion()}`);
+  (async () => {
+    ui.writeInformation(`Current safe-chain version: ${await getVersion()}`);
+  })();
 } else {
   ui.writeError(`Unknown command: ${command}.`);
   ui.emptyLine();
@@ -97,8 +101,15 @@ function writeHelp() {
   ui.emptyLine();
 }
 
-function getVersion() {
-  const require = createRequire(import.meta.url);
-  const packageJson = require("../package.json");
-  return packageJson.version;
+async function getVersion() {
+  const packageJsonPath = path.join(__dirname, "..", "package.json");
+
+  const data = await fs.promises.readFile(packageJsonPath);
+  const json = JSON.parse(data.toString("utf8"));
+
+  if (json && json.version) {
+    return json.version;
+  }
+
+  return "1.0.0";
 }

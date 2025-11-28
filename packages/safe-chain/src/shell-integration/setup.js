@@ -103,9 +103,7 @@ function copyStartupFiles() {
     }
 
     // Use absolute path for source
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const sourcePath = path.resolve(
+    const sourcePath = path.join(
       __dirname,
       includePython() ? "startup-scripts/include-python" : "startup-scripts",
       file

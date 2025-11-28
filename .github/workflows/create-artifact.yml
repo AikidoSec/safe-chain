@@ -3,9 +3,7 @@ name: Create binaries
 on: pull_request
 
 jobs:
-
   create-binaries:
-
     name: Create binary for ${{ matrix.os }}-${{ matrix.arch }}
 
     runs-on: ${{ matrix.runner }}
@@ -17,32 +15,32 @@ jobs:
             arch: x64
             runner: macos-15-intel
             target: node22-macos-x64
-            extension: ''
+            extension: ""
           - os: macos
             arch: arm64
             runner: macos-latest
             target: node22-macos-arm64
-            extension: ''
+            extension: ""
           - os: linux
             arch: x64
             runner: ubuntu-latest
             target: node22-linux-x64
-            extension: ''
+            extension: ""
           - os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
             target: node22-linux-arm64
-            extension: ''
+            extension: ""
           - os: win
             arch: x64
             runner: windows-latest
             target: node22-win-x64
-            extension: '.exe'
+            extension: ".exe"
           - os: win
             arch: arm64
             runner: windows-11-arm
             target: node22-win-arm64
-            extension: '.exe'
+            extension: ".exe"
 
     steps:
       - name: Checkout code
@@ -51,10 +49,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "lts/*"
+          node-version: "22.x"
 
       - name: Setup safe-chain
-        if: matrix.os != 'win'
         run: |
           npm i -g @aikidosec/safe-chain
           safe-chain setup-ci
@@ -65,23 +62,10 @@ jobs:
       - name: Create binary (Unix)
         if: matrix.os != 'win'
         run: |
-          npm i -g esbuild@0.27.0 @yao-pkg/pkg@6.10.1
-          mkdir -p "dist/${{ matrix.os }}-${{ matrix.arch }}"
-          esbuild "./packages/safe-chain/bin/safe-chain.js" --bundle --platform=node --target=node22 > "./dist/safe-chain.cjs"
-          pkg "./dist/safe-chain.cjs" --targets ${{ matrix.target }} --output "./dist/${{ matrix.os }}-${{ matrix.arch }}/safe-chain${{ matrix.extension }}"
-        shell: bash
-
-      - name: Create binary (Windows)
-        if: matrix.os == 'win'
-        run: |
-          npm i -g esbuild@0.27.0 @yao-pkg/pkg@6.10.1
-          New-Item -ItemType Directory -Force -Path "dist/${{ matrix.os }}-${{ matrix.arch }}"
-          esbuild "./packages/safe-chain/bin/safe-chain.js" --bundle --platform=node --target=node22 | Out-File -FilePath "./dist/safe-chain.cjs" -Encoding utf8
-          pkg "./dist/safe-chain.cjs" --targets ${{ matrix.target }} --output "./dist/${{ matrix.os }}-${{ matrix.arch }}/safe-chain${{ matrix.extension }}"
-        shell: powershell
+          node build.js ${{ matrix.target }}
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: safe-chain-${{ matrix.os }}-${{ matrix.arch }}
-          path: dist/${{ matrix.os }}-${{ matrix.arch }}/*
+          path: dist/*
