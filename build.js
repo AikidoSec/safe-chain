@@ -73,7 +73,7 @@ function buildSafeChainBinary(target) {
   // eslint-disable-next-line no-console
   console.error("Target: " + target);
   return new Promise((resolve, reject) => {
-    const pkg = spawn("pkg", ["./build/package.json", `--target=${target}`], {
+    const pkg = spawn("pkg", ["./build/package.json", "--targets", target], {
       stdio: "inherit",
       shell: true,
     });
