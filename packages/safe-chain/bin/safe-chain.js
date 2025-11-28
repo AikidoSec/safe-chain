@@ -10,7 +10,18 @@ import { ECOSYSTEM_JS, setEcoSystem } from "../src/config/settings.js";
 import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
 import { main } from "../src/main.js";
 import path from "path";
+import { fileURLToPath } from "url";
 import fs from "fs";
+
+/** @type {string} */
+let dirname;
+
+if (import.meta.url) {
+  const filename = fileURLToPath(import.meta.url);
+  dirname = path.dirname(filename);
+} else {
+  dirname = __dirname;
+}
 
 if (process.argv.length < 3) {
   ui.writeError("No command provided. Please provide a command to execute.");
@@ -23,7 +34,15 @@ initializeCliArguments(process.argv);
 
 const command = process.argv[2];
 
-const pkgManagerCommands = ["npm", "npx", "yarn"];
+const pkgManagerCommands = [
+  "npm",
+  "npx",
+  "yarn",
+  "bun",
+  "bunx",
+  "pnpm",
+  "pnpx",
+];
 
 if (pkgManagerCommands.includes(command)) {
   ui.writeInformation(process.argv.join(", "));
@@ -102,7 +121,7 @@ function writeHelp() {
 }
 
 async function getVersion() {
-  const packageJsonPath = path.join(__dirname, "..", "package.json");
+  const packageJsonPath = path.join(dirname, "..", "package.json");
 
   const data = await fs.promises.readFile(packageJsonPath);
   const json = JSON.parse(data.toString("utf8"));

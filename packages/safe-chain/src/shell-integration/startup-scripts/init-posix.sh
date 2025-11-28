@@ -9,15 +9,10 @@ function printSafeChainWarning() {
 
 function wrapSafeChainCommand() {
   local original_cmd="$1"
-  local aikido_cmd="$2"
 
-  # Remove the first 2 arguments (original_cmd and aikido_cmd) from $@
-  # so that "$@" now contains only the arguments passed to the original command
-  shift 2
-
-  if command -v "$aikido_cmd" > /dev/null 2>&1; then
+  if command -v safe-chain > /dev/null 2>&1; then
     # If the aikido command is available, just run it with the provided arguments
-    "$aikido_cmd" "$@"
+    safe-chain "$@"
   else
     # If the aikido command is not available, print a warning and run the original command
     printSafeChainWarning "$original_cmd"
@@ -27,27 +22,27 @@ function wrapSafeChainCommand() {
 }
 
 function npx() {
-  wrapSafeChainCommand "npx" "aikido-npx" "$@"
+  wrapSafeChainCommand "npx" "$@"
 }
 
 function yarn() {
-  wrapSafeChainCommand "yarn" "aikido-yarn" "$@"
+  wrapSafeChainCommand "yarn" "$@"
 }
 
 function pnpm() {
-  wrapSafeChainCommand "pnpm" "aikido-pnpm" "$@"
+  wrapSafeChainCommand "pnpm" "$@"
 }
 
 function pnpx() {
-  wrapSafeChainCommand "pnpx" "aikido-pnpx" "$@"
+  wrapSafeChainCommand "pnpx" "$@"
 }
 
 function bun() {
-  wrapSafeChainCommand "bun" "aikido-bun" "$@"
+  wrapSafeChainCommand "bun" "$@"
 }
 
 function bunx() {
-  wrapSafeChainCommand "bunx" "aikido-bunx" "$@"
+  wrapSafeChainCommand "bunx" "$@"
 }
 
 function npm() {
@@ -58,5 +53,5 @@ function npm() {
     return
   fi
 
-  wrapSafeChainCommand "npm" "aikido-npm" "$@"
+  wrapSafeChainCommand "npm" "$@"
 }

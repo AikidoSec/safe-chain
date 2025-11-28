@@ -15,7 +15,7 @@ if (!target) {
   await clearOutputFolder();
   await bundleSafeChain();
   await copyShellScripts();
-  await copyAndModifyPackageJson(target);
+  await copyAndModifyPackageJson();
   await buildSafeChainBinary(target);
 })();
 
@@ -41,8 +41,14 @@ async function copyShellScripts() {
     "./build/bin/startup-scripts",
     { recursive: true }
   );
+  await mkdir("./build/bin/path-wrappers", { recursive: true });
+  await cp(
+    "./packages/safe-chain/src/shell-integration/path-wrappers/",
+    "./build/bin/path-wrappers",
+    { recursive: true }
+  );
 }
-async function copyAndModifyPackageJson(target) {
+async function copyAndModifyPackageJson() {
   const packageJsonContent = await readFile(
     "./packages/safe-chain/package.json",
     "utf-8"
@@ -61,8 +67,11 @@ async function copyAndModifyPackageJson(target) {
   packageJson.type = "commonjs";
   packageJson.pkg = {
     outputPath: "dist",
-    assets: ["node_modules/certifi/**/*", "bin/startup-scripts/**/*"],
-    targets: [target],
+    assets: [
+      "node_modules/certifi/**/*",
+      "bin/startup-scripts/**/*",
+      "bin/path-wrappers/**/*",
+    ],
   };
 
   await writeFile("./build/package.json", JSON.stringify(packageJson, null, 2));
@@ -71,8 +80,6 @@ async function copyAndModifyPackageJson(target) {
 }
 
 function buildSafeChainBinary(target) {
-  // eslint-disable-next-line no-console
-  console.error("Target: " + target);
   return new Promise((resolve, reject) => {
     const pkg = spawn(
       "npx",

@@ -8,6 +8,16 @@ import { fileURLToPath } from "url";
 import { includePython } from "../config/cliArguments.js";
 import { ECOSYSTEM_PY } from "../config/settings.js";
 
+/** @type {string} */
+let dirname;
+
+if (import.meta.url) {
+  const filename = fileURLToPath(import.meta.url);
+  dirname = path.dirname(filename);
+} else {
+  dirname = __dirname;
+}
+
 /**
  * Loops over the detected shells and calls the setup function for each.
  */
@@ -37,10 +47,8 @@ export async function setupCi() {
  */
 function createUnixShims(shimsDir) {
   // Read the template file
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
   const templatePath = path.resolve(
-    __dirname,
+    dirname,
     "path-wrappers",
     "templates",
     "unix-wrapper.template.sh"
@@ -78,10 +86,8 @@ function createUnixShims(shimsDir) {
  */
 function createWindowsShims(shimsDir) {
   // Read the template file
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
   const templatePath = path.resolve(
-    __dirname,
+    dirname,
     "path-wrappers",
     "templates",
     "windows-wrapper.template.cmd"

@@ -6,6 +6,17 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { includePython } from "../config/cliArguments.js";
+import { fileURLToPath } from "url";
+
+/** @type {string} */
+let dirname;
+
+if (import.meta.url) {
+  const filename = fileURLToPath(import.meta.url);
+  dirname = path.dirname(filename);
+} else {
+  dirname = __dirname;
+}
 
 /**
  * Loops over the detected shells and calls the setup function for each.
@@ -103,7 +114,7 @@ function copyStartupFiles() {
 
     // Use absolute path for source
     const sourcePath = path.join(
-      __dirname,
+      dirname,
       includePython() ? "startup-scripts/include-python" : "startup-scripts",
       file
     );
