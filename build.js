@@ -16,7 +16,7 @@ if (!target) {
   await bundleSafeChain();
   await copyShellScripts();
   await copyAndModifyPackageJson(target);
-  // await buildSafeChainBinary(target);
+  await buildSafeChainBinary(target);
 })();
 
 async function clearOutputFolder() {
@@ -74,10 +74,14 @@ function buildSafeChainBinary(target) {
   // eslint-disable-next-line no-console
   console.error("Target: " + target);
   return new Promise((resolve, reject) => {
-    const pkg = spawn("pkg", ["./build/package.json", "-t", target], {
-      stdio: "inherit",
-      shell: true,
-    });
+    const pkg = spawn(
+      "npx",
+      ["@yao-pkg/pkg", "./build/package.json", "-t", target],
+      {
+        stdio: "inherit",
+        shell: true,
+      }
+    );
 
     pkg.on("close", (code) => {
       if (code !== 0) {

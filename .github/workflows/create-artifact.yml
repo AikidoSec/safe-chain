@@ -54,7 +54,7 @@ jobs:
 
       - name: Setup safe-chain
         run: |
-          npm i -g @aikidosec/safe-chain @yao-pkg/pkg
+          npm i -g @aikidosec/safe-chain
           safe-chain setup-ci
 
       - name: Install dependencies
@@ -63,7 +63,6 @@ jobs:
       - name: Create binary
         run: |
           node build.js ${{ matrix.target }}
-          pkg ./build/package.json --output "./dist/safe-chain${{ matrix.extension }}"
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
