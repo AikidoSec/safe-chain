@@ -43,7 +43,9 @@ const command = process.argv[2];
 const tool = knownAikidoTools.find((tool) => tool.tool === command);
 
 if (tool && tool.internalPackageManagerName === PIP_PACKAGE_MANAGER) {
-  await executePip(tool);
+  (async function () {
+    await executePip(tool);
+  })();
 } else if (tool) {
   const args = process.argv.slice(3);
 
