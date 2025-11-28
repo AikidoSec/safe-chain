@@ -30,7 +30,7 @@ jobs:
           - os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
-            target: node24-linux-arm64
+            target: node20-linux-arm64
             extension: ""
           - os: win
             arch: x64
