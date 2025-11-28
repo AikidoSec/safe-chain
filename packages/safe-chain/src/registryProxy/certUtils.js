@@ -2,7 +2,6 @@ import forge from "node-forge";
 import path from "path";
 import fs from "fs";
 import os from "os";
-import { ui } from "../environment/userInteraction.js";
 
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
