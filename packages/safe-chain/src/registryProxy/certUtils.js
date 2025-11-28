@@ -3,6 +3,9 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
+// @ts-ignore
+forge.options.usePureJavaScript = true;
+
 const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
 
