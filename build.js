@@ -73,6 +73,7 @@ function buildSafeChainBinary(target) {
   return new Promise((resolve, reject) => {
     const pkg = spawn("pkg", ["./build/package.json", `--target=${target}`], {
       stdio: "inherit",
+      shell: true,
     });
 
     pkg.on("close", (code) => {
