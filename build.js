@@ -29,7 +29,7 @@ async function bundleSafeChain() {
     entryPoints: ["./packages/safe-chain/bin/safe-chain.js"],
     bundle: true,
     platform: "node",
-    target: "node22",
+    target: "node24",
     outfile: "./build/bin/safe-chain.cjs",
   });
 }

@@ -54,7 +54,7 @@ jobs:
 
       - name: Setup safe-chain
         run: |
-          npm i -g @aikidosec/safe-chain pkg
+          npm i -g @aikidosec/safe-chain @yao-pkg/pkg
           safe-chain setup-ci
 
       - name: Install dependencies
