@@ -39,12 +39,11 @@ function Invoke-RealCommand {
 function Invoke-WrappedCommand {
     param(
         [string]$OriginalCmd,
-        [string]$AikidoCmd,
         [string[]]$Arguments
     )
 
-    if (Test-CommandAvailable $AikidoCmd) {
-        & $AikidoCmd @Arguments
+    if (Test-CommandAvailable "safe-chain") {
+        & safe-chain $OriginalCmd @Arguments
     }
     else {
         Write-SafeChainWarning $OriginalCmd
@@ -53,27 +52,27 @@ function Invoke-WrappedCommand {
 }
 
 function npx {
-    Invoke-WrappedCommand "npx" "aikido-npx" $args
+    Invoke-WrappedCommand "npx" $args
 }
 
 function yarn {
-    Invoke-WrappedCommand "yarn" "aikido-yarn" $args
+    Invoke-WrappedCommand "yarn" $args
 }
 
 function pnpm {
-    Invoke-WrappedCommand "pnpm" "aikido-pnpm" $args
+    Invoke-WrappedCommand "pnpm" $args
 }
 
 function pnpx {
-    Invoke-WrappedCommand "pnpx" "aikido-pnpx" $args
+    Invoke-WrappedCommand "pnpx" $args
 }
 
 function bun {
-    Invoke-WrappedCommand "bun" "aikido-bun" $args
+    Invoke-WrappedCommand "bun" $args
 }
 
 function bunx {
-    Invoke-WrappedCommand "bunx" "aikido-bunx" $args
+    Invoke-WrappedCommand "bunx" $args
 }
 
 function npm {
@@ -83,29 +82,29 @@ function npm {
         Invoke-RealCommand "npm" $args
         return
     }
-    
-    Invoke-WrappedCommand "npm" "aikido-npm" $args
+
+    Invoke-WrappedCommand "npm" $args
 }
 
 function pip {
-    Invoke-WrappedCommand "pip" "aikido-pip" $args
+    Invoke-WrappedCommand "pip" $args
 }
 
 function pip3 {
-    Invoke-WrappedCommand "pip3" "aikido-pip3" $args
+    Invoke-WrappedCommand "pip3" $args
 }
 
 function uv {
-    Invoke-WrappedCommand "uv" "aikido-uv" $args
+    Invoke-WrappedCommand "uv" $args
 }
 
 # `python -m pip`, `python -m pip3`.
 function python {
-    Invoke-WrappedCommand 'python' 'aikido-python' $args
+    Invoke-WrappedCommand 'python' $args
 }
 
 # `python3 -m pip`, `python3 -m pip3'.
 function python3 {
-    Invoke-WrappedCommand 'python3' 'aikido-python3' $args
+    Invoke-WrappedCommand 'python3' $args
 }
 

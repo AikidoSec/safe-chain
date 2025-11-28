@@ -45,7 +45,6 @@ const pkgManagerCommands = [
 ];
 
 if (pkgManagerCommands.includes(command)) {
-  ui.writeInformation(process.argv.join(", "));
   setEcoSystem(ECOSYSTEM_JS);
   initializePackageManager(command);
   (async () => {

@@ -17,41 +17,40 @@ end
 
 function wrapSafeChainCommand
     set original_cmd $argv[1]
-    set aikido_cmd $argv[2]
-    set cmd_args $argv[3..-1]
-    
-    if type -q $aikido_cmd
-        # If the aikido command is available, just run it with the provided arguments
-        $aikido_cmd $cmd_args
+    set cmd_args $argv[2..-1]
+
+    if type -q safe-chain
+        # If the safe-chain command is available, just run it with the provided arguments
+        safe-chain $original_cmd $cmd_args
     else
-        # If the aikido command is not available, print a warning and run the original command
+        # If the safe-chain command is not available, print a warning and run the original command
         printSafeChainWarning $original_cmd
         command $original_cmd $cmd_args
     end
 end
 
 function npx
-    wrapSafeChainCommand "npx" "aikido-npx" $argv
+    wrapSafeChainCommand "npx" $argv
 end
 
 function yarn
-    wrapSafeChainCommand "yarn" "aikido-yarn" $argv
+    wrapSafeChainCommand "yarn" $argv
 end
 
 function pnpm
-    wrapSafeChainCommand "pnpm" "aikido-pnpm" $argv
+    wrapSafeChainCommand "pnpm" $argv
 end
 
 function pnpx
-    wrapSafeChainCommand "pnpx" "aikido-pnpx" $argv
+    wrapSafeChainCommand "pnpx" $argv
 end
 
 function bun
-    wrapSafeChainCommand "bun" "aikido-bun" $argv
+    wrapSafeChainCommand "bun" $argv
 end
 
 function bunx
-    wrapSafeChainCommand "bunx" "aikido-bunx" $argv
+    wrapSafeChainCommand "bunx" $argv
 end
 
 function npm
@@ -66,5 +65,5 @@ function npm
         end
     end
 
-    wrapSafeChainCommand "npm" "aikido-npm" $argv
+    wrapSafeChainCommand "npm" $argv
 end
