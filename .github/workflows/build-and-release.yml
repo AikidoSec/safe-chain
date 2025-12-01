@@ -7,10 +7,14 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
+  create-binaries:
+    uses: ./.github/workflows/create-artifact.yml
+
   build:
+    needs: create-binaries
     runs-on: ubuntu-latest
 
     steps:
@@ -55,3 +59,22 @@ jobs:
         run: |
           echo "Publishing version ${{ steps.get_version.outputs.tag }} to NPM"
           npm publish --workspace=packages/safe-chain --access public --provenance
+
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries/
+          pattern: safe-chain-*
+          merge-multiple: false
+
+      - name: Upload binaries to existing GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ steps.get_version.outputs.tag }} \
+            binaries/safe-chain-macos-x64/* \
+            binaries/safe-chain-macos-arm64/* \
+            binaries/safe-chain-linux-x64/* \
+            binaries/safe-chain-linux-arm64/* \
+            binaries/safe-chain-win-x64/* \
+            binaries/safe-chain-win-arm64/*
