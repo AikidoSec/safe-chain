@@ -10,7 +10,7 @@ REM Check if aikido command is available with clean PATH
 set "PATH=%CLEAN_PATH%" & where {{AIKIDO_COMMAND}} >nul 2>&1
 if %errorlevel%==0 (
     REM Call aikido command with clean PATH
-    set "PATH=%CLEAN_PATH%" & {{AIKIDO_COMMAND}} %*
+    set "PATH=%CLEAN_PATH%" & safe-chain {{PACKAGE_MANAGER}} %*
 ) else (
     REM Find the original command with clean PATH
     for /f "tokens=*" %%i in ('set "PATH=%CLEAN_PATH%" ^& where {{PACKAGE_MANAGER}} 2^>nul') do (
