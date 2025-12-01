@@ -11,11 +11,26 @@ import { parseNpmPackageUrl } from "./parseNpmPackageUrl.js";
 const knownJsRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
 
 /**
+ * @returns {string[]}
+ */
+function getAllowedRegistries() {
+  const customRegistries = process.env.SAFE_CHAIN_CUSTOM_NPM_REGISTRIES || "";
+  const registries = [...knownJsRegistries];
+
+  if (customRegistries) {
+    registries.push(...customRegistries.split(",").map((reg) => reg.trim()));
+  }
+
+  return registries;
+}
+
+/**
  * @param {string} url
  * @returns {import("../interceptorBuilder.js").Interceptor | undefined}
  */
 export function npmInterceptorForUrl(url) {
-  const registry = knownJsRegistries.find((reg) => url.includes(reg));
+  const allowedRegistries = getAllowedRegistries();
+  const registry = allowedRegistries.find((reg) => url.includes(reg));
 
   if (registry) {
     return buildNpmInterceptor(registry);
