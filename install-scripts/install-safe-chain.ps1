@@ -2,7 +2,7 @@
 # Usage: iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
 
 
-$Version = "v0.0.3-binaries-beta"
+$Version = "v0.0.4-binaries-beta"
 $InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
