@@ -60,7 +60,7 @@ describe("pipInterceptor", async () => {
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0a1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0a1" },
+      expected: { packageName: "foo-bar", version: "2.0.0a1" },
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0-cp38-cp38-manylinux1_x86_64.whl",

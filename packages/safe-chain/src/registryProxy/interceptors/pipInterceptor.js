@@ -32,7 +32,14 @@ function buildPipInterceptor(registry) {
       reqContext.targetUrl,
       registry
     );
-    if (await isMalwarePackage(packageName, version)) {
+
+    // Normalize underscores to hyphens for DB matching, as PyPI allows underscores in distribution names
+    const hyphenName = packageName?.includes("_") ? packageName.replace(/_/g, "-") : packageName;
+
+    const isMalicious = await isMalwarePackage(packageName, version) 
+      || await isMalwarePackage(hyphenName, version);
+
+    if (isMalicious) {
       reqContext.blockMalware(packageName, version);
     }
   });
@@ -71,9 +78,11 @@ function parsePipPackageFromUrl(url, registry) {
   // Example wheel: https://files.pythonhosted.org/packages/xx/yy/requests-2.28.1-py3-none-any.whl
   // Example sdist: https://files.pythonhosted.org/packages/xx/yy/requests-2.28.1.tar.gz
 
-  // Wheel (.whl)
-  if (filename.endsWith(".whl")) {
-    const base = filename.slice(0, -4); // remove ".whl"
+  // Wheel (.whl) and Poetry's preflight metadata (.whl.metadata)
+  if (filename.endsWith(".whl") || filename.endsWith(".whl.metadata")) {
+    const base = filename.endsWith(".whl") 
+      ? filename.slice(0, -4) 
+      : filename.slice(0, -".whl.metadata".length);
     const firstDash = base.indexOf("-");
     if (firstDash > 0) {
       const dist = base.slice(0, firstDash); // may contain underscores
@@ -92,10 +101,10 @@ function parsePipPackageFromUrl(url, registry) {
     }
   }
 
-  // Source dist (sdist)
-  const sdistExtMatch = filename.match(/\.(tar\.gz|zip|tar\.bz2|tar\.xz)$/i);
+  // Source dist (sdist) and potential metadata sidecars (e.g., .tar.gz.metadata)
+  const sdistExtMatch = filename.match(/\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i);
   if (sdistExtMatch) {
-    const base = filename.slice(0, -sdistExtMatch[0].length);
+    const base = filename.replace(/\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i, "");
     const lastDash = base.lastIndexOf("-");
     if (lastDash > 0 && lastDash < base.length - 1) {
       packageName = base.slice(0, lastDash);
