@@ -32,11 +32,11 @@ describe("pipInterceptor", async () => {
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0-py3-none-any.whl",
-      expected: { packageName: "foo_bar", version: "2.0.0" },
+      expected: { packageName: "foo-bar", version: "2.0.0" },
     },
     {
       url: "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl",
-      expected: { packageName: "foo_bar", version: "2.0.0" },
+      expected: { packageName: "foo-bar", version: "2.0.0" },
     },
     {
       url: "https://pypi.org/packages/source/f/foo.bar/foo.bar-1.0.0.tar.gz",
