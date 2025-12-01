@@ -10,8 +10,7 @@ export function createPoetryPackageManager() {
   return {
     runCommand: (args) => runPoetryCommand(args),
 
-    // For poetry, we use the proxy-only approach to block package downloads,
-    // so we don't need to analyze commands.
+    // MITM only approach for Poetry
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
   };
