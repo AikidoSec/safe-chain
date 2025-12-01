@@ -100,15 +100,10 @@ main() {
     info "Binary installed to: $FINAL_FILE"
 
     # Execute safe-chain setup
-    info "Running safe-chain setup..."
-    if "$FINAL_FILE" setup; then
-        info "✓ safe-chain installed and configured successfully!"
-    else
+    if ! "$FINAL_FILE" setup; then
         warn "safe-chain was installed but setup encountered issues."
         warn "You can run 'safe-chain setup' manually later."
     fi
-
-    info "Installation complete!"
 }
 
 main

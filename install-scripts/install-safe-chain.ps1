@@ -85,16 +85,11 @@ function Install-SafeChain {
     Write-Info "Binary installed to: $finalFile"
 
     # Execute safe-chain setup
-    Write-Info "Running safe-chain setup..."
-
     try {
         $env:Path = "$env:Path;$InstallDir"
         & $finalFile setup
 
-        if ($LASTEXITCODE -eq 0) {
-            Write-Info "✓ safe-chain installed and configured successfully!"
-        }
-        else {
+        if ($LASTEXITCODE -ne 0) {
             Write-Warn "safe-chain was installed but setup encountered issues."
             Write-Warn "You can run 'safe-chain setup' manually later."
         }
@@ -103,8 +98,6 @@ function Install-SafeChain {
         Write-Warn "safe-chain was installed but setup encountered issues: $_"
         Write-Warn "You can run 'safe-chain setup' manually later."
     }
-
-    Write-Info "Installation complete!"
 }
 
 # Run installation
