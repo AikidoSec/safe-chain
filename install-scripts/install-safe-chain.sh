@@ -68,9 +68,32 @@ download() {
     fi
 }
 
+# Check and uninstall npm global package if present
+check_npm_installation() {
+    if ! command_exists npm; then
+        return
+    fi
+
+    # Check if safe-chain is installed as an npm global package
+    if npm list -g @aikidosec/safe-chain >/dev/null 2>&1; then
+        info "Detected npm global installation of @aikidosec/safe-chain"
+        info "Uninstalling npm version before installing binary version..."
+
+        if npm uninstall -g @aikidosec/safe-chain >/dev/null 2>&1; then
+            info "Successfully uninstalled npm version"
+        else
+            warn "Failed to uninstall npm version automatically"
+            warn "Please run: npm uninstall -g @aikidosec/safe-chain"
+        fi
+    fi
+}
+
 # Main installation
 main() {
     info "Installing safe-chain ${VERSION}..."
+
+    # Check for existing npm installation
+    check_npm_installation
 
     # Detect platform
     OS=$(detect_os)

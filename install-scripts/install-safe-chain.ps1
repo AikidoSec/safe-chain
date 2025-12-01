@@ -36,9 +36,36 @@ function Get-Architecture {
     }
 }
 
+# Check and uninstall npm global package if present
+function Remove-NpmInstallation {
+    # Check if npm is available
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        return
+    }
+
+    # Check if safe-chain is installed as an npm global package
+    npm list -g @aikidosec/safe-chain 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Info "Detected npm global installation of @aikidosec/safe-chain"
+        Write-Info "Uninstalling npm version before installing binary version..."
+
+        npm uninstall -g @aikidosec/safe-chain 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Info "Successfully uninstalled npm version"
+        }
+        else {
+            Write-Warn "Failed to uninstall npm version automatically"
+            Write-Warn "Please run: npm uninstall -g @aikidosec/safe-chain"
+        }
+    }
+}
+
 # Main installation
 function Install-SafeChain {
     Write-Info "Installing safe-chain $Version..."
+
+    # Check for existing npm installation
+    Remove-NpmInstallation
 
     # Detect platform
     $arch = Get-Architecture
