@@ -44,19 +44,19 @@ describe("pipInterceptor", async () => {
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0b1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0b1" },
+      expected: { packageName: "foo-bar", version: "2.0.0b1" },
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0rc1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0rc1" },
+      expected: { packageName: "foo-bar", version: "2.0.0rc1" },
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0.post1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0.post1" },
+      expected: { packageName: "foo-bar", version: "2.0.0.post1" },
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0.dev1.tar.gz",
-      expected: { packageName: "foo_bar", version: "2.0.0.dev1" },
+      expected: { packageName: "foo-bar", version: "2.0.0.dev1" },
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0a1.tar.gz",
@@ -64,7 +64,7 @@ describe("pipInterceptor", async () => {
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0-cp38-cp38-manylinux1_x86_64.whl",
-      expected: { packageName: "foo_bar", version: "2.0.0" },
+      expected: { packageName: "foo-bar", version: "2.0.0" },
     },
     // Invalid pip URLs
     {
