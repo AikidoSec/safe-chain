@@ -1,4 +1,7 @@
-$env:PATH = "$env:PATH;$HOME/.safe-chain/bin"
+# Use cross-platform path separator (: on Unix, ; on Windows)
+$pathSeparator = if ($IsWindows) { ';' } else { ':' }
+$safeChainBin = Join-Path $HOME '.safe-chain' 'bin'
+$env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
 function Write-SafeChainWarning {
     param([string]$Command)

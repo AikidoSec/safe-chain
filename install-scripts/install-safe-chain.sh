@@ -7,7 +7,7 @@
 set -e  # Exit on error
 
 # Configuration
-VERSION="${SAFE_CHAIN_VERSION:-v0.0.2-binaries-beta}"
+VERSION="${SAFE_CHAIN_VERSION:-v0.0.3-binaries-beta}"
 INSTALL_DIR="${HOME}/.safe-chain/bin"
 REPO_URL="https://github.com/AikidoSec/safe-chain"
 
@@ -98,18 +98,6 @@ main() {
     chmod +x "$FINAL_FILE" || error "Failed to make binary executable"
 
     info "Binary installed to: $FINAL_FILE"
-
-    # Check if directory is in PATH
-    case ":$PATH:" in
-        *":$INSTALL_DIR:"*)
-            info "Installation directory is already in PATH"
-            ;;
-        *)
-            warn "Installation directory is not in PATH"
-            warn "Add the following line to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
-            printf "\n    export PATH=\"\$PATH:${INSTALL_DIR}\"\n\n"
-            ;;
-    esac
 
     # Execute safe-chain setup
     info "Running safe-chain setup..."

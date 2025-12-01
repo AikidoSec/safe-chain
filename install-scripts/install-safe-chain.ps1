@@ -1,15 +1,8 @@
 # Downloads and installs safe-chain for Windows
 # Usage: iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
 
-param(
-    [string]$Version
-)
 
-# Configuration
-if (-not $Version) {
-    $Version = if ($env:SAFE_CHAIN_VERSION) { $env:SAFE_CHAIN_VERSION } else { "v0.0.2-binaries-beta" }
-}
-
+$Version = "v0.0.3-binaries-beta"
 $InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
@@ -90,37 +83,6 @@ function Install-SafeChain {
     }
 
     Write-Info "Binary installed to: $finalFile"
-
-    # Check if directory is in PATH
-    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if ($userPath -like "*$InstallDir*") {
-        Write-Info "Installation directory is already in PATH"
-    }
-    else {
-        Write-Warn "Installation directory is not in PATH"
-        Write-Host ""
-        Write-Warn "Would you like to add it to your PATH now? (Y/N)"
-        $response = Read-Host
-
-        if ($response -eq "Y" -or $response -eq "y") {
-            try {
-                $newPath = "$userPath;$InstallDir"
-                [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
-                Write-Info "Added to PATH. Please restart your terminal for changes to take effect."
-            }
-            catch {
-                Write-Warn "Failed to add to PATH automatically: $_"
-                Write-Warn "Please add the following directory to your PATH manually:"
-                Write-Host "    $InstallDir"
-            }
-        }
-        else {
-            Write-Warn "Skipping PATH setup. Add the following directory to your PATH manually:"
-            Write-Host ""
-            Write-Host "    $InstallDir"
-            Write-Host ""
-        }
-    }
 
     # Execute safe-chain setup
     Write-Info "Running safe-chain setup..."
