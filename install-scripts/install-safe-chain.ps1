@@ -86,7 +86,7 @@ function Remove-VoltaInstallation {
 
     # Volta manages global packages in its own directory
     # Check if safe-chain is installed via Volta
-    volta list @aikidosec/safe-chain 2>&1 | Out-Null
+    volta list safe-chain 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Info "Detected Volta installation of @aikidosec/safe-chain"
         Write-Info "Uninstalling Volta version before installing binary version..."
@@ -170,7 +170,8 @@ function Install-SafeChain {
 
         if ($setupArgs) {
             & $finalFile $setupCmd $setupArgs
-        } else {
+        }
+        else {
             & $finalFile $setupCmd
         }
 

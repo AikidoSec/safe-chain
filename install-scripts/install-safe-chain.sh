@@ -112,7 +112,7 @@ check_volta_installation() {
 
     # Volta manages global packages in its own directory
     # Check if safe-chain is installed via Volta
-    if volta list @aikidosec/safe-chain >/dev/null 2>&1; then
+    if volta list safe-chain >/dev/null 2>&1; then
         info "Detected Volta installation of @aikidosec/safe-chain"
         info "Uninstalling Volta version before installing binary version..."
 
