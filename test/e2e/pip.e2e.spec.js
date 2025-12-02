@@ -489,4 +489,54 @@ describe("E2E: pip coverage", () => {
       `Should still scan for malware. Output was:\n${result.output}`
     );
   });
+
+  it(`pip3 download works after configuring pip settings`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Configure pip with timeout and extra index URL
+    const configTimeout = await shell.runCommand("pip3 config set global.timeout 60");
+    assert.ok(
+      configTimeout.output.includes("Writing to"),
+      `Config set should succeed. Output was:\n${configTimeout.output}`
+    );
+    
+    const configIndex = await shell.runCommand(
+      "pip3 config set global.extra-index-url https://pypi.org/simple"
+    );
+    assert.ok(
+      configIndex.output.includes("Writing to"),
+      `Config set should succeed. Output was:\n${configIndex.output}`
+    );
+    
+    // Verify config persisted
+    const listConfig = await shell.runCommand("pip3 config list");
+    assert.ok(
+      listConfig.output.includes("timeout") && listConfig.output.includes("60"),
+      `Config should show timeout=60. Output was:\n${listConfig.output}`
+    );
+    assert.ok(
+      listConfig.output.includes("extra-index-url") && listConfig.output.includes("pypi.org"),
+      `Config should show extra-index-url. Output was:\n${listConfig.output}`
+    );
+    
+    // Now download packages with the configured settings
+    const downloadResult = await shell.runCommand(
+      "pip3 download -d /tmp/packages requests certifi"
+    );
+    
+    assert.ok(
+      downloadResult.output.includes("no malware found."),
+      `Should scan for malware. Output was:\n${downloadResult.output}`
+    );
+    
+    // Verify downloads succeeded
+    assert.ok(
+      downloadResult.output.includes("Saved") || downloadResult.output.includes("requests"),
+      `Download should succeed with configured settings. Output was:\n${downloadResult.output}`
+    );
+    assert.ok(
+      downloadResult.output.includes("certifi"),
+      `Should download certifi. Output was:\n${downloadResult.output}`
+    );
+  });
 });
