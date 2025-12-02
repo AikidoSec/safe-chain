@@ -29,6 +29,7 @@ export async function setupCi() {
   ui.emptyLine();
 
   const shimsDir = path.join(os.homedir(), ".safe-chain", "shims");
+  const binDir = path.join(os.homedir(), ".safe-chain", "shims");
   // Create the shims directory if it doesn't exist
   if (!fs.existsSync(shimsDir)) {
     fs.mkdirSync(shimsDir, { recursive: true });
@@ -36,7 +37,7 @@ export async function setupCi() {
 
   createShims(shimsDir);
   ui.writeInformation(`Created shims in ${shimsDir}`);
-  modifyPathForCi(shimsDir);
+  modifyPathForCi(shimsDir, binDir);
   ui.writeInformation(`Added shims directory to PATH for CI environments.`);
 }
 
@@ -130,13 +131,18 @@ function createShims(shimsDir) {
 
 /**
  * @param {string} shimsDir
+ * @param {string} binDir
  *
  * @returns {void}
  */
-function modifyPathForCi(shimsDir) {
+function modifyPathForCi(shimsDir, binDir) {
   if (process.env.GITHUB_PATH) {
     // In GitHub Actions, append the shims directory to GITHUB_PATH
-    fs.appendFileSync(process.env.GITHUB_PATH, shimsDir + os.EOL, "utf-8");
+    fs.appendFileSync(
+      process.env.GITHUB_PATH,
+      shimsDir + os.EOL + binDir + os.EOL,
+      "utf-8"
+    );
     ui.writeInformation(
       `Added shims directory to GITHUB_PATH for GitHub Actions.`
     );
@@ -147,6 +153,7 @@ function modifyPathForCi(shimsDir) {
     //  ##vso[task.prependpath]/path/to/add
     // Logging this to stdout will cause the Azure Pipelines agent to pick it up
     ui.writeInformation("##vso[task.prependpath]" + shimsDir);
+    ui.writeInformation("##vso[task.prependpath]" + binDir);
   }
 }
 

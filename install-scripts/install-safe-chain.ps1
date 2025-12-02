@@ -19,7 +19,7 @@ param(
     [switch]$includepython
 )
 
-$Version = "v0.0.4-binaries-beta"
+$Version = "v0.0.5-binaries-beta"
 $InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
