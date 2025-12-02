@@ -24,7 +24,9 @@ Aikido Safe Chain works on Node.js version 16 and above and supports the followi
 
 ## Installation
 
-Installing the Aikido Safe Chain is easy with our one-line installer:
+Installing the Aikido Safe Chain is easy with our one-line installer.
+
+> ⚠️ **Already installed via npm?** See the [migration guide](docs/npm-to-binary-migration.md) to switch to the binary version.
 
 ### Unix/Linux/macOS
 
@@ -186,11 +188,13 @@ Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD envir
 ### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
 **JavaScript only:**
+
 ```shell
 curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
 ```
 
 **With Python support:**
+
 ```shell
 curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
 ```
@@ -198,11 +202,13 @@ curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-s
 ### Windows (Azure Pipelines, etc.)
 
 **JavaScript only:**
+
 ```powershell
 iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
 ```
 
 **With Python support:**
+
 ```powershell
 iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci -includepython"
 ```
