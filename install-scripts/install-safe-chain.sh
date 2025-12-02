@@ -88,12 +88,36 @@ check_npm_installation() {
     fi
 }
 
+# Check and uninstall Volta-managed package if present
+check_volta_installation() {
+    if ! command_exists volta; then
+        return
+    fi
+
+    # Volta manages global packages in its own directory
+    # Check if safe-chain is installed via Volta
+    if volta list @aikidosec/safe-chain >/dev/null 2>&1; then
+        info "Detected Volta installation of @aikidosec/safe-chain"
+        info "Uninstalling Volta version before installing binary version..."
+
+        if volta uninstall @aikidosec/safe-chain >/dev/null 2>&1; then
+            info "Successfully uninstalled Volta version"
+        else
+            warn "Failed to uninstall Volta version automatically"
+            warn "Please run: volta uninstall @aikidosec/safe-chain"
+        fi
+    fi
+}
+
 # Main installation
 main() {
     info "Installing safe-chain ${VERSION}..."
 
     # Check for existing npm installation
     check_npm_installation
+
+    # Check for existing Volta installation
+    check_volta_installation
 
     # Detect platform
     OS=$(detect_os)

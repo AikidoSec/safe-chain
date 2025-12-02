@@ -60,12 +60,40 @@ function Remove-NpmInstallation {
     }
 }
 
+# Check and uninstall Volta-managed package if present
+function Remove-VoltaInstallation {
+    # Check if Volta is available
+    if (-not (Get-Command volta -ErrorAction SilentlyContinue)) {
+        return
+    }
+
+    # Volta manages global packages in its own directory
+    # Check if safe-chain is installed via Volta
+    volta list @aikidosec/safe-chain 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Info "Detected Volta installation of @aikidosec/safe-chain"
+        Write-Info "Uninstalling Volta version before installing binary version..."
+
+        volta uninstall @aikidosec/safe-chain 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Info "Successfully uninstalled Volta version"
+        }
+        else {
+            Write-Warn "Failed to uninstall Volta version automatically"
+            Write-Warn "Please run: volta uninstall @aikidosec/safe-chain"
+        }
+    }
+}
+
 # Main installation
 function Install-SafeChain {
     Write-Info "Installing safe-chain $Version..."
 
     # Check for existing npm installation
     Remove-NpmInstallation
+
+    # Check for existing Volta installation
+    Remove-VoltaInstallation
 
     # Detect platform
     $arch = Get-Architecture
