@@ -2,6 +2,9 @@
 
 # Aikido Safe Chain
 
+[![NPM Version](https://img.shields.io/npm/v/%40aikidosec%2Fsafe-chain?style=flat-square)](https://www.npmjs.com/package/@aikidosec/safe-chain)
+[![NPM Downloads](https://img.shields.io/npm/dw/%40aikidosec%2Fsafe-chain?style=flat-square)](https://www.npmjs.com/package/@aikidosec/safe-chain)
+
 - ✅ **Block malware on developer laptops and CI/CD**
 - ✅ **Supports npm and PyPI** more package managers coming
 - ✅ **Blocks packages newer than 24 hours** without breaking your build
