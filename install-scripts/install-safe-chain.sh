@@ -23,7 +23,7 @@
 set -e  # Exit on error
 
 # Configuration
-VERSION="${SAFE_CHAIN_VERSION:-v0.0.6-binaries-beta}"
+VERSION="${SAFE_CHAIN_VERSION:-v0.0.7-binaries-beta}"
 INSTALL_DIR="${HOME}/.safe-chain/bin"
 REPO_URL="https://github.com/AikidoSec/safe-chain"
 
