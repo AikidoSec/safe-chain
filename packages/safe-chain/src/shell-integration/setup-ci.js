@@ -29,7 +29,7 @@ export async function setupCi() {
   ui.emptyLine();
 
   const shimsDir = path.join(os.homedir(), ".safe-chain", "shims");
-  const binDir = path.join(os.homedir(), ".safe-chain", "shims");
+  const binDir = path.join(os.homedir(), ".safe-chain", "bin");
   // Create the shims directory if it doesn't exist
   if (!fs.existsSync(shimsDir)) {
     fs.mkdirSync(shimsDir, { recursive: true });
