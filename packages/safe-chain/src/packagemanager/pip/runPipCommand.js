@@ -46,7 +46,7 @@ function setFallbackCaBundleEnvironmentVariables(env, combinedCaPath) {
  * If the user has an existing PIP_CONFIG_FILE, a new temporary config is created that merges
  * their settings with safe-chain's, leaving the original file unchanged.
  * 
- * Special handling for 'pip config' commands: PIP_CONFIG_FILE is NOT overridden to allow
+ * Special handling for commands that modify config/cache/state: PIP_CONFIG_FILE is NOT overridden to allow
  * users to read/write persistent config. Only CA environment variables are set for these commands.
  * 
  * @param {string} command - The pip command to execute (e.g., 'pip3')
@@ -79,10 +79,12 @@ export async function runPip(command, args) {
     const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
     let cleanupConfigPath = null; // Track temp file for cleanup
 
-    // For config-related commands, skip PIP_CONFIG_FILE override to allow persistent config/cache access
-    // Only set fallback CA environment variables which don't interfere with config operations
     if (isConfigRelatedCommand) {
       ui.writeVerbose(`Safe-chain: Skipping PIP_CONFIG_FILE override for 'pip ${args[0]}' command to allow persistent config/cache access.`);
+      
+      // Still set the fallback CA bundle environment variables to avoid edge cases where a 
+      // plugin or extension triggers a network call during config introspection
+      // This can do no harm
       setFallbackCaBundleEnvironmentVariables(env, combinedCaPath);
       
       const result = await safeSpawn(command, args, {
