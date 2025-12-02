@@ -1,6 +1,23 @@
 # Downloads and installs safe-chain for Windows
-# Usage: iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
+#
+# Usage examples:
+#
+# Default (JavaScript packages only):
+#   iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
+#
+# CI setup (JavaScript packages only):
+#   iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
+#
+# Include Python packages:
+#   iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -includepython"
+#
+# CI setup with Python packages:
+#   iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci -includepython"
 
+param(
+    [switch]$ci,
+    [switch]$includepython
+)
 
 $Version = "v0.0.4-binaries-beta"
 $InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
@@ -139,19 +156,32 @@ function Install-SafeChain {
 
     Write-Info "Binary installed to: $finalFile"
 
+    # Build setup command based on parameters
+    $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
+    $setupArgs = @()
+    if ($includepython) {
+        $setupArgs += "--include-python"
+    }
+
     # Execute safe-chain setup
+    Write-Info "Running safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })..."
     try {
         $env:Path = "$env:Path;$InstallDir"
-        & $finalFile setup
+
+        if ($setupArgs) {
+            & $finalFile $setupCmd $setupArgs
+        } else {
+            & $finalFile $setupCmd
+        }
 
         if ($LASTEXITCODE -ne 0) {
             Write-Warn "safe-chain was installed but setup encountered issues."
-            Write-Warn "You can run 'safe-chain setup' manually later."
+            Write-Warn "You can run 'safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })' manually later."
         }
     }
     catch {
         Write-Warn "safe-chain was installed but setup encountered issues: $_"
-        Write-Warn "You can run 'safe-chain setup' manually later."
+        Write-Warn "You can run 'safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })' manually later."
     }
 }
 

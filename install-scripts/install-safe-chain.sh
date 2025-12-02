@@ -1,8 +1,24 @@
 #!/bin/sh
 
 # Downloads and installs safe-chain, depending on the operating system and architecture
-# Usage: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
-#    or: wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
+#
+# Usage examples:
+#
+# Default (JavaScript packages only):
+#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
+#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
+#
+# CI setup (JavaScript packages only):
+#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+#
+# Include Python packages:
+#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
+#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
+#
+# CI setup with Python packages:
+#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
 
 set -e  # Exit on error
 
@@ -109,8 +125,32 @@ check_volta_installation() {
     fi
 }
 
+# Parse command-line arguments
+parse_arguments() {
+    for arg in "$@"; do
+        case "$arg" in
+            --ci)
+                USE_CI_SETUP=true
+                ;;
+            --include-python)
+                INCLUDE_PYTHON=true
+                ;;
+            *)
+                error "Unknown argument: $arg"
+                ;;
+        esac
+    done
+}
+
 # Main installation
 main() {
+    # Initialize argument flags
+    USE_CI_SETUP=false
+    INCLUDE_PYTHON=false
+
+    # Parse command-line arguments
+    parse_arguments "$@"
+
     info "Installing safe-chain ${VERSION}..."
 
     # Check for existing npm installation
@@ -146,11 +186,24 @@ main() {
 
     info "Binary installed to: $FINAL_FILE"
 
+    # Build setup command based on arguments
+    SETUP_CMD="setup"
+    SETUP_ARGS=""
+
+    if [ "$USE_CI_SETUP" = "true" ]; then
+        SETUP_CMD="setup-ci"
+    fi
+
+    if [ "$INCLUDE_PYTHON" = "true" ]; then
+        SETUP_ARGS="--include-python"
+    fi
+
     # Execute safe-chain setup
-    if ! "$FINAL_FILE" setup; then
+    info "Running safe-chain $SETUP_CMD $SETUP_ARGS..."
+    if ! "$FINAL_FILE" $SETUP_CMD $SETUP_ARGS; then
         warn "safe-chain was installed but setup encountered issues."
-        warn "You can run 'safe-chain setup' manually later."
+        warn "You can run 'safe-chain $SETUP_CMD $SETUP_ARGS' manually later."
     fi
 }
 
-main
+main "$@"
