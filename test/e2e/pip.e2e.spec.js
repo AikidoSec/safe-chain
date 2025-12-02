@@ -336,4 +336,157 @@ describe("E2E: pip coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
+
+  it(`pip3 config set should work and persist configuration`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Set a config value
+    const setResult = await shell.runCommand(
+      "pip3 config set global.timeout 60"
+    );
+    
+    assert.ok(
+      setResult.output.includes("Writing to"),
+      `pip3 config set should write config. Output was:\n${setResult.output}`
+    );
+    
+    // Verify it was persisted by reading it back
+    const getResult = await shell.runCommand(
+      "pip3 config get global.timeout"
+    );
+    
+    assert.ok(
+      getResult.output.includes("60"),
+      `Config value should be 60. Output was:\n${getResult.output}`
+    );
+  });
+
+  it(`pip3 config list should show user configuration`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Set a value first
+    await shell.runCommand("pip3 config set global.timeout 90");
+    
+    // List config
+    const listResult = await shell.runCommand("pip3 config list");
+    
+    assert.ok(
+      listResult.output.includes("timeout") && listResult.output.includes("90"),
+      `Config list should show timeout=90. Output was:\n${listResult.output}`
+    );
+  });
+
+  it(`pip3 config unset should remove configuration`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Set a value
+    await shell.runCommand("pip3 config set global.timeout 120");
+    
+    // Verify it exists
+    const getResult = await shell.runCommand("pip3 config get global.timeout");
+    assert.ok(getResult.output.includes("120"));
+    
+    // Unset it
+    const unsetResult = await shell.runCommand("pip3 config unset global.timeout");
+    assert.ok(
+      unsetResult.output.includes("Writing to"),
+      `pip3 config unset should write config. Output was:\n${unsetResult.output}`
+    );
+  });
+
+  it(`pip3 cache dir should return cache directory path`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    const result = await shell.runCommand("pip3 cache dir");
+    
+    // Should output a directory path
+    assert.ok(
+      result.output.includes("/") && result.output.includes("cache"),
+      `Should output a cache directory path. Output was:\n${result.output}`
+    );
+  });
+
+  it(`pip3 cache info should show cache information`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Install something first to populate cache
+    await shell.runCommand("pip3 install --break-system-packages certifi");
+    
+    const result = await shell.runCommand("pip3 cache info");
+    
+    // Output should contain cache-related information
+    assert.ok(
+      result.output.match(/cache|wheel|http/i),
+      `Should output cache information. Output was:\n${result.output}`
+    );
+  });
+
+  it(`pip3 cache list should list cached packages`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Download a package to ensure something is in cache
+    await shell.runCommand("pip3 download certifi");
+    
+    const result = await shell.runCommand("pip3 cache list certifi");
+    
+    // Should show either cached wheels or "No locally built wheels"
+    assert.ok(
+      result.output.includes("certifi") || result.output.includes("No locally built"),
+      `Should output cache list information. Output was:\n${result.output}`
+    );
+  });
+
+  it(`pip3 debug should output debug information`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    const result = await shell.runCommand("pip3 debug");
+    
+    // Should contain debug information about pip environment
+    assert.ok(
+      result.output.match(/pip version|sys\.version|sys\.executable/i),
+      `Should output debug information. Output was:\n${result.output}`
+    );
+    
+    // Should NOT show safe-chain's temporary config file in the debug output
+    assert.ok(
+      !result.output.includes("safe-chain-pip-"),
+      `Debug output should not reference safe-chain temp config. Output was:\n${result.output}`
+    );
+  });
+
+  it(`pip3 completion should generate shell completion script`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    const result = await shell.runCommand("pip3 completion --zsh");
+    
+    // Should output shell completion code
+    assert.ok(
+      result.output.includes("compdef") || result.output.includes("_pip") || result.output.includes("pip completion"),
+      `Should output completion code. Output was:\n${result.output}`
+    );
+  });
+
+  it(`pip3 install still works after config operations`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Perform config operations
+    await shell.runCommand("pip3 config set global.timeout 60");
+    await shell.runCommand("pip3 cache dir");
+    
+    // Now install should still work with malware protection
+    const result = await shell.runCommand(
+      "pip3 install --break-system-packages certifi"
+    );
+    
+    assert.ok(
+      result.output.includes("Successfully installed") ||
+        result.output.includes("Requirement already satisfied"),
+      `Install should succeed after config operations. Output was:\n${result.output}`
+    );
+    
+    assert.ok(
+      result.output.includes("no malware found."),
+      `Should still scan for malware. Output was:\n${result.output}`
+    );
+  });
 });
