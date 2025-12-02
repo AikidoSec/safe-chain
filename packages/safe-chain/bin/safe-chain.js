@@ -141,6 +141,12 @@ async function getVersion() {
  * @param {import("../src/shell-integration/helpers.js").AikidoTool} tool
  */
 async function executePip(tool) {
+  // Scanners for pip / pip3 / python / python3 use a slightly different approach:
+  //  - They all use the same PIP_PACKAGE_MANAGER internally, but need some setup to be able to do so
+  //     - It needs to set which tool to run (pip / pip3 / python / python3)
+  //     - For python and python3, the -m pip/pip3 args are removed and later added again by the package manager
+  //  - Python / python3 skips safe-chain if not being run with -m pip or -m pip3
+
   let args = process.argv.slice(3);
   setEcoSystem(tool.ecoSystem);
   initializePackageManager(PIP_PACKAGE_MANAGER);

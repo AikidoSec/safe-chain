@@ -1,18 +1,6 @@
 # Downloads and installs safe-chain for Windows
 #
-# Usage examples:
-#
-# Default (JavaScript packages only):
-#   iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
-#
-# CI setup (JavaScript packages only):
-#   iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
-#
-# Include Python packages:
-#   iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -includepython"
-#
-# CI setup with Python packages:
-#   iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci -includepython"
+# Usage with "iex (iwr {url} -UseBasicParsing)" --> See README.md
 
 param(
     [switch]$ci,

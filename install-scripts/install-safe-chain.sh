@@ -2,23 +2,7 @@
 
 # Downloads and installs safe-chain, depending on the operating system and architecture
 #
-# Usage examples:
-#
-# Default (JavaScript packages only):
-#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
-#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
-#
-# CI setup (JavaScript packages only):
-#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
-#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
-#
-# Include Python packages:
-#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
-#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
-#
-# CI setup with Python packages:
-#   curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
-#   wget -qO- https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+# Usage with "curl -fsSL {url} | sh" --> See README.md
 
 set -e  # Exit on error
 
