@@ -109,7 +109,11 @@ function buildSafeChainBinary(target) {
       ? resolve("node_modules/.bin/pkg.cmd")
       : resolve("node_modules/.bin/pkg");
 
-    const pkg = spawn(pkgBin, ["./build/package.json", "-t", target], {
+    let pkgArgs = ["./build/package.json", "-t", "target"];
+
+    pkgArgs += ["--compress", "GZip"];
+
+    const pkg = spawn(pkgBin, pkgArgs, {
       stdio: "inherit",
       shell: true,
     });
