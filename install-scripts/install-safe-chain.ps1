@@ -7,7 +7,7 @@ param(
     [switch]$includepython
 )
 
-$Version = "v0.0.7-binaries-beta"
+$Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
 $InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
@@ -29,6 +29,25 @@ function Write-Error-Custom {
     param([string]$Message)
     Write-Host "[ERROR] $Message" -ForegroundColor Red
     exit 1
+}
+
+# Fetch latest release version tag from GitHub
+function Get-LatestVersion {
+    Write-Info "Fetching latest release version..."
+
+    try {
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/AikidoSec/safe-chain/releases/latest" -UseBasicParsing
+        $latestVersion = $response.tag_name
+
+        if ([string]::IsNullOrWhiteSpace($latestVersion)) {
+            Write-Error-Custom "Failed to fetch latest version from GitHub API. Please set SAFE_CHAIN_VERSION environment variable."
+        }
+
+        return $latestVersion
+    }
+    catch {
+        Write-Error-Custom "Failed to fetch latest version from GitHub API: $($_.Exception.Message). Please set SAFE_CHAIN_VERSION environment variable."
+    }
 }
 
 # Detect architecture
@@ -92,6 +111,11 @@ function Remove-VoltaInstallation {
 
 # Main installation
 function Install-SafeChain {
+    # Fetch latest version if VERSION is not set
+    if ([string]::IsNullOrWhiteSpace($script:Version)) {
+        $script:Version = Get-LatestVersion
+    }
+
     # Build installation message
     $installMsg = "Installing safe-chain $Version"
     if ($includepython) {

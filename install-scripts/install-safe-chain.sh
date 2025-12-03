@@ -7,7 +7,7 @@
 set -e  # Exit on error
 
 # Configuration
-VERSION="${SAFE_CHAIN_VERSION:-v0.0.7-binaries-beta}"
+VERSION="${SAFE_CHAIN_VERSION:-}"  # Will be fetched from latest release if not set
 INSTALL_DIR="${HOME}/.safe-chain/bin"
 REPO_URL="https://github.com/AikidoSec/safe-chain"
 
@@ -52,6 +52,26 @@ detect_arch() {
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+# Fetch latest release version tag from GitHub
+fetch_latest_version() {
+    info "Fetching latest release version..."
+
+    # Try using GitHub API to get the latest release tag
+    if command_exists curl; then
+        latest_version=$(curl -fsSL "https://api.github.com/repos/AikidoSec/safe-chain/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+    elif command_exists wget; then
+        latest_version=$(wget -qO- "https://api.github.com/repos/AikidoSec/safe-chain/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+    else
+        error "Neither curl nor wget found. Please install one of them or set SAFE_CHAIN_VERSION environment variable."
+    fi
+
+    if [ -z "$latest_version" ]; then
+        error "Failed to fetch latest version from GitHub API. Please set SAFE_CHAIN_VERSION environment variable."
+    fi
+
+    echo "$latest_version"
 }
 
 # Download file
@@ -134,6 +154,11 @@ main() {
 
     # Parse command-line arguments
     parse_arguments "$@"
+
+    # Fetch latest version if VERSION is not set
+    if [ -z "$VERSION" ]; then
+        VERSION=$(fetch_latest_version)
+    fi
 
     # Build installation message
     INSTALL_MSG="Installing safe-chain ${VERSION}"
