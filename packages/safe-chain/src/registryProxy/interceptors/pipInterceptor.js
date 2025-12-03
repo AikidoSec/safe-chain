@@ -8,6 +8,9 @@ const knownPipRegistries = [
   "pythonhosted.org",
 ];
 
+// Pattern for sdist extensions
+const sdistExtWithMetadataRe = /\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i;
+
 /**
  * @param {string} url
  * @returns {import("./interceptorBuilder.js").Interceptor | undefined}
@@ -33,7 +36,8 @@ function buildPipInterceptor(registry) {
       registry
     );
 
-    // Normalize underscores to hyphens for DB matching, as PyPI allows underscores in distribution names
+    // Normalize underscores to hyphens for DB matching, as PyPI allows underscores in distribution names.
+    // Per python, packages that differ only by hyphen vs underscore are considered the same.
     const hyphenName = packageName?.includes("_") ? packageName.replace(/_/g, "-") : packageName;
 
     const isMalicious = await isMalwarePackage(packageName, version) 
@@ -102,9 +106,9 @@ function parsePipPackageFromUrl(url, registry) {
   }
 
   // Source dist (sdist) and potential metadata sidecars (e.g., .tar.gz.metadata)
-  const sdistExtMatch = filename.match(/\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i);
+  const sdistExtMatch = filename.match(sdistExtWithMetadataRe);
   if (sdistExtMatch) {
-    const base = filename.replace(/\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i, "");
+    const base = filename.replace(sdistExtWithMetadataRe, "");
     const lastDash = base.lastIndexOf("-");
     if (lastDash > 0 && lastDash < base.length - 1) {
       packageName = base.slice(0, lastDash);
