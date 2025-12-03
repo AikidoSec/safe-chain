@@ -1,12 +1,37 @@
 #!/usr/bin/env node
 
 import chalk from "chalk";
-import { createRequire } from "module";
 import { ui } from "../src/environment/userInteraction.js";
 import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
+import { setEcoSystem } from "../src/config/settings.js";
+import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
+import { main } from "../src/main.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+import { knownAikidoTools } from "../src/shell-integration/helpers.js";
+import {
+  PIP_INVOCATIONS,
+  PIP_PACKAGE_MANAGER,
+  setCurrentPipInvocation,
+} from "../src/packagemanager/pip/pipSettings.js";
+
+/** @type {string} */
+// This checks the current file's dirname in a way that's compatible with:
+//  - Modulejs (import.meta.url)
+//  - ES modules (__dirname)
+// This is needed because safe-chain's npm package is built using ES modules,
+// but building the binaries requires commonjs.
+let dirname;
+if (import.meta.url) {
+  const filename = fileURLToPath(import.meta.url);
+  dirname = path.dirname(filename);
+} else {
+  dirname = __dirname;
+}
 
 if (process.argv.length < 3) {
   ui.writeError("No command provided. Please provide a command to execute.");
@@ -19,19 +44,35 @@ initializeCliArguments(process.argv);
 
 const command = process.argv[2];
 
-if (command === "help" || command === "--help" || command === "-h") {
+const tool = knownAikidoTools.find((tool) => tool.tool === command);
+
+if (tool && tool.internalPackageManagerName === PIP_PACKAGE_MANAGER) {
+  (async function () {
+    await executePip(tool);
+  })();
+} else if (tool) {
+  const args = process.argv.slice(3);
+
+  setEcoSystem(tool.ecoSystem);
+  initializePackageManager(tool.internalPackageManagerName);
+
+  (async () => {
+    var exitCode = await main(args);
+    process.exit(exitCode);
+  })();
+} else if (command === "help" || command === "--help" || command === "-h") {
   writeHelp();
   process.exit(0);
-}
-
-if (command === "setup") {
+} else if (command === "setup") {
   setup();
 } else if (command === "teardown") {
   teardown();
 } else if (command === "setup-ci") {
   setupCi();
 } else if (command === "--version" || command === "-v" || command === "-v") {
-  ui.writeInformation(`Current safe-chain version: ${getVersion()}`);
+  (async () => {
+    ui.writeInformation(`Current safe-chain version: ${await getVersion()}`);
+  })();
 } else {
   ui.writeError(`Unknown command: ${command}.`);
   ui.emptyLine();
@@ -87,8 +128,63 @@ function writeHelp() {
   ui.emptyLine();
 }
 
-function getVersion() {
-  const require = createRequire(import.meta.url);
-  const packageJson = require("../package.json");
-  return packageJson.version;
+async function getVersion() {
+  const packageJsonPath = path.join(dirname, "..", "package.json");
+
+  const data = await fs.promises.readFile(packageJsonPath);
+  const json = JSON.parse(data.toString("utf8"));
+
+  if (json && json.version) {
+    return json.version;
+  }
+
+  return "0.0.0";
+}
+
+/**
+ * @param {import("../src/shell-integration/helpers.js").AikidoTool} tool
+ */
+async function executePip(tool) {
+  // Scanners for pip / pip3 / python / python3 use a slightly different approach:
+  //  - They all use the same PIP_PACKAGE_MANAGER internally, but need some setup to be able to do so
+  //     - It needs to set which tool to run (pip / pip3 / python / python3)
+  //     - For python and python3, the -m pip/pip3 args are removed and later added again by the package manager
+  //  - Python / python3 skips safe-chain if not being run with -m pip or -m pip3
+
+  let args = process.argv.slice(3);
+  setEcoSystem(tool.ecoSystem);
+  initializePackageManager(PIP_PACKAGE_MANAGER);
+
+  let shouldSkip = false;
+  if (tool.tool === "pip") {
+    setCurrentPipInvocation(PIP_INVOCATIONS.PIP);
+  } else if (tool.tool === "pip3") {
+    setCurrentPipInvocation(PIP_INVOCATIONS.PIP3);
+  } else if (tool.tool === "python") {
+    if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
+      setCurrentPipInvocation(
+        args[1] === "pip3" ? PIP_INVOCATIONS.PY_PIP3 : PIP_INVOCATIONS.PY_PIP
+      );
+      args = args.slice(2);
+    } else {
+      shouldSkip = true;
+    }
+  } else if (tool.tool === "python3") {
+    if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
+      setCurrentPipInvocation(
+        args[1] === "pip3" ? PIP_INVOCATIONS.PY3_PIP3 : PIP_INVOCATIONS.PY3_PIP
+      );
+      args = args.slice(2);
+    } else {
+      shouldSkip = true;
+    }
+  }
+
+  if (shouldSkip) {
+    const { spawn } = await import("child_process");
+    spawn(tool.tool, args, { stdio: "inherit" });
+  } else {
+    var exitCode = await main(args);
+    process.exit(exitCode);
+  }
 }
