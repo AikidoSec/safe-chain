@@ -9,8 +9,12 @@ import { includePython } from "../config/cliArguments.js";
 import { ECOSYSTEM_PY } from "../config/settings.js";
 
 /** @type {string} */
+// This checks the current file's dirname in a way that's compatible with:
+//  - Modulejs (import.meta.url)
+//  - ES modules (__dirname)
+// This is needed because safe-chain's npm package is built using ES modules,
+// but building the binaries requires commonjs.
 let dirname;
-
 if (import.meta.url) {
   const filename = fileURLToPath(import.meta.url);
   dirname = path.dirname(filename);
