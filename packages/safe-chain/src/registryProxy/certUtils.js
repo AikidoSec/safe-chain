@@ -92,7 +92,7 @@ export function generateCertForHost(hostname) {
         Needed for Python virtualenv SSL validation and certificate path validation.
         This extension identifies the public key corresponding to the private key used to sign
         this certificate. It links this certificate to its issuing CA certificate.
-        Without this, Python virtualenv certificate validation might fail
+        Without this, Python virtualenv certificate validation might fail (for instance for Poetry)
         https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.1
       */
       name: "authorityKeyIdentifier",
@@ -126,6 +126,7 @@ function loadCa() {
     existingPrivateKey = privateKey;
 
     // Don't return a cert that is valid for less than 1 hour
+    // Some extensions were added in a later phase, ensure it has them or regenerate
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
     /** @type {any} */
     const basicConstraints = certificate.getExtension("basicConstraints");
@@ -157,6 +158,8 @@ function loadCa() {
 }
 
 /**
+ * Reconstruct the public key from the existing private key so renewed/self-signed CA certificates keep the same key material,
+ * preserving SKI/AKI continuity
  * @param {forge.pki.PrivateKey} [existingPrivateKey]
  */
 function generateCa(existingPrivateKey) {
@@ -185,7 +188,7 @@ function generateCa(existingPrivateKey) {
     {
       name: "basicConstraints",
       cA: true,
-      critical: true,
+      critical: true, // Marking basicConstraints as critical is required for CA certificates so clients must process it to trust the cert as a CA
     },
     {
       name: "keyUsage",
@@ -194,28 +197,10 @@ function generateCa(existingPrivateKey) {
       keyEncipherment: true,
     },
     {
-      /*
-        Subject Key Identifier (SKI)
-        
-        Needed for Python virtualenv SSL validation and certificate chain building.
-        This extension provides a means of identifying certificates containing a particular public key.
-        Python virtualenv environments require this for proper certificate chain validation.
-        System Python installations may be more lenient.
-        https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.2
-      */
       name: "subjectKeyIdentifier",
       subjectKeyIdentifier: keyIdentifier,
     },
     {
-      /*
-        Authority Key Identifier (AKI)
-        
-        Needed for Python virtualenv SSL validation and certificate path validation.
-        This extension identifies the public key corresponding to the private key used to sign
-        this certificate. It links this certificate to its issuing CA certificate.
-        Without this, Python virtualenv certificate validation might fail
-        https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.1
-      */
       name: "authorityKeyIdentifier",
       keyIdentifier,
     },
