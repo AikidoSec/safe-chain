@@ -49,7 +49,26 @@ jobs:
             runner: windows-11-arm
             target: node20-win-arm64
             extension: ".exe"
-
+          - os: alpine
+            arch: x64
+            runner: ubuntu-latest
+            target: node20-alpine-x64
+            extension: ""
+          - os: alpine
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            target: node20-alpine-arm64
+            extension: ""
+          - os: linuxstatic
+            arch: x64
+            runner: ubuntu-latest
+            target: node20-linuxstatic-x64
+            extension: ""
+          - os: linuxstatic
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            target: node20-linuxstatic-arm64
+            extension: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
