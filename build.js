@@ -119,10 +119,12 @@ function buildSafeChainBinary(target) {
       ? resolve("node_modules/.bin/pkg.cmd")
       : resolve("node_modules/.bin/pkg");
 
-    let pkgArgs = ["./build/package.json", "-t", "target"];
+    let pkgArgs = [];
 
-    pkgArgs += ["--compress", "GZip"];
+    // using gzip compression to lower binary size (original is 50MB)
+    pkgArgs = pkgArgs.concat(["--compress", "GZip"]);
 
+    pkgArgs = pkgArgs.concat(["./build/package.json", "-t", target]);
     const pkg = spawn(pkgBin, pkgArgs, {
       stdio: "inherit",
       shell: true,
