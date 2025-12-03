@@ -148,3 +148,6 @@ Claude.md
 # Build files
 build/
 dist/
+
+# Jetbrains IDEs
+.idea/**
