@@ -3,59 +3,6 @@ $pathSeparator = if ($IsWindows) { ';' } else { ':' }
 $safeChainBin = Join-Path $HOME '.safe-chain' 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
-function Write-SafeChainWarning {
-    param([string]$Command)
-    
-    # PowerShell equivalent of ANSI color codes: yellow background, black text for "Warning:"
-    Write-Host "Warning:" -BackgroundColor Yellow -ForegroundColor Black -NoNewline
-    Write-Host " safe-chain is not available to protect you from installing malware. $Command will run without it."
-    
-    # Cyan text for the install command
-    Write-Host "Install safe-chain by using " -NoNewline
-    Write-Host "npm install -g @aikidosec/safe-chain" -ForegroundColor Cyan -NoNewline
-    Write-Host "."
-}
-
-function Test-CommandAvailable {
-    param([string]$Command)
-    
-    try {
-        Get-Command $Command -ErrorAction Stop | Out-Null
-        return $true
-    }
-    catch {
-        return $false
-    }
-}
-
-function Invoke-RealCommand {
-    param(
-        [string]$Command,
-        [string[]]$Arguments
-    )
-    
-    # Find the real executable to avoid calling our wrapped functions
-    $realCommand = Get-Command -Name $Command -CommandType Application | Select-Object -First 1
-    if ($realCommand) {
-        & $realCommand.Source @Arguments
-    }
-}
-
-function Invoke-WrappedCommand {
-    param(
-        [string]$OriginalCmd,
-        [string[]]$Arguments
-    )
-
-    if (Test-CommandAvailable "safe-chain") {
-        & safe-chain $OriginalCmd @Arguments
-    }
-    else {
-        Write-SafeChainWarning $OriginalCmd
-        Invoke-RealCommand $OriginalCmd $Arguments
-    }
-}
-
 function npx {
     Invoke-WrappedCommand "npx" $args
 }
@@ -113,3 +60,56 @@ function python3 {
     Invoke-WrappedCommand 'python3' $args
 }
 
+
+function Write-SafeChainWarning {
+    param([string]$Command)
+    
+    # PowerShell equivalent of ANSI color codes: yellow background, black text for "Warning:"
+    Write-Host "Warning:" -BackgroundColor Yellow -ForegroundColor Black -NoNewline
+    Write-Host " safe-chain is not available to protect you from installing malware. $Command will run without it."
+    
+    # Cyan text for the install command
+    Write-Host "Install safe-chain by using " -NoNewline
+    Write-Host "npm install -g @aikidosec/safe-chain" -ForegroundColor Cyan -NoNewline
+    Write-Host "."
+}
+
+function Test-CommandAvailable {
+    param([string]$Command)
+    
+    try {
+        Get-Command $Command -ErrorAction Stop | Out-Null
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+function Invoke-RealCommand {
+    param(
+        [string]$Command,
+        [string[]]$Arguments
+    )
+    
+    # Find the real executable to avoid calling our wrapped functions
+    $realCommand = Get-Command -Name $Command -CommandType Application | Select-Object -First 1
+    if ($realCommand) {
+        & $realCommand.Source @Arguments
+    }
+}
+
+function Invoke-WrappedCommand {
+    param(
+        [string]$OriginalCmd,
+        [string[]]$Arguments
+    )
+
+    if (Test-CommandAvailable "safe-chain") {
+        & safe-chain $OriginalCmd @Arguments
+    }
+    else {
+        Write-SafeChainWarning $OriginalCmd
+        Invoke-RealCommand $OriginalCmd $Arguments
+    }
+}

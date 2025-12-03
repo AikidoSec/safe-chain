@@ -11,12 +11,21 @@ if (!target) {
   process.exit(1);
 }
 
-(async function () {
+(async function main() {
   await clearOutputFolder();
+
+  // Esbuild creates a single safe-chain.cjs with all dependencies included
   await bundleSafeChain();
+
+  // Copy assets that need to be included in the binary
+  // - All shell scripts that are used to setup safe-chain
+  // - Certifi because it contains static root certs for Python
+  // - Package.json for its metadata (package name, version, ...)
   await copyShellScripts();
   await copyCertifi();
   await copyAndModifyPackageJson();
+
+  // Creates a single binary with safe-chain.cjs and the copied assets
   await buildSafeChainBinary(target);
 })();
 

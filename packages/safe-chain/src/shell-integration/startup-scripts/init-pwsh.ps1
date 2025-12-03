@@ -3,6 +3,41 @@ $pathSeparator = if ($IsWindows) { ';' } else { ':' }
 $safeChainBin = Join-Path $HOME '.safe-chain' 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
+function npx {
+    Invoke-WrappedCommand "npx" $args
+}
+
+function yarn {
+    Invoke-WrappedCommand "yarn" $args
+}
+
+function pnpm {
+    Invoke-WrappedCommand "pnpm" $args
+}
+
+function pnpx {
+    Invoke-WrappedCommand "pnpx" $args
+}
+
+function bun {
+    Invoke-WrappedCommand "bun" $args
+}
+
+function bunx {
+    Invoke-WrappedCommand "bunx" $args
+}
+
+function npm {
+    # If args is just -v or --version and nothing else, just run the npm version command
+    # This is because nvm uses this to check the version of npm
+    if (($args.Length -eq 1) -and (($args[0] -eq "-v") -or ($args[0] -eq "--version"))) {
+        Invoke-RealCommand "npm" $args
+        return
+    }
+
+    Invoke-WrappedCommand "npm" $args
+}
+
 function Write-SafeChainWarning {
     param([string]$Command)
     
@@ -54,39 +89,4 @@ function Invoke-WrappedCommand {
         Write-SafeChainWarning $OriginalCmd
         Invoke-RealCommand $OriginalCmd $Arguments
     }
-}
-
-function npx {
-    Invoke-WrappedCommand "npx" $args
-}
-
-function yarn {
-    Invoke-WrappedCommand "yarn" $args
-}
-
-function pnpm {
-    Invoke-WrappedCommand "pnpm" $args
-}
-
-function pnpx {
-    Invoke-WrappedCommand "pnpx" $args
-}
-
-function bun {
-    Invoke-WrappedCommand "bun" $args
-}
-
-function bunx {
-    Invoke-WrappedCommand "bunx" $args
-}
-
-function npm {
-    # If args is just -v or --version and nothing else, just run the npm version command
-    # This is because nvm uses this to check the version of npm
-    if (($args.Length -eq 1) -and (($args[0] -eq "-v") -or ($args[0] -eq "--version"))) {
-        Invoke-RealCommand "npm" $args
-        return
-    }
-
-    Invoke-WrappedCommand "npm" $args
 }
