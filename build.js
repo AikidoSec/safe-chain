@@ -14,6 +14,7 @@ if (!target) {
 
 (async function main() {
   const startBuildTime = performance.now();
+
   await clearOutputFolder();
   console.log("- Cleared output folder ✅")
 
