@@ -364,4 +364,62 @@ describe("E2E: poetry coverage", () => {
       `Safe package should not be installed when batch includes malware. Output was:\n${listResult.output}`
     );
   });
+
+  it(`poetry non-network commands work correctly`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    await shell.runCommand("mkdir /tmp/test-poetry-nonnetwork && cd /tmp/test-poetry-nonnetwork");
+    await shell.runCommand("cd /tmp/test-poetry-nonnetwork && poetry init --no-interaction");
+    await shell.runCommand("cd /tmp/test-poetry-nonnetwork && poetry add requests");
+    
+    // Test poetry --version
+    const versionResult = await shell.runCommand("poetry --version");
+    assert.ok(
+      versionResult.output.includes("Poetry") && versionResult.output.includes("version"),
+      `Expected version output. Output was:\n${versionResult.output}`
+    );
+    
+    // Test poetry show (list installed packages)
+    const showResult = await shell.runCommand("cd /tmp/test-poetry-nonnetwork && poetry show");
+    assert.ok(
+      showResult.output.includes("requests"),
+      `Expected to see installed package. Output was:\n${showResult.output}`
+    );
+    
+    // Test poetry env info (show virtual environment info)
+    const envInfoResult = await shell.runCommand("cd /tmp/test-poetry-nonnetwork && poetry env info");
+    assert.ok(
+      envInfoResult.output.includes("Virtualenv") || envInfoResult.output.includes("Path"),
+      `Expected environment info. Output was:\n${envInfoResult.output}`
+    );
+    
+    // Test poetry check (validate pyproject.toml)
+    const checkResult = await shell.runCommand("cd /tmp/test-poetry-nonnetwork && poetry check");
+    assert.ok(
+      checkResult.output.includes("valid") || checkResult.output.includes("All"),
+      `Expected validation success. Output was:\n${checkResult.output}`
+    );
+    
+    // Test poetry config --list (show configuration)
+    const configResult = await shell.runCommand("poetry config --list");
+    assert.ok(
+      configResult.output.length > 0,
+      `Expected configuration output. Output was:\n${configResult.output}`
+    );
+    
+    // Test poetry run (execute command in virtualenv) - non-network command
+    const runResult = await shell.runCommand("cd /tmp/test-poetry-nonnetwork && poetry run python --version");
+    assert.ok(
+      runResult.output.includes("Python"),
+      `Expected Python version output. Output was:\n${runResult.output}`
+    );
+    
+    // Test poetry shell would start an interactive shell, so we skip that
+    // Test poetry env list (list virtual environments)
+    const envListResult = await shell.runCommand("cd /tmp/test-poetry-nonnetwork && poetry env list");
+    assert.ok(
+      envListResult.output.includes("py3") || envListResult.output.includes("Activated"),
+      `Expected env list output. Output was:\n${envListResult.output}`
+    );
+  });
 });
