@@ -110,9 +110,9 @@ function Remove-VoltaInstallation {
 # Main installation
 function Install-SafeChain {
     # Fetch latest version if VERSION is not set
-    if ([string]::IsNullOrWhiteSpace($script:Version)) {
+    if ([string]::IsNullOrWhiteSpace($Version)) {
         Write-Info "Fetching latest release version..."
-        $script:Version = Get-LatestVersion
+        $Version = Get-LatestVersion
     }
 
     # Build installation message
@@ -166,6 +166,10 @@ function Install-SafeChain {
     # Rename to final location
     $finalFile = Join-Path $InstallDir "safe-chain.exe"
     try {
+        # Remove existing file if present (Move-Item -Force doesn't overwrite)
+        if (Test-Path $finalFile) {
+            Remove-Item -Path $finalFile -Force
+        }
         Move-Item -Path $tempFile -Destination $finalFile -Force
     }
     catch {

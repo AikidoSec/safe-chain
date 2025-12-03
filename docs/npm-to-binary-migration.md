@@ -20,7 +20,7 @@ Depending on the version manager you're using, the uninstall process differs:
    npm uninstall -g @aikidosec/safe-chain
    ```
 
-4. **Install the binary version** (see [Installation](../README.md#installation))
+4. **Install the binary version** (see [Installation](https://github.com/AikidoSec/safe-chain/blob/main/README.md#installation))
 
 ### nvm (Node Version Manager)
 
@@ -51,7 +51,7 @@ Depending on the version manager you're using, the uninstall process differs:
 
    Repeat for each Node version where safe-chain was installed.
 
-4. **Install the binary version** (see [Installation](../README.md#installation))
+4. **Install the binary version** (see [Installation](https://github.com/AikidoSec/safe-chain/blob/main/README.md#installation))
 
 ### Volta
 
@@ -69,7 +69,7 @@ Depending on the version manager you're using, the uninstall process differs:
    volta uninstall @aikidosec/safe-chain
    ```
 
-4. **Install the binary version** (see [Installation](../README.md#installation))
+4. **Install the binary version** (see [Installation](https://github.com/AikidoSec/safe-chain/blob/main/README.md#installation))
 
 ## Troubleshooting
 
