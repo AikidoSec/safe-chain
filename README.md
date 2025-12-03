@@ -22,6 +22,7 @@ Aikido Safe Chain supports the following package managers:
 - 📦 **pip** (beta)
 - 📦 **pip3** (beta)
 - 📦 **uv** (beta)
+- 📦 **poetry** (beta)
 
 # Usage
 
@@ -81,7 +82,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
 
    - The output should show that Aikido Safe Chain is blocking the installation of these test packages as they are flagged as malware.
 
-When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `uv`, `pip`, or `pip3` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
+When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `uv`, `pip`, `pip3` or `poetry` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
 
 You can check the installed version by running:
 
@@ -93,13 +94,13 @@ safe-chain --version
 
 ### Malware Blocking
 
-The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, `pip`, or `pip3` commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
+The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, pip, pip3 or poetry commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
 
 ### Minimum package age (npm only)
 
 For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours (by default) until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
-⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3).
+⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry).
 
 ### Shell Integration
 
@@ -235,7 +236,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
   run: npm ci
 ```
 
-> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv) support.
+> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv/poetry) support.
 
 ## Azure DevOps Example
 
@@ -252,6 +253,6 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
   displayName: "Install dependencies"
 ```
 
-> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv) support.
+> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv/poetry) support.
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
