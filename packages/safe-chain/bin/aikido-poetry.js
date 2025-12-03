@@ -5,8 +5,9 @@ import { initializePackageManager } from "../src/packagemanager/currentPackageMa
 import { setEcoSystem, ECOSYSTEM_PY } from "../src/config/settings.js";
 
 setEcoSystem(ECOSYSTEM_PY);
-const packageManagerName = "poetry";
-initializePackageManager(packageManagerName);
-var exitCode = await main(process.argv.slice(2));
+initializePackageManager("poetry");
 
-process.exit(exitCode);
+(async () => {
+  var exitCode = await main(process.argv.slice(2));
+  process.exit(exitCode);
+})();

@@ -80,7 +80,7 @@ export const knownAikidoTools = [
     tool: "poetry",
     aikidoCommand: "aikido-poetry",
     ecoSystem: ECOSYSTEM_PY,
-    internalPackageManagerName: "pip",
+    internalPackageManagerName: "poetry",
   },
   {
     tool: "python",
