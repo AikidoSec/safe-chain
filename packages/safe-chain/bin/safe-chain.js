@@ -134,7 +134,7 @@ async function getVersion() {
     return json.version;
   }
 
-  return "1.0.0";
+  return "0.0.0";
 }
 
 /**
