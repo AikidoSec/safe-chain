@@ -1,6 +1,7 @@
 import { build } from "esbuild";
 import { mkdir, cp, rm, readFile, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { resolve } from "node:path";
 
 const target = process.argv[2];
 if (!target) {
@@ -102,8 +103,13 @@ async function copyAndModifyPackageJson() {
 }
 
 function buildSafeChainBinary(target) {
-  return new Promise((resolve, reject) => {
-    const pkg = spawn("./node_modules/.bin/pkg", ["./build/package.json", "-t", target], {
+  return new Promise((promiseResolve, reject) => {
+    // Use .cmd on Windows, resolve to absolute path for cross-platform compatibility
+    const pkgBin = process.platform === "win32"
+      ? resolve("node_modules/.bin/pkg.cmd")
+      : resolve("node_modules/.bin/pkg");
+
+    const pkg = spawn(pkgBin, ["./build/package.json", "-t", target], {
       stdio: "inherit",
       shell: true,
     });
@@ -112,7 +118,7 @@ function buildSafeChainBinary(target) {
       if (code !== 0) {
         reject(new Error(`pkg process exited with code ${code}`));
       } else {
-        resolve();
+        promiseResolve();
       }
     });
   });
