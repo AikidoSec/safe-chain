@@ -1,4 +1,4 @@
-![Aikido Safe Chain](./docs/banner.svg)
+![Aikido Safe Chain](https://raw.githubusercontent.com/AikidoSec/safe-chain/main/docs/banner.svg)
 
 # Aikido Safe Chain
 
@@ -10,7 +10,7 @@
 - ✅ **Blocks packages newer than 24 hours** without breaking your build
 - ✅ **Tokenless, free, no build data shared**
 
-Aikido Safe Chain works on Node.js version 16 and above and supports the following package managers:
+Aikido Safe Chain supports the following package managers:
 
 - 📦 **npm**
 - 📦 **npx**
@@ -29,7 +29,7 @@ Aikido Safe Chain works on Node.js version 16 and above and supports the followi
 
 Installing the Aikido Safe Chain is easy with our one-line installer.
 
-> ⚠️ **Already installed via npm?** See the [migration guide](docs/npm-to-binary-migration.md) to switch to the binary version.
+> ⚠️ **Already installed via npm?** See the [migration guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/npm-to-binary-migration.md) to switch to the binary version.
 
 ### Unix/Linux/macOS
 
@@ -111,7 +111,7 @@ The Aikido Safe Chain integrates with your shell to provide a seamless experienc
 - ✅ **PowerShell**
 - ✅ **PowerShell Core**
 
-More information about the shell integration can be found in the [shell integration documentation](docs/shell-integration.md).
+More information about the shell integration can be found in the [shell integration documentation](https://github.com/AikidoSec/safe-chain/blob/main/docs/shell-integration.md).
 
 ## Uninstallation
 
@@ -181,8 +181,6 @@ You can set the minimum package age through multiple sources (in order of priori
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.
-
-For optimal protection in CI/CD environments, we recommend using **npm >= 10.4.0** as it provides full dependency tree scanning. Other package managers currently offer limited scanning of install command arguments only.
 
 ## Installation for CI/CD
 
