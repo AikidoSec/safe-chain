@@ -103,14 +103,10 @@ async function copyAndModifyPackageJson() {
 
 function buildSafeChainBinary(target) {
   return new Promise((resolve, reject) => {
-    const pkg = spawn(
-      "npx",
-      ["@yao-pkg/pkg", "./build/package.json", "-t", target],
-      {
-        stdio: "inherit",
-        shell: true,
-      }
-    );
+    const pkg = spawn("./node_modules/.bin/pkg", ["./build/package.json", "-t", target], {
+      stdio: "inherit",
+      shell: true,
+    });
 
     pkg.on("close", (code) => {
       if (code !== 0) {

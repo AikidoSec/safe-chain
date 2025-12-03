@@ -20,6 +20,7 @@
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "oxlint": "^1.22.0",
-    "esbuild": "^0.27.0"
+    "esbuild": "^0.27.0",
+    "@yao-pkg/pkg": "6.10.1"
   }
 }
