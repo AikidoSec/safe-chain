@@ -92,12 +92,19 @@ function Remove-VoltaInstallation {
 
 # Main installation
 function Install-SafeChain {
-    Write-Info "Installing safe-chain $Version..."
+    # Build installation message
+    $installMsg = "Installing safe-chain $Version"
+    if ($includepython) {
+        $installMsg += " with python"
+    }
+    if ($ci) {
+        $installMsg += " in ci"
+    }
 
-    # Check for existing npm installation
+    Write-Info $installMsg
+
+    # Check for existing safe-chain installation through npm or volta
     Remove-NpmInstallation
-
-    # Check for existing Volta installation
     Remove-VoltaInstallation
 
     # Detect platform
@@ -120,7 +127,6 @@ function Install-SafeChain {
     # Download binary
     $downloadUrl = "$RepoUrl/releases/download/$Version/$binaryName"
     $tempFile = Join-Path $InstallDir $binaryName
-    $finalFile = Join-Path $InstallDir "safe-chain.exe"
 
     Write-Info "Downloading from: $downloadUrl"
 
@@ -135,6 +141,7 @@ function Install-SafeChain {
     }
 
     # Rename to final location
+    $finalFile = Join-Path $InstallDir "safe-chain.exe"
     try {
         Move-Item -Path $tempFile -Destination $finalFile -Force
     }

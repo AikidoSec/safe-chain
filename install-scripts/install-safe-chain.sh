@@ -69,7 +69,7 @@ download() {
 }
 
 # Check and uninstall npm global package if present
-check_npm_installation() {
+remove_npm_installation() {
     if ! command_exists npm; then
         return
     fi
@@ -89,7 +89,7 @@ check_npm_installation() {
 }
 
 # Check and uninstall Volta-managed package if present
-check_volta_installation() {
+remove_volta_installation() {
     if ! command_exists volta; then
         return
     fi
@@ -135,13 +135,20 @@ main() {
     # Parse command-line arguments
     parse_arguments "$@"
 
-    info "Installing safe-chain ${VERSION}..."
+    # Build installation message
+    INSTALL_MSG="Installing safe-chain ${VERSION}"
+    if [ "$INCLUDE_PYTHON" = "true" ]; then
+        INSTALL_MSG="${INSTALL_MSG} with python"
+    fi
+    if [ "$USE_CI_SETUP" = "true" ]; then
+        INSTALL_MSG="${INSTALL_MSG} in ci"
+    fi
 
-    # Check for existing npm installation
-    check_npm_installation
+    info "$INSTALL_MSG"
 
-    # Check for existing Volta installation
-    check_volta_installation
+    # Check for existing safe-chain installation through npm or volta
+    remove_npm_installation
+    remove_volta_installation
 
     # Detect platform
     OS=$(detect_os)
@@ -159,12 +166,12 @@ main() {
     # Download binary
     DOWNLOAD_URL="${REPO_URL}/releases/download/${VERSION}/${BINARY_NAME}"
     TEMP_FILE="${INSTALL_DIR}/${BINARY_NAME}"
-    FINAL_FILE="${INSTALL_DIR}/safe-chain"
 
     info "Downloading from: $DOWNLOAD_URL"
     download "$DOWNLOAD_URL" "$TEMP_FILE"
 
     # Rename and make executable
+    FINAL_FILE="${INSTALL_DIR}/safe-chain"
     mv "$TEMP_FILE" "$FINAL_FILE" || error "Failed to move binary to $FINAL_FILE"
     chmod +x "$FINAL_FILE" || error "Failed to make binary executable"
 
