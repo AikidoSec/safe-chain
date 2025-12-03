@@ -1,3 +1,71 @@
+set -gx PATH $PATH $HOME/.safe-chain/bin
+
+function npx
+    wrapSafeChainCommand "npx" $argv
+end
+
+function yarn
+    wrapSafeChainCommand "yarn" $argv
+end
+
+function pnpm
+    wrapSafeChainCommand "pnpm" $argv
+end
+
+function pnpx
+    wrapSafeChainCommand "pnpx" $argv
+end
+
+function bun
+    wrapSafeChainCommand "bun" $argv
+end
+
+function bunx
+    wrapSafeChainCommand "bunx" $argv
+end
+
+function npm
+    # If args is just -v or --version and nothing else, just run the `npm -v` command
+    # This is because nvm uses this to check the version of npm
+    set argc (count $argv)
+    if test $argc -eq 1
+        switch $argv[1]
+            case "-v" "--version"
+                command npm $argv
+                return
+        end
+    end
+
+    wrapSafeChainCommand "npm" $argv
+end
+
+
+function pip
+    wrapSafeChainCommand "pip" $argv
+end
+
+function pip3
+    wrapSafeChainCommand "pip3" $argv
+end
+
+function uv
+    wrapSafeChainCommand "uv" $argv
+end
+
+function poetry
+    wrapSafeChainCommand "poetry" $argv
+end
+
+# `python -m pip`, `python -m pip3`.
+function python
+    wrapSafeChainCommand "python" $argv
+end
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3
+    wrapSafeChainCommand "python3" $argv
+end
+
 function printSafeChainWarning
     set original_cmd $argv[1]
     
@@ -17,80 +85,14 @@ end
 
 function wrapSafeChainCommand
     set original_cmd $argv[1]
-    set aikido_cmd $argv[2]
-    set cmd_args $argv[3..-1]
-    
-    if type -q $aikido_cmd
-        # If the aikido command is available, just run it with the provided arguments
-        $aikido_cmd $cmd_args
+    set cmd_args $argv[2..-1]
+
+    if type -q safe-chain
+        # If the safe-chain command is available, just run it with the provided arguments
+        safe-chain $original_cmd $cmd_args
     else
-        # If the aikido command is not available, print a warning and run the original command
+        # If the safe-chain command is not available, print a warning and run the original command
         printSafeChainWarning $original_cmd
         command $original_cmd $cmd_args
     end
-end
-
-function npx
-    wrapSafeChainCommand "npx" "aikido-npx" $argv
-end
-
-function yarn
-    wrapSafeChainCommand "yarn" "aikido-yarn" $argv
-end
-
-function pnpm
-    wrapSafeChainCommand "pnpm" "aikido-pnpm" $argv
-end
-
-function pnpx
-    wrapSafeChainCommand "pnpx" "aikido-pnpx" $argv
-end
-
-function bun
-    wrapSafeChainCommand "bun" "aikido-bun" $argv
-end
-
-function bunx
-    wrapSafeChainCommand "bunx" "aikido-bunx" $argv
-end
-
-function npm
-    # If args is just -v or --version and nothing else, just run the `npm -v` command
-    # This is because nvm uses this to check the version of npm
-    set argc (count $argv)
-    if test $argc -eq 1
-        switch $argv[1]
-            case "-v" "--version"
-                command npm $argv
-                return
-        end
-    end
-
-    wrapSafeChainCommand "npm" "aikido-npm" $argv
-end
-
-function pip
-    wrapSafeChainCommand "pip" "aikido-pip" $argv
-end
-
-function pip3
-    wrapSafeChainCommand "pip3" "aikido-pip3" $argv
-end
-
-function uv
-    wrapSafeChainCommand "uv" "aikido-uv" $argv
-end
-
-function poetry
-    wrapSafeChainCommand "poetry" "aikido-poetry" $argv
-end
-
-# `python -m pip`, `python -m pip3`.
-function python
-    wrapSafeChainCommand "python" "aikido-python" $argv
-end
-
-# `python3 -m pip`, `python3 -m pip3'.
-function python3
-    wrapSafeChainCommand "python3" "aikido-python3" $argv
 end

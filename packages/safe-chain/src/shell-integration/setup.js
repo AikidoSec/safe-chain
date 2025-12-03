@@ -5,8 +5,22 @@ import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { fileURLToPath } from "url";
 import { includePython } from "../config/cliArguments.js";
+import { fileURLToPath } from "url";
+
+/** @type {string} */
+// This checks the current file's dirname in a way that's compatible with:
+//  - Modulejs (import.meta.url)
+//  - ES modules (__dirname)
+// This is needed because safe-chain's npm package is built using ES modules,
+// but building the binaries requires commonjs.
+let dirname;
+if (import.meta.url) {
+  const filename = fileURLToPath(import.meta.url);
+  dirname = path.dirname(filename);
+} else {
+  dirname = __dirname;
+}
 
 /**
  * Loops over the detected shells and calls the setup function for each.
@@ -103,10 +117,8 @@ function copyStartupFiles() {
     }
 
     // Use absolute path for source
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const sourcePath = path.resolve(
-      __dirname,
+    const sourcePath = path.join(
+      dirname,
       includePython() ? "startup-scripts/include-python" : "startup-scripts",
       file
     );

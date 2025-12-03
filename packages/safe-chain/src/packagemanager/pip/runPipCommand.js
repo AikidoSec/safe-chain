@@ -46,6 +46,9 @@ function setFallbackCaBundleEnvironmentVariables(env, combinedCaPath) {
  * If the user has an existing PIP_CONFIG_FILE, a new temporary config is created that merges
  * their settings with safe-chain's, leaving the original file unchanged.
  * 
+ * Special handling for commands that modify config/cache/state: PIP_CONFIG_FILE is NOT overridden to allow
+ * users to read/write persistent config. Only CA environment variables are set for these commands.
+ * 
  * @param {string} command - The pip command to execute (e.g., 'pip3')
  * @param {string[]} args - Command line arguments to pass to pip
  * @returns {Promise<{status: number}>} Exit status of the pip command
@@ -59,6 +62,12 @@ export async function runPip(command, args) {
     // validates correctly under both MITM'd and tunneled HTTPS.
     const combinedCaPath = getCombinedCaBundlePath();
 
+    // Commands that need access to persistent config/cache/state files
+    // These should not have PIP_CONFIG_FILE overridden as it would prevent them from
+    // reading/writing to the user's actual pip configuration and cache directories
+    const configRelatedCommands = ['config', 'cache', 'debug', 'completion'];
+    const isConfigRelatedCommand = args.length > 0 && configRelatedCommands.includes(args[0]);
+
     // https://pip.pypa.io/en/stable/topics/https-certificates/ explains that the 'cert' param (which we're providing via INI file)
     // will tell pip to use the provided CA bundle for HTTPS verification.
 
@@ -69,6 +78,22 @@ export async function runPip(command, args) {
     const tmpDir = os.tmpdir();
     const pipConfigPath = path.join(tmpDir, `safe-chain-pip-${Date.now()}.ini`);
     let cleanupConfigPath = null; // Track temp file for cleanup
+
+    if (isConfigRelatedCommand) {
+      ui.writeVerbose(`Safe-chain: Skipping PIP_CONFIG_FILE override for 'pip ${args[0]}' command to allow persistent config/cache access.`);
+      
+      // Still set the fallback CA bundle environment variables to avoid edge cases where a 
+      // plugin or extension triggers a network call during config introspection
+      // This can do no harm
+      setFallbackCaBundleEnvironmentVariables(env, combinedCaPath);
+      
+      const result = await safeSpawn(command, args, {
+        stdio: "inherit",
+        env,
+      });
+
+      return { status: result.status };
+    }
 
     // Note: Setting PIP_CONFIG_FILE overrides all pip config levels (Global/User/Site) per pip's loading order
     if (!env.PIP_CONFIG_FILE) {

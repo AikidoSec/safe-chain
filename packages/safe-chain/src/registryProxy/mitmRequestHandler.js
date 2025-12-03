@@ -117,14 +117,16 @@ function forwardRequest(req, hostname, res, requestHandler) {
 
   proxyReq.on("error", (err) => {
     ui.writeVerbose(
-      `Safe-chain: Error occurred while proxying request: ${err.message}`
+      `Safe-chain: Error occurred while proxying request to ${req.url} for ${hostname}: ${err.message}`
     );
     res.writeHead(502);
     res.end("Bad Gateway");
   });
 
   req.on("error", (err) => {
-    ui.writeError(`Safe-chain: Error reading client request: ${err.message}`);
+    ui.writeError(
+      `Safe-chain: Error reading client request to ${req.url} for ${hostname}: ${err.message}`
+    );
     proxyReq.destroy();
   });
 
@@ -175,7 +177,7 @@ function createProxyRequest(hostname, req, res, requestHandler) {
   const proxyReq = https.request(options, (proxyRes) => {
     proxyRes.on("error", (err) => {
       ui.writeError(
-        `Safe-chain: Error reading upstream response: ${err.message}`
+        `Safe-chain: Error reading upstream response to ${req.url} for ${hostname}: ${err.message}`
       );
       if (!res.headersSent) {
         res.writeHead(502);
@@ -184,7 +186,9 @@ function createProxyRequest(hostname, req, res, requestHandler) {
     });
 
     if (!proxyRes.statusCode) {
-      ui.writeError("Safe-chain: Proxy response missing status code");
+      ui.writeError(
+        `Safe-chain: Proxy response missing status code to ${req.url} for ${hostname}`
+      );
       res.writeHead(500);
       res.end("Internal Server Error");
       return;
