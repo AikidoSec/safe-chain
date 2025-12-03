@@ -8,9 +8,6 @@ const knownPipRegistries = [
   "pythonhosted.org",
 ];
 
-// Pattern for sdist extensions
-const sdistExtWithMetadataRe = /\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i;
-
 /**
  * @param {string} url
  * @returns {import("./interceptorBuilder.js").Interceptor | undefined}
@@ -40,8 +37,9 @@ function buildPipInterceptor(registry) {
     // Per python, packages that differ only by hyphen vs underscore are considered the same.
     const hyphenName = packageName?.includes("_") ? packageName.replace(/_/g, "-") : packageName;
 
-    const isMalicious = await isMalwarePackage(packageName, version) 
-      || await isMalwarePackage(hyphenName, version);
+    const isMalicious = 
+       await isMalwarePackage(packageName, version) 
+    || await isMalwarePackage(hyphenName, version);
 
     if (isMalicious) {
       reqContext.blockMalware(packageName, version);
@@ -83,17 +81,20 @@ function parsePipPackageFromUrl(url, registry) {
   // Example sdist: https://files.pythonhosted.org/packages/xx/yy/requests-2.28.1.tar.gz
 
   // Wheel (.whl) and Poetry's preflight metadata (.whl.metadata)
-  if (filename.endsWith(".whl") || filename.endsWith(".whl.metadata")) {
-    const base = filename.endsWith(".whl") 
-      ? filename.slice(0, -4) 
-      : filename.slice(0, -".whl.metadata".length);
+  // Examples:
+  //   foo_bar-2.0.0-py3-none-any.whl
+  //   foo_bar-2.0.0-py3-none-any.whl.metadata
+  const wheelExtRe = /\.whl(?:\.metadata)?$/;
+  const wheelExtMatch = filename.match(wheelExtRe);
+  if (wheelExtMatch) {
+    const base = filename.replace(wheelExtRe, "");
     const firstDash = base.indexOf("-");
     if (firstDash > 0) {
       const dist = base.slice(0, firstDash); // may contain underscores
       const rest = base.slice(firstDash + 1); // version + the rest of tags
       const secondDash = rest.indexOf("-");
       const rawVersion = secondDash >= 0 ? rest.slice(0, secondDash) : rest;
-      packageName = dist; // preserve underscores
+      packageName = dist;
       version = rawVersion;
       // Reject "latest" as it's a placeholder, not a real version
       // When version is "latest", this signals the URL doesn't contain actual version info
@@ -106,6 +107,7 @@ function parsePipPackageFromUrl(url, registry) {
   }
 
   // Source dist (sdist) and potential metadata sidecars (e.g., .tar.gz.metadata)
+  const sdistExtWithMetadataRe = /\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i;
   const sdistExtMatch = filename.match(sdistExtWithMetadataRe);
   if (sdistExtMatch) {
     const base = filename.replace(sdistExtWithMetadataRe, "");
@@ -122,7 +124,6 @@ function parsePipPackageFromUrl(url, registry) {
       return { packageName, version };
     }
   }
-
   // Unknown file type or invalid
   return { packageName: undefined, version: undefined };
 }

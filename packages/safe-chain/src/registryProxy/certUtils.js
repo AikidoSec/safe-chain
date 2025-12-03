@@ -115,41 +115,20 @@ function loadCa() {
   const keyPath = path.join(certFolder, "ca-key.pem");
   const certPath = path.join(certFolder, "ca-cert.pem");
 
-  let existingPrivateKey = null;
-
   if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
     const privateKeyPem = fs.readFileSync(keyPath, "utf8");
     const certPem = fs.readFileSync(certPath, "utf8");
     const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
     const certificate = forge.pki.certificateFromPem(certPem);
     
-    existingPrivateKey = privateKey;
-
     // Don't return a cert that is valid for less than 1 hour
-    // Some extensions were added in a later phase, ensure it has them or regenerate
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
-    /** @type {any} */
-    const basicConstraints = certificate.getExtension("basicConstraints");
-    const hasCriticalBasicConstraints = Boolean(
-      basicConstraints && basicConstraints.critical
-    );
-    const hasSubjectKeyIdentifier = Boolean(
-      certificate.getExtension("subjectKeyIdentifier")
-    );
-    const hasAuthorityKeyIdentifier = Boolean(
-      certificate.getExtension("authorityKeyIdentifier")
-    );
-    if (
-      certificate.validity.notAfter > oneHourFromNow &&
-      hasCriticalBasicConstraints &&
-      hasSubjectKeyIdentifier &&
-      hasAuthorityKeyIdentifier
-    ) {
+    if (certificate.validity.notAfter > oneHourFromNow) {
       return { privateKey, certificate };
     }
   }
 
-  const { privateKey, certificate } = generateCa(existingPrivateKey || undefined);
+  const { privateKey, certificate } = generateCa();
   fs.mkdirSync(certFolder, { recursive: true });
   fs.writeFileSync(keyPath, forge.pki.privateKeyToPem(privateKey));
   fs.writeFileSync(certPath, forge.pki.certificateToPem(certificate));
@@ -157,21 +136,8 @@ function loadCa() {
   return { privateKey, certificate };
 }
 
-/**
- * Reconstruct the public key from the existing private key so renewed/self-signed CA certificates keep the same key material,
- * preserving SKI/AKI continuity
- * @param {forge.pki.PrivateKey} [existingPrivateKey]
- */
-function generateCa(existingPrivateKey) {
-  const keys = existingPrivateKey 
-    ? { 
-        privateKey: existingPrivateKey, 
-        publicKey: forge.pki.setRsaPublicKey(
-          /** @type {any} */(existingPrivateKey).n, 
-          /** @type {any} */(existingPrivateKey).e
-        ) 
-      }
-    : forge.pki.rsa.generateKeyPair(2048);
+function generateCa() {
+  const keys = forge.pki.rsa.generateKeyPair(2048);
     
   const cert = forge.pki.createCertificate();
   cert.publicKey = keys.publicKey;
@@ -205,7 +171,7 @@ function generateCa(existingPrivateKey) {
       keyIdentifier,
     },
   ]);
-  cert.sign(/** @type {any} */(keys.privateKey), forge.md.sha256.create());
+  cert.sign(keys.privateKey, forge.md.sha256.create());
 
   return {
     privateKey: keys.privateKey,

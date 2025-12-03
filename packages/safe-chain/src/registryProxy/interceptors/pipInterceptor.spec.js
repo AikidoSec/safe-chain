@@ -35,6 +35,11 @@ describe("pipInterceptor", async () => {
       expected: { packageName: "foo-bar", version: "2.0.0" },
     },
     {
+      // Poetry preflight metadata alongside wheel (.whl.metadata)
+      url: "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl.metadata",
+      expected: { packageName: "foo-bar", version: "2.0.0" },
+    },
+    {
       url: "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl",
       expected: { packageName: "foo-bar", version: "2.0.0" },
     },
@@ -45,6 +50,11 @@ describe("pipInterceptor", async () => {
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0b1.tar.gz",
       expected: { packageName: "foo-bar", version: "2.0.0b1" },
+    },
+    {
+      // sdist with metadata sidecar (.tar.gz.metadata)
+      url: "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0.tar.gz.metadata",
+      expected: { packageName: "foo-bar", version: "2.0.0" },
     },
     {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0rc1.tar.gz",
