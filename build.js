@@ -13,10 +13,13 @@ if (!target) {
 }
 
 (async function main() {
+  const startBuildTime = performance.now();
   await clearOutputFolder();
+  console.log("- Cleared output folder ✅")
 
   // Esbuild creates a single safe-chain.cjs with all dependencies included
   await bundleSafeChain();
+  console.log("- Bundled safe-chain into safe-chain.cjs (es-build) ✅")
 
   // Copy assets that need to be included in the binary
   // - All shell scripts that are used to setup safe-chain
@@ -25,9 +28,15 @@ if (!target) {
   await copyShellScripts();
   await copyCertifi();
   await copyAndModifyPackageJson();
+  console.log("- Copied auxiliary resources (shell, package.json,...) ✅")
 
   // Creates a single binary with safe-chain.cjs and the copied assets
   await buildSafeChainBinary(target);
+  console.log(`- Built safe-chain binary for ${target} (pkg) ✅`)
+
+
+  const endBuildTime = performance.now();
+  console.log(`🏁 Finished build in ${((endBuildTime - startBuildTime)/1000).toFixed(2)}s`);
 })();
 
 async function clearOutputFolder() {
