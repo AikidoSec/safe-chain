@@ -33,8 +33,6 @@ function Write-Error-Custom {
 
 # Fetch latest release version tag from GitHub
 function Get-LatestVersion {
-    Write-Info "Fetching latest release version..."
-
     try {
         $response = Invoke-RestMethod -Uri "https://api.github.com/repos/AikidoSec/safe-chain/releases/latest" -UseBasicParsing
         $latestVersion = $response.tag_name
@@ -113,6 +111,7 @@ function Remove-VoltaInstallation {
 function Install-SafeChain {
     # Fetch latest version if VERSION is not set
     if ([string]::IsNullOrWhiteSpace($script:Version)) {
+        Write-Info "Fetching latest release version..."
         $script:Version = Get-LatestVersion
     }
 

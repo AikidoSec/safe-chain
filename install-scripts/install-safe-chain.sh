@@ -56,8 +56,6 @@ command_exists() {
 
 # Fetch latest release version tag from GitHub
 fetch_latest_version() {
-    info "Fetching latest release version..."
-
     # Try using GitHub API to get the latest release tag
     if command_exists curl; then
         latest_version=$(curl -fsSL "https://api.github.com/repos/AikidoSec/safe-chain/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
@@ -157,6 +155,7 @@ main() {
 
     # Fetch latest version if VERSION is not set
     if [ -z "$VERSION" ]; then
+        info "Fetching latest release version..."
         VERSION=$(fetch_latest_version)
     fi
 
