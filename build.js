@@ -37,7 +37,7 @@ if (!target) {
 
 
   const totalBuildTime = (performance.now() - startBuildTime)/1000;
-  const totalSizeInMb = (await stat("./dist/safe-chain" + (process.platform === "win32" ? ".bin" : ""))).size / (1024*1024);
+  const totalSizeInMb = (await stat("./dist/safe-chain" + (process.platform === "win32" ? ".exe" : ""))).size / (1024*1024);
   console.log(`🏁 Finished build in ${totalBuildTime.toFixed(2)}s, total build size: ${totalSizeInMb.toFixed(2)}MB`);
 })();
 
