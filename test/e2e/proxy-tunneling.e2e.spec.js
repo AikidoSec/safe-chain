@@ -58,28 +58,4 @@ describe("E2E: Safe chain proxy tunneling", () => {
 
     assert.ok(success, "curl should successfully connect to example.com via the authenticated proxy");
   });
-
-  it("should respect NO_PROXY and bypass upstream proxy", async () => {
-    // 1. Setup a test script
-    const setupShell = await container.openShell("zsh");
-    await setupShell.runCommand('npm pkg set scripts.test-curl="curl -v -I https://www.example.com"');
-
-    // 2. Set a BROKEN upstream proxy, but exclude example.com via NO_PROXY
-    const testShell = await container.openShell("zsh");
-    await testShell.runCommand('export HTTPS_PROXY="http://non-existent-proxy:1234"');
-    await testShell.runCommand('export NO_PROXY="www.example.com"');
-
-    // 3. Run the script
-    // If safe-chain ignores NO_PROXY, it will try to use the broken proxy and fail
-    // If it respects NO_PROXY, it will connect directly (which works in the container)
-    const { output } = await testShell.runCommand("npm run test-curl");
-
-    const success = output.includes("HTTP/2 200") || output.includes("HTTP/1.1 200");
-    
-    if (!success) {
-        console.log("NO_PROXY Test failed. Output:", output);
-    }
-
-    assert.ok(success, "curl should bypass the broken proxy for NO_PROXY domains");
-  });
 });

@@ -1,5 +1,4 @@
 import * as net from "net";
-import { getProxyForUrl } from "proxy-from-env";
 import { ui } from "../environment/userInteraction.js";
 
 /**
@@ -10,13 +9,20 @@ import { ui } from "../environment/userInteraction.js";
  * @returns {void}
  */
 export function tunnelRequest(req, clientSocket, head) {
-  // req.url in a CONNECT request is usually "hostname:port"
-  // We assume HTTPS for CONNECT requests to ensure we check HTTPS_PROXY
-  const proxyUrl = getProxyForUrl(`https://${req.url}`);
+  const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 
-  if (proxyUrl) {
-    // If a proxy is returned, it means we should use it (NO_PROXY check passed)
-    tunnelRequestViaProxy(req, clientSocket, head, proxyUrl);
+  if (httpsProxy) {
+    // If an HTTPS proxy is set, tunnel the request via the proxy
+    // This is the system proxy, not the safe-chain proxy
+    // The package manager will run via the safe-chain proxy
+    // The safe-chain proxy will then send the request to the system proxy
+    // Typical flow: package manager -> safe-chain proxy -> system proxy -> destination
+
+    // There are 2 processes involved in this:
+    // 1. Safe-chain process: has HTTPS_PROXY set to system proxy
+    // 2. Package manager process: has HTTPS_PROXY set to safe-chain proxy
+
+    tunnelRequestViaProxy(req, clientSocket, head, httpsProxy);
   } else {
     tunnelRequestToDestination(req, clientSocket, head);
   }
@@ -148,5 +154,4 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
     }
   });
 }
-
 
