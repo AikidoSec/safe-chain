@@ -19,8 +19,12 @@
   "author": "Aikido Security",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "oxlint": "^1.22.0",
+    "@types/proxy-from-env": "^1.0.4",
+    "@yao-pkg/pkg": "6.10.1",
     "esbuild": "^0.27.0",
-    "@yao-pkg/pkg": "6.10.1"
+    "oxlint": "^1.22.0"
+  },
+  "dependencies": {
+    "proxy-from-env": "^1.1.0"
   }
 }

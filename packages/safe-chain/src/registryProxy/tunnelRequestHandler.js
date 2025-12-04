@@ -1,4 +1,5 @@
 import * as net from "net";
+import { getProxyForUrl } from "proxy-from-env";
 import { ui } from "../environment/userInteraction.js";
 
 /**
@@ -9,21 +10,13 @@ import { ui } from "../environment/userInteraction.js";
  * @returns {void}
  */
 export function tunnelRequest(req, clientSocket, head) {
-  const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
-  const noProxy = process.env.NO_PROXY || process.env.no_proxy;
+  // req.url in a CONNECT request is usually "hostname:port"
+  // We assume HTTPS for CONNECT requests to ensure we check HTTPS_PROXY
+  const proxyUrl = getProxyForUrl(`https://${req.url}`);
 
-  if (httpsProxy && !shouldBypassProxy(req.url, noProxy)) {
-    // If an HTTPS proxy is set, tunnel the request via the proxy
-    // This is the system proxy, not the safe-chain proxy
-    // The package manager will run via the safe-chain proxy
-    // The safe-chain proxy will then send the request to the system proxy
-    // Typical flow: package manager -> safe-chain proxy -> system proxy -> destination
-
-    // There are 2 processes involved in this:
-    // 1. Safe-chain process: has HTTPS_PROXY set to system proxy
-    // 2. Package manager process: has HTTPS_PROXY set to safe-chain proxy
-
-    tunnelRequestViaProxy(req, clientSocket, head, httpsProxy);
+  if (proxyUrl) {
+    // If a proxy is returned, it means we should use it (NO_PROXY check passed)
+    tunnelRequestViaProxy(req, clientSocket, head, proxyUrl);
   } else {
     tunnelRequestToDestination(req, clientSocket, head);
   }
@@ -156,35 +149,4 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
   });
 }
 
-/**
- * @param {string | undefined} url
- * @param {string | undefined} noProxy
- * @returns {boolean}
- */
-function shouldBypassProxy(url, noProxy) {
-  if (!url || !noProxy) {
-    return false;
-  }
 
-  if (noProxy === "*") {
-    return true;
-  }
-
-  try {
-    const { hostname } = new URL(`http://${url}`);
-    const noProxyList = noProxy.split(",").map((s) => s.trim().toLowerCase());
-
-    return noProxyList.some((noProxyItem) => {
-      if (!noProxyItem) return false;
-      if (noProxyItem === hostname) return true;
-      // Handle domain matching (e.g. .example.com matches sub.example.com)
-      if (noProxyItem.startsWith(".") && hostname.endsWith(noProxyItem))
-        return true;
-      // Handle implicit domain matching (e.g. example.com matches sub.example.com)
-      if (hostname.endsWith(`.${noProxyItem}`)) return true;
-      return false;
-    });
-  } catch {
-    return false;
-  }
-}
