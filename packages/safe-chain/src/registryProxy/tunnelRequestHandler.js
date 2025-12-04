@@ -10,8 +10,9 @@ import { ui } from "../environment/userInteraction.js";
  */
 export function tunnelRequest(req, clientSocket, head) {
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+  const noProxy = process.env.NO_PROXY || process.env.no_proxy;
 
-  if (httpsProxy) {
+  if (httpsProxy && !shouldBypassProxy(req.url, noProxy)) {
     // If an HTTPS proxy is set, tunnel the request via the proxy
     // This is the system proxy, not the safe-chain proxy
     // The package manager will run via the safe-chain proxy
@@ -85,14 +86,23 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
 
   proxySocket.on("connect", () => {
     // Send CONNECT request to proxy
-    const connectRequest = [
+    const headers = [
       `CONNECT ${hostname}:${port || 443} HTTP/1.1`,
       `Host: ${hostname}:${port || 443}`,
-      "",
-      "",
-    ].join("\r\n");
+    ];
 
-    proxySocket.write(connectRequest);
+    if (proxy.username || proxy.password) {
+      const auth = Buffer.from(
+        `${decodeURIComponent(proxy.username)}:${decodeURIComponent(
+          proxy.password
+        )}`
+      ).toString("base64");
+      headers.push(`Proxy-Authorization: Basic ${auth}`);
+    }
+
+    headers.push("", "");
+
+    proxySocket.write(headers.join("\r\n"));
   });
 
   let isConnected = false;
@@ -144,4 +154,37 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
       proxySocket.end();
     }
   });
+}
+
+/**
+ * @param {string | undefined} url
+ * @param {string | undefined} noProxy
+ * @returns {boolean}
+ */
+function shouldBypassProxy(url, noProxy) {
+  if (!url || !noProxy) {
+    return false;
+  }
+
+  if (noProxy === "*") {
+    return true;
+  }
+
+  try {
+    const { hostname } = new URL(`http://${url}`);
+    const noProxyList = noProxy.split(",").map((s) => s.trim().toLowerCase());
+
+    return noProxyList.some((noProxyItem) => {
+      if (!noProxyItem) return false;
+      if (noProxyItem === hostname) return true;
+      // Handle domain matching (e.g. .example.com matches sub.example.com)
+      if (noProxyItem.startsWith(".") && hostname.endsWith(noProxyItem))
+        return true;
+      // Handle implicit domain matching (e.g. example.com matches sub.example.com)
+      if (hostname.endsWith(`.${noProxyItem}`)) return true;
+      return false;
+    });
+  } catch {
+    return false;
+  }
 }
