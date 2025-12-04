@@ -539,4 +539,278 @@ describe("E2E: pip coverage", () => {
       `Should download certifi. Output was:\n${downloadResult.output}`
     );
   });
+
+  // Tests for python/python3 bypass (non-pip invocations should go directly without safe-chain)
+  
+  it(`python3 --version should bypass safe-chain and work normally`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand("python3 --version");
+    
+    // Should output Python version
+    assert.ok(
+      result.output.match(/Python 3\.\d+\.\d+/),
+      `Should output Python version. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain proxy
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 --version should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python --version should bypass safe-chain and work normally`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand("python --version");
+    
+    // Should output Python version
+    assert.ok(
+      result.output.match(/Python \d+\.\d+\.\d+/),
+      `Should output Python version. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python --version should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 -c "print('hello')" should bypass safe-chain and execute code`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand("python3 -c \"print('hello world')\"");
+    
+    // Should execute Python code
+    assert.ok(
+      result.output.includes("hello world"),
+      `Should execute Python code. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 -c should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python -c should bypass safe-chain and execute code`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand("python -c \"import sys; print(sys.version)\"");
+    
+    // Should execute Python code and print version
+    assert.ok(
+      result.output.match(/\d+\.\d+\.\d+/),
+      `Should execute Python code. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python -c should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 script.py should bypass safe-chain and execute script`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Create a simple Python script
+    await shell.runCommand("echo \"print('script executed')\" > /tmp/test_script.py");
+    
+    const result = await shell.runCommand("python3 /tmp/test_script.py");
+    
+    // Should execute the script
+    assert.ok(
+      result.output.includes("script executed"),
+      `Should execute Python script. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 script.py should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python script.py should bypass safe-chain and execute script`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Create a simple Python script
+    await shell.runCommand("echo \"print('python2/3 compatible')\" > /tmp/test_script2.py");
+    
+    const result = await shell.runCommand("python /tmp/test_script2.py");
+    
+    // Should execute the script
+    assert.ok(
+      result.output.includes("python2/3 compatible"),
+      `Should execute Python script. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python script.py should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 -m json.tool should bypass safe-chain (module other than pip)`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // json.tool is a built-in Python module for formatting JSON
+    const result = await shell.runCommand("echo '{\"test\": 123}' | python3 -m json.tool");
+    
+    // Should format JSON
+    assert.ok(
+      result.output.includes('"test"') && result.output.includes('123'),
+      `Should format JSON. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 -m json.tool should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 -m http.server should bypass safe-chain (module other than pip)`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Start http.server in background and kill it immediately
+    // We just want to verify it starts without safe-chain interference
+    const result = await shell.runCommand("timeout 1 python3 -m http.server 8999 || true");
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 -m http.server should not go through safe-chain. Output was:\n${result.output}`
+    );
+    
+    // Should either start the server or timeout (both are success for bypass test)
+    assert.ok(
+      result.output.includes("Serving HTTP") || result.output === "" || result.exitCode !== undefined,
+      `Should attempt to start server. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 interactive mode should bypass safe-chain`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Run python3 with a command piped to stdin to simulate interactive mode
+    const result = await shell.runCommand("echo 'print(2+2)' | python3");
+    
+    // Should execute the command
+    assert.ok(
+      result.output.includes("4"),
+      `Should execute Python interactively. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 interactive should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 with no arguments should bypass safe-chain`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // Python with no args goes to interactive REPL, pipe exit command
+    const result = await shell.runCommand("echo 'exit()' | python3");
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 with no args should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 -m venv should bypass safe-chain (venv module)`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    const result = await shell.runCommand("python3 -m venv /tmp/test_venv");
+    
+    // Should create venv without safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 -m venv should not go through safe-chain. Output was:\n${result.output}`
+    );
+    
+    // Verify venv was created
+    const checkVenv = await shell.runCommand("test -f /tmp/test_venv/bin/python3 && echo 'exists'");
+    assert.ok(
+      checkVenv.output.includes("exists"),
+      `venv should be created. Output was:\n${checkVenv.output}`
+    );
+  });
+
+  it(`python3 -m pytest should bypass safe-chain (pytest module)`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    // pytest may not be installed, but the bypass should work regardless
+    const result = await shell.runCommand("python3 -m pytest --version 2>&1 || true");
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 -m pytest should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 -m site should bypass safe-chain (site module)`, async () => {
+    const shell = await container.openShell("zsh");
+    
+    const result = await shell.runCommand("python3 -m site");
+    
+    // Should output site information
+    assert.ok(
+      result.output.includes("sys.path") || result.output.includes("USER_BASE"),
+      `Should output site information. Output was:\n${result.output}`
+    );
+    
+    // Should NOT go through safe-chain
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `python3 -m site should not go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  // Verify that -m pip* still goes through safe-chain (sanity check)
+  
+  it(`python3 -m pip DOES go through safe-chain (sanity check)`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand(
+      "python3 -m pip install --break-system-packages certifi"
+    );
+    
+    // SHOULD go through safe-chain
+    assert.ok(
+      result.output.includes("Safe-chain") || result.output.includes("no malware found"),
+      `python3 -m pip SHOULD go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 -m pip3 DOES go through safe-chain (sanity check)`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand(
+      "python3 -m pip3 install --break-system-packages certifi"
+    );
+    
+    // SHOULD go through safe-chain
+    assert.ok(
+      result.output.includes("Safe-chain") || result.output.includes("no malware found"),
+      `python3 -m pip3 SHOULD go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python -m pip DOES go through safe-chain (sanity check)`, async () => {
+    const shell = await container.openShell("zsh");
+    const result = await shell.runCommand(
+      "python -m pip install --break-system-packages certifi"
+    );
+    
+    // SHOULD go through safe-chain
+    assert.ok(
+      result.output.includes("Safe-chain") || result.output.includes("no malware found"),
+      `python -m pip SHOULD go through safe-chain. Output was:\n${result.output}`
+    );
+  });
 });

@@ -3,16 +3,12 @@
 import { main } from "../src/main.js";
 import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
 import { setEcoSystem, ECOSYSTEM_PY } from "../src/config/settings.js";
-import { setCurrentPipInvocation, PIP_INVOCATIONS, PIP_PACKAGE_MANAGER } from "../src/packagemanager/pip/pipSettings.js";
+import { PIP_PACKAGE_MANAGER, PIP3_COMMAND } from "../src/packagemanager/pip/pipSettings.js";
 
 // Set eco system
 setEcoSystem(ECOSYSTEM_PY);
 
-// Set current invocation
-setCurrentPipInvocation(PIP_INVOCATIONS.PIP3);
-
-// Create package manager
-initializePackageManager(PIP_PACKAGE_MANAGER);
+initializePackageManager(PIP_PACKAGE_MANAGER, { tool: PIP3_COMMAND, args: process.argv.slice(2) });
 
 (async () => {
   // Pass through only user-supplied pip args
