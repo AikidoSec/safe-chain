@@ -99,7 +99,7 @@ export function generateCertForHost(hostname) {
       keyIdentifier: authorityKeyIdentifier,
     },
   ]);
-  cert.sign(/** @type {any} */ (ca.privateKey), forge.md.sha256.create());
+  cert.sign(ca.privateKey, forge.md.sha256.create());
 
   const result = {
     privateKey: forge.pki.privateKeyToPem(keys.privateKey),
@@ -120,7 +120,7 @@ function loadCa() {
     const certPem = fs.readFileSync(certPath, "utf8");
     const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
     const certificate = forge.pki.certificateFromPem(certPem);
-    
+
     // Don't return a cert that is valid for less than 1 hour
     const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
     if (certificate.validity.notAfter > oneHourFromNow) {
@@ -132,13 +132,11 @@ function loadCa() {
   fs.mkdirSync(certFolder, { recursive: true });
   fs.writeFileSync(keyPath, forge.pki.privateKeyToPem(privateKey));
   fs.writeFileSync(certPath, forge.pki.certificateToPem(certificate));
-  
   return { privateKey, certificate };
 }
 
 function generateCa() {
   const keys = forge.pki.rsa.generateKeyPair(2048);
-    
   const cert = forge.pki.createCertificate();
   cert.publicKey = keys.publicKey;
   cert.serialNumber = "01";
