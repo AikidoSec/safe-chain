@@ -71,7 +71,9 @@ if (tool && tool.internalPackageManagerName === PIP_PACKAGE_MANAGER) {
 } else if (command === "setup-ci") {
   setupCi();
 } else if (command === "run-proxy") {
-  await runProxy(process.argv.slice(2));
+  (async function () {
+    await runProxy(process.argv.slice(2));
+  })();
 } else if (command === "--version" || command === "-v" || command === "-v") {
   (async () => {
     ui.writeInformation(`Current safe-chain version: ${await getVersion()}`);
