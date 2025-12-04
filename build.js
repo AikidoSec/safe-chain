@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, cp, rm, readFile, writeFile } from "node:fs/promises";
+import { mkdir, cp, rm, readFile, writeFile, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 
@@ -36,8 +36,9 @@ if (!target) {
   console.log(`- Built safe-chain binary for ${target} (pkg) ✅`)
 
 
-  const endBuildTime = performance.now();
-  console.log(`🏁 Finished build in ${((endBuildTime - startBuildTime)/1000).toFixed(2)}s`);
+  const totalBuildTime = (performance.now() - startBuildTime)/1000;
+  const totalSizeInMb = (await stat("./dist/safe-chain" + (process.platform === "win32" ? ".exe" : ""))).size / (1024*1024);
+  console.log(`🏁 Finished build in ${totalBuildTime.toFixed(2)}s, total build size: ${totalSizeInMb.toFixed(2)}MB`);
 })();
 
 async function clearOutputFolder() {
@@ -119,7 +120,10 @@ function buildSafeChainBinary(target) {
       ? resolve("node_modules/.bin/pkg.cmd")
       : resolve("node_modules/.bin/pkg");
 
-    const pkg = spawn(pkgBin, ["./build/package.json", "-t", target], {
+    let pkgArgs = [];
+
+    pkgArgs = pkgArgs.concat(["./build/package.json", "-t", target]);
+    const pkg = spawn(pkgBin, pkgArgs, {
       stdio: "inherit",
       shell: true,
     });
