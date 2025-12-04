@@ -1,6 +1,9 @@
 import * as net from "net";
 import { ui } from "../environment/userInteraction.js";
 
+/** @type {string[]} */
+let timedoutEndpoints = [];
+
 /**
  * @param {import("http").IncomingMessage} req
  * @param {import("http").ServerResponse} clientSocket
@@ -38,6 +41,14 @@ export function tunnelRequest(req, clientSocket, head) {
 function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
 
+  if (timedoutEndpoints.includes(hostname)) {
+    clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+    ui.writeError(
+      `Safe-chain: Closing connection because previously timedout connect to ${hostname}`
+    );
+    return;
+  }
+
   const serverSocket = net.connect(
     Number.parseInt(port) || 443,
     hostname,
@@ -48,6 +59,16 @@ function tunnelRequestToDestination(req, clientSocket, head) {
       clientSocket.pipe(serverSocket);
     }
   );
+
+  const connectTimeout = getConnectTimeout(hostname);
+  serverSocket.setTimeout(connectTimeout);
+  serverSocket.on("timeout", () => {
+    timedoutEndpoints.push(hostname);
+    ui.writeError(
+      `Safe-chain: connect to ${hostname}:${port} timed out after ${connectTimeout}ms`
+    );
+    clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+  });
 
   clientSocket.on("error", () => {
     // This can happen if the client TCP socket sends RST instead of FIN.
@@ -144,4 +165,17 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
       proxySocket.end();
     }
   });
+}
+
+const imdsEndpoints = [
+  "metadata.google.internal",
+  "metadata.goog",
+  "169.254.169.254",
+  "192.0.2.1",
+];
+function getConnectTimeout(/** @type {string} */ host) {
+  if (imdsEndpoints.includes(host)) {
+    return 3000;
+  }
+  return 30000;
 }
