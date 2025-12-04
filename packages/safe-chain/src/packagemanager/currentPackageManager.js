@@ -35,10 +35,11 @@ const state = {
 
 /**
  * @param {string} packageManagerName
+ * @param {{ tool: string, args: string[] }} [context] - Optional tool context for package managers like pip
  *
  * @return {PackageManager}
  */
-export function initializePackageManager(packageManagerName) {
+export function initializePackageManager(packageManagerName, context) {
   if (packageManagerName === "npm") {
     state.packageManagerName = createNpmPackageManager();
   } else if (packageManagerName === "npx") {
@@ -54,7 +55,7 @@ export function initializePackageManager(packageManagerName) {
   } else if (packageManagerName === "bunx") {
     state.packageManagerName = createBunxPackageManager();
   } else if (packageManagerName === "pip") {
-    state.packageManagerName = createPipPackageManager();
+    state.packageManagerName = createPipPackageManager(context);
   } else if (packageManagerName === "uv") {
     state.packageManagerName = createUvPackageManager();
   } else {
