@@ -65,8 +65,8 @@ jobs:
 
       - name: Publish to npm
         run: |
-          echo "Publishing version ${{ steps.get_version.outputs.tag }} to NPM"
-          npm publish --workspace=packages/safe-chain --access public --provenance --tag ${{ steps.get_version.outputs.tag }}
+          echo "Publishing version ${{ needs.set-version.outputs.version }} to NPM"
+          npm publish --workspace=packages/safe-chain --access public --provenance --tag ${{ needs.set-version.outputs.version }}
 
       - name: Download all binary artifacts
         uses: actions/download-artifact@v4
