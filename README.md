@@ -1,13 +1,16 @@
-![Aikido Safe Chain](./docs/banner.svg)
+![Aikido Safe Chain](https://raw.githubusercontent.com/AikidoSec/safe-chain/main/docs/banner.svg)
 
 # Aikido Safe Chain
+
+[![NPM Version](https://img.shields.io/npm/v/%40aikidosec%2Fsafe-chain?style=flat-square)](https://www.npmjs.com/package/@aikidosec/safe-chain)
+[![NPM Downloads](https://img.shields.io/npm/dw/%40aikidosec%2Fsafe-chain?style=flat-square)](https://www.npmjs.com/package/@aikidosec/safe-chain)
 
 - ✅ **Block malware on developer laptops and CI/CD**
 - ✅ **Supports npm and PyPI** more package managers coming
 - ✅ **Blocks packages newer than 24 hours** without breaking your build
 - ✅ **Tokenless, free, no build data shared**
 
-Aikido Safe Chain works on Node.js version 16 and above and supports the following package managers:
+Aikido Safe Chain supports the following package managers:
 
 - 📦 **npm**
 - 📦 **npx**
@@ -24,29 +27,45 @@ Aikido Safe Chain works on Node.js version 16 and above and supports the followi
 
 ## Installation
 
-Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
+Installing the Aikido Safe Chain is easy with our one-line installer.
 
-1. **Install the Aikido Safe Chain package globally** using npm:
-   ```shell
-   npm install -g @aikidosec/safe-chain
-   ```
-2. **Setup the shell integration** by running:
+> ⚠️ **Already installed via npm?** See the [migration guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/npm-to-binary-migration.md) to switch to the binary version.
 
-   ```shell
-   safe-chain setup
-   ```
+### Unix/Linux/macOS
 
-   To enable Python (pip/pip3/uv) support (beta), use the `--include-python` flag:
+**Default installation (JavaScript packages only):**
 
-   ```shell
-   safe-chain setup --include-python
-   ```
+```shell
+curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
+```
 
-3. **❗Restart your terminal** to start using the Aikido Safe Chain.
+**Include Python support (pip/pip3/uv):**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
+```
+
+### Windows (PowerShell)
+
+**Default installation (JavaScript packages only):**
+
+```powershell
+iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
+```
+
+**Include Python support (pip/pip3/uv):**
+
+```powershell
+iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -includepython"
+```
+
+### Verify the installation
+
+1. **❗Restart your terminal** to start using the Aikido Safe Chain.
 
    - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip/pip3 are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
-4. **Verify the installation** by running one of the following commands:
+2. **Verify the installation** by running one of the following commands:
 
    For JavaScript/Node.js:
 
@@ -54,7 +73,7 @@ Installing the Aikido Safe Chain is easy. You just need 3 simple steps:
    npm install safe-chain-test
    ```
 
-   For Python (beta):
+   For Python (if you enabled Python support):
 
    ```shell
    pip3 install safe-chain-pi-test
@@ -92,7 +111,7 @@ The Aikido Safe Chain integrates with your shell to provide a seamless experienc
 - ✅ **PowerShell**
 - ✅ **PowerShell Core**
 
-More information about the shell integration can be found in the [shell integration documentation](docs/shell-integration.md).
+More information about the shell integration can be found in the [shell integration documentation](https://github.com/AikidoSec/safe-chain/blob/main/docs/shell-integration.md).
 
 ## Uninstallation
 
@@ -163,23 +182,37 @@ You can set the minimum package age through multiple sources (in order of priori
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.
 
-For optimal protection in CI/CD environments, we recommend using **npm >= 10.4.0** as it provides full dependency tree scanning. Other package managers currently offer limited scanning of install command arguments only.
+## Installation for CI/CD
 
-## Setup
+Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD environments. This sets up executable shims in the PATH instead of shell aliases.
 
-To use Aikido Safe Chain in CI/CD environments, run the following command after installing the package:
+### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
-```shell
-safe-chain setup-ci
-```
-
-To enable Python (pip/pip3/uv) support (beta) in CI/CD, use the `--include-python` flag:
+**JavaScript only:**
 
 ```shell
-safe-chain setup-ci --include-python
+curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
 ```
 
-This automatically configures your CI environment to use Aikido Safe Chain for all package manager commands.
+**With Python support:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+```
+
+### Windows (Azure Pipelines, etc.)
+
+**JavaScript only:**
+
+```powershell
+iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
+```
+
+**With Python support:**
+
+```powershell
+iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci -includepython"
+```
 
 ## Supported Platforms
 
@@ -195,15 +228,14 @@ This automatically configures your CI environment to use Aikido Safe Chain for a
     node-version: "22"
     cache: "npm"
 
-- name: Setup safe-chain
-  run: |
-    npm i -g @aikidosec/safe-chain
-    safe-chain setup-ci
+- name: Install safe-chain
+  run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
 
 - name: Install dependencies
-  run: |
-    npm ci
+  run: npm ci
 ```
+
+> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv) support.
 
 ## Azure DevOps Example
 
@@ -213,14 +245,13 @@ This automatically configures your CI environment to use Aikido Safe Chain for a
     versionSpec: "22.x"
   displayName: "Install Node.js"
 
-- script: |
-    npm i -g @aikidosec/safe-chain
-    safe-chain setup-ci
-  displayName: "Install safe chain"
+- script: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+  displayName: "Install safe-chain"
 
-- script: |
-    npm ci
-  displayName: "npm install and build"
+- script: npm ci
+  displayName: "Install dependencies"
 ```
+
+> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv) support.
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.

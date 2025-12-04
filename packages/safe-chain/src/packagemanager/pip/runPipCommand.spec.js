@@ -62,6 +62,103 @@ describe("runPipCommand environment variable handling", () => {
     mock.reset();
   });
 
+  it("should NOT set PIP_CONFIG_FILE for 'pip config' commands to allow persistent config access", async () => {
+    const res = await runPip("pip3", ["config", "set", "global.index-url", "https://test.pypi.org/simple"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    
+    // PIP_CONFIG_FILE should NOT be set for config commands
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CONFIG_FILE,
+      undefined,
+      "PIP_CONFIG_FILE should NOT be set for pip config commands"
+    );
+    
+    // But CA environment variables should still be set
+    assert.strictEqual(
+      capturedArgs.options.env.REQUESTS_CA_BUNDLE,
+      "/tmp/test-combined-ca.pem",
+      "REQUESTS_CA_BUNDLE should still be set"
+    );
+    assert.strictEqual(
+      capturedArgs.options.env.SSL_CERT_FILE,
+      "/tmp/test-combined-ca.pem",
+      "SSL_CERT_FILE should still be set"
+    );
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CERT,
+      "/tmp/test-combined-ca.pem",
+      "PIP_CERT should still be set"
+    );
+  });
+
+  it("should NOT set PIP_CONFIG_FILE for 'pip config get' commands", async () => {
+    const res = await runPip("pip3", ["config", "get", "global.index-url"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CONFIG_FILE,
+      undefined,
+      "PIP_CONFIG_FILE should NOT be set for pip config get"
+    );
+  });
+
+  it("should NOT set PIP_CONFIG_FILE for 'pip config list' commands", async () => {
+    const res = await runPip("pip3", ["config", "list"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CONFIG_FILE,
+      undefined,
+      "PIP_CONFIG_FILE should NOT be set for pip config list"
+    );
+  });
+
+  it("should NOT set PIP_CONFIG_FILE for 'pip cache' commands", async () => {
+    const res = await runPip("pip3", ["cache", "dir"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CONFIG_FILE,
+      undefined,
+      "PIP_CONFIG_FILE should NOT be set for pip cache commands"
+    );
+    
+    // CA env vars should still be set
+    assert.strictEqual(
+      capturedArgs.options.env.SSL_CERT_FILE,
+      "/tmp/test-combined-ca.pem",
+      "SSL_CERT_FILE should still be set"
+    );
+  });
+
+  it("should NOT set PIP_CONFIG_FILE for 'pip debug' commands", async () => {
+    const res = await runPip("pip3", ["debug"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CONFIG_FILE,
+      undefined,
+      "PIP_CONFIG_FILE should NOT be set for pip debug"
+    );
+  });
+
+  it("should NOT set PIP_CONFIG_FILE for 'pip completion' commands", async () => {
+    const res = await runPip("pip3", ["completion", "--bash"]);
+    assert.strictEqual(res.status, 0);
+    assert.ok(capturedArgs, "safeSpawn should have been called");
+    
+    assert.strictEqual(
+      capturedArgs.options.env.PIP_CONFIG_FILE,
+      undefined,
+      "PIP_CONFIG_FILE should NOT be set for pip completion"
+    );
+  });
+
   it("should set PIP_CERT env var and create config file", async () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
