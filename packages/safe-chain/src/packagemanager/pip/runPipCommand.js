@@ -78,7 +78,7 @@ export async function runPip(command, args) {
     ui.writeVerbose(`Safe-chain: Bypassing safe-chain for non-pip invocation: ${command} ${args.join(" ")}`);
     // Spawn the ORIGINAL command with ORIGINAL args
     const { spawn } = await import("child_process");
-    return new Promise((resolve) => {
+    return new Promise((_resolve) => {
       const proc = spawn(command, args, { stdio: "inherit" });
       proc.on("exit", (/** @type {number | null} */ code) => {
         process.exit(code ?? 0);
