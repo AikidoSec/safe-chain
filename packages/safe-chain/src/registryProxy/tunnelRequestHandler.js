@@ -171,7 +171,6 @@ const imdsEndpoints = [
   "metadata.google.internal",
   "metadata.goog",
   "169.254.169.254",
-  "192.0.2.1",
 ];
 function getConnectTimeout(/** @type {string} */ host) {
   if (imdsEndpoints.includes(host)) {
