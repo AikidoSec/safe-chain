@@ -1,15 +1,10 @@
-export const knownRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
-
-export function parsePackageFromUrl(url) {
-  let packageName, version, registry;
-
-  for (const knownRegistry of knownRegistries) {
-    if (url.includes(knownRegistry)) {
-      registry = knownRegistry;
-      break;
-    }
-  }
-
+/**
+ * @param {string} url
+ * @param {string} registry
+ * @returns {{packageName: string | undefined, version: string | undefined}}
+ */
+export function parseNpmPackageUrl(url, registry) {
+  let packageName, version;
   if (!registry || !url.endsWith(".tgz")) {
     return { packageName, version };
   }

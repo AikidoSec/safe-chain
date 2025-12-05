@@ -60,6 +60,26 @@ export class DockerTestContainer {
     }
   }
 
+  dockerExec(command, daemon = false) {
+    if (!this.isRunning) {
+      throw new Error("Container is not running");
+    }
+
+    try {
+      const dockerExecCommand = `docker exec ${daemon ? "-d " : " "}${
+        this.containerName
+      } bash -c "${command}"`;
+      const output = execSync(dockerExecCommand, {
+        encoding: "utf-8",
+        stdio: "pipe",
+        timeout: 10000,
+      });
+      return output;
+    } catch (error) {
+      throw new Error(`Failed to execute command: ${error.message}`);
+    }
+  }
+
   async openShell(shell) {
     let ptyProcess = pty.spawn(
       "docker",
@@ -96,9 +116,11 @@ export class DockerTestContainer {
 
         const timeout = setTimeout(() => {
           // Fallback in case the command doesn't finish in a reasonable time
+          // oxlint-disable-next-line no-console - having this log in CI helps diagnose issues
+          console.log("Command timeout reached");
           resolve({ allData, output: parseShellOutput(allData), command });
           ptyProcess.removeListener("data", handleInput);
-        }, 10000);
+        }, 15000);
 
         function handleInput(data) {
           allData.push(data);

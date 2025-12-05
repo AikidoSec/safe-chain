@@ -4,7 +4,8 @@
   "scripts": {
     "test": "node --test --experimental-test-module-mocks 'src/**/*.spec.js'",
     "test:watch": "node --test --watch --experimental-test-module-mocks 'src/**/*.spec.js'",
-    "lint": "eslint ."
+    "lint": "oxlint --deny-warnings",
+    "typecheck": "tsc --noEmit"
   },
   "bin": {
     "aikido-npm": "bin/aikido-npm.js",
@@ -14,6 +15,11 @@
     "aikido-pnpx": "bin/aikido-pnpx.js",
     "aikido-bun": "bin/aikido-bun.js",
     "aikido-bunx": "bin/aikido-bunx.js",
+    "aikido-uv": "bin/aikido-uv.js",
+    "aikido-pip": "bin/aikido-pip.js",
+    "aikido-pip3": "bin/aikido-pip3.js",
+    "aikido-python": "bin/aikido-python.js",
+    "aikido-python3": "bin/aikido-python3.js",
     "safe-chain": "bin/safe-chain.js"
   },
   "type": "module",
@@ -28,16 +34,26 @@
   "keywords": [],
   "author": "Aikido Security",
   "license": "AGPL-3.0-or-later",
-  "description": "The Aikido Safe Chain wraps around the [npm cli](https://github.com/npm/cli), [npx](https://github.com/npm/cli/blob/latest/docs/content/commands/npx.md), [yarn](https://yarnpkg.com/), [pnpm](https://pnpm.io/), [pnpx](https://pnpm.io/cli/dlx), [bun](https://bun.sh/), and [bunx](https://bun.sh/docs/cli/bunx) to provide extra checks before installing new packages. This tool will detect when a package contains malware and prompt you to exit, preventing npm, npx, yarn, pnpm, pnpx, bun, or bunx from downloading or running the malware.",
+  "description": "The Aikido Safe Chain wraps around the [npm cli](https://github.com/npm/cli), [npx](https://github.com/npm/cli/blob/latest/docs/content/commands/npx.md), [yarn](https://yarnpkg.com/), [pnpm](https://pnpm.io/), [pnpx](https://pnpm.io/cli/dlx), [bun](https://bun.sh/), [bunx](https://bun.sh/docs/cli/bunx), [uv](https://docs.astral.sh/uv/) (Python), and [pip](https://pip.pypa.io/) to provide extra checks before installing new packages. This tool will detect when a package contains malware and prompt you to exit, preventing npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, or pip/pip3 from downloading or running the malware.",
   "dependencies": {
-    "abbrev": "3.0.1",
+    "certifi": "14.5.15",
     "chalk": "5.4.1",
     "https-proxy-agent": "7.0.6",
-    "make-fetch-happen": "14.0.3",
-    "node-forge": "1.3.1",
-    "npm-registry-fetch": "18.0.2",
-    "ora": "8.2.0",
+    "ini": "6.0.0",
+    "make-fetch-happen": "15.0.3",
+    "node-forge": "1.3.2",
+    "npm-registry-fetch": "19.1.1",
     "semver": "7.7.2"
+  },
+  "devDependencies": {
+    "@types/ini": "^4.1.1",
+    "@types/make-fetch-happen": "^10.0.4",
+    "@types/node": "^18.19.130",
+    "@types/node-forge": "^1.3.14",
+    "@types/npm-registry-fetch": "^8.0.9",
+    "@types/semver": "^7.7.1",
+    "esbuild": "^0.27.0",
+    "typescript": "^5.9.3"
   },
   "main": "src/main.js",
   "bugs": {

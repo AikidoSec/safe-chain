@@ -1,8 +1,67 @@
+import { ui } from "../../environment/userInteraction.js";
 import {
   MALWARE_STATUS_MALWARE,
   openMalwareDatabase,
 } from "../malwareDatabase.js";
 
+/**
+ * @typedef {Object} PackageChange
+ * @property {string} name
+ * @property {string} version
+ * @property {string} type
+ */
+
+/**
+ * @typedef {Object} AuditResult
+ * @property {PackageChange[]} allowedChanges
+ * @property {(PackageChange & {reason: string})[]} disallowedChanges
+ * @property {boolean} isAllowed
+ */
+
+/**
+ * @typedef {Object} AuditStats
+ * @property {number} totalPackages
+ * @property {number} safePackages
+ * @property {number} malwarePackages
+ */
+
+/**
+ * @type AuditStats
+ */
+const auditStats = {
+  totalPackages: 0,
+  safePackages: 0,
+  malwarePackages: 0,
+};
+
+/**
+ * @returns {AuditStats}
+ */
+export function getAuditStats() {
+  return auditStats;
+}
+
+/**
+ *
+ * @param {string | undefined} name
+ * @param {string | undefined} version
+ * @returns {Promise<boolean>}
+ */
+export async function isMalwarePackage(name, version) {
+  if (!name || !version) {
+    return false;
+  }
+
+  const auditResult = await auditChanges([{ name, version, type: "add" }]);
+
+  return !auditResult.isAllowed;
+}
+
+/**
+ * @param {PackageChange[]} changes
+ *
+ * @returns {Promise<AuditResult>}
+ */
 export async function auditChanges(changes) {
   const allowedChanges = [];
   const disallowedChanges = [];
@@ -19,10 +78,20 @@ export async function auditChanges(changes) {
     );
 
     if (malwarePackage) {
+      auditStats.malwarePackages += 1;
+      ui.writeVerbose(
+        `Safe-chain: Package ${change.name}@${change.version} is marked as malware: ${malwarePackage.status}`
+      );
       disallowedChanges.push({ ...change, reason: malwarePackage.status });
     } else {
+      auditStats.safePackages += 1;
+      ui.writeVerbose(
+        `Safe-chain: Package ${change.name}@${change.version} is clean`
+      );
       allowedChanges.push(change);
     }
+
+    auditStats.totalPackages += 1;
   }
 
   const auditResults = {
@@ -34,6 +103,10 @@ export async function auditChanges(changes) {
   return auditResults;
 }
 
+/**
+ * @param {{name: string, version: string, type: string}[]} changes
+ * @returns {Promise<{name: string, version: string, status: string}[]>}
+ */
 async function getPackagesWithMalware(changes) {
   if (changes.length === 0) {
     return [];

@@ -1,3 +1,8 @@
+/**
+ * @param {string[]} args
+ *
+ * @returns {{name: string, version: string}[]}
+ */
 export function parsePackagesFromArguments(args) {
   let defaultTag = "latest";
 
@@ -21,6 +26,10 @@ export function parsePackagesFromArguments(args) {
   return [];
 }
 
+/**
+ * @param {string} arg
+ * @returns {{name: string, numberOfParameters: number} | undefined}
+ */
 function getOption(arg) {
   if (isOptionWithParameter(arg)) {
     return {
@@ -41,6 +50,10 @@ function getOption(arg) {
   return undefined;
 }
 
+/**
+ * @param {string} arg
+ * @returns {boolean}
+ */
 function isOptionWithParameter(arg) {
   const optionsWithParameters = [
     "--access",
@@ -68,6 +81,11 @@ function isOptionWithParameter(arg) {
   return optionsWithParameters.includes(arg);
 }
 
+/**
+ * @param {string} arg
+ * @param {string} defaultTag
+ * @returns {{name: string, version: string}}
+ */
 function parsePackagename(arg, defaultTag) {
   // format can be --package=name@version
   // in that case, we need to remove the --package= part
@@ -97,6 +115,10 @@ function parsePackagename(arg, defaultTag) {
   };
 }
 
+/**
+ * @param {string} arg
+ * @returns {string}
+ */
 function removeAlias(arg) {
   // removes the alias.
   // Eg.: server@npm:http-server@latest becomes http-server@latest

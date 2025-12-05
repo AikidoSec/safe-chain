@@ -7,9 +7,10 @@
     "test/e2e"
   ],
   "scripts": {
-    "test": "npm run test --workspace=packages/safe-chain --workspace=packages/safe-chain-bun",
+    "test": "npm run test --workspace=packages/safe-chain",
     "test:e2e": "npm run test --workspace=test/e2e",
-    "lint": "npm run lint --workspace=packages/safe-chain"
+    "lint": "npm run lint --workspace=packages/safe-chain",
+    "typecheck": "npm run typecheck --workspace=packages/safe-chain"
   },
   "repository": {
     "type": "git",
@@ -18,13 +19,8 @@
   "author": "Aikido Security",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "@eslint/js": "^9.35.0",
-    "eslint": "^9.35.0",
-    "eslint-plugin-import": "^2.32.0",
-    "globals": "^16.1.0",
-    "typescript-eslint": "^8.32.0"
-  },
-  "overrides": {
-    "brace-expansion@<=2.0.2": "2.0.2"
+    "oxlint": "^1.22.0",
+    "esbuild": "^0.27.0",
+    "@yao-pkg/pkg": "6.10.1"
   }
 }

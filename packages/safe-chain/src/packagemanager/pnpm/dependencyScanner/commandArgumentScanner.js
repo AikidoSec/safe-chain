@@ -1,6 +1,9 @@
 import { resolvePackageVersion } from "../../../api/npmApi.js";
 import { parsePackagesFromArguments } from "../parsing/parsePackagesFromArguments.js";
 
+/**
+ * @returns {import("../../npm/dependencyScanner/commandArgumentScanner.js").CommandArgumentScanner}
+ */
 export function commandArgumentScanner() {
   return {
     scan: (args) => scanDependencies(args),
@@ -8,6 +11,10 @@ export function commandArgumentScanner() {
   };
 }
 
+/**
+ * @param {string[]} args
+ * @returns {Promise<import("../../npm/dependencyScanner/commandArgumentScanner.js").ScanResult[]>}
+ */
 async function scanDependencies(args) {
   const changes = [];
   const packageUpdates = parsePackagesFromArguments(args);

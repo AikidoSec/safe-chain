@@ -1,6 +1,17 @@
 import * as net from "net";
 import { ui } from "../environment/userInteraction.js";
+import { isImdsEndpoint } from "./isImdsEndpoint.js";
 
+/** @type {string[]} */
+let timedoutEndpoints = [];
+
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("http").ServerResponse} clientSocket
+ * @param {Buffer} head
+ *
+ * @returns {void}
+ */
 export function tunnelRequest(req, clientSocket, head) {
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 
@@ -21,26 +32,97 @@ export function tunnelRequest(req, clientSocket, head) {
   }
 }
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("http").ServerResponse} clientSocket
+ * @param {Buffer} head
+ *
+ * @returns {void}
+ */
 function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
+  const isImds = isImdsEndpoint(hostname);
 
-  const serverSocket = net.connect(port || 443, hostname, () => {
-    clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-    serverSocket.write(head);
-    serverSocket.pipe(clientSocket);
-    clientSocket.pipe(serverSocket);
+  if (timedoutEndpoints.includes(hostname)) {
+    clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+    if (isImds) {
+      ui.writeVerbose(
+        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`
+      );
+    } else {
+      ui.writeError(
+        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`
+      );
+    }
+    return;
+  }
+
+  const serverSocket = net.connect(
+    Number.parseInt(port) || 443,
+    hostname,
+    () => {
+      clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      serverSocket.write(head);
+      serverSocket.pipe(clientSocket);
+      clientSocket.pipe(serverSocket);
+    }
+  );
+
+  // Set explicit connection timeout to avoid waiting for OS default (~2 minutes).
+  // IMDS endpoints get shorter timeout (3s) since they're commonly unreachable outside cloud environments.
+  const connectTimeout = getConnectTimeout(hostname);
+  serverSocket.setTimeout(connectTimeout);
+
+  serverSocket.on("timeout", () => {
+    timedoutEndpoints.push(hostname);
+    // Suppress error logging for IMDS endpoints - timeouts are expected when not in cloud
+    if (isImds) {
+      ui.writeVerbose(
+        `Safe-chain: connect to ${hostname}:${
+          port || 443
+        } timed out after ${connectTimeout}ms`
+      );
+    } else {
+      ui.writeError(
+        `Safe-chain: connect to ${hostname}:${
+          port || 443
+        } timed out after ${connectTimeout}ms`
+      );
+    }
+    serverSocket.destroy(); // Clean up socket to prevent event loop hanging
+    clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+  });
+
+  clientSocket.on("error", () => {
+    // This can happen if the client TCP socket sends RST instead of FIN.
+    // Not subscribing to 'error' event will cause node to throw and crash.
+    if (serverSocket.writable) {
+      serverSocket.end();
+    }
   });
 
   serverSocket.on("error", (err) => {
-    ui.writeError(
-      `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
-    );
+    if (isImds) {
+      ui.writeVerbose(
+        `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
+      );
+    } else {
+      ui.writeError(
+        `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
+      );
+    }
     if (clientSocket.writable) {
       clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
     }
   });
 }
 
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("http").ServerResponse} clientSocket
+ * @param {Buffer} head
+ * @param {string} proxyUrl
+ */
 function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
   const { port, hostname } = new URL(`http://${req.url}`);
   const proxy = new URL(proxyUrl);
@@ -48,7 +130,7 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
   // Connect to proxy server
   const proxySocket = net.connect({
     host: proxy.hostname,
-    port: proxy.port,
+    port: Number.parseInt(proxy.port) || 80,
   });
 
   proxySocket.on("connect", () => {
@@ -97,6 +179,13 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
       if (clientSocket.writable) {
         clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
       }
+    } else {
+      ui.writeError(
+        `Safe-chain: proxy socket error after connection - ${err.message}`
+      );
+      if (clientSocket.writable) {
+        clientSocket.end();
+      }
     }
   });
 
@@ -105,4 +194,16 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
       proxySocket.end();
     }
   });
+}
+
+/**
+ * Returns appropriate connection timeout for a host.
+ * - IMDS endpoints: 3s (fail fast when outside cloud, reduce 5min delay to ~20s)
+ * - Other endpoints: 30s (allow for slow networks while preventing indefinite hangs)
+ */
+function getConnectTimeout(/** @type {string} */ host) {
+  if (isImdsEndpoint(host)) {
+    return 3000;
+  }
+  return 30000;
 }

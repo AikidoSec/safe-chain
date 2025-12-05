@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "lib": ["es2023"],
+    "module": "node16",
+    "strict": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node16",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*.js",
+    "bin/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/*.spec.js"
+  ]
+}

@@ -2,6 +2,9 @@ import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 export function createBunPackageManager() {
   return {
     runCommand: (args) => runBunCommand("bun", args),
@@ -13,6 +16,9 @@ export function createBunPackageManager() {
   };
 }
 
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 export function createBunxPackageManager() {
   return {
     runCommand: (args) => runBunCommand("bunx", args),
@@ -24,6 +30,11 @@ export function createBunxPackageManager() {
   };
 }
 
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @returns {Promise<{status: number}>}
+ */
 async function runBunCommand(command, args) {
   try {
     const result = await safeSpawn(command, args, {
@@ -31,7 +42,7 @@ async function runBunCommand(command, args) {
       env: mergeSafeChainProxyEnvironmentVariables(process.env),
     });
     return { status: result.status };
-  } catch (error) {
+  } catch (/** @type any */ error) {
     if (error.status) {
       return { status: error.status };
     } else {

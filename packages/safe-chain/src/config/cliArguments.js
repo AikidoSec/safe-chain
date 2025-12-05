@@ -1,12 +1,24 @@
+/**
+ * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined, includePython: boolean}}
+ */
 const state = {
-  malwareAction: undefined,
+  loggingLevel: undefined,
+  skipMinimumPackageAge: undefined,
+  minimumPackageAgeHours: undefined,
+  includePython: false,
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
 
+/**
+ * @param {string[]} args
+ * @returns {string[]}
+ */
 export function initializeCliArguments(args) {
   // Reset state on each call
-  state.malwareAction = undefined;
+  state.loggingLevel = undefined;
+  state.skipMinimumPackageAge = undefined;
+  state.minimumPackageAgeHours = undefined;
 
   const safeChainArgs = [];
   const remainingArgs = [];
@@ -19,21 +31,19 @@ export function initializeCliArguments(args) {
     }
   }
 
-  setMalwareAction(safeChainArgs);
+  setLoggingLevel(safeChainArgs);
+  setSkipMinimumPackageAge(safeChainArgs);
+  setMinimumPackageAgeHours(safeChainArgs);
+  setIncludePython(args);
 
   return remainingArgs;
 }
 
-function setMalwareAction(args) {
-  const safeChainMalwareActionArg = SAFE_CHAIN_ARG_PREFIX + "malware-action=";
-
-  const action = getLastArgEqualsValue(args, safeChainMalwareActionArg);
-  if (!action) {
-    return;
-  }
-  state.malwareAction = action.toLowerCase();
-}
-
+/**
+ * @param {string[]} args
+ * @param {string} prefix
+ * @returns {string | undefined}
+ */
 function getLastArgEqualsValue(args, prefix) {
   for (var i = args.length - 1; i >= 0; i--) {
     const arg = args[i];
@@ -45,6 +55,84 @@ function getLastArgEqualsValue(args, prefix) {
   return undefined;
 }
 
-export function getMalwareAction() {
-  return state.malwareAction;
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setLoggingLevel(args) {
+  const safeChainLoggingArg = SAFE_CHAIN_ARG_PREFIX + "logging=";
+
+  const level = getLastArgEqualsValue(args, safeChainLoggingArg);
+  if (!level) {
+    return;
+  }
+  state.loggingLevel = level.toLowerCase();
+}
+
+export function getLoggingLevel() {
+  return state.loggingLevel;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setSkipMinimumPackageAge(args) {
+  const flagName = SAFE_CHAIN_ARG_PREFIX + "skip-minimum-package-age";
+
+  if (hasFlagArg(args, flagName)) {
+    state.skipMinimumPackageAge = true;
+  }
+}
+
+export function getSkipMinimumPackageAge() {
+  return state.skipMinimumPackageAge;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setMinimumPackageAgeHours(args) {
+  const argName = SAFE_CHAIN_ARG_PREFIX + "minimum-package-age-hours=";
+
+  const value = getLastArgEqualsValue(args, argName);
+  if (value) {
+    state.minimumPackageAgeHours = value;
+  }
+}
+
+/**
+ * @returns {string | undefined}
+ */
+export function getMinimumPackageAgeHours() {
+  return state.minimumPackageAgeHours;
+}
+
+/**
+ * @param {string[]} args
+ */
+function setIncludePython(args) {
+  // This flag doesn't have the --safe-chain- prefix because
+  // it is only used for the safe-chain command itself and
+  // not when wrapped around package manager commands.
+  state.includePython = hasFlagArg(args, "--include-python");
+}
+
+export function includePython() {
+  return state.includePython;
+}
+
+/**
+ * @param {string[]} args
+ * @param {string} flagName
+ * @returns {boolean}
+ */
+function hasFlagArg(args, flagName) {
+  for (const arg of args) {
+    if (arg.toLowerCase() === flagName.toLowerCase()) {
+      return true;
+    }
+  }
+  return false;
 }

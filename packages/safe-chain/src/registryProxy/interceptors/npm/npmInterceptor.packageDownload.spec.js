@@ -1,9 +1,22 @@
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 import assert from "node:assert";
-import { parsePackageFromUrl } from "./parsePackageFromUrl.js";
 
-describe("parsePackageFromUrl", () => {
-  const testCases = [
+describe("npmInterceptor", async () => {
+  let lastPackage;
+  let malwareResponse = false;
+
+  mock.module("../../../scanning/audit/index.js", {
+    namedExports: {
+      isMalwarePackage: async (packageName, version) => {
+        lastPackage = { packageName, version };
+        return malwareResponse;
+      },
+    },
+  });
+
+  const { npmInterceptorForUrl } = await import("./npmInterceptor.js");
+
+  const parserCases = [
     // Regular packages
     {
       url: "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
@@ -78,11 +91,6 @@ describe("parsePackageFromUrl", () => {
       url: "https://registry.yarnpkg.com/@babel/core/-/core-7.21.4.tgz",
       expected: { packageName: "@babel/core", version: "7.21.4" },
     },
-    // Invalid URLs should return undefined values
-    {
-      url: "https://example.com/package.tgz",
-      expected: { packageName: undefined, version: undefined },
-    },
     // URL to get package info, not tarball
     {
       url: "https://registry.npmjs.org/lodash",
@@ -105,10 +113,51 @@ describe("parsePackageFromUrl", () => {
     },
   ];
 
-  testCases.forEach(({ url, expected }, index) => {
-    it(`should parse URL ${index + 1}: ${url}`, () => {
-      const result = parsePackageFromUrl(url);
-      assert.deepEqual(result, expected);
+  parserCases.forEach(({ url, expected }, index) => {
+    it(`should parse URL ${index + 1}: ${url}`, async () => {
+      const interceptor = npmInterceptorForUrl(url);
+      assert.ok(
+        interceptor,
+        "Interceptor should be created for known npm registry"
+      );
+
+      await interceptor.handleRequest(url);
+
+      assert.deepEqual(lastPackage, expected);
     });
+  });
+
+  it("should not create interceptor for unknown registry", () => {
+    const url = "https://example.com/some-package/-/some-package-1.0.0.tgz";
+
+    const interceptor = npmInterceptorForUrl(url);
+
+    assert.equal(
+      interceptor,
+      undefined,
+      "Interceptor should be undefined for unknown registry"
+    );
+  });
+
+  it("should block malicious package", async () => {
+    const url =
+      "https://registry.npmjs.org/malicious-package/-/malicious-package-1.0.0.tgz";
+    malwareResponse = true;
+
+    const interceptor = npmInterceptorForUrl(url);
+
+    const result = await interceptor.handleRequest(url);
+
+    assert.ok(result.blockResponse, "Should contain a blockResponse");
+    assert.equal(
+      result.blockResponse.statusCode,
+      403,
+      "Block response should have status code 403"
+    );
+    assert.equal(
+      result.blockResponse.message,
+      "Forbidden - blocked by safe-chain",
+      "Block response should have correct status message"
+    );
   });
 });

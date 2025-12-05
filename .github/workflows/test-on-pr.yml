@@ -33,8 +33,11 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      - name: Run ESLint
+      - name: Run linting
         run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck --workspace=packages/safe-chain
 
       - name: Create package tarball
         run: npm pack --workspace=packages/safe-chain

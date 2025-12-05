@@ -5,8 +5,30 @@ on:
     tags:
       - "*"
 
+permissions:
+  id-token: write
+  contents: write
+
 jobs:
+  set-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.tag }}
+    steps:
+      - name: Set version number
+        id: get_version
+        run: |
+          version="${{ github.ref_name }}"
+          echo "tag=$version" >> $GITHUB_OUTPUT
+
+  create-binaries:
+    needs: set-version
+    uses: ./.github/workflows/create-artifact.yml
+    with:
+      version: ${{ needs.set-version.outputs.version }}
+
   build:
+    needs: [set-version, create-binaries]
     runs-on: ubuntu-latest
 
     steps:
@@ -26,14 +48,8 @@ jobs:
           npm i -g @aikidosec/safe-chain
           safe-chain setup-ci
 
-      - name: Set version number
-        id: get_version
-        run: |
-          version="${{ github.ref_name }}"
-          echo "tag=$version" >> $GITHUB_OUTPUT
-
       - name: Set the version in safe-chain package
-        run: npm --no-git-tag-version version ${{ steps.get_version.outputs.tag }} --workspace=packages/safe-chain
+        run: npm --no-git-tag-version version ${{ needs.set-version.outputs.version }} --workspace=packages/safe-chain
 
       - name: Install dependencies
         run: npm ci
@@ -49,7 +65,33 @@ jobs:
 
       - name: Publish to npm
         run: |
-          echo "Publishing version ${{ steps.get_version.outputs.tag }} to NPM"
-          npm publish --workspace=packages/safe-chain --access public
+          echo "Publishing version ${{ needs.set-version.outputs.version }} to NPM"
+          npm publish --workspace=packages/safe-chain --access public --provenance
+
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries/
+          pattern: safe-chain-*
+          merge-multiple: false
+
+      - name: Rename binaries to include platform and architecture
+        run: |
+          mv binaries/safe-chain-macos-x64/safe-chain binaries/safe-chain-macos-x64/safe-chain-macos-x64
+          mv binaries/safe-chain-macos-arm64/safe-chain binaries/safe-chain-macos-arm64/safe-chain-macos-arm64
+          mv binaries/safe-chain-linux-x64/safe-chain binaries/safe-chain-linux-x64/safe-chain-linux-x64
+          mv binaries/safe-chain-linux-arm64/safe-chain binaries/safe-chain-linux-arm64/safe-chain-linux-arm64
+          mv binaries/safe-chain-win-x64/safe-chain.exe binaries/safe-chain-win-x64/safe-chain-win-x64.exe
+          mv binaries/safe-chain-win-arm64/safe-chain.exe binaries/safe-chain-win-arm64/safe-chain-win-arm64.exe
+
+      - name: Upload binaries to existing GitHub Release
         env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ needs.set-version.outputs.version }} \
+            binaries/safe-chain-macos-x64/* \
+            binaries/safe-chain-macos-arm64/* \
+            binaries/safe-chain-linux-x64/* \
+            binaries/safe-chain-linux-arm64/* \
+            binaries/safe-chain-win-x64/* \
+            binaries/safe-chain-win-arm64/*

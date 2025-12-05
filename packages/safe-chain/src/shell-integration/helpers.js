@@ -2,15 +2,92 @@ import { spawnSync } from "child_process";
 import * as os from "os";
 import fs from "fs";
 import path from "path";
+import { ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
 
+/**
+ * @typedef {Object} AikidoTool
+ * @property {string} tool
+ * @property {string} aikidoCommand
+ * @property {string} ecoSystem
+ * @property {string} internalPackageManagerName
+ */
+
+/**
+ * @type {AikidoTool[]}
+ */
 export const knownAikidoTools = [
-  { tool: "npm", aikidoCommand: "aikido-npm" },
-  { tool: "npx", aikidoCommand: "aikido-npx" },
-  { tool: "yarn", aikidoCommand: "aikido-yarn" },
-  { tool: "pnpm", aikidoCommand: "aikido-pnpm" },
-  { tool: "pnpx", aikidoCommand: "aikido-pnpx" },
-  { tool: "bun", aikidoCommand: "aikido-bun" },
-  { tool: "bunx", aikidoCommand: "aikido-bunx" },
+  {
+    tool: "npm",
+    aikidoCommand: "aikido-npm",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "npm",
+  },
+  {
+    tool: "npx",
+    aikidoCommand: "aikido-npx",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "npx",
+  },
+  {
+    tool: "yarn",
+    aikidoCommand: "aikido-yarn",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "yarn",
+  },
+  {
+    tool: "pnpm",
+    aikidoCommand: "aikido-pnpm",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "pnpm",
+  },
+  {
+    tool: "pnpx",
+    aikidoCommand: "aikido-pnpx",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "pnpx",
+  },
+  {
+    tool: "bun",
+    aikidoCommand: "aikido-bun",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "bun",
+  },
+  {
+    tool: "bunx",
+    aikidoCommand: "aikido-bunx",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "bunx",
+  },
+  {
+    tool: "uv",
+    aikidoCommand: "aikido-uv",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "uv",
+  },
+  {
+    tool: "pip",
+    aikidoCommand: "aikido-pip",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
+  {
+    tool: "pip3",
+    aikidoCommand: "aikido-pip3",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
+  {
+    tool: "python",
+    aikidoCommand: "aikido-python",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
+  {
+    tool: "python3",
+    aikidoCommand: "aikido-python3",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pip",
+  },
   // When adding a new tool here, also update the documentation for the new tool in the README.md
 ];
 
@@ -30,6 +107,11 @@ export function getPackageManagerList() {
   return `${tools.join(", ")}, and ${lastTool} commands`;
 }
 
+/**
+ * @param {string} executableName
+ *
+ * @returns {boolean}
+ */
 export function doesExecutableExistOnSystem(executableName) {
   if (os.platform() === "win32") {
     const result = spawnSync("where", [executableName], { stdio: "ignore" });
@@ -40,6 +122,13 @@ export function doesExecutableExistOnSystem(executableName) {
   }
 }
 
+/**
+ * @param {string} filePath
+ * @param {RegExp} pattern
+ * @param {string} [eol]
+ *
+ * @returns {void}
+ */
 export function removeLinesMatchingPattern(filePath, pattern, eol) {
   if (!fs.existsSync(filePath)) {
     return;
@@ -54,6 +143,12 @@ export function removeLinesMatchingPattern(filePath, pattern, eol) {
 }
 
 const maxLineLength = 100;
+
+/**
+ * @param {string} line
+ * @param {RegExp} pattern
+ * @returns {boolean}
+ */
 function shouldRemoveLine(line, pattern) {
   const isPatternMatch = pattern.test(line);
 
@@ -82,6 +177,13 @@ function shouldRemoveLine(line, pattern) {
   return true;
 }
 
+/**
+ * @param {string} filePath
+ * @param {string} line
+ * @param {string} [eol]
+ *
+ * @returns {void}
+ */
 export function addLineToFile(filePath, line, eol) {
   createFileIfNotExists(filePath);
 
@@ -92,6 +194,11 @@ export function addLineToFile(filePath, line, eol) {
   fs.writeFileSync(filePath, updatedContent, "utf-8");
 }
 
+/**
+ * @param {string} filePath
+ *
+ * @returns {void}
+ */
 function createFileIfNotExists(filePath) {
   if (fs.existsSync(filePath)) {
     return;

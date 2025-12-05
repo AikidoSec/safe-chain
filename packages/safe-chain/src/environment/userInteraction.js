@@ -1,96 +1,122 @@
+// oxlint-disable no-console
 import chalk from "chalk";
-import ora from "ora";
-import { createInterface } from "readline";
 import { isCi } from "./environment.js";
+import {
+  getLoggingLevel,
+  LOGGING_SILENT,
+  LOGGING_VERBOSE,
+} from "../config/settings.js";
+
+/**
+ * @type {{ bufferOutput: boolean, bufferedMessages:(() => void)[]}}
+ */
+const state = {
+  bufferOutput: false,
+  bufferedMessages: [],
+};
+
+function isSilentMode() {
+  return getLoggingLevel() === LOGGING_SILENT;
+}
+
+function isVerboseMode() {
+  return getLoggingLevel() === LOGGING_VERBOSE;
+}
 
 function emptyLine() {
+  if (isSilentMode()) return;
+
   writeInformation("");
 }
 
+/**
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
 function writeInformation(message, ...optionalParams) {
-  console.log(message, ...optionalParams);
+  if (isSilentMode()) return;
+
+  writeOrBuffer(() => console.log(message, ...optionalParams));
 }
 
+/**
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
 function writeWarning(message, ...optionalParams) {
+  if (isSilentMode()) return;
+
   if (!isCi()) {
     message = chalk.yellow(message);
   }
-  console.warn(message, ...optionalParams);
+  writeOrBuffer(() => console.warn(message, ...optionalParams));
 }
 
+/**
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
 function writeError(message, ...optionalParams) {
   if (!isCi()) {
     message = chalk.red(message);
   }
-  console.error(message, ...optionalParams);
+  writeOrBuffer(() => console.error(message, ...optionalParams));
 }
 
-function startProcess(message) {
-  if (isCi()) {
-    return {
-      succeed: (message) => {
-        writeInformation(message);
-      },
-      fail: (message) => {
-        writeError(message);
-      },
-      stop: () => {},
-      setText: (message) => {
-        writeInformation(message);
-      },
-    };
+function writeExitWithoutInstallingMaliciousPackages() {
+  let message = "Safe-chain: Exiting without installing malicious packages.";
+  if (!isCi()) {
+    message = chalk.red(message);
+  }
+  writeOrBuffer(() => console.error(message));
+}
+
+/**
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
+function writeVerbose(message, ...optionalParams) {
+  if (!isVerboseMode()) return;
+
+  writeOrBuffer(() => console.log(message, ...optionalParams));
+}
+
+/**
+ *
+ * @param {() => void} messageFunction
+ */
+function writeOrBuffer(messageFunction) {
+  if (state.bufferOutput) {
+    state.bufferedMessages.push(messageFunction);
   } else {
-    const spinner = ora(message).start();
-    return {
-      succeed: (message) => {
-        spinner.succeed(message);
-      },
-      fail: (message) => {
-        spinner.fail(message);
-      },
-      stop: () => {
-        spinner.stop();
-      },
-      setText: (message) => {
-        spinner.text = message;
-      },
-    };
+    messageFunction();
   }
 }
 
-async function confirm(config) {
-  if (isCi()) {
-    return Promise.resolve(config.default);
+function startBufferingLogs() {
+  state.bufferOutput = true;
+  state.bufferedMessages = [];
+}
+
+function writeBufferedLogsAndStopBuffering() {
+  state.bufferOutput = false;
+  for (const log of state.bufferedMessages) {
+    log();
   }
-
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) => {
-    const defaultText = config.default ? " (Y/n)" : " (y/N)";
-    rl.question(`${config.message}${defaultText} `, (answer) => {
-      rl.close();
-
-      const normalizedAnswer = answer.trim().toLowerCase();
-
-      if (normalizedAnswer === "y" || normalizedAnswer === "yes") {
-        resolve(true);
-      } else if (normalizedAnswer === "n" || normalizedAnswer === "no") {
-        resolve(false);
-      } else {
-        resolve(config.default);
-      }
-    });
-  });
+  state.bufferedMessages = [];
 }
 
 export const ui = {
+  writeVerbose,
   writeInformation,
   writeWarning,
   writeError,
+  writeExitWithoutInstallingMaliciousPackages,
   emptyLine,
-  startProcess,
-  confirm,
+  startBufferingLogs,
+  writeBufferedLogsAndStopBuffering,
 };

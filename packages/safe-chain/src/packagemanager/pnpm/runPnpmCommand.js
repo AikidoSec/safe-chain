@@ -2,6 +2,11 @@ import { ui } from "../../environment/userInteraction.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 
+/**
+ * @param {string[]} args
+ * @param {string} [toolName]
+ * @returns {Promise<{status: number}>}
+ */
 export async function runPnpmCommand(args, toolName = "pnpm") {
   try {
     let result;
@@ -20,7 +25,7 @@ export async function runPnpmCommand(args, toolName = "pnpm") {
     }
 
     return { status: result.status };
-  } catch (error) {
+  } catch (/** @type any */ error) {
     if (error.status) {
       return { status: error.status };
     } else {

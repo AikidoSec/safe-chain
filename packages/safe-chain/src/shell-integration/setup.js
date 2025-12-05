@@ -5,7 +5,22 @@ import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { includePython } from "../config/cliArguments.js";
 import { fileURLToPath } from "url";
+
+/** @type {string} */
+// This checks the current file's dirname in a way that's compatible with:
+//  - Modulejs (import.meta.url)
+//  - ES modules (__dirname)
+// This is needed because safe-chain's npm package is built using ES modules,
+// but building the binaries requires commonjs.
+let dirname;
+if (import.meta.url) {
+  const filename = fileURLToPath(import.meta.url);
+  dirname = path.dirname(filename);
+} else {
+  dirname = __dirname;
+}
 
 /**
  * Loops over the detected shells and calls the setup function for each.
@@ -43,7 +58,7 @@ export async function setup() {
       ui.emptyLine();
       ui.writeInformation(`Please restart your terminal to apply the changes.`);
     }
-  } catch (error) {
+  } catch (/** @type {any} */ error) {
     ui.writeError(
       `Failed to set up shell aliases: ${error.message}. Please check your shell configuration.`
     );
@@ -53,6 +68,7 @@ export async function setup() {
 
 /**
  * Calls the setup function for the given shell and reports the result.
+ * @param {import("./shellDetection.js").Shell} shell
  */
 function setupShell(shell) {
   let success = false;
@@ -60,7 +76,7 @@ function setupShell(shell) {
   try {
     shell.teardown(knownAikidoTools); // First, tear down to prevent duplicate aliases
     success = shell.setup(knownAikidoTools);
-  } catch (err) {
+  } catch (/** @type {any} */ err) {
     success = false;
     error = err;
   }
@@ -101,9 +117,11 @@ function copyStartupFiles() {
     }
 
     // Use absolute path for source
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const sourcePath = path.resolve(__dirname, "startup-scripts", file);
+    const sourcePath = path.join(
+      dirname,
+      includePython() ? "startup-scripts/include-python" : "startup-scripts",
+      file
+    );
     fs.copyFileSync(sourcePath, targetPath);
   }
 }

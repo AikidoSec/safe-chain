@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "node",
+    "promise",
+    "eslint",
+    "unicorn",
+    "oxc",
+    "import"
+  ],
+  "env": {
+    "browser": false,
+    "node": true
+  },
+  "rules": {
+    "eslint/no-console": "error",
+    "eslint/no-empty": "error",
+    "eslint/no-undef": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "*.spec.js"
+      ],
+      "rules": {
+        "eslint/no-console": "off"
+      }
+    }
+  ]
+}

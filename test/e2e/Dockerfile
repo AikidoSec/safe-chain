@@ -25,6 +25,7 @@ ARG NODE_VERSION=latest
 ARG NPM_VERSION=latest
 ARG YARN_VERSION=latest
 ARG PNPM_VERSION=latest
+ARG PYTHON_VERSION=3
 
 SHELL ["/bin/bash", "-c"]
 ENV BASH_ENV=~/.bashrc
@@ -48,6 +49,27 @@ RUN volta install pnpm@${PNPM_VERSION}
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
+
+# Install Python and pip (pip3)
+RUN apt-get update && apt-get install -y python${PYTHON_VERSION} python3-pip && \
+    ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python3 && \
+    ln -sf /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/local/bin/pip3 && \
+    cat <<'EOF' > /usr/lib/python3/dist-packages/pip3.py
+"""
+Shim module so 'python[3] -m pip3 …' resolves to pip's CLI entry point.
+"""
+try:
+    import pip._internal
+    pip._internal.main()
+except Exception as exc:
+    print("pip3 module shim failed:", exc)
+    raise
+EOF
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    echo 'source $HOME/.local/bin/env' >> ~/.bashrc
 
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/

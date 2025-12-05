@@ -12,6 +12,10 @@ export function getCaCertPath() {
   return path.join(certFolder, "ca-cert.pem");
 }
 
+/**
+ * @param {string} hostname
+ * @returns {{privateKey: string, certificate: string}}
+ */
 export function generateCertForHost(hostname) {
   let existingCert = certCache.get(hostname);
   if (existingCert) {
@@ -43,6 +47,16 @@ export function generateCertForHost(hostname) {
       name: "keyUsage",
       digitalSignature: true,
       keyEncipherment: true,
+    },
+    {
+      /*
+        extKeyUsage serverAuth is required for TLS server authentication.
+        This is especially important for Python venv environments, which use their own
+        certificate validation logic and will reject certificates lacking the serverAuth EKU.
+        Adding serverAuth does not impact other usages
+      */
+      name: "extKeyUsage",
+      serverAuth: true,
     },
   ]);
   cert.sign(ca.privateKey, forge.md.sha256.create());

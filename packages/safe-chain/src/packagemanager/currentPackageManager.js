@@ -9,14 +9,39 @@ import {
   createPnpxPackageManager,
 } from "./pnpm/createPackageManager.js";
 import { createYarnPackageManager } from "./yarn/createPackageManager.js";
+import { createPipPackageManager } from "./pip/createPackageManager.js";
+import { createUvPackageManager } from "./uv/createUvPackageManager.js";
 
+/**
+ * @type {{packageManagerName: PackageManager | null}}
+ */
 const state = {
   packageManagerName: null,
 };
 
-export function initializePackageManager(packageManagerName, version) {
+/**
+ * @typedef {Object} GetDependencyUpdatesResult
+ * @property {string} name
+ * @property {string} version
+ * @property {string} type
+ */
+
+/**
+ * @typedef {Object} PackageManager
+ * @property {(args: string[]) => Promise<{ status: number }>} runCommand
+ * @property {(args: string[]) => boolean} isSupportedCommand
+ * @property {(args: string[]) => Promise<GetDependencyUpdatesResult[]> | GetDependencyUpdatesResult[]} getDependencyUpdatesForCommand
+ */
+
+/**
+ * @param {string} packageManagerName
+ * @param {{ tool: string, args: string[] }} [context] - Optional tool context for package managers like pip
+ *
+ * @return {PackageManager}
+ */
+export function initializePackageManager(packageManagerName, context) {
   if (packageManagerName === "npm") {
-    state.packageManagerName = createNpmPackageManager(version);
+    state.packageManagerName = createNpmPackageManager();
   } else if (packageManagerName === "npx") {
     state.packageManagerName = createNpxPackageManager();
   } else if (packageManagerName === "yarn") {
@@ -29,6 +54,10 @@ export function initializePackageManager(packageManagerName, version) {
     state.packageManagerName = createBunPackageManager();
   } else if (packageManagerName === "bunx") {
     state.packageManagerName = createBunxPackageManager();
+  } else if (packageManagerName === "pip") {
+    state.packageManagerName = createPipPackageManager(context);
+  } else if (packageManagerName === "uv") {
+    state.packageManagerName = createUvPackageManager();
   } else {
     throw new Error("Unsupported package manager: " + packageManagerName);
   }
