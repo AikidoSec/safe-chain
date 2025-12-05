@@ -38,6 +38,11 @@ export async function main(args) {
     // This parses all the --safe-chain arguments and removes them from the args array
     args = initializeCliArguments(args);
 
+    if (args[0] === "safe-chain-verify") {
+      ui.writeInformation("Safe-chain: Ok");
+      return 0;
+    }
+
     if (shouldScanCommand(args)) {
       const commandScanResult = await scanCommand(args);
 
