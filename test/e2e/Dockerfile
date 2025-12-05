@@ -71,6 +71,12 @@ EOF
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     echo 'source $HOME/.local/bin/env' >> ~/.bashrc
 
+# Install pipx (recommended installer for Poetry) and Poetry itself
+RUN apt-get update && apt-get install -y pipx && \
+        pipx ensurepath && \
+        pipx install poetry && \
+        ln -sf /root/.local/bin/poetry /usr/local/bin/poetry
+
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/
 RUN npm install -g /pkgs/*.tgz

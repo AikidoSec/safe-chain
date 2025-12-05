@@ -48,6 +48,10 @@ function uv() {
   wrapSafeChainCommand "uv" "$@"
 }
 
+function poetry() {
+  wrapSafeChainCommand "poetry" "$@"
+}
+
 # `python -m pip`, `python -m pip3`.
 function python() {
   wrapSafeChainCommand "python" "$@"

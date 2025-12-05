@@ -52,6 +52,10 @@ function uv
     wrapSafeChainCommand "uv" $argv
 end
 
+function poetry
+    wrapSafeChainCommand "poetry" $argv
+end
+
 # `python -m pip`, `python -m pip3`.
 function python
     wrapSafeChainCommand "python" $argv

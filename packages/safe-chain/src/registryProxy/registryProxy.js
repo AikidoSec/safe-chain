@@ -36,9 +36,10 @@ function getSafeChainProxyEnvironmentVariables() {
     return {};
   }
 
+  const proxyUrl = `http://localhost:${state.port}`;
   return {
-    HTTPS_PROXY: `http://localhost:${state.port}`,
-    GLOBAL_AGENT_HTTP_PROXY: `http://localhost:${state.port}`,
+    HTTPS_PROXY: proxyUrl,
+    GLOBAL_AGENT_HTTP_PROXY: proxyUrl,
     NODE_EXTRA_CA_CERTS: getCaCertPath(),
   };
 }

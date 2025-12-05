@@ -77,6 +77,12 @@ export const knownAikidoTools = [
     internalPackageManagerName: "pip",
   },
   {
+    tool: "poetry",
+    aikidoCommand: "aikido-poetry",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "poetry",
+  },
+  {
     tool: "python",
     aikidoCommand: "aikido-python",
     ecoSystem: ECOSYSTEM_PY,
