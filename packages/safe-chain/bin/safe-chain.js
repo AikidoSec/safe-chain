@@ -13,11 +13,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { knownAikidoTools } from "../src/shell-integration/helpers.js";
-import {
-  PIP_INVOCATIONS,
-  PIP_PACKAGE_MANAGER,
-  setCurrentPipInvocation,
-} from "../src/packagemanager/pip/pipSettings.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -46,15 +41,14 @@ const command = process.argv[2];
 
 const tool = knownAikidoTools.find((tool) => tool.tool === command);
 
-if (tool && tool.internalPackageManagerName === PIP_PACKAGE_MANAGER) {
-  (async function () {
-    await executePip(tool);
-  })();
-} else if (tool) {
+if (tool) {
   const args = process.argv.slice(3);
 
   setEcoSystem(tool.ecoSystem);
-  initializePackageManager(tool.internalPackageManagerName);
+  
+  // Provide tool context to PM (pip uses this; others ignore)
+  const toolContext = { tool: tool.tool, args };
+  initializePackageManager(tool.internalPackageManagerName, toolContext);
 
   (async () => {
     var exitCode = await main(args);
@@ -139,52 +133,4 @@ async function getVersion() {
   }
 
   return "0.0.0";
-}
-
-/**
- * @param {import("../src/shell-integration/helpers.js").AikidoTool} tool
- */
-async function executePip(tool) {
-  // Scanners for pip / pip3 / python / python3 use a slightly different approach:
-  //  - They all use the same PIP_PACKAGE_MANAGER internally, but need some setup to be able to do so
-  //     - It needs to set which tool to run (pip / pip3 / python / python3)
-  //     - For python and python3, the -m pip/pip3 args are removed and later added again by the package manager
-  //  - Python / python3 skips safe-chain if not being run with -m pip or -m pip3
-
-  let args = process.argv.slice(3);
-  setEcoSystem(tool.ecoSystem);
-  initializePackageManager(PIP_PACKAGE_MANAGER);
-
-  let shouldSkip = false;
-  if (tool.tool === "pip") {
-    setCurrentPipInvocation(PIP_INVOCATIONS.PIP);
-  } else if (tool.tool === "pip3") {
-    setCurrentPipInvocation(PIP_INVOCATIONS.PIP3);
-  } else if (tool.tool === "python") {
-    if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
-      setCurrentPipInvocation(
-        args[1] === "pip3" ? PIP_INVOCATIONS.PY_PIP3 : PIP_INVOCATIONS.PY_PIP
-      );
-      args = args.slice(2);
-    } else {
-      shouldSkip = true;
-    }
-  } else if (tool.tool === "python3") {
-    if (args[0] === "-m" && (args[1] === "pip" || args[1] === "pip3")) {
-      setCurrentPipInvocation(
-        args[1] === "pip3" ? PIP_INVOCATIONS.PY3_PIP3 : PIP_INVOCATIONS.PY3_PIP
-      );
-      args = args.slice(2);
-    } else {
-      shouldSkip = true;
-    }
-  }
-
-  if (shouldSkip) {
-    const { spawn } = await import("child_process");
-    spawn(tool.tool, args, { stdio: "inherit" });
-  } else {
-    var exitCode = await main(args);
-    process.exit(exitCode);
-  }
 }
