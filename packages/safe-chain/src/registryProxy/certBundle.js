@@ -103,7 +103,7 @@ export function getCombinedCaBundlePath() {
 function readUserCertificateFile(certPath) {
   try {
     // Validate path is a string and not attempting path traversal
-    if (typeof certPath !== "string" || certPath.includes("..") || certPath.startsWith("/")) {
+    if (typeof certPath !== "string" || certPath.includes("..")) {
       return null;
     }
 
