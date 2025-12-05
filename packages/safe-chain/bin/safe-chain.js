@@ -6,6 +6,7 @@ import { setup } from "../src/shell-integration/setup.js";
 import { teardown } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
+import { runProxy } from "../src/run-proxy.js";
 import { setEcoSystem } from "../src/config/settings.js";
 import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
 import { main } from "../src/main.js";
@@ -63,6 +64,10 @@ if (tool) {
   teardown();
 } else if (command === "setup-ci") {
   setupCi();
+} else if (command === "run-proxy") {
+  (async function () {
+    await runProxy(process.argv.slice(2));
+  })();
 } else if (command === "--version" || command === "-v" || command === "-v") {
   (async () => {
     ui.writeInformation(`Current safe-chain version: ${await getVersion()}`);
