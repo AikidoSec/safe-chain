@@ -96,14 +96,18 @@ export function getCombinedCaBundlePath() {
 }
 
 /**
- * Read user certificate file.
+ * Read and validate user certificate file with comprehensive security checks.
  * @param {string} certPath - Path to certificate file
  * @returns {string | null} Certificate PEM content or null if invalid/unreadable
  */
 function readUserCertificateFile(certPath) {
   try {
-    // Validate path is a string and not attempting path traversal
-    if (typeof certPath !== "string" || certPath.includes("..")) {
+    if (typeof certPath !== "string" || certPath.trim().length === 0) {
+      return null;
+    }
+
+    // Path traversal protection - check for .. and multiple slashes
+    if (certPath.includes("..") || certPath.includes("//") || certPath.includes("\\\\")) {
       return null;
     }
 
@@ -111,15 +115,24 @@ function readUserCertificateFile(certPath) {
       return null;
     }
 
-    const certPathAbsolute = path.resolve(certPath);
-    // Verify it's an absolute path (cross-platform)
-    if (!path.isAbsolute(certPathAbsolute)) {
+    const stats = fs.lstatSync(certPath);
+    if (!stats.isFile() || stats.isSymbolicLink()) {
       return null;
     }
 
-    const content = fs.readFileSync(certPathAbsolute, "utf8");
-    return content && isParsable(content) ? content : null;
+    const content = fs.readFileSync(certPath, "utf8");
+    if (!content || typeof content !== "string") {
+      return null;
+    }
+
+    // 6) Validate PEM format
+    if (!isParsable(content)) {
+      return null;
+    }
+
+    return content;
   } catch {
+    // Silently fail on any errors (permissions, parsing, etc.)
     return null;
   }
 }
@@ -134,7 +147,7 @@ function readUserCertificateFile(certPath) {
 export function getCombinedCaBundlePathWithUserCerts(userCertPath) {
   const parts = [];
 
-  // 1) Add Safe Chain CA (for MITM'd registries)
+  // 1) Safe Chain CA
   const safeChainPath = getCaCertPath();
   try {
     const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
@@ -143,12 +156,12 @@ export function getCombinedCaBundlePathWithUserCerts(userCertPath) {
     // Ignore if Safe Chain CA is not available
   }
 
-  // 2) Add user's certificates if provided
+  // 2) User's certificates
   if (userCertPath) {
     const userPem = readUserCertificateFile(userCertPath);
     if (userPem) {
       parts.push(userPem.trim());
-      ui.writeWarning(`Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
+      ui.writeVerbose(`Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
     } else {
       ui.writeWarning(`Safe-chain: Could not read or parse user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
     }
