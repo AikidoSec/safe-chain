@@ -1,6 +1,6 @@
 # Use cross-platform path separator (: on Unix, ; on Windows)
 $pathSeparator = if ($IsWindows) { ';' } else { ':' }
-$safeChainBin = Join-Path $HOME '.safe-chain' 'bin'
+$safeChainBin = Join-Path (Join-Path $HOME '.safe-chain') 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
 function npx {
