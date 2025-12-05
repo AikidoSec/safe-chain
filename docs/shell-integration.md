@@ -85,7 +85,28 @@ This means the shell functions are working but the Aikido commands aren't instal
 
 To verify the integration is working, follow these steps:
 
-1. **Check if startup scripts were sourced in your shell startup file:**
+1. **Quick verification using the built-in test command (recommended):**
+
+   After restarting your terminal, run the verification command:
+
+   ```bash
+   npm safe-chain-verify
+   ```
+
+   You should see the output: `Safe-chain: Ok`
+
+   This confirms that Safe Chain is successfully intercepting package manager commands. You can use this command with any supported package manager:
+
+   - `npm safe-chain-verify`
+   - `yarn safe-chain-verify`
+   - `pnpm safe-chain-verify`
+   - `bun safe-chain-verify`
+   - `pip safe-chain-verify` (if Python support is enabled)
+   - `pip3 safe-chain-verify` (if Python support is enabled)
+
+   If you don't see this output, Safe Chain is not intercepting commands correctly - proceed to the steps below.
+
+2. **Check if startup scripts were sourced in your shell startup file:**
 
    - **For Bash**: Open `~/.bashrc` in your text editor
    - **For Zsh**: Open `~/.zshrc` in your text editor
@@ -94,16 +115,16 @@ To verify the integration is working, follow these steps:
 
    Look for lines that source the Safe Chain startup scripts from `~/.safe-chain/scripts/`
 
-2. **Test that shell functions are active in your terminal:**
+3. **Test that shell functions are active in your terminal:**
 
    After restarting your terminal, run these commands:
 
    - `npm --version` - Should show output from the Aikido-wrapped version
    - `type npm` - Should show that `npm` is a function
 
-3. **If you need to remove the integration manually:**
+4. **If you need to remove the integration manually:**
 
-   Edit the same startup file from step 1 and delete any lines that source Safe Chain scripts from `~/.safe-chain/scripts/`.
+   Edit the same startup file from step 2 and delete any lines that source Safe Chain scripts from `~/.safe-chain/scripts/`.
 
 ## Manual Setup
 

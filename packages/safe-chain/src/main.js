@@ -38,6 +38,9 @@ export async function main(args) {
     // This parses all the --safe-chain arguments and removes them from the args array
     args = initializeCliArguments(args);
 
+    // Handle verification command to test if safe-chain is intercepting package manager commands
+    // Users can run: npm safe-chain-verify, yarn safe-chain-verify, pip safe-chain-verify, etc.
+    // This confirms the shell integration is working correctly without performing any package operations
     if (args[0] === "safe-chain-verify") {
       ui.writeInformation("Safe-chain: Ok");
       return 0;

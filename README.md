@@ -67,6 +67,25 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
 
 2. **Verify the installation** by running one of the following commands:
 
+   **Quick verification** (recommended):
+
+   For JavaScript/Node.js package managers:
+
+   ```shell
+   npm safe-chain-verify
+   ```
+
+   For Python package managers (if you enabled Python support):
+
+   ```shell
+   pip3 safe-chain-verify
+   ```
+
+   - This command quickly confirms that Safe Chain is intercepting package manager commands. You should see the output: `Safe-chain: Ok`
+   - You can use this with any supported package manager: `npx safe-chain-verify`, `yarn safe-chain-verify`, `pnpm safe-chain-verify`, `bun safe-chain-verify`, etc.
+
+   **Full verification with malware test**:
+
    For JavaScript/Node.js:
 
    ```shell
