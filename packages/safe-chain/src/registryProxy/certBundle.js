@@ -6,6 +6,7 @@ import certifi from "certifi";
 import tls from "node:tls";
 import { X509Certificate } from "node:crypto";
 import { getCaCertPath } from "./certUtils.js";
+import { ui } from "../environment/userInteraction.js";
 
 /**
  * Check if a PEM string contains only parsable cert blocks.
@@ -92,4 +93,69 @@ export function getCombinedCaBundlePath() {
   fs.writeFileSync(target, combined, { encoding: "utf8" });
   cachedPath = target;
   return cachedPath;
+}
+
+/**
+ * Read user certificate file.
+ * @param {string} certPath - Path to certificate file
+ * @returns {string | null} Certificate PEM content or null if invalid/unreadable
+ */
+function readUserCertificateFile(certPath) {
+  try {
+    // Validate path is a string and not attempting path traversal
+    if (typeof certPath !== "string" || certPath.includes("..") || certPath.startsWith("/")) {
+      return null;
+    }
+
+    if (!fs.existsSync(certPath)) {
+      return null;
+    }
+
+    const certPathAbsolute = path.resolve(certPath);
+    // Verify it's an absolute path (cross-platform)
+    if (!path.isAbsolute(certPathAbsolute)) {
+      return null;
+    }
+
+    const content = fs.readFileSync(certPathAbsolute, "utf8");
+    return content && isParsable(content) ? content : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Combine user's existing NODE_EXTRA_CA_CERTS with Safe Chain's CA certificate.
+ * If user has NODE_EXTRA_CA_CERTS set, it's merged with Safe Chain CA.
+ * 
+ * @param {string | undefined} userCertPath - User's existing NODE_EXTRA_CA_CERTS path (if any)
+ * @returns {string} Path to the final CA bundle
+ */
+export function getCombinedCaBundlePathWithUserCerts(userCertPath) {
+  const parts = [];
+
+  // 1) Add Safe Chain CA (for MITM'd registries)
+  const safeChainPath = getCaCertPath();
+  try {
+    const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
+    if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
+  } catch {
+    // Ignore if Safe Chain CA is not available
+  }
+
+  // 2) Add user's certificates if provided
+  if (userCertPath) {
+    const userPem = readUserCertificateFile(userCertPath);
+    if (userPem) {
+      parts.push(userPem.trim());
+      ui.writeWarning(`Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
+    } else {
+      ui.writeWarning(`Safe-chain: Could not read or parse user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
+    }
+  }
+
+  const finalCombined = parts.filter(Boolean).join("\n");
+  const target = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
+  fs.writeFileSync(target, finalCombined, { encoding: "utf8" });
+  return target;
 }
