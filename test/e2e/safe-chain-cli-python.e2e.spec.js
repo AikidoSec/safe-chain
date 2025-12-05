@@ -14,6 +14,10 @@ describe("E2E: safe-chain CLI python/pip support", () => {
     await container.start();
     // Note: We do NOT run 'safe-chain setup' here.
     // We want to test the 'safe-chain' CLI command directly.
+
+    // Clear pip cache before each test to ensure fresh downloads through proxy
+    const shell = await container.openShell("zsh");
+    await shell.runCommand("pip3 cache purge");
   });
 
   afterEach(async () => {
