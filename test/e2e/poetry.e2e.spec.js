@@ -16,6 +16,9 @@ describe("E2E: poetry coverage", () => {
 
     const installationShell = await container.openShell("zsh");
     await installationShell.runCommand("safe-chain setup --include-python");
+    
+    // Clear poetry cache
+    await installationShell.runCommand("command poetry cache clear pypi --all -n");
   });
 
   afterEach(async () => {
@@ -28,9 +31,6 @@ describe("E2E: poetry coverage", () => {
 
   it(`successfully installs known safe packages with poetry add`, async () => {
     const shell = await container.openShell("zsh");
-    
-    // Clear poetry cache using command to bypass safe-chain wrapper
-    await shell.runCommand("command poetry cache clear pypi --all -n");
     
     // Initialize a new poetry project
     await shell.runCommand("mkdir /tmp/test-poetry-project && cd /tmp/test-poetry-project");
