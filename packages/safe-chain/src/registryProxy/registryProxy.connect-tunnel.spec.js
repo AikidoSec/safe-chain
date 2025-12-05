@@ -1,11 +1,28 @@
-import { before, after, describe, it } from "node:test";
+import { before, after, describe, it, mock } from "node:test";
 import assert from "node:assert";
 import net from "net";
 import tls from "tls";
-import {
-  createSafeChainProxy,
-  mergeSafeChainProxyEnvironmentVariables,
-} from "./registryProxy.js";
+
+// Mock isImdsEndpoint BEFORE any other imports that might use it
+// This allows us to use TEST-NET-1 (192.0.2.1) as a test IMDS endpoint
+mock.module("./isImdsEndpoint.js", {
+  namedExports: {
+    isImdsEndpoint: (host) => {
+      // 192.0.2.1 is TEST-NET-1, reserved for testing (RFC 5737)
+      if (host === "192.0.2.1") return true;
+      // Real IMDS endpoints
+      return [
+        "metadata.google.internal",
+        "metadata.goog",
+        "169.254.169.254",
+      ].includes(host);
+    },
+  },
+});
+
+// Use dynamic import AFTER mocking to ensure mock is applied
+const { createSafeChainProxy, mergeSafeChainProxyEnvironmentVariables } =
+  await import("./registryProxy.js");
 
 describe("registryProxy.connectTunnel", () => {
   let proxy, proxyHost, proxyPort;
@@ -62,15 +79,21 @@ describe("registryProxy.connectTunnel", () => {
 
     // Verify the certificate is NOT issued by our safe-chain CA
     // Our self-signed CA would have issuer: "Safe-Chain Proxy CA"
-    assert.ok(certInfo.issuer !== undefined, "Certificate should have an issuer");
+    assert.ok(
+      certInfo.issuer !== undefined,
+      "Certificate should have an issuer"
+    );
     assert.ok(
       !certInfo.issuer.includes("Safe-Chain"),
       `Tunnel should use destination's real certificate, not safe-chain CA. Issuer: ${certInfo.issuer}`
     );
 
     // Verify it's a real certificate with proper hostname
-    assert.strictEqual(certInfo.subject.includes("postman-echo.com"), true,
-      `Certificate subject should include postman-echo.com, got: ${certInfo.subject}`);
+    assert.strictEqual(
+      certInfo.subject.includes("postman-echo.com"),
+      true,
+      `Certificate subject should include postman-echo.com, got: ${certInfo.subject}`
+    );
 
     socket.destroy();
   });
@@ -105,7 +128,6 @@ describe("registryProxy.connectTunnel", () => {
       assert.ok(true);
     });
 
-
     it("should handle socket errors without crashing", async () => {
       const socket = await connectToProxy(proxyHost, proxyPort);
 
@@ -125,7 +147,94 @@ describe("registryProxy.connectTunnel", () => {
       // Test passes if no unhandled error crashes the process
       assert.ok(true);
     });
+  });
 
+  describe("Connection Timeout", () => {
+    it("should timeout quickly when connecting to IMDS endpoint (3s)", async () => {
+      // We need to make sure we're not running behind an existing safe-chain installation to allow this test to work
+      const https_proxy = process.env.HTTPS_PROXY;
+      delete process.env.HTTPS_PROXY;
+      const socket = await connectToProxy(proxyHost, proxyPort);
+      const startTime = Date.now();
+
+      // 192.0.2.1 is TEST-NET-1 (RFC 5737), guaranteed to never route
+      const connectRequest = `CONNECT 192.0.2.1:443 HTTP/1.1\r\nHost: 192.0.2.1:443\r\n\r\n`;
+      socket.write(connectRequest);
+
+      let responseData = "";
+      await new Promise((resolve) => {
+        socket.once("data", (data) => {
+          responseData += data.toString();
+          resolve();
+        });
+      });
+
+      const duration = Date.now() - startTime;
+
+      // Should return 502 Bad Gateway
+      assert.ok(
+        responseData.includes("HTTP/1.1 502 Bad Gateway"),
+        "Should return 502 for timeout"
+      );
+
+      // Should timeout around 3 seconds for IMDS endpoints (allow some margin)
+      assert.ok(
+        duration >= 2800 && duration < 5000,
+        `IMDS timeout should be ~3s, got ${duration}ms`
+      );
+
+      socket.destroy();
+      if (https_proxy) {
+        process.env.HTTPS_PROXY = https_proxy;
+      }
+    });
+
+    it("should cache timed-out endpoints and fail immediately on retry", async () => {
+      // We need to make sure we're not running behind an existing safe-chain installation to allow this test to work
+      const https_proxy = process.env.HTTPS_PROXY;
+      delete process.env.HTTPS_PROXY;
+      // First connection - will timeout
+      const socket1 = await connectToProxy(proxyHost, proxyPort);
+      const connectRequest = `CONNECT 192.0.2.1:80 HTTP/1.1\r\nHost: 192.0.2.1:80\r\n\r\n`;
+      socket1.write(connectRequest);
+
+      await new Promise((resolve) => {
+        socket1.once("data", () => resolve());
+      });
+      socket1.destroy();
+
+      // Second connection - should fail immediately (cached)
+      const socket2 = await connectToProxy(proxyHost, proxyPort);
+      const startTime = Date.now();
+      socket2.write(connectRequest);
+
+      let responseData = "";
+      await new Promise((resolve) => {
+        socket2.once("data", (data) => {
+          responseData += data.toString();
+          resolve();
+        });
+      });
+
+      const duration = Date.now() - startTime;
+
+      // Should return 502 immediately (cached timeout)
+      assert.ok(
+        responseData.includes("HTTP/1.1 502 Bad Gateway"),
+        "Should return 502 for cached timeout"
+      );
+
+      // Should be nearly instant (< 100ms) since it's cached
+      assert.ok(
+        duration < 100,
+        `Cached timeout should be instant, got ${duration}ms`
+      );
+
+      socket2.destroy();
+      if (https_proxy) {
+        process.env.HTTPS_PROXY = https_proxy;
+      }
+    });
   });
 });
 
@@ -167,7 +276,12 @@ function establishHttpsTunnel(socket, targetHost, targetPort) {
   });
 }
 
-function sendHttpsRequestThroughTunnel(socket, verb, url, rejectUnauthorized = false) {
+function sendHttpsRequestThroughTunnel(
+  socket,
+  verb,
+  url,
+  rejectUnauthorized = false
+) {
   return new Promise((resolve, reject) => {
     const tlsSocket = tls.connect(
       {
@@ -214,12 +328,16 @@ function getTlsCertificateInfo(socket, url) {
         const cert = tlsSocket.getPeerCertificate();
 
         // Extract issuer and subject information
-        const issuer = cert.issuer ?
-          Object.entries(cert.issuer).map(([k, v]) => `${k}=${v}`).join(", ") :
-          "unknown";
-        const subject = cert.subject ?
-          Object.entries(cert.subject).map(([k, v]) => `${k}=${v}`).join(", ") :
-          "unknown";
+        const issuer = cert.issuer
+          ? Object.entries(cert.issuer)
+              .map(([k, v]) => `${k}=${v}`)
+              .join(", ")
+          : "unknown";
+        const subject = cert.subject
+          ? Object.entries(cert.subject)
+              .map(([k, v]) => `${k}=${v}`)
+              .join(", ")
+          : "unknown";
 
         tlsSocket.end();
         resolve({ issuer, subject });
