@@ -6,6 +6,7 @@ import certifi from "certifi";
 import tls from "node:tls";
 import { X509Certificate } from "node:crypto";
 import { getCaCertPath } from "./certUtils.js";
+import { ui } from "../environment/userInteraction.js";
 
 /**
  * Check if a PEM string contains only parsable cert blocks.
@@ -92,4 +93,82 @@ export function getCombinedCaBundlePath() {
   fs.writeFileSync(target, combined, { encoding: "utf8" });
   cachedPath = target;
   return cachedPath;
+}
+
+/**
+ * Read and validate user certificate file
+ * @param {string} certPath - Path to certificate file
+ * @returns {string | null} Certificate PEM content or null if invalid/unreadable
+ */
+function readUserCertificateFile(certPath) {
+  try {
+    // Perform security checks before reading
+    if (typeof certPath !== "string" || certPath.trim().length === 0) {
+      return null;
+    }
+
+    if (certPath.includes("..") || certPath.includes("//") || certPath.includes("\\\\")) {
+      return null;
+    }
+
+    if (!fs.existsSync(certPath)) {
+      return null;
+    }
+
+    const stats = fs.lstatSync(certPath);
+    if (!stats.isFile() || stats.isSymbolicLink()) {
+      return null;
+    }
+
+    const content = fs.readFileSync(certPath, "utf8");
+    if (!content || typeof content !== "string") {
+      return null;
+    }
+
+    // 6) Validate PEM format
+    if (!isParsable(content)) {
+      return null;
+    }
+
+    return content;
+  } catch {
+    // Silently fail on any errors
+    return null;
+  }
+}
+
+/**
+ * Combine user's existing NODE_EXTRA_CA_CERTS with Safe Chain's CA certificate.
+ * If user has NODE_EXTRA_CA_CERTS set, it's merged with Safe Chain CA.
+ * 
+ * @param {string | undefined} userCertPath - User's existing NODE_EXTRA_CA_CERTS path (if any)
+ * @returns {string} Path to the final CA bundle
+ */
+export function getCombinedCaBundlePathWithUserCerts(userCertPath) {
+  const parts = [];
+
+  // 1) Safe Chain CA
+  const safeChainPath = getCaCertPath();
+  try {
+    const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
+    if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
+  } catch {
+    // Ignore if Safe Chain CA is not available
+  }
+
+  // 2) User's certificates
+  if (userCertPath) {
+    const userPem = readUserCertificateFile(userCertPath);
+    if (userPem) {
+      parts.push(userPem.trim());
+      ui.writeVerbose(`Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
+    } else {
+      ui.writeWarning(`Safe-chain: Could not read or parse user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
+    }
+  }
+
+  const finalCombined = parts.filter(Boolean).join("\n");
+  const target = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
+  fs.writeFileSync(target, finalCombined, { encoding: "utf8" });
+  return target;
 }
