@@ -15,6 +15,13 @@ function removeBundleIfExists() {
   }
 }
 
+// Utility to get a valid PEM certificate for testing
+function getValidCert() {
+  const cert = typeof tls.rootCertificates?.[0] === "string" ? tls.rootCertificates[0] : "";
+  assert.ok(cert.includes("BEGIN CERTIFICATE"), "Environment lacks Node root certificates for test");
+  return cert;
+}
+
 describe("certBundle.getCombinedCaBundlePath", () => {
   beforeEach(() => {
     mock.restoreAll();
@@ -67,5 +74,202 @@ describe("certBundle.getCombinedCaBundlePath", () => {
     const contents = fs.readFileSync(bundlePath, "utf8");
     assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Bundle should contain certificate blocks from certifi/Node roots");
     assert.ok(!contents.includes(invalidMarker), "Bundle should not include invalid Safe Chain content");
+  });
+});
+
+describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
+  beforeEach(() => {
+    mock.restoreAll();
+  });
+
+  it("returns a path with Safe Chain CA when no user cert provided", async () => {
+    // Mock getCaCertPath to return valid cert
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts(undefined);
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+  });
+
+  it("merges user cert with Safe Chain CA", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    
+    // Create Safe Chain CA
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    const safeChainCert = getValidCert();
+    fs.writeFileSync(safeChainPath, safeChainCert, "utf8");
+
+    // Create user cert file
+    const userCertPath = path.join(tmpDir, "user-cert.pem");
+    const userCert = getValidCert();
+    fs.writeFileSync(userCertPath, userCert, "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts(userCertPath);
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    
+    // Both certs should be in the bundle
+    const certCount = (contents.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
+    assert.ok(certCount >= 2, "Bundle should contain both Safe Chain and user certificates");
+  });
+
+  it("ignores non-existent user cert path", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts("/nonexistent/path.pem");
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    // Should still have Safe Chain CA
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+  });
+
+  it("ignores invalid PEM user cert", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    const userCertPath = path.join(tmpDir, "invalid.pem");
+    fs.writeFileSync(userCertPath, "NOT A VALID CERTIFICATE", "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts(userCertPath);
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    // Should still have Safe Chain CA only
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+    assert.ok(!contents.includes("NOT A VALID"), "Should not include invalid cert");
+  });
+
+  it("rejects user cert with path traversal attempts", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts("../../../etc/passwd");
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    // Should only have Safe Chain CA, rejected the traversal path
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+  });
+
+  it("rejects user cert with symlink", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    // Create a target file and a symlink to it
+    const targetCert = path.join(tmpDir, "target.pem");
+    fs.writeFileSync(targetCert, getValidCert(), "utf8");
+    
+    const symlinkPath = path.join(tmpDir, "symlink.pem");
+    try {
+      fs.symlinkSync(targetCert, symlinkPath);
+    } catch {
+      // Skip test if symlinks are not supported (e.g., on Windows without admin)
+      return;
+    }
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts(symlinkPath);
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    // Should only have Safe Chain CA, symlinks are rejected
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+  });
+
+  it("rejects user cert that is a directory", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    const certDir = path.join(tmpDir, "certs");
+    fs.mkdirSync(certDir);
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts(certDir);
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    // Should only have Safe Chain CA
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+  });
+
+  it("handles empty string user cert path", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts("   ");
+
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
   });
 });
