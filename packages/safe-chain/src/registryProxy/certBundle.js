@@ -96,17 +96,17 @@ export function getCombinedCaBundlePath() {
 }
 
 /**
- * Read and validate user certificate file with comprehensive security checks.
+ * Read and validate user certificate file
  * @param {string} certPath - Path to certificate file
  * @returns {string | null} Certificate PEM content or null if invalid/unreadable
  */
 function readUserCertificateFile(certPath) {
   try {
+    // Perform security checks before reading
     if (typeof certPath !== "string" || certPath.trim().length === 0) {
       return null;
     }
 
-    // Path traversal protection - check for .. and multiple slashes
     if (certPath.includes("..") || certPath.includes("//") || certPath.includes("\\\\")) {
       return null;
     }
@@ -132,7 +132,7 @@ function readUserCertificateFile(certPath) {
 
     return content;
   } catch {
-    // Silently fail on any errors (permissions, parsing, etc.)
+    // Silently fail on any errors
     return null;
   }
 }
