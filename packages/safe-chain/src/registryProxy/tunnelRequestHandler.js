@@ -76,13 +76,17 @@ function tunnelRequestToDestination(req, clientSocket, head) {
   serverSocket.on("timeout", () => {
     timedoutEndpoints.push(hostname);
     // Suppress error logging for IMDS endpoints - timeouts are expected when not in cloud
-    if (isImdsEndpoint(hostname)) {
+    if (isImds) {
       ui.writeVerbose(
-        `Safe-chain: connect to ${hostname}:${port || 443} timed out after ${connectTimeout}ms`
+        `Safe-chain: connect to ${hostname}:${
+          port || 443
+        } timed out after ${connectTimeout}ms`
       );
     } else {
       ui.writeError(
-        `Safe-chain: connect to ${hostname}:${port || 443} timed out after ${connectTimeout}ms`
+        `Safe-chain: connect to ${hostname}:${
+          port || 443
+        } timed out after ${connectTimeout}ms`
       );
     }
     serverSocket.destroy(); // Clean up socket to prevent event loop hanging
@@ -98,7 +102,7 @@ function tunnelRequestToDestination(req, clientSocket, head) {
   });
 
   serverSocket.on("error", (err) => {
-    if (isImdsEndpoint(hostname)) {
+    if (isImds) {
       ui.writeVerbose(
         `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
       );

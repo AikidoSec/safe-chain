@@ -5,7 +5,7 @@
 const imdsEndpoints = [
   "metadata.google.internal",
   "metadata.goog",
-  "169.254.169.254",
+  "169.254.169.254", // AWS, Azure, Oracle Cloud, GCP
 ];
 
 export function isImdsEndpoint(/** @type {string} */ host) {
