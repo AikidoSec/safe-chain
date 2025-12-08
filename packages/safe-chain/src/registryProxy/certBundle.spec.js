@@ -272,4 +272,88 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
     const contents = fs.readFileSync(bundlePath, "utf8");
     assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
   });
+
+  it("accepts files with CRLF line endings (Windows-style)", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    // Create a real file with CRLF content to test Windows line ending support
+    const userCertPath = path.join(tmpDir, "user-cert-crlf.pem");
+    const crlfCert = getValidCert().replace(/\n/g, "\r\n");
+    fs.writeFileSync(userCertPath, crlfCert, "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePathWithUserCerts(userCertPath);
+    assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+    const contents = fs.readFileSync(bundlePath, "utf8");
+    const certCount = (contents.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
+    assert.ok(certCount >= 2, "Bundle should contain Safe Chain and user certificates with CRLF");
+  });
+
+  it("detects and handles Windows-style path syntax (drive letters and UNC)", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    
+    // Test that Windows path syntax is recognized (even if files don't exist on macOS/Linux)
+    // These should gracefully fail (return Safe Chain CA only) rather than crash
+    const winPaths = [
+      "C:\\temp\\cert.pem",
+      "D:\\Users\\name\\certs\\ca.pem",
+      "\\\\server\\share\\cert.pem"
+    ];
+    
+    for (const winPath of winPaths) {
+      const bundlePath = getCombinedCaBundlePathWithUserCerts(winPath);
+      assert.ok(fs.existsSync(bundlePath), `Bundle should exist for ${winPath}`);
+      const contents = fs.readFileSync(bundlePath, "utf8");
+      assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+    }
+  });
+
+  it("rejects path traversal with Windows-style paths (C:\\temp\\..\\etc\\passwd)", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
+    const safeChainPath = path.join(tmpDir, "safechain.pem");
+    fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+
+    mock.module("./certUtils.js", {
+      namedExports: {
+        getCaCertPath: () => safeChainPath,
+      },
+    });
+
+    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    
+    // Test various Windows-style traversal attempts
+    const traversalPaths = [
+      "C:\\temp\\..\\etc\\passwd",
+      "D:\\Users\\..\\..\\Windows\\System32",
+      "\\\\server\\share\\..\\admin",
+      "../../../etc/passwd",  // Unix-style for comparison
+    ];
+    
+    for (const badPath of traversalPaths) {
+      const bundlePath = getCombinedCaBundlePathWithUserCerts(badPath);
+      assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
+      const contents = fs.readFileSync(bundlePath, "utf8");
+      // Only Safe Chain CA should be present (user cert rejected due to traversal)
+      const certCount = (contents.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
+      assert.strictEqual(certCount, 1, `Traversal path ${badPath} should be rejected; only Safe Chain CA included`);
+    }
+  });
 });
