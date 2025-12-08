@@ -48,16 +48,16 @@ function isParsable(pem) {
 let cachedPath = null;
 
 /**
- * Build a combined CA bundle for Python and Node HTTPS flows.
- * - Includes Safe Chain CA (for MITM of known registries)
- * - Includes Mozilla roots via npm `certifi` (public HTTPS)
- * - Includes Node's built-in root certificates as a portable fallback
+ * Build a combined CA bundle.
+ * Automatically includes:
+ * - Safe Chain CA (for MITM of known registries)
+ * - Mozilla roots via certifi (for public HTTPS)
+ * - Node's built-in root certificates (fallback)
+ * - User's custom certificates (if NODE_EXTRA_CA_CERTS environment variable is set)
+ * 
  * @returns {string} Path to the combined CA bundle PEM file
  */
 export function getCombinedCaBundlePath() {
-  if (cachedPath && fs.existsSync(cachedPath)) return cachedPath;
-
-  // Concatenate PEM files
   const parts = [];
 
   // 1) Safe Chain CA (for MITM'd registries)
@@ -90,11 +90,23 @@ export function getCombinedCaBundlePath() {
     // Ignore if unavailable
   }
 
+  // 4) User's NODE_EXTRA_CA_CERTS (if set)
+  const userCertPath = process.env.NODE_EXTRA_CA_CERTS;
+  if (userCertPath) {
+    const userPem = readUserCertificateFile(userCertPath);
+    if (userPem) {
+      parts.push(userPem.trim());
+      ui.writeVerbose(`Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
+    } else {
+      ui.writeWarning(`Safe-chain: Could not read or parse user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
+    }
+  }
+
   const combined = parts.filter(Boolean).join("\n");
-  const target = path.join(os.tmpdir(), "safe-chain-ca-bundle.pem");
+  const target = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
   fs.writeFileSync(target, combined, { encoding: "utf8" });
   cachedPath = target;
-  return cachedPath;
+  return target;
 }
 
 /**
@@ -166,38 +178,4 @@ function readUserCertificateFile(certPath) {
   }
 }
 
-/**
- * Combine user's existing NODE_EXTRA_CA_CERTS with Safe Chain's CA certificate.
- * If user has NODE_EXTRA_CA_CERTS set, it's merged with Safe Chain CA.
- * 
- * @param {string | undefined} userCertPath - User's existing NODE_EXTRA_CA_CERTS path (if any)
- * @returns {string} Path to the final CA bundle
- */
-export function getCombinedCaBundlePathWithUserCerts(userCertPath) {
-  const parts = [];
 
-  // 1) Safe Chain CA
-  const safeChainPath = getCaCertPath();
-  try {
-    const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
-    if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
-  } catch {
-    // Ignore if Safe Chain CA is not available
-  }
-
-  // 2) User's certificates
-  if (userCertPath) {
-    const userPem = readUserCertificateFile(userCertPath);
-    if (userPem) {
-      parts.push(userPem.trim());
-      ui.writeVerbose(`Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
-    } else {
-      ui.writeWarning(`Safe-chain: Could not read or parse user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
-    }
-  }
-
-  const finalCombined = parts.filter(Boolean).join("\n");
-  const target = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
-  fs.writeFileSync(target, finalCombined, { encoding: "utf8" });
-  return target;
-}
