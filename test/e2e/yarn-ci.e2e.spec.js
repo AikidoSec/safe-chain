@@ -33,7 +33,9 @@ describe("E2E: yarn coverage", () => {
 
   it(`safe-chain succesfully installs safe packages`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("yarn add axios");
+    const result = await shell.runCommand(
+      "yarn add axios --safe-chain-logging=verbose"
+    );
 
     assert.ok(
       result.output.includes("no malware found."),

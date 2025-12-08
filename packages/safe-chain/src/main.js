@@ -64,8 +64,7 @@ export async function main(args) {
 
     const auditStats = getAuditStats();
     if (auditStats.totalPackages > 0) {
-      ui.emptyLine();
-      ui.writeInformation(
+      ui.writeVerbose(
         `${chalk.green("✔")} Safe-chain: Scanned ${
           auditStats.totalPackages
         } packages, no malware found.`

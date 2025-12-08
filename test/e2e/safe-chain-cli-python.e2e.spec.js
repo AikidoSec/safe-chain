@@ -14,6 +14,10 @@ describe("E2E: safe-chain CLI python/pip support", () => {
     await container.start();
     // Note: We do NOT run 'safe-chain setup' here.
     // We want to test the 'safe-chain' CLI command directly.
+
+    // Clear pip cache
+    const shell = await container.openShell("zsh");
+    await shell.runCommand("pip3 cache purge");
   });
 
   afterEach(async () => {
@@ -27,7 +31,7 @@ describe("E2E: safe-chain CLI python/pip support", () => {
     const shell = await container.openShell("zsh");
     // Invoke safe-chain directly with pip3 command
     const result = await shell.runCommand(
-      "safe-chain pip3 install --break-system-packages requests"
+      "safe-chain pip3 install --break-system-packages requests --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -44,7 +48,7 @@ describe("E2E: safe-chain CLI python/pip support", () => {
   it("safe-chain python3 -m pip install routes through proxy", async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "safe-chain python3 -m pip install --break-system-packages requests"
+      "safe-chain python3 -m pip install --break-system-packages requests --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -55,7 +59,7 @@ describe("E2E: safe-chain CLI python/pip support", () => {
 
   it("safe-chain python3 script.py bypasses proxy", async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create a simple script
     await shell.runCommand("echo \"print('direct execution')\" > /tmp/test.py");
 
