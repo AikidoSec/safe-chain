@@ -20,6 +20,12 @@ import { EventEmitter } from "events";
  * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => NodeJS.Dict<string | string[]> | undefined} modifyRequestHeaders
  * @property {() => boolean} modifiesResponse
  * @property {(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer} modifyBody
+ *
+ * @typedef {Object} MalwareBlockedEvent
+ * @property {string} packageName
+ * @property {string} version
+ * @property {string} targetUrl
+ * @property {number} timestamp
  */
 
 /**
