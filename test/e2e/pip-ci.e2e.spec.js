@@ -12,7 +12,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
   beforeEach(async () => {
     container = new DockerTestContainer();
     await container.start();
-    
+
     // Clear pip cache before each test to ensure fresh downloads through proxy
     const shell = await container.openShell("zsh");
     await shell.runCommand("pip3 cache purge");
@@ -100,7 +100,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       const projectShell = await container.openShell(shell);
       // Use --break-system-packages to avoid Debian/Ubuntu external management restrictions
       const result = await projectShell.runCommand(
-        "pip3 install --break-system-packages certifi"
+        "pip3 install --break-system-packages certifi --safe-chain-logging=verbose"
       );
 
       const hasExpectedOutput = result.output.includes("no malware found.");
@@ -126,7 +126,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
 
       const projectShell = await container.openShell(shell);
       const result = await projectShell.runCommand(
-        "python -m pip install --break-system-packages certifi"
+        "python -m pip install --break-system-packages certifi --safe-chain-logging=verbose"
       );
 
       assert.ok(
@@ -149,7 +149,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
 
       const projectShell = await container.openShell(shell);
       const result = await projectShell.runCommand(
-        "python3 -m pip install --break-system-packages certifi"
+        "python3 -m pip install --break-system-packages certifi --safe-chain-logging=verbose"
       );
 
       assert.ok(
@@ -172,7 +172,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
 
       const projectShell = await container.openShell(shell);
       const result = await projectShell.runCommand(
-        "pip install --break-system-packages certifi"
+        "pip install --break-system-packages certifi --safe-chain-logging=verbose"
       );
 
       assert.ok(
@@ -195,7 +195,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
 
       const projectShell = await container.openShell(shell);
       const result = await projectShell.runCommand(
-        "pip3 install --break-system-packages certifi"
+        "pip3 install --break-system-packages certifi --safe-chain-logging=verbose"
       );
 
       assert.ok(

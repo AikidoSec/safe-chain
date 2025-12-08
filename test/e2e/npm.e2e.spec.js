@@ -28,7 +28,9 @@ describe("E2E: npm coverage", () => {
 
   it(`safe-chain succesfully installs safe packages`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("npm i axios");
+    const result = await shell.runCommand(
+      "npm i axios --safe-chain-logging=verbose"
+    );
 
     assert.ok(
       result.output.includes("no malware found."),

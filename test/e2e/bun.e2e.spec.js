@@ -28,7 +28,9 @@ describe("E2E: bun coverage", () => {
 
   it(`safe-chain succesfully installs safe packages`, async () => {
     const shell = await container.openShell("bash");
-    const result = await shell.runCommand("bun i axios");
+    const result = await shell.runCommand(
+      "bun i axios --safe-chain-logging=verbose"
+    );
 
     assert.ok(
       result.output.includes("no malware found."),
