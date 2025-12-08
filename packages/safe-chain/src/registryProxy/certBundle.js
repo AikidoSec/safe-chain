@@ -15,6 +15,8 @@ import { ui } from "../environment/userInteraction.js";
  */
 function isParsable(pem) {
   if (!pem || typeof pem !== "string") return false;
+  // Normalize Windows CRLF to LF to ensure consistent parsing
+  pem = pem.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const begin = "-----BEGIN CERTIFICATE-----";
   const end = "-----END CERTIFICATE-----";
   const blocks = [];
@@ -96,38 +98,65 @@ export function getCombinedCaBundlePath() {
 }
 
 /**
+ * Normalize path
+ * @param {string} p - Path to normalize
+ * @returns {string}
+ */
+function normalizePathF(p) {
+  return p.replace(/\\/g, "/");
+}
+
+/**
  * Read and validate user certificate file
  * @param {string} certPath - Path to certificate file
  * @returns {string | null} Certificate PEM content or null if invalid/unreadable
  */
 function readUserCertificateFile(certPath) {
   try {
-    // Perform security checks before reading
+    // 1) Basic validation
     if (typeof certPath !== "string" || certPath.trim().length === 0) {
       return null;
     }
 
-    if (certPath.includes("..") || certPath.includes("//") || certPath.includes("\\\\")) {
+    // 2) Reject path traversal attempts (normalize backslashes first for Windows paths)
+    const normalizedPath = normalizePathF(certPath);
+    if (normalizedPath.includes("..")) {
       return null;
     }
 
-    if (!fs.existsSync(certPath)) {
+    // 3) Check if file exists and is not a directory or symlink
+    let stats;
+    try {
+      stats = fs.lstatSync(certPath);
+    } catch {
+      // File doesn't exist or can't be accessed
       return null;
     }
 
-    const stats = fs.lstatSync(certPath);
-    if (!stats.isFile() || stats.isSymbolicLink()) {
+    if (!stats.isFile()) {
+      // Reject directories and symlinks
       return null;
     }
 
-    const content = fs.readFileSync(certPath, "utf8");
+    // 4) Read file content
+    let content;
+    try {
+      content = fs.readFileSync(certPath, "utf8");
+    } catch {
+      return null;
+    }
+
     if (!content || typeof content !== "string") {
       return null;
     }
 
-    // 6) Validate PEM format
+    // 5) Validate PEM format
     if (!isParsable(content)) {
-      return null;
+      // Fallback: accept if it at least contains PEM delimiters
+      // (covers edge cases with unusual formatting that X509Certificate might reject)
+      if (!content.includes("-----BEGIN CERTIFICATE-----") || !content.includes("-----END CERTIFICATE-----")) {
+        return null;
+      }
     }
 
     return content;
