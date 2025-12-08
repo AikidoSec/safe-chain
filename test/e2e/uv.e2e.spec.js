@@ -16,7 +16,7 @@ describe("E2E: uv coverage", () => {
 
     const installationShell = await container.openShell("zsh");
     await installationShell.runCommand("safe-chain setup --include-python");
-    
+
     // Clear uv cache
     await installationShell.runCommand("uv cache clean");
   });
@@ -32,7 +32,7 @@ describe("E2E: uv coverage", () => {
   it(`successfully installs known safe packages with uv pip install`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages requests"
+      "uv pip install --system --break-system-packages requests --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -44,7 +44,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install with specific version`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages requests==2.32.3"
+      "uv pip install --system --break-system-packages requests==2.32.3 --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -56,7 +56,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install with version specifiers (>=)`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      'uv pip install --system --break-system-packages "Jinja2>=3.1"'
+      'uv pip install --system --break-system-packages "Jinja2>=3.1" --safe-chain-logging=verbose'
     );
 
     assert.ok(
@@ -68,7 +68,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install with extras such as requests[socks]`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      'uv pip install --system --break-system-packages "requests[socks]==2.32.3"'
+      'uv pip install --system --break-system-packages "requests[socks]==2.32.3" --safe-chain-logging=verbose'
     );
 
     assert.ok(
@@ -80,7 +80,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install multiple packages`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages requests certifi urllib3"
+      "uv pip install --system --break-system-packages requests certifi urllib3 --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -91,13 +91,13 @@ describe("E2E: uv coverage", () => {
 
   it(`uv pip install from requirements file`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create a requirements.txt file
     await shell.runCommand("echo 'requests==2.32.3' > requirements.txt");
     await shell.runCommand("echo 'certifi>=2024.0.0' >> requirements.txt");
-    
+
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages -r requirements.txt"
+      "uv pip install --system --break-system-packages -r requirements.txt --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -108,12 +108,12 @@ describe("E2E: uv coverage", () => {
 
   it(`uv pip sync with requirements file`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create a requirements.txt file
     await shell.runCommand("echo 'requests==2.32.3' > requirements-sync.txt");
-    
+
     const result = await shell.runCommand(
-      "uv pip sync --system --break-system-packages requirements-sync.txt"
+      "uv pip sync --system --break-system-packages requirements-sync.txt --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -124,7 +124,7 @@ describe("E2E: uv coverage", () => {
 
   it(`safe-chain blocks installation of malicious Python packages via uv`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     const result = await shell.runCommand(
       "uv pip install --system --break-system-packages safe-chain-pi-test"
     );
@@ -152,7 +152,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install from GitHub URL using the CA bundle`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages git+https://github.com/psf/requests.git@v2.32.3"
+      "uv pip install --system --break-system-packages git+https://github.com/psf/requests.git@v2.32.3 --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -170,9 +170,9 @@ describe("E2E: uv coverage", () => {
 
   it(`uv pip successfully validates certificates for HTTPS downloads`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages certifi"
+      "uv pip install --system --break-system-packages certifi --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -199,7 +199,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install from direct HTTPS wheel URL`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages https://files.pythonhosted.org/packages/70/8e/0e2d847013cb52cd35b38c009bb167a1a26b2ce6cd6965bf26b47bc0bf44/requests-2.31.0-py3-none-any.whl"
+      "uv pip install --system --break-system-packages https://files.pythonhosted.org/packages/70/8e/0e2d847013cb52cd35b38c009bb167a1a26b2ce6cd6965bf26b47bc0bf44/requests-2.31.0-py3-none-any.whl --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -216,13 +216,15 @@ describe("E2E: uv coverage", () => {
 
   it(`uv pip install with --upgrade flag`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // First install a package
-    await shell.runCommand("uv pip install --system --break-system-packages requests==2.31.0");
-    
+    await shell.runCommand(
+      "uv pip install --system --break-system-packages requests==2.31.0"
+    );
+
     // Then upgrade it
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages --upgrade requests"
+      "uv pip install --system --break-system-packages --upgrade requests --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -234,7 +236,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install with --no-deps flag`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages --no-deps requests"
+      "uv pip install --system --break-system-packages --no-deps requests --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -245,14 +247,18 @@ describe("E2E: uv coverage", () => {
 
   it(`uv pip install with --editable flag from local directory`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create a simple package structure
     await shell.runCommand("mkdir -p /tmp/test-pkg");
-    await shell.runCommand("echo 'from setuptools import setup' > /tmp/test-pkg/setup.py");
-    await shell.runCommand("echo \"setup(name='test-pkg', version='0.1.0')\" >> /tmp/test-pkg/setup.py");
-    
+    await shell.runCommand(
+      "echo 'from setuptools import setup' > /tmp/test-pkg/setup.py"
+    );
+    await shell.runCommand(
+      "echo \"setup(name='test-pkg', version='0.1.0')\" >> /tmp/test-pkg/setup.py"
+    );
+
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages -e /tmp/test-pkg"
+      "uv pip install --system --break-system-packages -e /tmp/test-pkg --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -263,13 +269,11 @@ describe("E2E: uv coverage", () => {
 
   it(`uv pip compile creates locked requirements`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create an input requirements file
     await shell.runCommand("echo 'requests' > requirements.in");
-    
-    const result = await shell.runCommand(
-      "uv pip compile requirements.in"
-    );
+
+    const result = await shell.runCommand("uv pip compile requirements.in");
 
     // uv pip compile doesn't install packages, just resolves dependencies
     // It should complete successfully and output resolved requirements
@@ -282,7 +286,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install with --index-url for alternate registry`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages --index-url https://test.pypi.org/simple certifi"
+      "uv pip install --system --break-system-packages --index-url https://test.pypi.org/simple certifi --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -303,7 +307,7 @@ describe("E2E: uv coverage", () => {
     const result = await shell.runCommand(
       "uv pip install --system --break-system-packages requests --safe-chain-logging=verbose"
     );
-    
+
     assert.ok(
       result.output.includes("no malware found."),
       `Output did not include expected text. Output was:\n${result.output}`
@@ -313,7 +317,7 @@ describe("E2E: uv coverage", () => {
   it(`uv pip install with version range constraint`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      'uv pip install --system --break-system-packages "requests>=2.31.0,<2.33.0"'
+      'uv pip install --system --break-system-packages "requests>=2.31.0,<2.33.0" --safe-chain-logging=verbose'
     );
 
     assert.ok(
@@ -324,10 +328,12 @@ describe("E2E: uv coverage", () => {
 
   it(`uv pip list shows installed packages`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Install a package first
-    await shell.runCommand("uv pip install --system --break-system-packages requests");
-    
+    await shell.runCommand(
+      "uv pip install --system --break-system-packages requests"
+    );
+
     // Then list packages - this shouldn't trigger safe-chain scanning
     const result = await shell.runCommand("uv pip list --system");
 
@@ -340,10 +346,10 @@ describe("E2E: uv coverage", () => {
 
   it(`uv add installs package and updates project`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project and add package in same command
     const result = await shell.runCommand(
-      "uv init test-project && cd test-project && uv add requests"
+      "uv init test-project && cd test-project && uv add requests --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -354,12 +360,12 @@ describe("E2E: uv coverage", () => {
 
   it(`uv add with specific version`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project
     await shell.runCommand("uv init test-project-version");
-    
+
     const result = await shell.runCommand(
-      "cd test-project-version && uv add requests==2.32.3"
+      "cd test-project-version && uv add requests==2.32.3 --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -370,12 +376,12 @@ describe("E2E: uv coverage", () => {
 
   it(`uv add --dev for development dependencies`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project
     await shell.runCommand("uv init test-project-dev");
-    
+
     const result = await shell.runCommand(
-      "cd test-project-dev && uv add --dev pytest"
+      "cd test-project-dev && uv add --dev pytest --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -386,12 +392,12 @@ describe("E2E: uv coverage", () => {
 
   it(`uv add multiple packages at once`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project
     await shell.runCommand("uv init test-project-multi");
-    
+
     const result = await shell.runCommand(
-      "cd test-project-multi && uv add requests certifi urllib3"
+      "cd test-project-multi && uv add requests certifi urllib3 --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -402,10 +408,10 @@ describe("E2E: uv coverage", () => {
 
   it(`safe-chain blocks malicious packages via uv add`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project
     await shell.runCommand("uv init test-project-malware");
-    
+
     const result = await shell.runCommand(
       "cd test-project-malware && uv add safe-chain-pi-test"
     );
@@ -427,20 +433,19 @@ describe("E2E: uv coverage", () => {
   it(`uv tool install installs a global tool`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "uv tool install ruff"
+      "uv tool install ruff --safe-chain-logging=verbose"
     );
 
     assert.ok(
-      result.output.includes("no malware found.") || result.output.includes("Installed"),
+      result.output.includes("no malware found.") ||
+        result.output.includes("Installed"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
 
   it(`safe-chain blocks malicious packages via uv tool install`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand(
-      "uv tool install safe-chain-pi-test"
-    );
+    const result = await shell.runCommand("uv tool install safe-chain-pi-test");
 
     assert.ok(
       result.output.includes("blocked 1 malicious package downloads:"),
@@ -454,12 +459,14 @@ describe("E2E: uv coverage", () => {
 
   it(`uv run --with installs ephemeral dependency`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create a simple Python script
-    await shell.runCommand("echo 'import requests; print(requests.__version__)' > test_script.py");
-    
+    await shell.runCommand(
+      "echo 'import requests; print(requests.__version__)' > test_script.py"
+    );
+
     const result = await shell.runCommand(
-      "uv run --with requests test_script.py"
+      "uv run --with requests test_script.py --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -470,10 +477,10 @@ describe("E2E: uv coverage", () => {
 
   it(`safe-chain blocks malicious packages via uv run --with`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create a simple Python script
     await shell.runCommand("echo 'print(\"test\")' > test_script2.py");
-    
+
     const result = await shell.runCommand(
       "uv run --with safe-chain-pi-test test_script2.py"
     );
@@ -486,10 +493,10 @@ describe("E2E: uv coverage", () => {
 
   it(`uv sync syncs project dependencies`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project, add a dependency, remove venv, and sync in one command chain
     const result = await shell.runCommand(
-      "uv init test-sync-project && cd test-sync-project && uv add requests && rm -rf .venv && uv sync"
+      "uv init test-sync-project && cd test-sync-project && uv add requests --safe-chain-logging=verbose && rm -rf .venv && uv sync --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -500,12 +507,12 @@ describe("E2E: uv coverage", () => {
 
   it(`uv add from git URL`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project
     await shell.runCommand("uv init test-git-add");
-    
+
     const result = await shell.runCommand(
-      "cd test-git-add && uv add git+https://github.com/psf/requests.git@v2.32.3"
+      "cd test-git-add && uv add git+https://github.com/psf/requests.git@v2.32.3 --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -516,12 +523,12 @@ describe("E2E: uv coverage", () => {
 
   it(`uv add with --optional group`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize a new uv project
     await shell.runCommand("uv init test-optional");
-    
+
     const result = await shell.runCommand(
-      "cd test-optional && uv add --optional dev pytest"
+      "cd test-optional && uv add --optional dev pytest --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -532,13 +539,15 @@ describe("E2E: uv coverage", () => {
 
   it(`uv run --with-requirements installs from requirements file`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Create requirements file and script
     await shell.runCommand("echo 'requests' > run_requirements.txt");
-    await shell.runCommand("echo 'import requests; print(requests.__version__)' > run_script.py");
-    
+    await shell.runCommand(
+      "echo 'import requests; print(requests.__version__)' > run_script.py"
+    );
+
     const result = await shell.runCommand(
-      "uv run --with-requirements run_requirements.txt run_script.py"
+      "uv run --with-requirements run_requirements.txt run_script.py --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -549,10 +558,10 @@ describe("E2E: uv coverage", () => {
 
   it(`uv sync --all-extras syncs all optional dependencies`, async () => {
     const shell = await container.openShell("zsh");
-    
+
     // Initialize project with optional dependency and sync in one command chain
     const result = await shell.runCommand(
-      "uv init test-extras && cd test-extras && uv add --optional dev pytest && uv sync --all-extras"
+      "uv init test-extras && cd test-extras && uv add --optional dev pytest --safe-chain-logging=verbose && uv sync --all-extras"
     );
 
     assert.ok(
@@ -561,4 +570,3 @@ describe("E2E: uv coverage", () => {
     );
   });
 });
-
