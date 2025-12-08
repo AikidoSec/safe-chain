@@ -138,7 +138,7 @@ function handleConnect(req, clientSocket, head) {
   if (interceptor) {
     // Subscribe to malware blocked events
     interceptor.on("malwareBlocked", (event) => {
-      onMalwareBlocked(event.packageName, event.version, event.url);
+      onMalwareBlocked(event.packageName, event.version, event.targetUrl);
     });
 
     mitmConnect(req, clientSocket, interceptor);
