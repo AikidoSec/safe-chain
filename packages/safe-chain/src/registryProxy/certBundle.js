@@ -15,8 +15,7 @@ import { ui } from "../environment/userInteraction.js";
  */
 function isParsable(pem) {
   if (!pem || typeof pem !== "string") return false;
-  // Normalize Windows CRLF to LF to ensure consistent parsing
-  pem = pem.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  pem = normalizeLineEndings(pem);
   const begin = "-----BEGIN CERTIFICATE-----";
   const end = "-----END CERTIFICATE-----";
   const blocks = [];
@@ -119,6 +118,15 @@ function normalizePathF(p) {
 }
 
 /**
+ * Normalize line endings to LF
+ * @param {string} text - Text with mixed line endings
+ * @returns {string}
+ */
+function normalizeLineEndings(text) {
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+/**
  * Read and validate user certificate file
  * @param {string} certPath - Path to certificate file
  * @returns {string | null} Certificate PEM content or null if invalid/unreadable
@@ -164,11 +172,7 @@ function readUserCertificateFile(certPath) {
 
     // 5) Validate PEM format
     if (!isParsable(content)) {
-      // Fallback: accept if it at least contains PEM delimiters
-      // (covers edge cases with unusual formatting that X509Certificate might reject)
-      if (!content.includes("-----BEGIN CERTIFICATE-----") || !content.includes("-----END CERTIFICATE-----")) {
-        return null;
-      }
+      return null;
     }
 
     return content;

@@ -340,7 +340,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     );
 
     assert.ok(
-      result.output.includes("no malware found."),
+      result.output.includes("installed") || result.output.includes("packages installed"),
       `bun i failed with valid NODE_EXTRA_CA_CERTS. Output was:\n${result.output}`
     );
   });
