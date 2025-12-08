@@ -43,9 +43,6 @@ function isParsable(pem) {
   }
 }
 
-/** @type {string | null} */
-let cachedPath = null;
-
 /**
  * Build a combined CA bundle.
  * Automatically includes:
@@ -104,7 +101,6 @@ export function getCombinedCaBundlePath() {
   const combined = parts.filter(Boolean).join("\n");
   const target = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
   fs.writeFileSync(target, combined, { encoding: "utf8" });
-  cachedPath = target;
   return target;
 }
 
