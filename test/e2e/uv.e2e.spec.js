@@ -16,6 +16,9 @@ describe("E2E: uv coverage", () => {
 
     const installationShell = await container.openShell("zsh");
     await installationShell.runCommand("safe-chain setup --include-python");
+    
+    // Clear uv cache
+    await installationShell.runCommand("uv cache clean");
   });
 
   afterEach(async () => {
