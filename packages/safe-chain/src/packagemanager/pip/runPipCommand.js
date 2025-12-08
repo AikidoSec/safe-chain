@@ -93,7 +93,7 @@ export async function runPip(command, args) {
   try {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
 
-    // Always provide Python with a complete CA bundle (Safe Chain CA + Mozilla + Node built-in roots)
+    // Always provide Python with a complete CA bundle (Safe Chain CA + Mozilla + Node built-in roots + user certs)
     // so that any network request made by pip, including those outside explicit CLI args,
     // validates correctly under both MITM'd and tunneled HTTPS.
     const combinedCaPath = getCombinedCaBundlePath();

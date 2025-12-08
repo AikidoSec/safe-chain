@@ -77,12 +77,13 @@ describe("certBundle.getCombinedCaBundlePath", () => {
   });
 });
 
-describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
+describe("certBundle.getCombinedCaBundlePath with user certs", () => {
   beforeEach(() => {
     mock.restoreAll();
+    delete process.env.NODE_EXTRA_CA_CERTS;
   });
 
-  it("returns a path with Safe Chain CA when no user cert provided", async () => {
+  it("returns a path with full CA bundle (Safe Chain + Mozilla + Node roots) when no user cert in env", async () => {
     // Mock getCaCertPath to return valid cert
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
     const safeChainPath = path.join(tmpDir, "safechain.pem");
@@ -94,15 +95,17 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts(undefined);
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
-    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
+    assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain certificate blocks");
+    // Should include base bundle (Safe Chain + Mozilla/Node roots)
+    assert.ok(contents.length > 1000, "Bundle should be substantial with Mozilla/Node roots included");
   });
 
-  it("merges user cert with Safe Chain CA", async () => {
+  it("merges user cert with full base bundle (Safe Chain CA + Mozilla + Node roots)", async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
     
     // Create Safe Chain CA
@@ -114,6 +117,7 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
     const userCertPath = path.join(tmpDir, "user-cert.pem");
     const userCert = getValidCert();
     fs.writeFileSync(userCertPath, userCert, "utf8");
+    process.env.NODE_EXTRA_CA_CERTS = userCertPath;
 
     mock.module("./certUtils.js", {
       namedExports: {
@@ -121,8 +125,8 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts(userCertPath);
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
@@ -136,6 +140,7 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "certtest-"));
     const safeChainPath = path.join(tmpDir, "safechain.pem");
     fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
+    process.env.NODE_EXTRA_CA_CERTS = "/nonexistent/path.pem";
 
     mock.module("./certUtils.js", {
       namedExports: {
@@ -143,8 +148,8 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts("/nonexistent/path.pem");
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
@@ -159,7 +164,8 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
     fs.writeFileSync(safeChainPath, getValidCert(), "utf8");
 
     const userCertPath = path.join(tmpDir, "invalid.pem");
-    fs.writeFileSync(userCertPath, "NOT A VALID CERTIFICATE", "utf8");
+    fs.writeFileSync(userCertPath, "NOT A VALID PEM", "utf8");
+    process.env.NODE_EXTRA_CA_CERTS = userCertPath;
 
     mock.module("./certUtils.js", {
       namedExports: {
@@ -167,8 +173,8 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts(userCertPath);
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
@@ -188,8 +194,9 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts("../../../etc/passwd");
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    process.env.NODE_EXTRA_CA_CERTS = "../../../etc/passwd";
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
@@ -221,8 +228,9 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts(symlinkPath);
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    process.env.NODE_EXTRA_CA_CERTS = symlinkPath;
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
@@ -245,8 +253,9 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts(certDir);
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    process.env.NODE_EXTRA_CA_CERTS = certDir;
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
@@ -265,8 +274,9 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts("   ");
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    process.env.NODE_EXTRA_CA_CERTS = "   ";
+    const bundlePath = getCombinedCaBundlePath();
 
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
@@ -280,8 +290,10 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
 
     // Create a real file with CRLF content to test Windows line ending support
     const userCertPath = path.join(tmpDir, "user-cert-crlf.pem");
-    const crlfCert = getValidCert().replace(/\n/g, "\r\n");
-    fs.writeFileSync(userCertPath, crlfCert, "utf8");
+    const userCert = getValidCert();
+    const certWithCRLF = userCert.replace(/\n/g, "\r\n");
+    fs.writeFileSync(userCertPath, certWithCRLF, "utf8");
+    process.env.NODE_EXTRA_CA_CERTS = userCertPath;
 
     mock.module("./certUtils.js", {
       namedExports: {
@@ -289,8 +301,8 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
-    const bundlePath = getCombinedCaBundlePathWithUserCerts(userCertPath);
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
+    const bundlePath = getCombinedCaBundlePath();
     assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
     const contents = fs.readFileSync(bundlePath, "utf8");
     const certCount = (contents.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
@@ -308,7 +320,7 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
     
     // Test that Windows path syntax is recognized (even if files don't exist on macOS/Linux)
     // These should gracefully fail (return Safe Chain CA only) rather than crash
@@ -319,7 +331,8 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
     ];
     
     for (const winPath of winPaths) {
-      const bundlePath = getCombinedCaBundlePathWithUserCerts(winPath);
+      process.env.NODE_EXTRA_CA_CERTS = winPath;
+      const bundlePath = getCombinedCaBundlePath();
       assert.ok(fs.existsSync(bundlePath), `Bundle should exist for ${winPath}`);
       const contents = fs.readFileSync(bundlePath, "utf8");
       assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Should contain Safe Chain CA");
@@ -337,7 +350,7 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       },
     });
 
-    const { getCombinedCaBundlePathWithUserCerts } = await import("./certBundle.js");
+    const { getCombinedCaBundlePath } = await import("./certBundle.js");
     
     // Test various Windows-style traversal attempts
     const traversalPaths = [
@@ -347,13 +360,20 @@ describe("certBundle.getCombinedCaBundlePathWithUserCerts", () => {
       "../../../etc/passwd",  // Unix-style for comparison
     ];
     
+    // First, get baseline bundle without user certs to know expected cert count
+    delete process.env.NODE_EXTRA_CA_CERTS;
+    const baselineBundlePath = getCombinedCaBundlePath();
+    const baselineContents = fs.readFileSync(baselineBundlePath, "utf8");
+    const baselineCertCount = (baselineContents.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
+    
     for (const badPath of traversalPaths) {
-      const bundlePath = getCombinedCaBundlePathWithUserCerts(badPath);
+      process.env.NODE_EXTRA_CA_CERTS = badPath;
+      const bundlePath = getCombinedCaBundlePath();
       assert.ok(fs.existsSync(bundlePath), "Bundle path should exist");
       const contents = fs.readFileSync(bundlePath, "utf8");
-      // Only Safe Chain CA should be present (user cert rejected due to traversal)
+      // Should contain base bundle (Safe Chain + Mozilla + Node roots) but NOT user cert
       const certCount = (contents.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
-      assert.strictEqual(certCount, 1, `Traversal path ${badPath} should be rejected; only Safe Chain CA included`);
+      assert.strictEqual(certCount, baselineCertCount, `Traversal path ${badPath} should be rejected; base bundle only (no user cert added)`);
     }
   });
 });
