@@ -3,7 +3,7 @@ import { ui } from "../environment/userInteraction.js";
 import { isImdsEndpoint } from "./isImdsEndpoint.js";
 
 /** @type {string[]} */
-let timedoutEndpoints = [];
+let timedoutImdsEndpoints = [];
 
 /**
  * @param {import("http").IncomingMessage} req
@@ -43,7 +43,7 @@ function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
   const isImds = isImdsEndpoint(hostname);
 
-  if (timedoutEndpoints.includes(hostname)) {
+  if (timedoutImdsEndpoints.includes(hostname)) {
     clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
     if (isImds) {
       ui.writeVerbose(
@@ -74,9 +74,9 @@ function tunnelRequestToDestination(req, clientSocket, head) {
   serverSocket.setTimeout(connectTimeout);
 
   serverSocket.on("timeout", () => {
-    timedoutEndpoints.push(hostname);
     // Suppress error logging for IMDS endpoints - timeouts are expected when not in cloud
     if (isImds) {
+      timedoutImdsEndpoints.push(hostname);
       ui.writeVerbose(
         `Safe-chain: connect to ${hostname}:${
           port || 443
