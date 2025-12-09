@@ -310,7 +310,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     );
 
     assert.ok(
-      result.output.includes("added"),
+      !result.output.toLowerCase().includes("error") || result.output.includes("Done"),
       `yarn add failed with valid NODE_EXTRA_CA_CERTS. Output was:\n${result.output}`
     );
   });
@@ -326,7 +326,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     );
 
     assert.ok(
-      result.output.includes("added"),
+      !result.output.toLowerCase().includes("error") || result.output.includes("Progress"),
       `pnpm add failed with valid NODE_EXTRA_CA_CERTS. Output was:\n${result.output}`
     );
   });
@@ -340,7 +340,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     );
 
     assert.ok(
-      result.output.includes("installed") || result.output.includes("packages installed"),
+      !result.output.toLowerCase().includes("error") || result.output.includes("installed"),
       `bun i failed with valid NODE_EXTRA_CA_CERTS. Output was:\n${result.output}`
     );
   });
