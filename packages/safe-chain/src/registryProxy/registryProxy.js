@@ -120,9 +120,7 @@ function stopServer(server) {
     } catch {
       resolve();
     }
-    setTimeout(() => {
-      resolve();
-    }, SERVER_STOP_TIMEOUT_MS);
+    setTimeout(() => resolve(), SERVER_STOP_TIMEOUT_MS);
   });
 }
 
