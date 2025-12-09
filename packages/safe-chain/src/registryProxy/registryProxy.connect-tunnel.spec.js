@@ -5,17 +5,28 @@ import tls from "tls";
 
 // Mock isImdsEndpoint BEFORE any other imports that might use it
 // This allows us to use TEST-NET-1 (192.0.2.1) as a test IMDS endpoint
+const mockIsImdsEndpoint = (host) => {
+  if (host === "192.0.2.1") return true;
+  return [
+    "metadata.google.internal",
+    "metadata.goog",
+    "169.254.169.254",
+  ].includes(host);
+};
+
 mock.module("./isImdsEndpoint.js", {
   namedExports: {
-    isImdsEndpoint: (host) => {
-      // 192.0.2.1 is TEST-NET-1, reserved for testing (RFC 5737)
-      if (host === "192.0.2.1") return true;
-      // Real IMDS endpoints
-      return [
-        "metadata.google.internal",
-        "metadata.goog",
-        "169.254.169.254",
-      ].includes(host);
+    isImdsEndpoint: mockIsImdsEndpoint,
+  },
+});
+
+// Mock getConnectTimeout to speed up tests
+mock.module("./getConnectTimeout.js", {
+  namedExports: {
+    getConnectTimeout: (host) => {
+      // IMDS endpoints: 100ms (real: 3s)
+      // Other endpoints: 500ms (real: 30s)
+      return mockIsImdsEndpoint(host) ? 100 : 500;
     },
   },
 });
@@ -150,7 +161,7 @@ describe("registryProxy.connectTunnel", () => {
   });
 
   describe("Connection Timeout", () => {
-    it("should timeout quickly when connecting to IMDS endpoint (3s)", async () => {
+    it("should timeout quickly when connecting to IMDS endpoint", async () => {
       // We need to make sure we're not running behind an existing safe-chain installation to allow this test to work
       const https_proxy = process.env.HTTPS_PROXY;
       delete process.env.HTTPS_PROXY;
@@ -179,8 +190,8 @@ describe("registryProxy.connectTunnel", () => {
 
       // Should timeout around 3 seconds for IMDS endpoints (allow some margin)
       assert.ok(
-        duration >= 2800 && duration < 5000,
-        `IMDS timeout should be ~3s, got ${duration}ms`
+        duration >= 80 && duration < 200,
+        `IMDS timeout should be ~80-200ms, got ${duration}ms`
       );
 
       socket.destroy();
@@ -189,11 +200,11 @@ describe("registryProxy.connectTunnel", () => {
       }
     });
 
-    it("should cache timed-out endpoints and fail immediately on retry", async () => {
+    it("should cache timed-out IMDS endpoints and fail immediately on retry", async () => {
       // We need to make sure we're not running behind an existing safe-chain installation to allow this test to work
       const https_proxy = process.env.HTTPS_PROXY;
       delete process.env.HTTPS_PROXY;
-      // First connection - will timeout
+      // First connection - will timeout (192.0.2.1 is mocked as IMDS endpoint)
       const socket1 = await connectToProxy(proxyHost, proxyPort);
       const connectRequest = `CONNECT 192.0.2.1:80 HTTP/1.1\r\nHost: 192.0.2.1:80\r\n\r\n`;
       socket1.write(connectRequest);
@@ -224,10 +235,62 @@ describe("registryProxy.connectTunnel", () => {
         "Should return 502 for cached timeout"
       );
 
-      // Should be nearly instant (< 100ms) since it's cached
+      // Should be nearly instant (< 50ms) since it's cached
       assert.ok(
-        duration < 100,
-        `Cached timeout should be instant, got ${duration}ms`
+        duration < 50,
+        `Cached IMDS timeout should be instant, got ${duration}ms`
+      );
+
+      socket2.destroy();
+      if (https_proxy) {
+        process.env.HTTPS_PROXY = https_proxy;
+      }
+    });
+
+    it("should NOT cache timed-out non-IMDS endpoints", async () => {
+      // We need to make sure we're not running behind an existing safe-chain installation to allow this test to work
+      const https_proxy = process.env.HTTPS_PROXY;
+      delete process.env.HTTPS_PROXY;
+
+      // 192.0.2.2 is in TEST-NET-1 (RFC 5737) but NOT mocked as IMDS
+      // It will timeout but should NOT be cached
+      const connectRequest = `CONNECT 192.0.2.2:443 HTTP/1.1\r\nHost: 192.0.2.2:443\r\n\r\n`;
+
+      // First connection - will timeout
+      const socket1 = await connectToProxy(proxyHost, proxyPort);
+      socket1.write(connectRequest);
+
+      await new Promise((resolve) => {
+        socket1.once("data", () => resolve());
+      });
+      socket1.destroy();
+
+      // Second connection - should NOT fail immediately because non-IMDS endpoints are not cached
+      const socket2 = await connectToProxy(proxyHost, proxyPort);
+      const startTime = Date.now();
+      socket2.write(connectRequest);
+
+      let responseData = "";
+      await new Promise((resolve) => {
+        socket2.once("data", (data) => {
+          responseData += data.toString();
+          resolve();
+        });
+      });
+
+      const duration = Date.now() - startTime;
+
+      // Should return 502 Bad Gateway (timeout)
+      assert.ok(
+        responseData.includes("HTTP/1.1 502 Bad Gateway"),
+        "Should return 502 for timeout"
+      );
+
+      // Should NOT be instant - it should retry the connection (taking ~500ms due to mock timeout)
+      // If it was cached, it would return in < 50ms
+      assert.ok(
+        duration >= 400,
+        `Non-IMDS timeout should NOT be cached, but got instant response in ${duration}ms`
       );
 
       socket2.destroy();
