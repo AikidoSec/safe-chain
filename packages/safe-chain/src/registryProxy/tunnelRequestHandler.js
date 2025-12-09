@@ -1,6 +1,7 @@
 import * as net from "net";
 import { ui } from "../environment/userInteraction.js";
 import { isImdsEndpoint } from "./isImdsEndpoint.js";
+import { getConnectTimeout } from "./getConnectTimeout.js";
 
 /** @type {string[]} */
 let timedoutImdsEndpoints = [];
@@ -196,14 +197,3 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
   });
 }
 
-/**
- * Returns appropriate connection timeout for a host.
- * - IMDS endpoints: 3s (fail fast when outside cloud, reduce 5min delay to ~20s)
- * - Other endpoints: 30s (allow for slow networks while preventing indefinite hangs)
- */
-function getConnectTimeout(/** @type {string} */ host) {
-  if (isImdsEndpoint(host)) {
-    return 3000;
-  }
-  return 30000;
-}
