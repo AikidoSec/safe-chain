@@ -26,6 +26,7 @@ ARG NPM_VERSION=latest
 ARG YARN_VERSION=latest
 ARG PNPM_VERSION=latest
 ARG PYTHON_VERSION=3
+ARG ENABLE_PYENV=false
 
 SHELL ["/bin/bash", "-c"]
 ENV BASH_ENV=~/.bashrc
@@ -83,4 +84,11 @@ RUN npm install -g /pkgs/*.tgz
 
 WORKDIR /testapp
 RUN npm init -y
+
+# Optional: install pyenv and set a managed Python version when enabled
+RUN if [ "$ENABLE_PYENV" = "true" ]; then \
+            apt-get update && apt-get install -y git build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libffi-dev && \
+            git clone https://github.com/pyenv/pyenv.git /root/.pyenv && \
+            bash -lc 'export PYENV_ROOT=/root/.pyenv; export PATH="$PYENV_ROOT/bin:$PATH"; eval "$(pyenv init -)"; pyenv install 3.12.3; pyenv global 3.12.3'; \
+        fi
 

@@ -56,12 +56,22 @@ function poetry {
 
 # `python -m pip`, `python -m pip3`.
 function python {
-    Invoke-WrappedCommand 'python' $args
+    # Intercept only `python -m pip|pip3`; otherwise invoke real python
+    if (($args.Length -ge 2) -and ($args[0] -eq '-m') -and (($args[1] -eq 'pip') -or ($args[1] -eq 'pip3'))) {
+        Invoke-WrappedCommand 'python' $args
+    } else {
+        Invoke-RealCommand 'python' $args
+    }
 }
 
 # `python3 -m pip`, `python3 -m pip3'.
 function python3 {
-    Invoke-WrappedCommand 'python3' $args
+    # Intercept only `python3 -m pip|pip3`; otherwise invoke real python3
+    if (($args.Length -ge 2) -and ($args[0] -eq '-m') -and (($args[1] -eq 'pip') -or ($args[1] -eq 'pip3'))) {
+        Invoke-WrappedCommand 'python3' $args
+    } else {
+        Invoke-RealCommand 'python3' $args
+    }
 }
 
 

@@ -2,30 +2,12 @@ import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
-import { PIP_COMMAND, PIP3_COMMAND, PYTHON_COMMAND, PYTHON3_COMMAND } from "./pipSettings.js";
+import { PIP_COMMAND, PIP3_COMMAND } from "./pipSettings.js";
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import ini from "ini";
-
-/**
- * Checks if this pip invocation should bypass safe-chain and spawn directly.
- * Returns true if the tool is python/python3 but NOT being run with -m pip/pip3.
- * @param {string} command - The command executable
- * @param {string[]} args - The arguments
- * @returns {boolean}
- */
-function shouldBypassSafeChain(command, args) {
-  if (command === PYTHON_COMMAND || command === PYTHON3_COMMAND) {
-    // Check if args start with -m pip
-    if (args.length >= 2 && args[0] === "-m" && (args[1] === PIP_COMMAND || args[1] === PIP3_COMMAND)) {
-      return false;
-    }
-    return true;
-  }
-  return false;
-}
 
 /**
  * Sets fallback CA bundle environment variables used by Python libraries.
@@ -73,23 +55,6 @@ function setFallbackCaBundleEnvironmentVariables(env, combinedCaPath) {
  * @returns {Promise<{status: number}>} Exit status of the pip command
  */
 export async function runPip(command, args) {
-  // Check if we should bypass safe-chain (python/python3 without -m pip)
-  if (shouldBypassSafeChain(command, args)) {
-    ui.writeVerbose(`Safe-chain: Bypassing safe-chain for non-pip invocation: ${command} ${args.join(" ")}`);
-    // Spawn the ORIGINAL command with ORIGINAL args
-    const { spawn } = await import("child_process");
-    return new Promise((_resolve) => {
-      const proc = spawn(command, args, { stdio: "inherit" });
-      proc.on("exit", (/** @type {number | null} */ code) => {
-        process.exit(code ?? 0);
-      });
-      proc.on("error", (/** @type {Error} */ err) => {
-        ui.writeError(`Error executing command: ${err.message}`);
-        process.exit(1);
-      });
-    });
-  }
-
   try {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
 

@@ -58,12 +58,22 @@ end
 
 # `python -m pip`, `python -m pip3`.
 function python
-    wrapSafeChainCommand "python" $argv
+    # Intercept only `python -m pip|pip3`; otherwise call real python
+    if test (count $argv) -ge 2; and test $argv[1] = "-m"; and (test $argv[2] = "pip" -o test $argv[2] = "pip3")
+        wrapSafeChainCommand "python" $argv
+    else
+        command python $argv
+    end
 end
 
 # `python3 -m pip`, `python3 -m pip3'.
 function python3
-    wrapSafeChainCommand "python3" $argv
+    # Intercept only `python3 -m pip|pip3`; otherwise call real python3
+    if test (count $argv) -ge 2; and test $argv[1] = "-m"; and (test $argv[2] = "pip" -o test $argv[2] = "pip3")
+        wrapSafeChainCommand "python3" $argv
+    else
+        command python3 $argv
+    end
 end
 
 function printSafeChainWarning

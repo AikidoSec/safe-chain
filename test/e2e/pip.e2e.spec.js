@@ -569,6 +569,137 @@ describe("E2E: pip coverage", () => {
     );
   });
 
+  it(`python3 --version completes quickly (no recursion/loop)`, async () => {
+    const shell = await container.openShell("zsh");
+    const start = Date.now();
+    const result = await shell.runCommand("python3 --version");
+    const durationMs = Date.now() - start;
+
+    assert.ok(
+      durationMs < 3000,
+      `Command should complete quickly. Took ${durationMs}ms. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.match(/Python 3\.\d+\.\d+/),
+      `Should output Python version. Output was:\n${result.output}`
+    );
+  });
+
+  it(`alias python=python3 still bypasses and is fast`, async () => {
+    const shell = await container.openShell("zsh");
+    await shell.runCommand("alias python=python3");
+
+    const start = Date.now();
+    const result = await shell.runCommand("python --version");
+    const durationMs = Date.now() - start;
+
+    assert.ok(
+      durationMs < 3000,
+      `Command should complete quickly. Took ${durationMs}ms. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.match(/Python 3\.\d+\.\d+/),
+      `Should output Python 3 version via alias. Output was:\n${result.output}`
+    );
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `Non-pip alias should bypass safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`alias python=python3, python -m pip goes through safe-chain`, async () => {
+    const shell = await container.openShell("zsh");
+    await shell.runCommand("alias python=python3");
+
+    const start = Date.now();
+    const result = await shell.runCommand(
+      "python -m pip install --break-system-packages certifi --safe-chain-logging=verbose"
+    );
+    const durationMs = Date.now() - start;
+
+    assert.ok(
+      durationMs < 10000,
+      `Install should not hang or loop under alias. Took ${durationMs}ms. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("Safe-chain") ||
+        result.output.includes("no malware found"),
+      `pip flow SHOULD be protected even with alias. Output was:\n${result.output}`
+    );
+  });
+
+  // Shadowing function tests: user-defined shell function overrides wrapper
+  it(`function python(){ python3 "$@"; } bypasses non-pip and is fast`, async () => {
+    const shell = await container.openShell("zsh");
+    await shell.runCommand('function python(){ python3 "$@"; }');
+
+    const start = Date.now();
+    const result = await shell.runCommand("python --version");
+    const durationMs = Date.now() - start;
+
+    assert.ok(
+      durationMs < 3000,
+      `Command should complete quickly under shadowing function. Took ${durationMs}ms. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.match(/Python 3\.\d+\.\d+/),
+      `Should output Python 3 version via shadowing function. Output was:\n${result.output}`
+    );
+    assert.ok(
+      !result.output.includes("Safe-chain"),
+      `Non-pip via shadowing function should bypass safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`function python(){ python3 "$@"; } with python -m pip is protected`, async () => {
+    const shell = await container.openShell("zsh");
+    await shell.runCommand('function python(){ python3 "$@"; }');
+
+    const start = Date.now();
+    const result = await shell.runCommand(
+      "python -m pip install --break-system-packages certifi --safe-chain-logging=verbose"
+    );
+    const durationMs = Date.now() - start;
+
+    assert.ok(
+      durationMs < 10000,
+      `Install should not hang or loop under shadowing function. Took ${durationMs}ms. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("Safe-chain") ||
+        result.output.includes("no malware found"),
+      `pip flow SHOULD be protected even with shadowing function. Output was:\n${result.output}`
+    );
+  });
+
+  it(`shadow function + python -m pip blocks malware`, async () => {
+    const shell = await container.openShell("zsh");
+    await shell.runCommand('function python(){ python3 "$@"; }');
+
+    const result = await shell.runCommand(
+      "python -m pip install --break-system-packages safe-chain-pi-test"
+    );
+
+    assert.ok(
+      result.output.includes("blocked 1 malicious package downloads:"),
+      `Should block malware under shadow function. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("safe_chain_pi_test@0.0.1"),
+      `Should identify malware package. Output was:\n${result.output}`
+    );
+    assert.ok(
+      result.output.includes("Exiting without installing malicious packages."),
+      `Should refuse installation. Output was:\n${result.output}`
+    );
+
+    const listResult = await shell.runCommand("python -m pip list");
+    assert.ok(
+      !listResult.output.includes("safe-chain-pi-test"),
+      `Malicious package should not be installed. Output was:\n${listResult.output}`
+    );
+  });
+
   it(`python --version should bypass safe-chain and work normally`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand("python --version");
@@ -810,6 +941,25 @@ describe("E2E: pip coverage", () => {
     );
 
     // SHOULD go through safe-chain
+    assert.ok(
+      result.output.includes("Safe-chain") ||
+        result.output.includes("no malware found"),
+      `python3 -m pip SHOULD go through safe-chain. Output was:\n${result.output}`
+    );
+  });
+
+  it(`python3 -m pip completes quickly and shows protection`, async () => {
+    const shell = await container.openShell("zsh");
+    const start = Date.now();
+    const result = await shell.runCommand(
+      "python3 -m pip install --break-system-packages certifi --safe-chain-logging=verbose"
+    );
+    const durationMs = Date.now() - start;
+
+    assert.ok(
+      durationMs < 10000,
+      `Install should not hang or loop. Took ${durationMs}ms. Output was:\n${result.output}`
+    );
     assert.ok(
       result.output.includes("Safe-chain") ||
         result.output.includes("no malware found"),

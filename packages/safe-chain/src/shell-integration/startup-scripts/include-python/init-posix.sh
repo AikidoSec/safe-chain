@@ -54,12 +54,22 @@ function poetry() {
 
 # `python -m pip`, `python -m pip3`.
 function python() {
-  wrapSafeChainCommand "python" "$@"
+  # Intercept only `python -m pip|pip3`; otherwise run the real python to avoid loops/shadowing
+  if [[ "$1" == "-m" && ( "$2" == "pip" || "$2" == "pip3" ) ]]; then
+    wrapSafeChainCommand "python" "$@"
+  else
+    command python "$@"
+  fi
 }
 
 # `python3 -m pip`, `python3 -m pip3'.
 function python3() {
-  wrapSafeChainCommand "python3" "$@"
+  # Intercept only `python3 -m pip|pip3`; otherwise run the real python3
+  if [[ "$1" == "-m" && ( "$2" == "pip" || "$2" == "pip3" ) ]]; then
+    wrapSafeChainCommand "python3" "$@"
+  else
+    command python3 "$@"
+  fi
 }
 
 function printSafeChainWarning() {

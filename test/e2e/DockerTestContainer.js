@@ -16,20 +16,22 @@ const yarnVersion = process.env.YARN_VERSION || "latest";
 const pnpmVersion = process.env.PNPM_VERSION || "latest";
 
 export class DockerTestContainer {
-  constructor() {
+  constructor(profile = "default") {
     this.containerName = `safe-chain-test-${Math.random()
       .toString(36)
       .substring(2, 15)}`;
     this.isRunning = false;
+    this.profile = profile;
   }
 
-  static buildImage() {
+  static buildImage(profile = "default") {
     try {
       const buildArgs = [
         `--build-arg NODE_VERSION=${nodeVersion}`,
         `--build-arg NPM_VERSION=${npmVersion}`,
         `--build-arg YARN_VERSION=${yarnVersion}`,
         `--build-arg PNPM_VERSION=${pnpmVersion}`,
+        profile === "pyenv" ? "--build-arg ENABLE_PYENV=true" : "",
       ].join(" ");
 
       execSync(
