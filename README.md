@@ -116,17 +116,21 @@ More information about the shell integration can be found in the [shell integrat
 
 ## Uninstallation
 
-To uninstall the Aikido Safe Chain, you can run the following command:
+To uninstall the Aikido Safe Chain, use our one-line uninstaller:
 
-1. **Remove all aliases from your shell** by running:
-   ```shell
-   safe-chain teardown
-   ```
-2. **Uninstall the Aikido Safe Chain package** using npm:
-   ```shell
-   npm uninstall -g @aikidosec/safe-chain
-   ```
-3. **❗Restart your terminal** to remove the aliases.
+### Unix/Linux/macOS
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/uninstall-safe-chain.sh | sh
+```
+
+### Windows (PowerShell)
+
+```powershell
+iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/uninstall-safe-chain.ps1" -UseBasicParsing)
+```
+
+**❗Restart your terminal** after uninstalling to ensure all aliases are removed.
 
 # Configuration
 

@@ -77,11 +77,11 @@ remove_volta_installation() {
 
 # Main uninstallation
 main() {
-    SAFE_CHAIN_EXE="$INSTALL_DIR/safe-chain"
+    SAFE_CHAIN_LOCATION="$INSTALL_DIR/safe-chain"
 
-    if [ -x "$SAFE_CHAIN_EXE" ]; then
+    if [ -x "$SAFE_CHAIN_LOCATION" ]; then
         info "Running safe-chain teardown..."
-        "$SAFE_CHAIN_EXE" teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
+        "$SAFE_CHAIN_LOCATION" teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
     elif command_exists safe-chain; then
         info "Running safe-chain teardown..."
         safe-chain teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."

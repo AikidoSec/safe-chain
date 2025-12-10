@@ -75,11 +75,22 @@ function Uninstall-SafeChain {
     Write-Info "Uninstalling safe-chain..."
 
     # Run teardown if safe-chain is available
+    # Check for both safe-chain.exe (Windows) and safe-chain (Unix) since PowerShell Core runs on all platforms
     $safeChainExe = Join-Path $InstallDir "safe-chain.exe"
+    $safeChainBin = Join-Path $InstallDir "safe-chain"
+
+    $safeChainPath = $null
     if (Test-Path $safeChainExe) {
+        $safeChainPath = $safeChainExe
+    }
+    elseif (Test-Path $safeChainBin) {
+        $safeChainPath = $safeChainBin
+    }
+
+    if ($safeChainPath) {
         Write-Info "Running safe-chain teardown..."
         try {
-            & $safeChainExe teardown
+            & $safeChainPath teardown
             if ($LASTEXITCODE -ne 0) {
                 Write-Warn "safe-chain teardown encountered issues, continuing with uninstallation..."
             }
