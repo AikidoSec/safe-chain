@@ -80,3 +80,62 @@ jobs:
         with:
           name: safe-chain-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*
+
+  create-proxy-binaries:
+    name: Create proxy binary for ${{ matrix.os }}-${{ matrix.arch }}
+
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+            extension: ""
+          - os: macos
+            arch: arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            extension: ""
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            extension: ""
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            extension: ""
+          - os: win
+            arch: x64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            extension: ".exe"
+          - os: win
+            arch: arm64
+            runner: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            extension: ".exe"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build proxy
+        working-directory: proxy
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload proxy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxy-${{ matrix.os }}-${{ matrix.arch }}
+          path: proxy/target/${{ matrix.target }}/release/proxy${{ matrix.extension }}

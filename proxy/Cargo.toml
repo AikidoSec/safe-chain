@@ -1,0 +1,8 @@
+[package]
+name = "proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rama = { git = "https://github.com/plabayo/rama", features = ["http-full", "dns", "boring"] }
+tokio = { version = "1", features = ["full"] }
