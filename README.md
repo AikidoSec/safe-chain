@@ -179,6 +179,25 @@ You can set the minimum package age through multiple sources (in order of priori
    }
    ```
 
+## Custom Registries
+
+By default, Safe Chain monitors downloads from the official package registries (npm registry, PyPI, etc.). If you use a private or custom package registry, you can configure Safe Chain to also monitor downloads from those registries.
+
+⚠️ This feature **currently only applies to Python package managers** (pip, pip3, uv, poetry) and does not apply to npm-based package managers.
+
+### Configuration Options
+
+You can set custom registries through the following source:
+
+1. **Environment Variable**:
+
+   ```shell
+   export SAFE_CHAIN_PIP_CUSTOM_REGISTRIES=my-custom-registry.example.com,private-pypi.internal.com
+   pip install mypackage
+   ```
+
+   Use a comma-separated list of registry hostnames to monitor multiple custom registries.
+
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.

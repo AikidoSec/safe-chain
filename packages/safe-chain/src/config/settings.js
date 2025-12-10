@@ -98,3 +98,30 @@ export function skipMinimumPackageAge() {
 
   return defaultSkipMinimumPackageAge;
 }
+
+/** @type {string[]} */
+const defaultPipCustomRegistries = [];
+/** @returns {string[]} */
+export function getPipCustomRegistries() {
+  // Priority 1: Environment variable
+  const envValue = validatePipCustomRegistries(
+    environmentVariables.getPipCustomRegistries()
+  );
+  if (envValue !== undefined) {
+    return envValue;
+  }
+
+  return defaultPipCustomRegistries;
+}
+
+/**
+ * @param {string | undefined} value
+ * @returns {string[] | undefined}
+ */
+function validatePipCustomRegistries(value) {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.split(",");
+}
