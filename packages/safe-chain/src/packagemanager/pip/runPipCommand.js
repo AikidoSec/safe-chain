@@ -2,7 +2,6 @@ import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
-import { PIP_COMMAND, PIP3_COMMAND } from "./pipSettings.js";
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import os from "node:os";
