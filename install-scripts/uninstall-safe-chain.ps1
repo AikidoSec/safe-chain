@@ -2,7 +2,9 @@
 #
 # Usage with "iex (iwr {url} -UseBasicParsing)" --> See README.md
 
-$InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
+# Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
+$HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
+$InstallDir = Join-Path $HomeDir ".safe-chain/bin"
 
 # Helper functions
 function Write-Info {
