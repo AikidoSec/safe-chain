@@ -1,7 +1,8 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList, getShimsDir, } from "./helpers.js";
+import fs from "fs";
 
 /**
  * @returns {Promise<void>}
@@ -60,5 +61,26 @@ export async function teardown() {
       `Failed to remove shell aliases: ${error.message}. Please check your shell configuration.`
     );
     return;
+  }
+}
+
+/**
+ * @returns {Promise<void>}
+ */
+export async function teardownCi() {
+  const shimsDir = getShimsDir();
+  if (fs.existsSync(shimsDir)) {
+    try {
+      fs.rmSync(shimsDir, { recursive: true, force: true });
+      ui.writeInformation(
+        `${chalk.bold("- CI Shims:")} ${chalk.green("Removed successfully")}`
+      );
+    } catch (/** @type {any} */ error) {
+      ui.writeError(
+        `${chalk.bold("- CI Shims:")} ${chalk.red(
+          "Failed to remove"
+        )}. Error: ${error.message}`
+      );
+    }
   }
 }
