@@ -81,10 +81,13 @@ export async function runPip(command, args) {
     return new Promise((_resolve) => {
       const proc = spawn(command, args, { stdio: "inherit" });
       proc.on("exit", (/** @type {number | null} */ code) => {
+        ui.writeVerbose(`${command} ${args.join(" ")} exited with status ${code}`);
+        ui.writeBufferedLogsAndStopBuffering();
         process.exit(code ?? 0);
       });
       proc.on("error", (/** @type {Error} */ err) => {
         ui.writeError(`Error executing command: ${err.message}`);
+        ui.writeBufferedLogsAndStopBuffering();
         process.exit(1);
       });
     });
