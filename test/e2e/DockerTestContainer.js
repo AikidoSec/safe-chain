@@ -36,7 +36,7 @@ export class DockerTestContainer {
         `docker build --progress=plain -t ${imageName} -f ${dockerFile} ${contextPath} ${buildArgs}`,
         {
           stdio: "pipe",
-          maxBuffer: 50 * 1024 * 1024, // 50MB buffer to capture verbose build logs
+          maxBuffer: 10 * 1024 * 1024, // Default is 1MB, increase to 10MB to account for large build logs
         }
       );
     } catch (error) {

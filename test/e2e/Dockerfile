@@ -41,11 +41,11 @@ RUN apt-get install -y fish && \
     touch /root/.config/fish/config.fish
 
 # Install Volta and Node.js
-RUN curl -sSL https://get.volta.sh | bash
-RUN /root/.volta/bin/volta install node@${NODE_VERSION}
-RUN /root/.volta/bin/volta install npm@${NPM_VERSION}
-RUN /root/.volta/bin/volta install yarn@${YARN_VERSION}
-RUN /root/.volta/bin/volta install pnpm@${PNPM_VERSION}
+RUN curl -fsSL https://get.volta.sh | bash
+RUN volta install node@${NODE_VERSION}
+RUN volta install npm@${NPM_VERSION}
+RUN volta install yarn@${YARN_VERSION}
+RUN volta install pnpm@${PNPM_VERSION}
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
