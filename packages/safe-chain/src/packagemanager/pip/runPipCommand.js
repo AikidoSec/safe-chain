@@ -16,7 +16,7 @@ import ini from "ini";
  * @param {string[]} args - The arguments
  * @returns {boolean}
  */
-function shouldBypassSafeChain(command, args) {
+export function shouldBypassSafeChain(command, args) {
   if (command === PYTHON_COMMAND || command === PYTHON3_COMMAND) {
     // Check if args start with -m pip
     if (args.length >= 2 && args[0] === "-m" && (args[1] === PIP_COMMAND || args[1] === PIP3_COMMAND)) {
