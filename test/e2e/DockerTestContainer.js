@@ -33,9 +33,9 @@ export class DockerTestContainer {
       ].join(" ");
 
       execSync(
-        `docker build -t ${imageName} -f ${dockerFile} ${contextPath} ${buildArgs}`,
+        `docker build --progress=plain -t ${imageName} -f ${dockerFile} ${contextPath} ${buildArgs}`,
         {
-          stdio: "ignore",
+          stdio: "inherit",
         }
       );
     } catch (error) {
