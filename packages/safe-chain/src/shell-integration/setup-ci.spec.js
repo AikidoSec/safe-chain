@@ -50,6 +50,7 @@ describe("Setup CI shell integration", () => {
           { tool: "yarn", aikidoCommand: "aikido-yarn" },
         ],
         getPackageManagerList: () => "npm, yarn",
+        getShimsDir: () => mockShimsDir,
       },
     });
 
