@@ -33,12 +33,16 @@ export class DockerTestContainer {
       ].join(" ");
 
       execSync(
-        `docker build -t ${imageName} -f ${dockerFile} ${contextPath} ${buildArgs}`,
+        `docker build --progress=plain -t ${imageName} -f ${dockerFile} ${contextPath} ${buildArgs}`,
         {
-          stdio: "ignore",
+          stdio: "pipe",
+          maxBuffer: 10 * 1024 * 1024, // Default is 1MB, increase to 10MB to account for large build logs
         }
       );
     } catch (error) {
+      // Only print the build logs if the build fails
+      if (error.stdout) console.log(error.stdout.toString());
+      if (error.stderr) console.error(error.stderr.toString());
       throw new Error(`Failed to build Docker image: ${error.message}`);
     }
   }

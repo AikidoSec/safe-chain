@@ -41,7 +41,7 @@ RUN apt-get install -y fish && \
     touch /root/.config/fish/config.fish
 
 # Install Volta and Node.js
-RUN curl https://get.volta.sh | bash
+RUN curl -fsSL https://get.volta.sh | bash
 RUN volta install node@${NODE_VERSION}
 RUN volta install npm@${NPM_VERSION}
 RUN volta install yarn@${YARN_VERSION}
