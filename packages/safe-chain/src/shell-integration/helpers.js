@@ -121,6 +121,13 @@ export function getShimsDir() {
 }
 
 /**
+ * @returns {string}
+ */
+export function getScriptsDir() {
+  return path.join(os.homedir(), ".safe-chain", "scripts");
+}
+
+/**
  * @param {string} executableName
  *
  * @returns {boolean}

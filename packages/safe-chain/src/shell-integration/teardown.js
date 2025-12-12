@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools, getPackageManagerList, getShimsDir, } from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList, getShimsDir, getScriptsDir } from "./helpers.js";
 import fs from "fs";
 
 /**
@@ -65,10 +65,14 @@ export async function teardown() {
 }
 
 /**
+ * Removes directories created by setup-ci and setup commands
  * @returns {Promise<void>}
  */
-export async function teardownCi() {
+export async function teardownDirectories() {
   const shimsDir = getShimsDir();
+  const scriptsDir = getScriptsDir();
+
+  // Remove CI shims directory
   if (fs.existsSync(shimsDir)) {
     try {
       fs.rmSync(shimsDir, { recursive: true, force: true });
@@ -78,6 +82,22 @@ export async function teardownCi() {
     } catch (/** @type {any} */ error) {
       ui.writeError(
         `${chalk.bold("- CI Shims:")} ${chalk.red(
+          "Failed to remove"
+        )}. Error: ${error.message}`
+      );
+    }
+  }
+
+  // Remove scripts directory
+  if (fs.existsSync(scriptsDir)) {
+    try {
+      fs.rmSync(scriptsDir, { recursive: true, force: true });
+      ui.writeInformation(
+        `${chalk.bold("- Scripts:")} ${chalk.green("Removed successfully")}`
+      );
+    } catch (/** @type {any} */ error) {
+      ui.writeError(
+        `${chalk.bold("- Scripts:")} ${chalk.red(
           "Failed to remove"
         )}. Error: ${error.message}`
       );
