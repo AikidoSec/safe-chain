@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Version to set in package.json'
+        description: "Version to set in package.json"
         required: false
         type: string
 
@@ -137,5 +137,5 @@ jobs:
       - name: Upload proxy artifact
         uses: actions/upload-artifact@v4
         with:
-          name: proxy-${{ matrix.os }}-${{ matrix.arch }}
-          path: proxy/target/${{ matrix.target }}/release/proxy${{ matrix.extension }}
+          name: safe-chain-proxy-${{ matrix.os }}-${{ matrix.arch }}
+          path: proxy/target/${{ matrix.target }}/release/safe-chain-proxy${{ matrix.extension }}
