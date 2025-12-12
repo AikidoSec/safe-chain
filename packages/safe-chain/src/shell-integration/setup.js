@@ -3,7 +3,6 @@ import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
 import { knownAikidoTools, getPackageManagerList, getScriptsDir } from "./helpers.js";
 import fs from "fs";
-import os from "os";
 import path from "path";
 import { includePython } from "../config/cliArguments.js";
 import { fileURLToPath } from "url";
