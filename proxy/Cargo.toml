@@ -1,5 +1,5 @@
 [package]
-name = "proxy"
+name = "safe-chain-proxy"
 version = "0.1.0"
 edition = "2021"
 
