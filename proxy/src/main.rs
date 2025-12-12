@@ -1,10 +1,7 @@
-use std::{convert::Infallible, time::Duration};
-
+use clap::Parser;
 use rama::{
-    Layer, Service,
     extensions::ExtensionsMut,
     http::{
-        Request, Response, StatusCode,
         client::EasyHttpWebClient,
         layer::{
             remove_header::{RemoveRequestHeaderLayer, RemoveResponseHeaderLayer},
@@ -14,6 +11,7 @@ use rama::{
         matcher::MethodMatcher,
         server::HttpServer,
         service::web::response::IntoResponse,
+        Request, Response, StatusCode,
     },
     layer::ConsumeErrLayer,
     net::{http::RequestContext, proxy::ProxyTarget, stream::layer::http::BodyLimitLayer},
@@ -23,14 +21,23 @@ use rama::{
     telemetry::tracing::{
         self,
         metadata::LevelFilter,
-        subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt},
+        subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter},
     },
+    Layer, Service,
 };
+use std::{convert::Infallible, time::Duration};
+
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short, long, default_value_t = 0)]
+    port: u16,
+}
 
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
     setup_tracing();
-    run_server().await;
+    run_server(args.port).await;
 }
 
 fn setup_tracing() {
@@ -45,10 +52,10 @@ fn setup_tracing() {
     tracing::info!("Tracing is set up");
 }
 
-async fn run_server() {
+async fn run_server(port: u16) {
     let graceful = rama::graceful::Shutdown::default();
 
-    graceful.spawn_task_fn(server_task);
+    graceful.spawn_task_fn(move |guard| server_task(guard, port));
 
     graceful
         .shutdown_with_limit(Duration::from_secs(30))
@@ -56,11 +63,17 @@ async fn run_server() {
         .expect("graceful shutdown");
 }
 
-async fn server_task(guard: rama::graceful::ShutdownGuard) {
+async fn server_task(guard: rama::graceful::ShutdownGuard, port: u16) {
+    let tcp_address = format!("127.0.0.1:{}", port);
+
     let tcp_service = TcpListener::build()
-        .bind("127.0.0.1:3128")
+        .bind(tcp_address)
         .await
-        .expect("bind tcp proxy to 127.0.0.1:3128");
+        .expect("bind tcp proxy");
+
+    let local_address = tcp_service.local_addr().expect("tcp proxy assigned a port");
+    tracing::info!("Safe-chain proxy running on {local_address}");
+
     let exec = Executor::graceful(guard.clone());
 
     let http_service = HttpServer::auto(exec).service(
