@@ -60,8 +60,8 @@ if (tool) {
 } else if (command === "setup") {
   setup();
 } else if (command === "teardown") {
-  teardown();
   teardownCi();
+  teardown();
 } else if (command === "setup-ci") {
   setupCi();
 } else if (command === "--version" || command === "-v" || command === "-v") {
