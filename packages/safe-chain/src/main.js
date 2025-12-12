@@ -23,6 +23,7 @@ export async function main(args) {
   process.on("uncaughtException", (error) => {
     ui.writeError(`Safe-chain: Uncaught exception: ${error.message}`);
     ui.writeVerbose(`Stack trace: ${error.stack}`);
+    ui.writeBufferedLogsAndStopBuffering();
     process.exit(1);
   });
 
@@ -31,6 +32,7 @@ export async function main(args) {
     if (reason instanceof Error) {
       ui.writeVerbose(`Stack trace: ${reason.stack}`);
     }
+    ui.writeBufferedLogsAndStopBuffering();
     process.exit(1);
   });
 
@@ -89,6 +91,7 @@ export async function main(args) {
     return packageManagerResult.status;
   } catch (/** @type any */ error) {
     ui.writeError("Failed to check for malicious packages:", error.message);
+    ui.writeBufferedLogsAndStopBuffering();
 
     // Returning the exit code back to the caller allows the promise
     //  to be awaited in the bin files and return the correct exit code

@@ -7,6 +7,7 @@ import ini from "ini";
 
 describe("runPipCommand environment variable handling", () => {
   let runPip;
+  let shouldBypassSafeChain;
   let capturedArgs = null;
   let customEnv = null;
   let capturedConfigContent = null; // Capture config file content before cleanup
@@ -56,6 +57,7 @@ describe("runPipCommand environment variable handling", () => {
 
     const mod = await import("./runPipCommand.js");
     runPip = mod.runPip;
+    shouldBypassSafeChain = mod.shouldBypassSafeChain;
   });
 
   afterEach(() => {
@@ -66,14 +68,14 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["config", "set", "global.index-url", "https://test.pypi.org/simple"]);
     assert.strictEqual(res.status, 0);
     assert.ok(capturedArgs, "safeSpawn should have been called");
-    
+
     // PIP_CONFIG_FILE should NOT be set for config commands
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
       "PIP_CONFIG_FILE should NOT be set for pip config commands"
     );
-    
+
     // But CA environment variables should still be set
     assert.strictEqual(
       capturedArgs.options.env.REQUESTS_CA_BUNDLE,
@@ -96,7 +98,7 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["config", "get", "global.index-url"]);
     assert.strictEqual(res.status, 0);
     assert.ok(capturedArgs, "safeSpawn should have been called");
-    
+
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
@@ -108,7 +110,7 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["config", "list"]);
     assert.strictEqual(res.status, 0);
     assert.ok(capturedArgs, "safeSpawn should have been called");
-    
+
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
@@ -120,13 +122,13 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["cache", "dir"]);
     assert.strictEqual(res.status, 0);
     assert.ok(capturedArgs, "safeSpawn should have been called");
-    
+
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
       "PIP_CONFIG_FILE should NOT be set for pip cache commands"
     );
-    
+
     // CA env vars should still be set
     assert.strictEqual(
       capturedArgs.options.env.SSL_CERT_FILE,
@@ -139,7 +141,7 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["debug"]);
     assert.strictEqual(res.status, 0);
     assert.ok(capturedArgs, "safeSpawn should have been called");
-    
+
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
@@ -151,7 +153,7 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["completion", "--bash"]);
     assert.strictEqual(res.status, 0);
     assert.ok(capturedArgs, "safeSpawn should have been called");
-    
+
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
@@ -181,7 +183,7 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(res.status, 0);
 
     assert.ok(capturedArgs, "safeSpawn should have been called");
-    
+
     // Check environment variables are set
     assert.strictEqual(
       capturedArgs.options.env.REQUESTS_CA_BUNDLE,
@@ -218,7 +220,7 @@ describe("runPipCommand environment variable handling", () => {
     // For default PyPI, we still set env vars; pip CLI --cert takes precedence
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
-    
+
     // Environment variables still set (pip CLI --cert takes precedence)
     assert.strictEqual(
       capturedArgs.options.env.REQUESTS_CA_BUNDLE,
@@ -233,7 +235,7 @@ describe("runPipCommand environment variable handling", () => {
   it("should preserve HTTPS_PROXY from proxy merge", async () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
-    
+
     assert.strictEqual(
       capturedArgs.options.env.HTTPS_PROXY,
       "http://localhost:8080",
@@ -380,7 +382,7 @@ describe("runPipCommand environment variable handling", () => {
     await fs.writeFile(cfgPath, initialIni, "utf-8");
 
     customEnv = { PIP_CONFIG_FILE: cfgPath };
-    
+
     // Capture stdout/stderr
     let output = "";
     const originalWrite = process.stdout.write;
@@ -397,4 +399,21 @@ describe("runPipCommand environment variable handling", () => {
     assert.ok(output.includes("proxy found in PIP_CONFIG_FILE"), "Should warn about proxy overwrite in output");
     customEnv = null;
   });
+
+  it("should bypass safe-chain for python correctly", async () => {
+    assert.strictEqual(shouldBypassSafeChain("python", []), true);
+    assert.strictEqual(shouldBypassSafeChain("python3", []), true);
+
+    assert.strictEqual(shouldBypassSafeChain("python", ["--version"]), true);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["--version"]), true);
+
+    assert.strictEqual(shouldBypassSafeChain("python", ["-m", "http.server"]), true);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "http.server"]), true);
+
+    assert.strictEqual(shouldBypassSafeChain("python", ["-m", "pip"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "pip"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python", ["-m", "pip3"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "pip3"]), false);
+  });
+
 });
