@@ -9,11 +9,7 @@ use server::proxy::run_server;
 
 /// CLI arguments for configuring proxy behavior.
 #[derive(Parser)]
-#[command(
-    about = "A security-focused HTTP/HTTPS proxy for Safe-chain",
-    version,
-    author
-)]
+#[command(about = "Aikido safe-chain proxy", version, author)]
 struct Args {
     /// TCP port binding. Use 0 for OS-assigned port (recommended for avoiding conflicts).
     #[arg(short, long, default_value_t = 0)]
