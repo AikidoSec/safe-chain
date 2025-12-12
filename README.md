@@ -37,13 +37,13 @@ Installing the Aikido Safe Chain is easy with our one-line installer.
 **Default installation (JavaScript packages only):**
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
+curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/refs/tags/1.2.1/install-scripts/install-safe-chain.sh | sh
 ```
 
 **Include Python support (pip/pip3/uv):**
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
+curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/refs/tags/1.2.1/install-scripts/install-safe-chain.sh | sh -s -- --include-python
 ```
 
 ### Windows (PowerShell)
@@ -51,13 +51,13 @@ curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-s
 **Default installation (JavaScript packages only):**
 
 ```powershell
-iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
+iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/refs/tags/1.2.1/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
 ```
 
 **Include Python support (pip/pip3/uv):**
 
 ```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -includepython"
+iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/refs/tags/1.2.1/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -includepython"
 ```
 
 ### Verify the installation
@@ -234,7 +234,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     cache: "npm"
 
 - name: Install safe-chain
-  run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+  run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/refs/tags/1.2.1/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
 
 - name: Install dependencies
   run: npm ci
@@ -250,7 +250,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     versionSpec: "22.x"
   displayName: "Install Node.js"
 
-- script: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+- script: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/refs/tags/1.2.1/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
   displayName: "Install safe-chain"
 
 - script: npm ci
