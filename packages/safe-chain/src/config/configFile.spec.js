@@ -282,4 +282,121 @@ describe("getMinimumPackageAgeHours", () => {
 
     assert.strictEqual(hours, undefined);
   });
+
+  it("should return 0 when minimumPackageAgeHours is set to 0", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: 0 })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, 0);
+  });
+
+  it("should return 0 when minimumPackageAgeHours is set to string '0'", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: "0" })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, 0);
+  });
+
+  it("should handle negative numeric values", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: -24 })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, -24);
+  });
+
+  it("should handle negative string values", () => {
+    fsMock.existsSync.mock.mockImplementation(() => true);
+    fsMock.readFileSync.mock.mockImplementation(() =>
+      JSON.stringify({ minimumPackageAgeHours: "-48" })
+    );
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, -48);
+  });
+});
+
+describe("environmentVariables - getMinimumPackageAgeHours", () => {
+  let originalEnv;
+  let getMinimumPackageAgeHours;
+
+  beforeEach(async () => {
+    // Save original environment
+    originalEnv = process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS;
+
+    // Re-import the module to get fresh version
+    const envModule = await import(
+      `./environmentVariables.js?update=${Date.now()}`
+    );
+    getMinimumPackageAgeHours = envModule.getMinimumPackageAgeHours;
+  });
+
+  afterEach(() => {
+    // Restore original environment
+    if (originalEnv !== undefined) {
+      process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS = originalEnv;
+    } else {
+      delete process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS;
+    }
+  });
+
+  it("should return undefined when environment variable is not set", () => {
+    delete process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS;
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, undefined);
+  });
+
+  it("should return value when environment variable is set to a number", () => {
+    process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS = "48";
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, "48");
+  });
+
+  it("should return '0' when environment variable is set to '0'", () => {
+    process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS = "0";
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, "0");
+  });
+
+  it("should return value when set to decimal", () => {
+    process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS = "1.5";
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, "1.5");
+  });
+
+  it("should return value even if non-numeric (validation happens in settings.js)", () => {
+    process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS = "invalid";
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, "invalid");
+  });
+
+  it("should return negative values (validation happens in settings.js)", () => {
+    process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS = "-24";
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, "-24");
+  });
 });

@@ -81,7 +81,7 @@ function validateMinimumPackageAgeHours(value) {
     return undefined;
   }
 
-  if (numericValue > 0) {
+  if (numericValue >= 0) {
     return numericValue;
   }
 
