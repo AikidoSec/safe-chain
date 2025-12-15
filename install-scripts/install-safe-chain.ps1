@@ -3,8 +3,7 @@
 # Usage with "iex (iwr {url} -UseBasicParsing)" --> See README.md
 
 param(
-    [switch]$ci,
-    [switch]$includepython
+    [switch]$ci
 )
 
 $Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
@@ -117,9 +116,6 @@ function Install-SafeChain {
 
     # Build installation message
     $installMsg = "Installing safe-chain $Version"
-    if ($includepython) {
-        $installMsg += " with python"
-    }
     if ($ci) {
         $installMsg += " in ci"
     }

@@ -34,15 +34,11 @@ Installing the Aikido Safe Chain is easy with our one-line installer.
 
 ### Unix/Linux/macOS
 
-**Default installation (JavaScript packages only):**
-
 ```shell
 curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
 ```
 
 ### Windows (PowerShell)
-
-**Default installation:**
 
 ```powershell
 iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
@@ -62,7 +58,7 @@ iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-sc
    npm install safe-chain-test
    ```
 
-   For Python (if you enabled Python support):
+   For Python:
 
    ```shell
    pip3 install safe-chain-pi-test
@@ -181,24 +177,14 @@ Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD envir
 
 ### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
-**JavaScript only:**
-
 ```shell
 curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
 ```
 
 ### Windows (Azure Pipelines, etc.)
 
-**JavaScript only:**
-
 ```powershell
 iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
-```
-
-**With Python support:**
-
-```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci -includepython"
 ```
 
 ## Supported Platforms

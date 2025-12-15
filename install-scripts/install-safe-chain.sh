@@ -145,7 +145,6 @@ parse_arguments() {
 main() {
     # Initialize argument flags
     USE_CI_SETUP=false
-    INCLUDE_PYTHON=false
 
     # Parse command-line arguments
     parse_arguments "$@"
@@ -158,9 +157,6 @@ main() {
 
     # Build installation message
     INSTALL_MSG="Installing safe-chain ${VERSION}"
-    if [ "$INCLUDE_PYTHON" = "true" ]; then
-        INSTALL_MSG="${INSTALL_MSG} with python"
-    fi
     if [ "$USE_CI_SETUP" = "true" ]; then
         INSTALL_MSG="${INSTALL_MSG} in ci"
     fi
