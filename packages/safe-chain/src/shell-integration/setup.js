@@ -4,7 +4,6 @@ import { detectShells } from "./shellDetection.js";
 import { knownAikidoTools, getPackageManagerList, getScriptsDir } from "./helpers.js";
 import fs from "fs";
 import path from "path";
-import { includePython } from "../config/cliArguments.js";
 import { fileURLToPath } from "url";
 
 /** @type {string} */

@@ -5,7 +5,6 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
-import { includePython } from "../config/cliArguments.js";
 import { ECOSYSTEM_PY } from "../config/settings.js";
 
 /** @type {string} */
