@@ -3,7 +3,7 @@
 import chalk from "chalk";
 import { ui } from "../src/environment/userInteraction.js";
 import { setup } from "../src/shell-integration/setup.js";
-import { teardown } from "../src/shell-integration/teardown.js";
+import { teardown, teardownDirectories } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
 import { setEcoSystem } from "../src/config/settings.js";
@@ -60,6 +60,7 @@ if (tool) {
 } else if (command === "setup") {
   setup();
 } else if (command === "teardown") {
+  teardownDirectories();
   teardown();
 } else if (command === "setup-ci") {
   setupCi();

@@ -1,9 +1,8 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList, getScriptsDir } from "./helpers.js";
 import fs from "fs";
-import os from "os";
 import path from "path";
 import { includePython } from "../config/cliArguments.js";
 import { fileURLToPath } from "url";
@@ -107,10 +106,10 @@ function setupShell(shell) {
 
 function copyStartupFiles() {
   const startupFiles = ["init-posix.sh", "init-pwsh.ps1", "init-fish.fish"];
+  const targetDir = getScriptsDir();
 
   for (const file of startupFiles) {
-    const targetDir = path.join(os.homedir(), ".safe-chain", "scripts");
-    const targetPath = path.join(os.homedir(), ".safe-chain", "scripts", file);
+    const targetPath = path.join(targetDir, file);
 
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
