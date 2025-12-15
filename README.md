@@ -19,10 +19,10 @@ Aikido Safe Chain supports the following package managers:
 - 📦 **pnpx**
 - 📦 **bun**
 - 📦 **bunx**
-- 📦 **pip** (beta)
-- 📦 **pip3** (beta)
-- 📦 **uv** (beta)
-- 📦 **poetry** (beta)
+- 📦 **pip**
+- 📦 **pip3**
+- 📦 **uv**
+- 📦 **poetry**
 
 # Usage
 
