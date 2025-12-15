@@ -160,6 +160,5 @@ function modifyPathForCi(shimsDir, binDir) {
 }
 
 function getToolsToSetup() {
-  // Python support is now enabled by default (feature flag removed)
   return knownAikidoTools;
 }
