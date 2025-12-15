@@ -134,9 +134,6 @@ parse_arguments() {
             --ci)
                 USE_CI_SETUP=true
                 ;;
-            --include-python)
-                INCLUDE_PYTHON=true
-                ;;
             *)
                 error "Unknown argument: $arg"
                 ;;
@@ -207,10 +204,6 @@ main() {
 
     if [ "$USE_CI_SETUP" = "true" ]; then
         SETUP_CMD="setup-ci"
-    fi
-
-    if [ "$INCLUDE_PYTHON" = "true" ]; then
-        SETUP_ARGS="--include-python"
     fi
 
     # Execute safe-chain setup

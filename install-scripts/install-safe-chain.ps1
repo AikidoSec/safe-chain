@@ -181,9 +181,6 @@ function Install-SafeChain {
     # Build setup command based on parameters
     $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
     $setupArgs = @()
-    if ($includepython) {
-        $setupArgs += "--include-python"
-    }
 
     # Execute safe-chain setup
     Write-Info "Running safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })..."

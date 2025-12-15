@@ -118,7 +118,7 @@ function copyStartupFiles() {
     // Use absolute path for source
     const sourcePath = path.join(
       dirname,
-      includePython() ? "startup-scripts/include-python" : "startup-scripts",
+      "startup-scripts",
       file
     );
     fs.copyFileSync(sourcePath, targetPath);

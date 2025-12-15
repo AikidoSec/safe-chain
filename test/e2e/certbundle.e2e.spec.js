@@ -231,7 +231,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
   it(`pip install works without NODE_EXTRA_CA_CERTS set`, async () => {
     const shell = await container.openShell("zsh");
     
-    await shell.runCommand("safe-chain setup --include-python");
+    await shell.runCommand("safe-chain setup");
     await shell.runCommand("unset NODE_EXTRA_CA_CERTS");
     
     const result = await shell.runCommand(
@@ -247,7 +247,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
   it(`pip install works with valid NODE_EXTRA_CA_CERTS set`, async () => {
     const shell = await container.openShell("zsh");
     
-    await shell.runCommand("safe-chain setup --include-python");
+    await shell.runCommand("safe-chain setup");
     
     // Create a temporary valid certificate
     await shell.runCommand("cp /etc/ssl/certs/ca-certificates.crt /tmp/pip-valid-certs.pem");
@@ -265,7 +265,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
   it(`pip install handles non-existent NODE_EXTRA_CA_CERTS gracefully`, async () => {
     const shell = await container.openShell("zsh");
     
-    await shell.runCommand("safe-chain setup --include-python");
+    await shell.runCommand("safe-chain setup");
     
     const result = await shell.runCommand(
       'export NODE_EXTRA_CA_CERTS="/tmp/nonexistent-pip-certs.pem" && pip3 install --break-system-packages requests'
@@ -281,7 +281,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
   it(`pip install handles invalid NODE_EXTRA_CA_CERTS gracefully`, async () => {
     const shell = await container.openShell("zsh");
     
-    await shell.runCommand("safe-chain setup --include-python");
+    await shell.runCommand("safe-chain setup");
     
     // Create invalid cert
     await shell.runCommand(
