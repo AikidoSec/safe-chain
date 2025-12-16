@@ -89,8 +89,8 @@ jobs:
         run: |
           sed 's/$(fetch_latest_version)/${VERSION}/' install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
           sed "s/Get-LatestVersion/\"${VERSION}\"/" install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
-          cp install-scripts/uninstall-safe-chain.sh
-          cp install-scripts/uninstall-safe-chain.ps1
+          cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
+          cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
 
       - name: Upload binaries to existing GitHub Release
         env:
