@@ -44,9 +44,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
       - name: Setup safe-chain
-        run: |
-          npm i -g @aikidosec/safe-chain
-          safe-chain setup-ci
+        run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
 
       - name: Set the version in safe-chain package
         run: npm --no-git-tag-version version ${{ needs.set-version.outputs.version }} --workspace=packages/safe-chain
