@@ -110,9 +110,7 @@ jobs:
           node-version: "lts/*"
 
       - name: Setup safe-chain
-        run: |
-          npm i -g @aikidosec/safe-chain@1.0.24
-          safe-chain setup-ci
+        run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
 
       - name: Install dependencies (root)
         run: npm ci
