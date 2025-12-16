@@ -77,21 +77,33 @@ jobs:
 
       - name: Rename binaries to include platform and architecture
         run: |
-          mv binaries/safe-chain-macos-x64/safe-chain binaries/safe-chain-macos-x64/safe-chain-macos-x64
-          mv binaries/safe-chain-macos-arm64/safe-chain binaries/safe-chain-macos-arm64/safe-chain-macos-arm64
-          mv binaries/safe-chain-linux-x64/safe-chain binaries/safe-chain-linux-x64/safe-chain-linux-x64
-          mv binaries/safe-chain-linux-arm64/safe-chain binaries/safe-chain-linux-arm64/safe-chain-linux-arm64
-          mv binaries/safe-chain-win-x64/safe-chain.exe binaries/safe-chain-win-x64/safe-chain-win-x64.exe
-          mv binaries/safe-chain-win-arm64/safe-chain.exe binaries/safe-chain-win-arm64/safe-chain-win-arm64.exe
+          mkdir release-artifacts
+          mv binaries/safe-chain-macos-x64/safe-chain release-artifacts/safe-chain-macos-x64/safe-chain-macos-x64
+          mv binaries/safe-chain-macos-arm64/safe-chain release-artifacts/safe-chain-macos-arm64/safe-chain-macos-arm64
+          mv binaries/safe-chain-linux-x64/safe-chain release-artifacts/safe-chain-linux-x64/safe-chain-linux-x64
+          mv binaries/safe-chain-linux-arm64/safe-chain release-artifacts/safe-chain-linux-arm64/safe-chain-linux-arm64
+          mv binaries/safe-chain-win-x64/safe-chain.exe release-artifacts/safe-chain-win-x64/safe-chain-win-x64.exe
+          mv binaries/safe-chain-win-arm64/safe-chain.exe release-artifacts/safe-chain-win-arm64/safe-chain-win-arm64.exe
+
+      - name: Move install scripts and hard-code version
+        run: |
+          sed 's/$(fetch_latest_version)/${VERSION}/' install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
+          sed "s/Get-LatestVersion/\"${VERSION}\"/" install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
+          cp install-scripts/uninstall-safe-chain.sh
+          cp install-scripts/uninstall-safe-chain.ps1
 
       - name: Upload binaries to existing GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ needs.set-version.outputs.version }} \
-            binaries/safe-chain-macos-x64/* \
-            binaries/safe-chain-macos-arm64/* \
-            binaries/safe-chain-linux-x64/* \
-            binaries/safe-chain-linux-arm64/* \
-            binaries/safe-chain-win-x64/* \
-            binaries/safe-chain-win-arm64/*
+            release-artifacts/safe-chain-macos-x64/* \
+            release-artifacts/safe-chain-macos-arm64/* \
+            release-artifacts/safe-chain-linux-x64/* \
+            release-artifacts/safe-chain-linux-arm64/* \
+            release-artifacts/safe-chain-win-x64/* \
+            release-artifacts/safe-chain-win-arm64/* \
+            release-artifacts/install-safe-chain.sh \
+            release-artifacts/install-safe-chain.ps1 \
+            release-artifacts/safe-chain-win-arm64/* \
+            release-artifacts/safe-chain-win-arm64/*
