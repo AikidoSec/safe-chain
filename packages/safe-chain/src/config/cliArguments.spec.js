@@ -276,7 +276,7 @@ describe("initializeCliArguments", () => {
   it("should warn on deprecated --include-python for setup", () => {
     const warnings = [];
     const originalWriteWarning = ui.writeWarning;
-    ui.writeWarning = (msg, ...rest) => {
+    ui.writeWarning = (msg, ..._rest) => {
       warnings.push(String(msg));
     };
     try {
@@ -294,7 +294,7 @@ describe("initializeCliArguments", () => {
   it("should warn on deprecated --include-python for setup-ci", () => {
     const warnings = [];
     const originalWriteWarning = ui.writeWarning;
-    ui.writeWarning = (msg, ...rest) => {
+    ui.writeWarning = (msg, ..._rest) => {
       warnings.push(String(msg));
     };
     try {
