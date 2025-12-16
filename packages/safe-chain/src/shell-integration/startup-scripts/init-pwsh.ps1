@@ -38,6 +38,33 @@ function npm {
     Invoke-WrappedCommand "npm" $args
 }
 
+function pip {
+    Invoke-WrappedCommand "pip" $args
+}
+
+function pip3 {
+    Invoke-WrappedCommand "pip3" $args
+}
+
+function uv {
+    Invoke-WrappedCommand "uv" $args
+}
+
+function poetry {
+    Invoke-WrappedCommand "poetry" $args
+}
+
+# `python -m pip`, `python -m pip3`.
+function python {
+    Invoke-WrappedCommand 'python' $args
+}
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3 {
+    Invoke-WrappedCommand 'python3' $args
+}
+
+
 function Write-SafeChainWarning {
     param([string]$Command)
     
