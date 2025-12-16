@@ -130,8 +130,7 @@ function hasFlagArg(args, flagName) {
  * @returns {void}
  */
 export function checkDeprecatedPythonFlag(args) {
-  if (!Array.isArray(args)) return;
-  if (args.includes("--include-python")) {
+  if (hasFlagArg(args, "--include-python")) {
     ui.writeWarning(
       "--include-python is deprecated and ignored. Python tooling is included by default."
     );

@@ -4,7 +4,6 @@
 
 param(
     [switch]$ci,
-    # Backwards compatibility: deprecated; warn and ignore if supplied
     [switch]$includepython
 )
 
