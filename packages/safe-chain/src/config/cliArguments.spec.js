@@ -6,6 +6,7 @@ import {
   getSkipMinimumPackageAge,
   getMinimumPackageAgeHours,
 } from "./cliArguments.js";
+import { ui } from "../environment/userInteraction.js";
 
 describe("initializeCliArguments", () => {
   it("should return all args when no safe-chain args are present", () => {
@@ -270,5 +271,41 @@ describe("initializeCliArguments", () => {
     initializeCliArguments(args);
 
     assert.strictEqual(getMinimumPackageAgeHours(), "-24");
+  });
+
+  it("should warn on deprecated --include-python for setup", () => {
+    const warnings = [];
+    const originalWriteWarning = ui.writeWarning;
+    ui.writeWarning = (msg, ..._rest) => {
+      warnings.push(String(msg));
+    };
+    try {
+      const argv = ["node", "safe-chain", "setup", "--include-python"];
+      initializeCliArguments(argv);
+      assert.ok(
+        warnings.some((m) => m.includes("--include-python is deprecated")),
+        "Expected a deprecation warning for --include-python in setup"
+      );
+    } finally {
+      ui.writeWarning = originalWriteWarning;
+    }
+  });
+
+  it("should warn on deprecated --include-python for setup-ci", () => {
+    const warnings = [];
+    const originalWriteWarning = ui.writeWarning;
+    ui.writeWarning = (msg, ..._rest) => {
+      warnings.push(String(msg));
+    };
+    try {
+      const argv = ["node", "safe-chain", "setup-ci", "--include-python"];
+      initializeCliArguments(argv);
+      assert.ok(
+        warnings.some((m) => m.includes("--include-python is deprecated")),
+        "Expected a deprecation warning for --include-python in setup-ci"
+      );
+    } finally {
+      ui.writeWarning = originalWriteWarning;
+    }
   });
 });

@@ -3,7 +3,8 @@
 # Usage with "iex (iwr {url} -UseBasicParsing)" --> See README.md
 
 param(
-    [switch]$ci
+    [switch]$ci,
+    [switch]$includepython
 )
 
 $Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
@@ -118,6 +119,9 @@ function Install-SafeChain {
     $installMsg = "Installing safe-chain $Version"
     if ($ci) {
         $installMsg += " in ci"
+    }
+    if ($includepython) {
+        Write-Warn "-includepython is deprecated and ignored. Python ecosystem is now included by default."
     }
 
     Write-Info $installMsg
