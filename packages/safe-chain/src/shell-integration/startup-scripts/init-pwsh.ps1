@@ -1,5 +1,7 @@
 # Use cross-platform path separator (: on Unix, ; on Windows)
-$pathSeparator = if ($IsWindows) { ';' } else { ':' }
+# $IsWindows is only available in PowerShell Core 6.0+. If it doesn't exist, assume Windows PowerShell
+$isWindowsPlatform = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
+$pathSeparator = if ($isWindowsPlatform) { ';' } else { ':' }
 $safeChainBin = Join-Path (Join-Path $HOME '.safe-chain') 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
