@@ -1,32 +1,24 @@
 import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 
-describe("getScanTimeout", () => {
+let configFileContent = undefined;
+mock.module("fs", {
+  namedExports: {
+    existsSync: () => configFileContent !== undefined,
+    readFileSync: () => configFileContent,
+    writeFileSync: (content) => (configFileContent = content),
+    mkdirSync: () => {},
+  },
+});
+
+describe("getScanTimeout", async () => {
   let originalEnv;
-  let fsMock;
-  let getScanTimeout;
+
+  const { getScanTimeout } = await import("./configFile.js");
 
   beforeEach(async () => {
     // Save original environment
     originalEnv = process.env.AIKIDO_SCAN_TIMEOUT_MS;
-
-    // Mock fs module
-    fsMock = {
-      existsSync: mock.fn(() => false),
-      readFileSync: mock.fn(() => "{}"),
-      writeFileSync: mock.fn(),
-      mkdirSync: mock.fn(),
-    };
-
-    mock.module("fs", {
-      namedExports: fsMock,
-    });
-
-    // Re-import the module to get the mocked version
-    const configFileModule = await import(
-      `./configFile.js?update=${Date.now()}`
-    );
-    getScanTimeout = configFileModule.getScanTimeout;
   });
 
   afterEach(() => {
@@ -37,14 +29,12 @@ describe("getScanTimeout", () => {
       delete process.env.AIKIDO_SCAN_TIMEOUT_MS;
     }
 
-    // Reset all mocks
-    mock.restoreAll();
+    configFileContent = undefined;
   });
 
   it("should return default timeout of 10000ms when no config or env var is set", () => {
     delete process.env.AIKIDO_SCAN_TIMEOUT_MS;
-    // Mock: config file doesn't exist
-    fsMock.existsSync.mock.mockImplementation(() => false);
+    configFileContent = undefined;
 
     const timeout = getScanTimeout();
 
@@ -53,11 +43,7 @@ describe("getScanTimeout", () => {
 
   it("should return timeout from config file when set", () => {
     delete process.env.AIKIDO_SCAN_TIMEOUT_MS;
-    // Mock: config file exists with scanTimeout: 5000
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: 5000 })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: 5000 });
 
     const timeout = getScanTimeout();
 
@@ -66,11 +52,7 @@ describe("getScanTimeout", () => {
 
   it("should prioritize environment variable over config file", () => {
     process.env.AIKIDO_SCAN_TIMEOUT_MS = "20000";
-    // Mock: config file exists with scanTimeout: 5000
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: 5000 })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: 5000 });
 
     const timeout = getScanTimeout();
 
@@ -79,11 +61,7 @@ describe("getScanTimeout", () => {
 
   it("should handle invalid environment variable and fall back to config", () => {
     process.env.AIKIDO_SCAN_TIMEOUT_MS = "invalid";
-    // Mock: config file exists with scanTimeout: 7000
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: 7000 })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: 7000 });
 
     const timeout = getScanTimeout();
 
@@ -91,8 +69,7 @@ describe("getScanTimeout", () => {
   });
 
   it("should ignore zero and negative values and fall back to default", () => {
-    // Mock: config file doesn't exist
-    fsMock.existsSync.mock.mockImplementation(() => false);
+    configFileContent = undefined;
 
     process.env.AIKIDO_SCAN_TIMEOUT_MS = "0";
 
@@ -107,11 +84,7 @@ describe("getScanTimeout", () => {
 
   it("should ignore textual non-numeric values in environment variable and fall back to config", () => {
     process.env.AIKIDO_SCAN_TIMEOUT_MS = "fast";
-    // Mock: config file exists with scanTimeout: 8000
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: 8000 })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: 8000 });
 
     const timeout = getScanTimeout();
 
@@ -120,11 +93,7 @@ describe("getScanTimeout", () => {
 
   it("should ignore textual non-numeric values in config file and fall back to default", () => {
     delete process.env.AIKIDO_SCAN_TIMEOUT_MS;
-    // Mock: config file exists with scanTimeout: "slow"
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: "slow" })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: "slow" });
 
     const timeout = getScanTimeout();
 
@@ -133,11 +102,7 @@ describe("getScanTimeout", () => {
 
   it("should ignore textual non-numeric values in both env and config, fall back to default", () => {
     process.env.AIKIDO_SCAN_TIMEOUT_MS = "quick";
-    // Mock: config file exists with scanTimeout: "medium"
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: "medium" })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: "medium" });
 
     const timeout = getScanTimeout();
 
@@ -146,11 +111,7 @@ describe("getScanTimeout", () => {
 
   it("should ignore mixed alphanumeric strings in environment variable", () => {
     process.env.AIKIDO_SCAN_TIMEOUT_MS = "5000ms";
-    // Mock: config file exists with scanTimeout: 6000
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: 6000 })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: 6000 });
 
     const timeout = getScanTimeout();
 
@@ -159,11 +120,7 @@ describe("getScanTimeout", () => {
 
   it("should ignore mixed alphanumeric strings in config file", () => {
     delete process.env.AIKIDO_SCAN_TIMEOUT_MS;
-    // Mock: config file exists with scanTimeout: "3000ms"
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: "3000ms" })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: "3000ms" });
 
     const timeout = getScanTimeout();
 
@@ -171,37 +128,15 @@ describe("getScanTimeout", () => {
   });
 });
 
-describe("getMinimumPackageAgeHours", () => {
-  let fsMock;
-  let getMinimumPackageAgeHours;
-
-  beforeEach(async () => {
-    // Mock fs module
-    fsMock = {
-      existsSync: mock.fn(() => false),
-      readFileSync: mock.fn(() => "{}"),
-      writeFileSync: mock.fn(),
-      mkdirSync: mock.fn(),
-    };
-
-    mock.module("fs", {
-      namedExports: fsMock,
-    });
-
-    // Re-import the module to get the mocked version
-    const configFileModule = await import(
-      `./configFile.js?update=${Date.now()}`
-    );
-    getMinimumPackageAgeHours = configFileModule.getMinimumPackageAgeHours;
-  });
+describe("getMinimumPackageAgeHours", async () => {
+  const { getMinimumPackageAgeHours } = await import("./configFile.js");
 
   afterEach(() => {
-    // Reset all mocks
-    mock.restoreAll();
+    configFileContent = undefined;
   });
 
   it("should return null when config file doesn't exist", () => {
-    fsMock.existsSync.mock.mockImplementation(() => false);
+    configFileContent = undefined;
 
     const hours = getMinimumPackageAgeHours();
 
@@ -209,10 +144,7 @@ describe("getMinimumPackageAgeHours", () => {
   });
 
   it("should return null when config file exists but minimumPackageAgeHours is not set", () => {
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ scanTimeout: 5000 })
-    );
+    configFileContent = JSON.stringify({ scanTimeout: 5000 });
 
     const hours = getMinimumPackageAgeHours();
 
@@ -220,10 +152,7 @@ describe("getMinimumPackageAgeHours", () => {
   });
 
   it("should return value from config file when set to valid number", () => {
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ minimumPackageAgeHours: 48 })
-    );
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: 48 });
 
     const hours = getMinimumPackageAgeHours();
 
@@ -231,10 +160,7 @@ describe("getMinimumPackageAgeHours", () => {
   });
 
   it("should handle string numbers in config file", () => {
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ minimumPackageAgeHours: "72" })
-    );
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: "72" });
 
     const hours = getMinimumPackageAgeHours();
 
@@ -242,10 +168,7 @@ describe("getMinimumPackageAgeHours", () => {
   });
 
   it("should handle decimal values", () => {
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ minimumPackageAgeHours: 1.5 })
-    );
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: 1.5 });
 
     const hours = getMinimumPackageAgeHours();
 
@@ -253,21 +176,15 @@ describe("getMinimumPackageAgeHours", () => {
   });
 
   it("should return null for non-numeric strings", () => {
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ minimumPackageAgeHours: "invalid" })
-    );
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: "invalid" });
 
     const hours = getMinimumPackageAgeHours();
 
     assert.strictEqual(hours, undefined);
   });
 
-  it("should return null for values with units suffix", () => {
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() =>
-      JSON.stringify({ minimumPackageAgeHours: "48h" })
-    );
+  it("should return undefined for values with units suffix", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: "48h" });
 
     const hours = getMinimumPackageAgeHours();
 
@@ -275,11 +192,42 @@ describe("getMinimumPackageAgeHours", () => {
   });
 
   it("should handle malformed JSON and return null", () => {
-    fsMock.existsSync.mock.mockImplementation(() => true);
-    fsMock.readFileSync.mock.mockImplementation(() => "{ invalid json");
+    configFileContent = "{ invalid json";
 
     const hours = getMinimumPackageAgeHours();
 
     assert.strictEqual(hours, undefined);
+  });
+
+  it("should return 0 when minimumPackageAgeHours is set to 0", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: 0 });
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, 0);
+  });
+
+  it("should return 0 when minimumPackageAgeHours is set to string '0'", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: "0" });
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, 0);
+  });
+
+  it("should handle negative numeric values", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: -24 });
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, -24);
+  });
+
+  it("should handle negative string values", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: "-48" });
+
+    const hours = getMinimumPackageAgeHours();
+
+    assert.strictEqual(hours, -48);
   });
 });

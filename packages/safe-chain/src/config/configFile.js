@@ -67,7 +67,7 @@ function validateMinimumPackageAgeHours(value) {
  */
 export function getMinimumPackageAgeHours() {
   const config = readConfigFile();
-  if (config.minimumPackageAgeHours) {
+  if (config.minimumPackageAgeHours !== undefined) {
     const validated = validateMinimumPackageAgeHours(
       config.minimumPackageAgeHours
     );

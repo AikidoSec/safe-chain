@@ -15,7 +15,7 @@ describe("E2E: poetry coverage", () => {
     await container.start();
 
     const installationShell = await container.openShell("zsh");
-    await installationShell.runCommand("safe-chain setup --include-python");
+    await installationShell.runCommand("safe-chain setup");
     
     // Clear poetry cache
     await installationShell.runCommand("command poetry cache clear pypi --all -n");

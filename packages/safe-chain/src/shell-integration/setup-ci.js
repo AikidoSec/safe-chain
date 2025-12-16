@@ -1,12 +1,10 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
-import { getPackageManagerList, knownAikidoTools } from "./helpers.js";
+import { getPackageManagerList, knownAikidoTools, getShimsDir } from "./helpers.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
-import { includePython } from "../config/cliArguments.js";
-import { ECOSYSTEM_PY } from "../config/settings.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -32,7 +30,7 @@ export async function setupCi() {
   );
   ui.emptyLine();
 
-  const shimsDir = path.join(os.homedir(), ".safe-chain", "shims");
+  const shimsDir = getShimsDir();
   const binDir = path.join(os.homedir(), ".safe-chain", "bin");
   // Create the shims directory if it doesn't exist
   if (!fs.existsSync(shimsDir)) {
@@ -162,9 +160,5 @@ function modifyPathForCi(shimsDir, binDir) {
 }
 
 function getToolsToSetup() {
-  if (includePython()) {
-    return knownAikidoTools;
-  } else {
-    return knownAikidoTools.filter((tool) => tool.ecoSystem !== ECOSYSTEM_PY);
-  }
+  return knownAikidoTools;
 }

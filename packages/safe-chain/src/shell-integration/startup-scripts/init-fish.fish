@@ -39,6 +39,33 @@ function npm
     wrapSafeChainCommand "npm" $argv
 end
 
+
+function pip
+    wrapSafeChainCommand "pip" $argv
+end
+
+function pip3
+    wrapSafeChainCommand "pip3" $argv
+end
+
+function uv
+    wrapSafeChainCommand "uv" $argv
+end
+
+function poetry
+    wrapSafeChainCommand "poetry" $argv
+end
+
+# `python -m pip`, `python -m pip3`.
+function python
+    wrapSafeChainCommand "python" $argv
+end
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3
+    wrapSafeChainCommand "python3" $argv
+end
+
 function printSafeChainWarning
     set original_cmd $argv[1]
     

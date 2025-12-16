@@ -15,7 +15,7 @@ describe("E2E: pip coverage", () => {
     await container.start();
 
     const installationShell = await container.openShell("zsh");
-    await installationShell.runCommand("safe-chain setup --include-python");
+    await installationShell.runCommand("safe-chain setup");
 
     // Clear pip cache before each test to ensure fresh downloads through proxy
     await installationShell.runCommand("pip3 cache purge");

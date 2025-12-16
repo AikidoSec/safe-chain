@@ -19,10 +19,10 @@ Aikido Safe Chain supports the following package managers:
 - 📦 **pnpx**
 - 📦 **bun**
 - 📦 **bunx**
-- 📦 **pip** (beta)
-- 📦 **pip3** (beta)
-- 📦 **uv** (beta)
-- 📦 **poetry** (beta)
+- 📦 **pip**
+- 📦 **pip3**
+- 📦 **uv**
+- 📦 **poetry**
 
 # Usage
 
@@ -34,30 +34,14 @@ Installing the Aikido Safe Chain is easy with our one-line installer.
 
 ### Unix/Linux/macOS
 
-**Default installation (JavaScript packages only):**
-
 ```shell
 curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
 ```
 
-**Include Python support (pip/pip3/uv):**
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
-```
-
 ### Windows (PowerShell)
-
-**Default installation (JavaScript packages only):**
 
 ```powershell
 iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
-```
-
-**Include Python support (pip/pip3/uv):**
-
-```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -includepython"
 ```
 
 ### Verify the installation
@@ -74,7 +58,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
    npm install safe-chain-test
    ```
 
-   For Python (if you enabled Python support):
+   For Python:
 
    ```shell
    pip3 install safe-chain-pi-test
@@ -193,30 +177,14 @@ Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD envir
 
 ### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
-**JavaScript only:**
-
 ```shell
 curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
 ```
 
-**With Python support:**
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
-```
-
 ### Windows (Azure Pipelines, etc.)
-
-**JavaScript only:**
 
 ```powershell
 iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
-```
-
-**With Python support:**
-
-```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci -includepython"
 ```
 
 ## Supported Platforms
@@ -234,13 +202,11 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     cache: "npm"
 
 - name: Install safe-chain
-  run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+  run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
 
 - name: Install dependencies
   run: npm ci
 ```
-
-> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv/poetry) support.
 
 ## Azure DevOps Example
 
@@ -250,13 +216,11 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     versionSpec: "22.x"
   displayName: "Install Node.js"
 
-- script: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+- script: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
   displayName: "Install safe-chain"
 
 - script: npm ci
   displayName: "Install dependencies"
 ```
-
-> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv/poetry) support.
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
