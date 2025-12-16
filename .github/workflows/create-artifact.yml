@@ -59,8 +59,14 @@ jobs:
         with:
           node-version: "20.x"
 
-      - name: Setup safe-chain
+      - name: Setup safe-chain (Mac/Linux)
+        if: runner.os != 'Windows'
         run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+
+      - name: Setup safe-chain (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
