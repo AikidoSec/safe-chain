@@ -1,3 +1,5 @@
+import { ui } from "../environment/userInteraction.js";
+
 /**
  * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined}}
  */
@@ -33,7 +35,7 @@ export function initializeCliArguments(args) {
   setLoggingLevel(safeChainArgs);
   setSkipMinimumPackageAge(safeChainArgs);
   setMinimumPackageAgeHours(safeChainArgs);
-
+  checkDeprecatedPythonFlag(args);
   return remainingArgs;
 }
 
@@ -119,4 +121,19 @@ function hasFlagArg(args, flagName) {
     }
   }
   return false;
+}
+
+/**
+ * Emits a deprecation warning for legacy --include-python flag
+ *
+ * @param {string[]} args
+ * @returns {void}
+ */
+export function checkDeprecatedPythonFlag(args) {
+  if (!Array.isArray(args)) return;
+  if (args.includes("--include-python")) {
+    ui.writeWarning(
+      "--include-python is deprecated and ignored. Python tooling is included by default."
+    );
+  }
 }

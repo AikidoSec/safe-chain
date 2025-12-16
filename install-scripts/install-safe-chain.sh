@@ -134,6 +134,9 @@ parse_arguments() {
             --ci)
                 USE_CI_SETUP=true
                 ;;
+            --include-python)
+                warn "--include-python is deprecated and ignored. Python ecosystem is now included by default."
+                ;;
             *)
                 error "Unknown argument: $arg"
                 ;;
