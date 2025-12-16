@@ -63,10 +63,10 @@ jobs:
           cp LICENSE packages/safe-chain/
           cp -r docs packages/safe-chain/
 
-      - name: Publish to npm
-        run: |
-          echo "Publishing version ${{ needs.set-version.outputs.version }} to NPM"
-          npm publish --workspace=packages/safe-chain --access public --provenance
+      # - name: Publish to npm
+      #   run: |
+      #     echo "Publishing version ${{ needs.set-version.outputs.version }} to NPM"
+      #     npm publish --workspace=packages/safe-chain --access public --provenance
 
       - name: Download all binary artifacts
         uses: actions/download-artifact@v4
