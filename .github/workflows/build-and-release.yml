@@ -105,5 +105,5 @@ jobs:
             release-artifacts/safe-chain-win-arm64/* \
             release-artifacts/install-safe-chain.sh \
             release-artifacts/install-safe-chain.ps1 \
-            release-artifacts/safe-chain-win-arm64/* \
-            release-artifacts/safe-chain-win-arm64/*
+            release-artifacts/uninstall-safe-chain.sh \
+            release-artifacts/uninstall-safe-chain.ps1
