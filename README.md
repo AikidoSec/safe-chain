@@ -191,6 +191,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
 
 - ✅ **GitHub Actions**
 - ✅ **Azure Pipelines**
+- ✅ **CircleCI**
 
 ## GitHub Actions Example
 
@@ -224,3 +225,25 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
 ```
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
+
+## CircleCI Example
+
+```yaml
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - checkout
+      - run: |
+          curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+      - run: npm ci
+      - run: npm test
+workflows:
+  build_and_test:
+    jobs:
+      - build
+```
+
+Note: `setup-ci` writes the Safe Chain shims to `~/.safe-chain/shims` and persists PATH via CircleCI's `BASH_ENV`, so subsequent steps automatically use the wrapped package managers.
