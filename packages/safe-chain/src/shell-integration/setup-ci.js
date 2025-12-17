@@ -160,8 +160,8 @@ function modifyPathForCi(shimsDir, binDir) {
 
   if (process.env.BASH_ENV) {
     // In CircleCI, persisting PATH across steps is done by appending shell exports
-    // to the file referenced by BASH_ENV. CircleCI sources this file for each step.
-    const exportLine = `export PATH=\"${shimsDir}:${binDir}:$PATH\"` + os.EOL;
+    // to the file referenced by BASH_ENV. CircleCI sources this file for 'run' each step.
+    const exportLine = `export PATH="${shimsDir}:${binDir}:$PATH"` + os.EOL;
     fs.appendFileSync(process.env.BASH_ENV, exportLine, "utf-8");
     ui.writeInformation(`Added shims directory to BASH_ENV for CircleCI.`);
   }
