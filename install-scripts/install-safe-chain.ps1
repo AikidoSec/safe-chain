@@ -157,7 +157,7 @@ function Install-SafeChain {
     # Check if the requested version is already installed
     if (Test-VersionInstalled -RequestedVersion $Version) {
         Write-Info "safe-chain $Version is already installed"
-        exit 0
+        return
     }
 
     # Build installation message
