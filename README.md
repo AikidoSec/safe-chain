@@ -35,14 +35,30 @@ Installing the Aikido Safe Chain is easy with our one-line installer.
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1" -UseBasicParsing)
 ```
+
+### Pinning to a specific version
+
+To install a specific version instead of the latest, replace `latest` with the version number in the URL (available from version 1.3.2 onwards):
+
+**Unix/Linux/macOS:**
+```shell
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.ps1" -UseBasicParsing)
+```
+
+You can find all available versions on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
 
 ### Verify the installation
 
@@ -105,13 +121,13 @@ To uninstall the Aikido Safe Chain, use our one-line uninstaller:
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/uninstall-safe-chain.sh | sh
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/uninstall-safe-chain.sh | sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/uninstall-safe-chain.ps1" -UseBasicParsing)
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/uninstall-safe-chain.ps1" -UseBasicParsing)
 ```
 
 **❗Restart your terminal** after uninstalling to ensure all aliases are removed.
@@ -178,13 +194,13 @@ Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD envir
 ### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 ```
 
 ### Windows (Azure Pipelines, etc.)
 
 ```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
+iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -ci"
 ```
 
 ## Supported Platforms
@@ -203,7 +219,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     cache: "npm"
 
 - name: Install safe-chain
-  run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+  run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
 - name: Install dependencies
   run: npm ci
@@ -217,7 +233,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     versionSpec: "22.x"
   displayName: "Install Node.js"
 
-- script: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+- script: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
   displayName: "Install safe-chain"
 
 - script: npm ci
