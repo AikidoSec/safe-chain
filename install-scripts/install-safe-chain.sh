@@ -54,6 +54,38 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Get currently installed version of safe-chain
+get_installed_version() {
+    if ! command_exists safe-chain; then
+        echo ""
+        return
+    fi
+
+    # Extract version from "Current safe-chain version: X.Y.Z" output
+    installed_version=$(safe-chain -v 2>/dev/null | grep "Current safe-chain version:" | sed -E 's/.*: (.*)/\1/')
+    echo "$installed_version"
+}
+
+# Check if the requested version is already installed
+is_version_installed() {
+    requested_version="$1"
+    installed_version=$(get_installed_version)
+
+    if [ -z "$installed_version" ]; then
+        return 1  # Not installed
+    fi
+
+    # Strip leading 'v' from versions if present for comparison
+    requested_clean=$(echo "$requested_version" | sed 's/^v//')
+    installed_clean=$(echo "$installed_version" | sed 's/^v//')
+
+    if [ "$requested_clean" = "$installed_clean" ]; then
+        return 0  # Same version installed
+    else
+        return 1  # Different version installed
+    fi
+}
+
 # Fetch latest release version tag from GitHub
 fetch_latest_version() {
     # Try using GitHub API to get the latest release tag
@@ -153,6 +185,12 @@ main() {
     if [ -z "$VERSION" ]; then
         info "Fetching latest release version..."
         VERSION=$(fetch_latest_version)
+    fi
+
+    # Check if the requested version is already installed
+    if is_version_installed "$VERSION"; then
+        info "safe-chain ${VERSION} is already installed"
+        exit 0
     fi
 
     # Build installation message
