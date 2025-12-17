@@ -1,5 +1,7 @@
 # Use cross-platform path separator (: on Unix, ; on Windows)
-$pathSeparator = if ($IsWindows) { ';' } else { ':' }
+# $IsWindows is only available in PowerShell Core 6.0+. If it doesn't exist, assume Windows PowerShell
+$isWindowsPlatform = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
+$pathSeparator = if ($isWindowsPlatform) { ';' } else { ':' }
 $safeChainBin = Join-Path (Join-Path $HOME '.safe-chain') 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
@@ -37,6 +39,33 @@ function npm {
 
     Invoke-WrappedCommand "npm" $args
 }
+
+function pip {
+    Invoke-WrappedCommand "pip" $args
+}
+
+function pip3 {
+    Invoke-WrappedCommand "pip3" $args
+}
+
+function uv {
+    Invoke-WrappedCommand "uv" $args
+}
+
+function poetry {
+    Invoke-WrappedCommand "poetry" $args
+}
+
+# `python -m pip`, `python -m pip3`.
+function python {
+    Invoke-WrappedCommand 'python' $args
+}
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3 {
+    Invoke-WrappedCommand 'python3' $args
+}
+
 
 function Write-SafeChainWarning {
     param([string]$Command)

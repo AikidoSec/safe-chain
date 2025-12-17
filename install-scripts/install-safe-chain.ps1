@@ -31,6 +31,46 @@ function Write-Error-Custom {
     exit 1
 }
 
+# Get currently installed version of safe-chain
+function Get-InstalledVersion {
+    # Check if safe-chain command exists
+    if (-not (Get-Command safe-chain -ErrorAction SilentlyContinue)) {
+        return $null
+    }
+
+    try {
+        # Execute safe-chain -v and capture output
+        $output = & safe-chain -v 2>&1
+
+        # Extract version from "Current safe-chain version: X.Y.Z" output
+        if ($output -match "Current safe-chain version:\s*(.+)") {
+            return $matches[1].Trim()
+        }
+
+        return $null
+    }
+    catch {
+        return $null
+    }
+}
+
+# Check if the requested version is already installed
+function Test-VersionInstalled {
+    param([string]$RequestedVersion)
+
+    $installedVersion = Get-InstalledVersion
+
+    if ([string]::IsNullOrWhiteSpace($installedVersion)) {
+        return $false
+    }
+
+    # Strip leading 'v' from versions if present for comparison
+    $requestedClean = $RequestedVersion -replace '^v', ''
+    $installedClean = $installedVersion -replace '^v', ''
+
+    return $requestedClean -eq $installedClean
+}
+
 # Fetch latest release version tag from GitHub
 function Get-LatestVersion {
     try {
@@ -115,13 +155,19 @@ function Install-SafeChain {
         $Version = Get-LatestVersion
     }
 
+    # Check if the requested version is already installed
+    if (Test-VersionInstalled -RequestedVersion $Version) {
+        Write-Info "safe-chain $Version is already installed"
+        return
+    }
+
     # Build installation message
     $installMsg = "Installing safe-chain $Version"
-    if ($includepython) {
-        $installMsg += " with python"
-    }
     if ($ci) {
         $installMsg += " in ci"
+    }
+    if ($includepython) {
+        Write-Warn "-includepython is deprecated and ignored. Python ecosystem is now included by default."
     }
 
     Write-Info $installMsg
@@ -181,9 +227,6 @@ function Install-SafeChain {
     # Build setup command based on parameters
     $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
     $setupArgs = @()
-    if ($includepython) {
-        $setupArgs += "--include-python"
-    }
 
     # Execute safe-chain setup
     Write-Info "Running safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })..."

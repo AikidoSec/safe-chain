@@ -57,20 +57,18 @@ describe("E2E: safe-chain teardown command", () => {
     assert.ok(checkScriptsGone.output.includes("missing"), "Scripts directory should be removed after teardown");
   });
 
-  it("safe-chain teardown removes shims directory created by setup-ci --include-python", async () => {
+  it("safe-chain teardown removes shims directory created by setup-ci", async () => {
     const shell = await container.openShell("bash");
 
-    // Run setup-ci with --include-python
-    await shell.runCommand("safe-chain setup-ci --include-python");
-
+    // Run setup-ci
+    await shell.runCommand("safe-chain setup-ci");
     // Verify shims directory exists
     const checkShimsExist = await shell.runCommand("test -d ~/.safe-chain/shims && echo 'exists' || echo 'missing'");
-    assert.ok(checkShimsExist.output.includes("exists"), "Shims directory should exist after setup-ci --include-python");
+    assert.ok(checkShimsExist.output.includes("exists"), "Shims directory should exist after setup-ci");
 
     // Verify Python shims were created
     const checkPythonShims = await shell.runCommand("test -f ~/.safe-chain/shims/pip && echo 'exists' || echo 'missing'");
-    assert.ok(checkPythonShims.output.includes("exists"), "Python shims should exist after setup-ci --include-python");
-
+    assert.ok(checkPythonShims.output.includes("exists"), "Python shims should exist after setup-ci");
     // Run teardown
     await shell.runCommand("safe-chain teardown");
 
@@ -79,15 +77,14 @@ describe("E2E: safe-chain teardown command", () => {
     assert.ok(checkShimsGone.output.includes("missing"), "Shims directory should be removed after teardown");
   });
 
-  it("safe-chain teardown removes scripts directory created by setup --include-python", async () => {
+  it("safe-chain teardown removes scripts directory created by setup", async () => {
     const shell = await container.openShell("bash");
 
-    // Run setup with --include-python
-    await shell.runCommand("safe-chain setup --include-python");
-
+    // Run setup
+    await shell.runCommand("safe-chain setup");
     // Verify scripts directory exists
     const checkScriptsExist = await shell.runCommand("test -d ~/.safe-chain/scripts && echo 'exists' || echo 'missing'");
-    assert.ok(checkScriptsExist.output.includes("exists"), "Scripts directory should exist after setup --include-python");
+    assert.ok(checkScriptsExist.output.includes("exists"), "Scripts directory should exist after setup");
 
     // Run teardown
     await shell.runCommand("safe-chain teardown");

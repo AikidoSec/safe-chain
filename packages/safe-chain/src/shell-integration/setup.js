@@ -4,7 +4,6 @@ import { detectShells } from "./shellDetection.js";
 import { knownAikidoTools, getPackageManagerList, getScriptsDir } from "./helpers.js";
 import fs from "fs";
 import path from "path";
-import { includePython } from "../config/cliArguments.js";
 import { fileURLToPath } from "url";
 
 /** @type {string} */
@@ -118,7 +117,7 @@ function copyStartupFiles() {
     // Use absolute path for source
     const sourcePath = path.join(
       dirname,
-      includePython() ? "startup-scripts/include-python" : "startup-scripts",
+      "startup-scripts",
       file
     );
     fs.copyFileSync(sourcePath, targetPath);
