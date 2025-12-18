@@ -160,6 +160,15 @@ export function readDatabaseFromLocalCache() {
   }
 }
 
+/** @type {SafeChainConfig} */
+const emptyConfig = {
+  scanTimeout: undefined,
+  minimumPackageAgeHours: undefined,
+  npm: {
+    customRegistries: undefined,
+  },
+};
+
 /**
  * @returns {SafeChainConfig}
  */
@@ -167,26 +176,14 @@ function readConfigFile() {
   const configFilePath = getConfigFilePath();
 
   if (!fs.existsSync(configFilePath)) {
-    return {
-      scanTimeout: undefined,
-      minimumPackageAgeHours: undefined,
-      npm: {
-        customRegistries: undefined,
-      },
-    };
+    return emptyConfig;
   }
 
   try {
     const data = fs.readFileSync(configFilePath, "utf8");
     return JSON.parse(data);
   } catch {
-    return {
-      scanTimeout: undefined,
-      minimumPackageAgeHours: undefined,
-      npm: {
-        customRegistries: undefined,
-      },
-    };
+    return emptyConfig;
   }
 }
 
