@@ -11,7 +11,7 @@ import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
  * @return {NodeJS.ProcessEnv} Modified environment object
  */
 function getPipXCaBundleEnvironmentVariables(env, combinedCaPath) {
-  let retVal = env;
+  let retVal = { ...env };
 
   // SSL_CERT_FILE: Used by Python SSL libraries and underlying HTTP clients
   if (env.SSL_CERT_FILE) {
