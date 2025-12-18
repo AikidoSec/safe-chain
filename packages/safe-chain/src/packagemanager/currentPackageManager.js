@@ -10,9 +10,9 @@ import {
 } from "./pnpm/createPackageManager.js";
 import { createYarnPackageManager } from "./yarn/createPackageManager.js";
 import { createPipPackageManager } from "./pip/createPackageManager.js";
-import { createPipXPackageManager } from "./pipx/createPipXPackageManager.js";
 import { createUvPackageManager } from "./uv/createUvPackageManager.js";
 import { createPoetryPackageManager } from "./poetry/createPoetryPackageManager.js";
+import { createPipXPackageManager } from "./pipx/createPipXPackageManager.js";
 
 /**
  * @type {{packageManagerName: PackageManager | null}}
