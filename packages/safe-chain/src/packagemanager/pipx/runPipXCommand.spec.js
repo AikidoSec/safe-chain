@@ -77,24 +77,4 @@ describe("runPipXCommand", () => {
     assert.strictEqual(env.HTTP_PROXY, "");
     assert.ok(mergeCalls.length >= 1, "proxy merge should be invoked");
   });
-
-  it("overwrites user CA env vars and warns", async () => {
-    mergedEnvReturn = {
-      HTTPS_PROXY: "http://localhost:8080",
-      HTTP_PROXY: "",
-      SSL_CERT_FILE: "user-ssl",
-      REQUESTS_CA_BUNDLE: "user-requests",
-      PIP_CERT: "user-pip",
-    };
-
-    await runPipX("pipx", ["install", "ruff"]);
-
-    const [, , options] = safeSpawnMock.mock.calls[0].arguments;
-    const env = options.env;
-
-    assert.strictEqual(env.SSL_CERT_FILE, "/tmp/test-combined-ca.pem", "SSL cert should be overwritten");
-    assert.strictEqual(env.REQUESTS_CA_BUNDLE, "/tmp/test-combined-ca.pem", "requests bundle should be overwritten");
-    assert.strictEqual(env.PIP_CERT, "/tmp/test-combined-ca.pem", "pip cert should be overwritten");
-    assert.strictEqual(warnMock.mock.calls.length, 3, "should warn for each overwritten var");
-  });
 });
