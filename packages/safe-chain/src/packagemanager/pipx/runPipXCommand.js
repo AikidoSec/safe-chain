@@ -8,25 +8,29 @@ import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
  * 
  * @param {NodeJS.ProcessEnv} env - Env object
  * @param {string} combinedCaPath - Path to the combined CA bundle
+ * @return {NodeJS.ProcessEnv} Modified environment object
  */
-function setPipXCaBundleEnvironmentVariables(env, combinedCaPath) {
+function getPipXCaBundleEnvironmentVariables(env, combinedCaPath) {
+  let retVal = env;
+
   // SSL_CERT_FILE: Used by Python SSL libraries and underlying HTTP clients
   if (env.SSL_CERT_FILE) {
     ui.writeWarning("Safe-chain: User defined SSL_CERT_FILE found in environment. It will be overwritten.");
   }
-  env.SSL_CERT_FILE = combinedCaPath;
+  retVal.SSL_CERT_FILE = combinedCaPath;
 
   // REQUESTS_CA_BUNDLE: Used by the requests library (may be used by tooling under pipx)
   if (env.REQUESTS_CA_BUNDLE) {
     ui.writeWarning("Safe-chain: User defined REQUESTS_CA_BUNDLE found in environment. It will be overwritten.");
   }
-  env.REQUESTS_CA_BUNDLE = combinedCaPath;
+  retVal.REQUESTS_CA_BUNDLE = combinedCaPath;
 
   // PIP_CERT: Some underlying pip operations may respect this
   if (env.PIP_CERT) {
     ui.writeWarning("Safe-chain: User defined PIP_CERT found in environment. It will be overwritten.");
   }
-  env.PIP_CERT = combinedCaPath;
+  retVal.PIP_CERT = combinedCaPath;
+  return retVal;
 }
 
 /**
@@ -41,14 +45,14 @@ export async function runPipX(command, args) {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
 
     const combinedCaPath = getCombinedCaBundlePath();
-    setPipXCaBundleEnvironmentVariables(env, combinedCaPath);
+    const modifiedEnv = getPipXCaBundleEnvironmentVariables(env, combinedCaPath);
 
     // Note: pipx uses HTTPS_PROXY and HTTP_PROXY environment variables for proxy configuration
     // These are already set by mergeSafeChainProxyEnvironmentVariables
 
     const result = await safeSpawn(command, args, {
       stdio: "inherit",
-      env,
+      env: modifiedEnv,
     });
 
     return { status: result.status };
