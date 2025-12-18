@@ -97,12 +97,10 @@ export function getNpmCustomRegistries() {
   const npmConfig = /** @type {SafeChainRegistryConfiguration} */ (config.npm);
   const customRegistries = npmConfig.customRegistries;
 
-  // Handle format: ensure it's an array of strings
   if (!Array.isArray(customRegistries)) {
     return [];
   }
 
-  // Filter to only string values (format checking, not validation)
   return customRegistries.filter((item) => typeof item === "string");
 }
 
@@ -160,19 +158,19 @@ export function readDatabaseFromLocalCache() {
   }
 }
 
-/** @type {SafeChainConfig} */
-const emptyConfig = {
-  scanTimeout: undefined,
-  minimumPackageAgeHours: undefined,
-  npm: {
-    customRegistries: undefined,
-  },
-};
-
 /**
  * @returns {SafeChainConfig}
  */
 function readConfigFile() {
+  /** @type {SafeChainConfig} */
+  const emptyConfig = {
+    scanTimeout: undefined,
+    minimumPackageAgeHours: undefined,
+    npm: {
+      customRegistries: undefined,
+    },
+  };
+
   const configFilePath = getConfigFilePath();
 
   if (!fs.existsSync(configFilePath)) {
