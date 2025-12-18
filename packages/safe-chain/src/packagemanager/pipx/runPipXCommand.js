@@ -16,7 +16,7 @@ function setPipXCaBundleEnvironmentVariables(env, combinedCaPath) {
   }
   env.SSL_CERT_FILE = combinedCaPath;
 
-  // REQUESTS_CA_BUNDLE: Used by the requests library (which uv may use internally)
+  // REQUESTS_CA_BUNDLE: Used by the requests library (may be used by tooling under pipx)
   if (env.REQUESTS_CA_BUNDLE) {
     ui.writeWarning("Safe-chain: User defined REQUESTS_CA_BUNDLE found in environment. It will be overwritten.");
   }
@@ -30,18 +30,11 @@ function setPipXCaBundleEnvironmentVariables(env, combinedCaPath) {
 }
 
 /**
- * Runs a uv command with safe-chain's certificate bundle and proxy configuration.
+ * Runs a pipx command with safe-chain's certificate bundle and proxy configuration.
  * 
- * uv respects standard environment variables for proxy and TLS configuration:
- * - HTTP_PROXY / HTTPS_PROXY: Proxy settings
- * - SSL_CERT_FILE / REQUESTS_CA_BUNDLE: CA bundle for TLS verification
- * 
- * Unlike pip (which requires a temporary config file for cert configuration), uv directly
- * honors environment variables, so no config/ini file is needed.
- * 
- * @param {string} command - The pipx command to execute
- * @param {string[]} args - Command line arguments to pass to pipx
- * @returns {Promise<{status: number}>} Exit status of the pipx command
+ * @param {string} command - The command to execute
+ * @param {string[]} args - Command line arguments
+ * @returns {Promise<{status: number}>} Exit status of the command
  */
 export async function runPipX(command, args) {
   try {

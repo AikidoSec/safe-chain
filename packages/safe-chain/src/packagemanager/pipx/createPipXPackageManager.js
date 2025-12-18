@@ -11,7 +11,7 @@ export function createPipXPackageManager() {
     runCommand: (args) => {
       return runPipX("pipx", args);
     },
-    // For uv, rely solely on MITM
+    // MITM only
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
   };

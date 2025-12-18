@@ -39,7 +39,6 @@ function npm
     wrapSafeChainCommand "npm" $argv
 end
 
-
 function pip
     wrapSafeChainCommand "pip" $argv
 end
@@ -64,6 +63,10 @@ end
 # `python3 -m pip`, `python3 -m pip3'.
 function python3
     wrapSafeChainCommand "python3" $argv
+end
+
+function pipx
+    wrapSafeChainCommand "pipx" $argv
 end
 
 function printSafeChainWarning

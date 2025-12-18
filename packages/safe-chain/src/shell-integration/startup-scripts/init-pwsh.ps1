@@ -66,6 +66,9 @@ function python3 {
     Invoke-WrappedCommand 'python3' $args
 }
 
+function pipx {
+    Invoke-WrappedCommand "pipx" $args
+}
 
 function Write-SafeChainWarning {
     param([string]$Command)

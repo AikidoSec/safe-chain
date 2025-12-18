@@ -98,7 +98,7 @@ export const knownAikidoTools = [
     tool: "pipx",
     aikidoCommand: "aikido-pipx",
     ecoSystem: ECOSYSTEM_PY,
-    internalPackageManagerName: "pip",
+    internalPackageManagerName: "pipx",
   }
   // When adding a new tool here, also update the documentation for the new tool in the README.md
 ];

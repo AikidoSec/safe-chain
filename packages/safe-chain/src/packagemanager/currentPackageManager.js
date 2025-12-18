@@ -10,6 +10,7 @@ import {
 } from "./pnpm/createPackageManager.js";
 import { createYarnPackageManager } from "./yarn/createPackageManager.js";
 import { createPipPackageManager } from "./pip/createPackageManager.js";
+import { createPipXPackageManager } from "./pipx/createPipXPackageManager.js";
 import { createUvPackageManager } from "./uv/createUvPackageManager.js";
 import { createPoetryPackageManager } from "./poetry/createPoetryPackageManager.js";
 
@@ -61,6 +62,8 @@ export function initializePackageManager(packageManagerName, context) {
     state.packageManagerName = createUvPackageManager();
   } else if (packageManagerName === "poetry") {
     state.packageManagerName = createPoetryPackageManager();
+  } else if (packageManagerName === "pipx") {
+    state.packageManagerName = createPipXPackageManager();
   } else {
     throw new Error("Unsupported package manager: " + packageManagerName);
   }
