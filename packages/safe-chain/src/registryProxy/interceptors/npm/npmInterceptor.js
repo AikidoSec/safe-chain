@@ -11,7 +11,11 @@ import {
 } from "./modifyNpmInfo.js";
 import { parseNpmPackageUrl } from "./parseNpmPackageUrl.js";
 
-const knownJsRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
+const knownJsRegistries = [
+  "registry.npmjs.org",
+  "registry.yarnpkg.com",
+  "registry.npmjs.com",
+];
 
 /**
  * @param {string} url
