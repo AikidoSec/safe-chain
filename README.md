@@ -183,6 +183,30 @@ You can set the minimum package age through multiple sources (in order of priori
    }
    ```
 
+## Custom NPM Registries
+
+Configure Safe Chain to scan packages from custom or private npm registries.
+
+### Configuration Options
+
+You can set custom registries through environment variable or config file. Both sources are merged together.
+
+1. **Environment Variable** (comma-separated):
+
+   ```shell
+   export SAFE_CHAIN_NPM_CUSTOM_REGISTRIES="npm.company.com,registry.internal.net"
+   ```
+
+2. **Config File** (`~/.aikido/config.json`):
+
+   ```json
+   {
+     "npm": {
+       "customRegistries": ["npm.company.com", "registry.internal.net"]
+     }
+   }
+   ```
+
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.

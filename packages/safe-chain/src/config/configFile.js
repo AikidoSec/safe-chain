@@ -7,10 +7,14 @@ import { getEcoSystem } from "./settings.js";
 /**
  * @typedef {Object} SafeChainConfig
  *
- * This should be a number, but can be anything because it is user-input.
+ * We cannot trust the input and should add the necessary validations
+ * @property {unknown | Number} scanTimeout
+ * @property {unknown | Number} minimumPackageAgeHours
+ * @property {unknown | SafeChainRegistryConfiguration} npm
+ *
+ * @typedef {Object} SafeChainRegistryConfiguration
  * We cannot trust the input and should add the necessary validations.
- * @property {unknown} scanTimeout
- * @property {unknown} minimumPackageAgeHours
+ * @property {unknown | string[]} customRegistries
  */
 
 /**
@@ -79,6 +83,30 @@ export function getMinimumPackageAgeHours() {
 }
 
 /**
+ * Gets the custom npm registries from the config file (format parsing only, no validation)
+ * @returns {string[]}
+ */
+export function getNpmCustomRegistries() {
+  const config = readConfigFile();
+
+  if (!config || !config.npm) {
+    return [];
+  }
+
+  // TypeScript needs help understanding that config.npm exists and has customRegistries
+  const npmConfig = /** @type {SafeChainRegistryConfiguration} */ (config.npm);
+  const customRegistries = npmConfig.customRegistries;
+
+  // Handle format: ensure it's an array of strings
+  if (!Array.isArray(customRegistries)) {
+    return [];
+  }
+
+  // Filter to only string values (format checking, not validation)
+  return customRegistries.filter((item) => typeof item === "string");
+}
+
+/**
  * @param {import("../api/aikido.js").MalwarePackage[]} data
  * @param {string | number} version
  *
@@ -142,6 +170,9 @@ function readConfigFile() {
     return {
       scanTimeout: undefined,
       minimumPackageAgeHours: undefined,
+      npm: {
+        customRegistries: undefined,
+      },
     };
   }
 
@@ -152,6 +183,9 @@ function readConfigFile() {
     return {
       scanTimeout: undefined,
       minimumPackageAgeHours: undefined,
+      npm: {
+        customRegistries: undefined,
+      },
     };
   }
 }
