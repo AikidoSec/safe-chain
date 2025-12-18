@@ -13,19 +13,16 @@ import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
 function getPipXCaBundleEnvironmentVariables(env, combinedCaPath) {
   let retVal = { ...env };
 
-  // SSL_CERT_FILE: Used by Python SSL libraries and underlying HTTP clients
   if (env.SSL_CERT_FILE) {
     ui.writeWarning("Safe-chain: User defined SSL_CERT_FILE found in environment. It will be overwritten.");
   }
   retVal.SSL_CERT_FILE = combinedCaPath;
 
-  // REQUESTS_CA_BUNDLE: Used by the requests library (may be used by tooling under pipx)
   if (env.REQUESTS_CA_BUNDLE) {
     ui.writeWarning("Safe-chain: User defined REQUESTS_CA_BUNDLE found in environment. It will be overwritten.");
   }
   retVal.REQUESTS_CA_BUNDLE = combinedCaPath;
 
-  // PIP_CERT: Some underlying pip operations may respect this
   if (env.PIP_CERT) {
     ui.writeWarning("Safe-chain: User defined PIP_CERT found in environment. It will be overwritten.");
   }
