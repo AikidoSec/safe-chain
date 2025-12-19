@@ -182,13 +182,13 @@ describe("registryProxy.connectTunnel", () => {
 
       const duration = Date.now() - startTime;
 
-      // Should return 502 Bad Gateway
+      // Should return 504 Gateway Timeout (not 502 - 504 is for actual timeouts)
       assert.ok(
-        responseData.includes("HTTP/1.1 502 Bad Gateway"),
-        "Should return 502 for timeout"
+        responseData.includes("HTTP/1.1 504 Gateway Timeout"),
+        "Should return 504 for timeout"
       );
 
-      // Should timeout around 3 seconds for IMDS endpoints (allow some margin)
+      // Should timeout around 100ms for IMDS endpoints (allow some margin)
       assert.ok(
         duration >= 80 && duration < 200,
         `IMDS timeout should be ~80-200ms, got ${duration}ms`
@@ -280,10 +280,10 @@ describe("registryProxy.connectTunnel", () => {
 
       const duration = Date.now() - startTime;
 
-      // Should return 502 Bad Gateway (timeout)
+      // Should return 504 Gateway Timeout (not 502 - 504 is for actual timeouts)
       assert.ok(
-        responseData.includes("HTTP/1.1 502 Bad Gateway"),
-        "Should return 502 for timeout"
+        responseData.includes("HTTP/1.1 504 Gateway Timeout"),
+        "Should return 504 for timeout"
       );
 
       // Should NOT be instant - it should retry the connection (taking ~500ms due to mock timeout)
