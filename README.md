@@ -71,7 +71,20 @@ You can find all available versions on the [releases page](https://github.com/Ai
 
    - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
-2. **Verify the installation** by running one of the following commands:
+2. **Verify the installation** by running the verification command:
+
+   ```shell
+   npm safe-chain-verify
+   pnpm safe-chain-verify
+   pip safe-chain-verify
+   uv safe-chain-verify
+
+   # Any other supported package manager: {packagemanager} safe-chain-verify
+   ```
+
+   - The output should display "OK: Safe-chain works!" confirming that Aikido Safe Chain is properly installed and running.
+
+3. **(Optional) Test malware blocking** by attempting to install a test package:
 
    For JavaScript/Node.js:
 

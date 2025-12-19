@@ -3,7 +3,10 @@
 import chalk from "chalk";
 import { ui } from "../src/environment/userInteraction.js";
 import { setup } from "../src/shell-integration/setup.js";
-import { teardown, teardownDirectories } from "../src/shell-integration/teardown.js";
+import {
+  teardown,
+  teardownDirectories,
+} from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
 import { setEcoSystem } from "../src/config/settings.js";
@@ -45,7 +48,7 @@ if (tool) {
   const args = process.argv.slice(3);
 
   setEcoSystem(tool.ecoSystem);
-  
+
   // Provide tool context to PM (pip uses this; others ignore)
   const toolContext = { tool: tool.tool, args };
   initializePackageManager(tool.internalPackageManagerName, toolContext);
