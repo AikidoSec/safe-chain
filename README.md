@@ -23,6 +23,7 @@ Aikido Safe Chain supports the following package managers:
 - 📦 **pip3**
 - 📦 **uv**
 - 📦 **poetry**
+- 📦 **pipx**
 
 # Usage
 
@@ -64,7 +65,7 @@ You can find all available versions on the [releases page](https://github.com/Ai
 
 1. **❗Restart your terminal** to start using the Aikido Safe Chain.
 
-   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip/pip3 are loaded correctly. If you do not restart your terminal, the aliases will not be available.
+   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
 2. **Verify the installation** by running one of the following commands:
 
@@ -82,7 +83,7 @@ You can find all available versions on the [releases page](https://github.com/Ai
 
    - The output should show that Aikido Safe Chain is blocking the installation of these test packages as they are flagged as malware.
 
-When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `uv`, `pip`, `pip3` or `poetry` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
+When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry` and `pipx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
 
 You can check the installed version by running:
 
@@ -94,17 +95,17 @@ safe-chain --version
 
 ### Malware Blocking
 
-The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, pip, pip3 or poetry commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
+The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, uv, poetry or pipx commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
 
 ### Minimum package age (npm only)
 
 For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours (by default) until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
-⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry).
+⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry, pipx).
 
 ### Shell Integration
 
-The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, bun, bunx, and Python package managers (uv, pip). It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:
+The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, bun, bunx, and Python package managers (pip, uv, poetry, pipx). It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:
 
 - ✅ **Bash**
 - ✅ **Zsh**

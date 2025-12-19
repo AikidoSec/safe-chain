@@ -21,6 +21,7 @@
     "aikido-python": "bin/aikido-python.js",
     "aikido-python3": "bin/aikido-python3.js",
     "aikido-poetry": "bin/aikido-poetry.js",
+    "aikido-pipx": "bin/aikido-pipx.js",
     "safe-chain": "bin/safe-chain.js"
   },
   "type": "module",

@@ -35,7 +35,6 @@ function npm() {
   wrapSafeChainCommand "npm" "$@"
 }
 
-
 function pip() {
   wrapSafeChainCommand "pip" "$@"
 }
@@ -60,6 +59,10 @@ function python() {
 # `python3 -m pip`, `python3 -m pip3'.
 function python3() {
   wrapSafeChainCommand "python3" "$@"
+}
+
+function pipx() {
+  wrapSafeChainCommand "pipx" "$@"
 }
 
 function printSafeChainWarning() {
