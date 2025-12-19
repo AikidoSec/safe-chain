@@ -27,6 +27,8 @@ Aikido Safe Chain supports the following package managers:
 
 # Usage
 
+![Aikido Safe Chain demo](https://raw.githubusercontent.com/AikidoSec/safe-chain/main/docs/safe-package-manager-demo.gif)
+
 ## Installation
 
 Installing the Aikido Safe Chain is easy with our one-line installer.
@@ -50,11 +52,13 @@ iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/insta
 To install a specific version instead of the latest, replace `latest` with the version number in the URL (available from version 1.3.2 onwards):
 
 **Unix/Linux/macOS:**
+
 ```shell
 curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.sh | sh
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.ps1" -UseBasicParsing)
 ```
