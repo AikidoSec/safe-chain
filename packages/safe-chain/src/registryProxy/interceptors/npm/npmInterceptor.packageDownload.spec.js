@@ -1,19 +1,36 @@
 import { describe, it, mock } from "node:test";
 import assert from "node:assert";
 
-describe("npmInterceptor", async () => {
-  let lastPackage;
-  let malwareResponse = false;
+let lastPackage;
+let malwareResponse = false;
+let customRegistries = [];
 
-  mock.module("../../../scanning/audit/index.js", {
-    namedExports: {
-      isMalwarePackage: async (packageName, version) => {
-        lastPackage = { packageName, version };
-        return malwareResponse;
-      },
+mock.module("../../../scanning/audit/index.js", {
+  namedExports: {
+    isMalwarePackage: async (packageName, version) => {
+      lastPackage = { packageName, version };
+      return malwareResponse;
     },
-  });
+  },
+});
 
+mock.module("../../../config/settings.js", {
+  namedExports: {
+    LOGGING_SILENT: "silent",
+    LOGGING_NORMAL: "normal",
+    LOGGING_VERBOSE: "verbose",
+    ECOSYSTEM_JS: "js",
+    ECOSYSTEM_PY: "py",
+    getLoggingLevel: () => "normal",
+    getEcoSystem: () => "js",
+    setEcoSystem: () => {},
+    getMinimumPackageAgeHours: () => 24,
+    getNpmCustomRegistries: () => customRegistries,
+    skipMinimumPackageAge: () => false,
+  },
+});
+
+describe("npmInterceptor", async () => {
   const { npmInterceptorForUrl } = await import("./npmInterceptor.js");
 
   const parserCases = [
@@ -158,6 +175,93 @@ describe("npmInterceptor", async () => {
       result.blockResponse.message,
       "Forbidden - blocked by safe-chain",
       "Block response should have correct status message"
+    );
+  });
+});
+
+describe("npmInterceptor with custom registries", async () => {
+  const { npmInterceptorForUrl } = await import("./npmInterceptor.js");
+
+  it("should create interceptor for custom registry", async () => {
+    // Set custom registries for this test
+    customRegistries = ["npm.company.com", "registry.internal.net"];
+    const url = "https://npm.company.com/lodash/-/lodash-4.17.21.tgz";
+
+    const interceptor = npmInterceptorForUrl(url);
+
+    assert.ok(interceptor, "Interceptor should be created for custom registry");
+
+    await interceptor.handleRequest(url);
+
+    assert.deepEqual(lastPackage, {
+      packageName: "lodash",
+      version: "4.17.21",
+    });
+  });
+
+  it("should create interceptor for custom registry with scoped packages", async () => {
+    // Set custom registries for this test
+    customRegistries = ["npm.company.com", "registry.internal.net"];
+    malwareResponse = false;
+
+    const url =
+      "https://registry.internal.net/@company/package/-/package-1.0.0.tgz";
+
+    const interceptor = npmInterceptorForUrl(url);
+
+    assert.ok(
+      interceptor,
+      "Interceptor should be created for custom registry with scoped package"
+    );
+
+    await interceptor.handleRequest(url);
+
+    assert.deepEqual(lastPackage, {
+      packageName: "@company/package",
+      version: "1.0.0",
+    });
+  });
+
+  it("should handle multiple custom registries", async () => {
+    // Set custom registries for this test
+    customRegistries = ["npm.company.com", "registry.internal.net"];
+    malwareResponse = false;
+
+    const url1 = "https://npm.company.com/lodash/-/lodash-4.17.21.tgz";
+    const url2 = "https://registry.internal.net/express/-/express-4.18.2.tgz";
+
+    const interceptor1 = npmInterceptorForUrl(url1);
+    const interceptor2 = npmInterceptorForUrl(url2);
+
+    assert.ok(interceptor1, "Should create interceptor for first registry");
+    assert.ok(interceptor2, "Should create interceptor for second registry");
+
+    await interceptor1.handleRequest(url1);
+    assert.deepEqual(lastPackage, {
+      packageName: "lodash",
+      version: "4.17.21",
+    });
+
+    await interceptor2.handleRequest(url2);
+    assert.deepEqual(lastPackage, {
+      packageName: "express",
+      version: "4.18.2",
+    });
+  });
+
+  it("should not create interceptor for non-custom registry", () => {
+    // Set custom registries for this test
+    customRegistries = ["npm.company.com", "registry.internal.net"];
+    malwareResponse = false;
+
+    const url = "https://unknown.registry.com/package/-/package-1.0.0.tgz";
+
+    const interceptor = npmInterceptorForUrl(url);
+
+    assert.equal(
+      interceptor,
+      undefined,
+      "Should not create interceptor for unknown registry"
     );
   });
 });

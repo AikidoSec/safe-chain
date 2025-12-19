@@ -1,4 +1,7 @@
-import { skipMinimumPackageAge } from "../../../config/settings.js";
+import {
+  getNpmCustomRegistries,
+  skipMinimumPackageAge,
+} from "../../../config/settings.js";
 import { isMalwarePackage } from "../../../scanning/audit/index.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import {
@@ -8,14 +11,20 @@ import {
 } from "./modifyNpmInfo.js";
 import { parseNpmPackageUrl } from "./parseNpmPackageUrl.js";
 
-const knownJsRegistries = ["registry.npmjs.org", "registry.yarnpkg.com"];
+const knownJsRegistries = [
+  "registry.npmjs.org",
+  "registry.yarnpkg.com",
+  "registry.npmjs.com",
+];
 
 /**
  * @param {string} url
  * @returns {import("../interceptorBuilder.js").Interceptor | undefined}
  */
 export function npmInterceptorForUrl(url) {
-  const registry = knownJsRegistries.find((reg) => url.includes(reg));
+  const registry = [...knownJsRegistries, ...getNpmCustomRegistries()].find(
+    (reg) => url.includes(reg)
+  );
 
   if (registry) {
     return buildNpmInterceptor(registry);

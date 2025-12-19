@@ -98,3 +98,48 @@ export function skipMinimumPackageAge() {
 
   return defaultSkipMinimumPackageAge;
 }
+
+/**
+ * Normalizes a registry URL by removing protocol if present
+ * @param {string} registry
+ * @returns {string}
+ */
+function normalizeRegistry(registry) {
+  // Remove protocol (http://, https://) if present
+  return registry.replace(/^https?:\/\//, "");
+}
+
+/**
+ * Parses comma-separated registries from environment variable
+ * @param {string | undefined} envValue
+ * @returns {string[]}
+ */
+function parseRegistriesFromEnv(envValue) {
+  if (!envValue || typeof envValue !== "string") {
+    return [];
+  }
+
+  // Split by comma and trim whitespace
+  return envValue
+    .split(",")
+    .map((registry) => registry.trim())
+    .filter((registry) => registry.length > 0);
+}
+
+/**
+ * Gets the custom npm registries from both environment variable and config file (merged)
+ * @returns {string[]}
+ */
+export function getNpmCustomRegistries() {
+  const envRegistries = parseRegistriesFromEnv(
+    environmentVariables.getNpmCustomRegistries()
+  );
+  const configRegistries = configFile.getNpmCustomRegistries();
+
+  // Merge both sources and remove duplicates
+  const allRegistries = [...envRegistries, ...configRegistries];
+  const uniqueRegistries = [...new Set(allRegistries)];
+
+  // Normalize each registry (remove protocol if any)
+  return uniqueRegistries.map(normalizeRegistry);
+}

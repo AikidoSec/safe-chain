@@ -9,6 +9,7 @@ describe("npmInterceptor minimum package age", async () => {
     namedExports: {
       getMinimumPackageAgeHours: () => minimumPackageAgeSettings,
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
+      getNpmCustomRegistries: () => [],
     },
   });
 
