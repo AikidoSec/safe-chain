@@ -15,7 +15,7 @@ import { gunzipSync, gzipSync } from "zlib";
  */
 export function mitmConnect(req, clientSocket, interceptor) {
   ui.writeVerbose(`Safe-chain: Set up MITM tunnel for ${req.url}`);
-  const { hostname } = new URL(`http://${req.url}`);
+  const { hostname, port } = new URL(`http://${req.url}`);
 
   clientSocket.on("error", (err) => {
     ui.writeVerbose(
@@ -26,7 +26,7 @@ export function mitmConnect(req, clientSocket, interceptor) {
     // Not subscribing to 'close' event will cause node to throw and crash.
   });
 
-  const server = createHttpsServer(hostname, interceptor);
+  const server = createHttpsServer(hostname, port, interceptor);
 
   server.on("error", (err) => {
     ui.writeError(`Safe-chain: HTTPS server error: ${err.message}`);
@@ -46,10 +46,11 @@ export function mitmConnect(req, clientSocket, interceptor) {
 
 /**
  * @param {string} hostname
+ * @param {string} port
  * @param {Interceptor} interceptor
  * @returns {import("https").Server}
  */
-function createHttpsServer(hostname, interceptor) {
+function createHttpsServer(hostname, port, interceptor) {
   const cert = generateCertForHost(hostname);
 
   /**
@@ -80,7 +81,7 @@ function createHttpsServer(hostname, interceptor) {
     }
 
     // Collect request body
-    forwardRequest(req, hostname, res, requestInterceptor);
+    forwardRequest(req, hostname, port, res, requestInterceptor);
   }
 
   const server = https.createServer(
@@ -109,11 +110,12 @@ function getRequestPathAndQuery(url) {
 /**
  * @param {import("http").IncomingMessage} req
  * @param {string} hostname
+ * @param {string} port
  * @param {import("http").ServerResponse} res
  * @param {import("./interceptors/interceptorBuilder.js").RequestInterceptionHandler} requestHandler
  */
-function forwardRequest(req, hostname, res, requestHandler) {
-  const proxyReq = createProxyRequest(hostname, req, res, requestHandler);
+function forwardRequest(req, hostname, port, res, requestHandler) {
+  const proxyReq = createProxyRequest(hostname, port, req, res, requestHandler);
 
   proxyReq.on("error", (err) => {
     ui.writeVerbose(
@@ -144,13 +146,14 @@ function forwardRequest(req, hostname, res, requestHandler) {
 
 /**
  * @param {string} hostname
+ * @param {string} port
  * @param {import("http").IncomingMessage} req
  * @param {import("http").ServerResponse} res
  * @param {import("./interceptors/interceptorBuilder.js").RequestInterceptionHandler} requestHandler
  *
  * @returns {import("http").ClientRequest}
  */
-function createProxyRequest(hostname, req, res, requestHandler) {
+function createProxyRequest(hostname, port, req, res, requestHandler) {
   /** @type {NodeJS.Dict<string | string[]> | undefined} */
   let headers = { ...req.headers };
   // Remove the host header from the incoming request before forwarding.
@@ -163,7 +166,7 @@ function createProxyRequest(hostname, req, res, requestHandler) {
   /** @type {import("http").RequestOptions} */
   const options = {
     hostname: hostname,
-    port: 443,
+    port: port,
     path: req.url,
     method: req.method,
     headers: { ...headers },
