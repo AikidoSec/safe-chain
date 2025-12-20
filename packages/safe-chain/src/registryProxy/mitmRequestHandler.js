@@ -166,7 +166,7 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
   /** @type {import("http").RequestOptions} */
   const options = {
     hostname: hostname,
-    port: port,
+    port: port || 443,
     path: req.url,
     method: req.method,
     headers: { ...headers },
