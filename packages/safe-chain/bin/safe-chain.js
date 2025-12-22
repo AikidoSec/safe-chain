@@ -3,7 +3,7 @@
 import chalk from "chalk";
 import { ui } from "../src/environment/userInteraction.js";
 import { setup } from "../src/shell-integration/setup.js";
-import { teardown } from "../src/shell-integration/teardown.js";
+import { teardown, teardownDirectories } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
 import { setEcoSystem } from "../src/config/settings.js";
@@ -60,6 +60,7 @@ if (tool) {
 } else if (command === "setup") {
   setup();
 } else if (command === "teardown") {
+  teardownDirectories();
   teardown();
 } else if (command === "setup-ci") {
   setupCi();
@@ -95,11 +96,6 @@ function writeHelp() {
     )}: This will setup your shell to wrap safe-chain around npm, npx, yarn, pnpm, pnpx, bun, bunx, pip and pip3.`
   );
   ui.writeInformation(
-    `    ${chalk.yellow(
-      "--include-python"
-    )}: Experimental: include Python package managers (pip, pip3) in the setup.`
-  );
-  ui.writeInformation(
     `- ${chalk.cyan(
       "safe-chain teardown"
     )}: This will remove safe-chain aliases from your shell configuration.`
@@ -108,11 +104,6 @@ function writeHelp() {
     `- ${chalk.cyan(
       "safe-chain setup-ci"
     )}: This will setup safe-chain for CI environments by creating shims and modifying the PATH.`
-  );
-  ui.writeInformation(
-    `    ${chalk.yellow(
-      "--include-python"
-    )}: Experimental: include Python package managers (pip, pip3) in the setup.`
   );
   ui.writeInformation(
     `- ${chalk.cyan("safe-chain --version")} (or ${chalk.cyan(

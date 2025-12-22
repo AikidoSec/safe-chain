@@ -2,7 +2,7 @@
 
 ## Overview
 
-The shell integration automatically wraps common package manager commands (`npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`) with Aikido's security scanning functionality. It also intercepts Python module invocations for pip when available: `python -m pip`, `python -m pip3`, `python3 -m pip`, `python3 -m pip3`. This is achieved by sourcing startup scripts that define shell functions to wrap these commands with their Aikido-protected equivalents.
+The shell integration automatically wraps common package manager commands (`npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry`, `pipx`) with Aikido's security scanning functionality. It also intercepts Python module invocations for pip when available: `python -m pip`, `python -m pip3`, `python3 -m pip`, `python3 -m pip3`. This is achieved by sourcing startup scripts that define shell functions to wrap these commands with their Aikido-protected equivalents.
 
 ## Supported Shells
 
@@ -28,7 +28,7 @@ This command:
 
 - Copies necessary startup scripts to Safe Chain's installation directory (`~/.safe-chain/scripts`)
 - Detects all supported shells on your system
-- Sources each shell's startup file to add Safe Chain functions for `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, and `pip3`
+- Sources each shell's startup file to add Safe Chain functions for `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry` and `pipx`
 - Adds lightweight interceptors so `python -m pip[...]` and `python3 -m pip[...]` route through Safe Chain when invoked by name
 
 ❗ After running this command, **you must restart your terminal** for the changes to take effect. This ensures that the startup scripts are sourced correctly.
@@ -78,7 +78,7 @@ The system modifies the following files to source Safe Chain startup scripts:
 This means the shell functions are working but the Aikido commands aren't installed or available in your PATH:
 
 - Make sure Aikido Safe Chain is properly installed on your system
-- Verify the `aikido-npm`, `aikido-npx`, `aikido-yarn`, `aikido-pnpm`, `aikido-pnpx`, `aikido-bun`, `aikido-bunx`, `aikido-pip`, and `aikido-pip3` commands exist
+- Verify the `aikido-npm`, `aikido-npx`, `aikido-yarn`, `aikido-pnpm`, `aikido-pnpx`, `aikido-bun`, `aikido-bunx`, `aikido-pip`, `aikido-pip3`, `aikido-uv`, `aikido-poetry` and `aikido-pipx` commands exist
 - Check that these commands are in your system's PATH
 
 ### Manual Verification
@@ -121,7 +121,7 @@ npm() {
 }
 ```
 
-Repeat this pattern for `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, and `pip3` using their respective `aikido-*` commands. After adding these functions, restart your terminal to apply the changes.
+Repeat this pattern for `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry` and `pipx` using their respective `aikido-*` commands. After adding these functions, restart your terminal to apply the changes.
 
 To intercept Python module invocations for pip without altering Python itself, you can add small forwarding functions:
 

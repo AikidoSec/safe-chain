@@ -94,6 +94,12 @@ export const knownAikidoTools = [
     ecoSystem: ECOSYSTEM_PY,
     internalPackageManagerName: "pip",
   },
+  {
+    tool: "pipx",
+    aikidoCommand: "aikido-pipx",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pipx",
+  }
   // When adding a new tool here, also update the documentation for the new tool in the README.md
 ];
 
@@ -111,6 +117,20 @@ export function getPackageManagerList() {
   }
   const lastTool = tools.pop();
   return `${tools.join(", ")}, and ${lastTool} commands`;
+}
+
+/**
+ * @returns {string}
+ */
+export function getShimsDir() {
+  return path.join(os.homedir(), ".safe-chain", "shims");
+}
+
+/**
+ * @returns {string}
+ */
+export function getScriptsDir() {
+  return path.join(os.homedir(), ".safe-chain", "scripts");
 }
 
 /**

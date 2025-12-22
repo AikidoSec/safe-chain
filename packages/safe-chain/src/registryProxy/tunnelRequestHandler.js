@@ -43,6 +43,7 @@ export function tunnelRequest(req, clientSocket, head) {
 function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
   const isImds = isImdsEndpoint(hostname);
+  const targetPort = Number.parseInt(port) || 443;
 
   if (timedoutImdsEndpoints.includes(hostname)) {
     clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
@@ -58,62 +59,75 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     return;
   }
 
-  const serverSocket = net.connect(
-    Number.parseInt(port) || 443,
-    hostname,
-    () => {
-      clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-      serverSocket.write(head);
-      serverSocket.pipe(clientSocket);
-      clientSocket.pipe(serverSocket);
-    }
-  );
-
-  // Set explicit connection timeout to avoid waiting for OS default (~2 minutes).
-  // IMDS endpoints get shorter timeout (3s) since they're commonly unreachable outside cloud environments.
   const connectTimeout = getConnectTimeout(hostname);
-  serverSocket.setTimeout(connectTimeout);
 
-  serverSocket.on("timeout", () => {
-    // Suppress error logging for IMDS endpoints - timeouts are expected when not in cloud
+  // Use JS setTimeout for true connection timeout (not idle timeout).
+  // socket.setTimeout() measures inactivity, not time since connection attempt.
+  const connectTimer = setTimeout(() => {
     if (isImds) {
       timedoutImdsEndpoints.push(hostname);
       ui.writeVerbose(
-        `Safe-chain: connect to ${hostname}:${
-          port || 443
-        } timed out after ${connectTimeout}ms`
+        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`
       );
     } else {
       ui.writeError(
-        `Safe-chain: connect to ${hostname}:${
-          port || 443
-        } timed out after ${connectTimeout}ms`
+        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`
       );
     }
-    serverSocket.destroy(); // Clean up socket to prevent event loop hanging
-    clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+    serverSocket.destroy();
+    if (clientSocket.writable) {
+      clientSocket.end("HTTP/1.1 504 Gateway Timeout\r\n\r\n");
+    }
+  }, connectTimeout);
+
+  const serverSocket = net.connect(targetPort, hostname, () => {
+    // Clear timer to prevent false timeout errors after successful connection
+    clearTimeout(connectTimer);
+
+    clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+    serverSocket.write(head);
+    serverSocket.pipe(clientSocket);
+    clientSocket.pipe(serverSocket);
   });
 
   clientSocket.on("error", () => {
     // This can happen if the client TCP socket sends RST instead of FIN.
     // Not subscribing to 'error' event will cause node to throw and crash.
+    clearTimeout(connectTimer);
+    if (serverSocket.writable) {
+      serverSocket.end();
+    }
+  });
+
+  clientSocket.on("close", () => {
+    // Client closed connection - clean up server socket
+    clearTimeout(connectTimer);
     if (serverSocket.writable) {
       serverSocket.end();
     }
   });
 
   serverSocket.on("error", (err) => {
+    clearTimeout(connectTimer);
     if (isImds) {
       ui.writeVerbose(
-        `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
+        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`
       );
     } else {
       ui.writeError(
-        `Safe-chain: error connecting to ${hostname}:${port} - ${err.message}`
+        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`
       );
     }
     if (clientSocket.writable) {
       clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
+    }
+  });
+
+  serverSocket.on("close", () => {
+    // Server closed connection - clean up client socket
+    clearTimeout(connectTimer);
+    if (clientSocket.writable) {
+      clientSocket.end();
     }
   });
 }

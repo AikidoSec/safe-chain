@@ -35,6 +35,36 @@ function npm() {
   wrapSafeChainCommand "npm" "$@"
 }
 
+function pip() {
+  wrapSafeChainCommand "pip" "$@"
+}
+
+function pip3() {
+  wrapSafeChainCommand "pip3" "$@"
+}
+
+function uv() {
+  wrapSafeChainCommand "uv" "$@"
+}
+
+function poetry() {
+  wrapSafeChainCommand "poetry" "$@"
+}
+
+# `python -m pip`, `python -m pip3`.
+function python() {
+  wrapSafeChainCommand "python" "$@"
+}
+
+# `python3 -m pip`, `python3 -m pip3'.
+function python3() {
+  wrapSafeChainCommand "python3" "$@"
+}
+
+function pipx() {
+  wrapSafeChainCommand "pipx" "$@"
+}
+
 function printSafeChainWarning() {
   # \033[43;30m is used to set the background color to yellow and text color to black
   # \033[0m is used to reset the text formatting

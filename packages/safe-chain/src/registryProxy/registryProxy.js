@@ -2,7 +2,7 @@ import * as http from "http";
 import { tunnelRequest } from "./tunnelRequestHandler.js";
 import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
-import { getCaCertPath } from "./certUtils.js";
+import { getCombinedCaBundlePath } from "./certBundle.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
@@ -37,10 +37,12 @@ function getSafeChainProxyEnvironmentVariables() {
   }
 
   const proxyUrl = `http://localhost:${state.port}`;
+  const caCertPath = getCombinedCaBundlePath();
+
   return {
     HTTPS_PROXY: proxyUrl,
     GLOBAL_AGENT_HTTP_PROXY: proxyUrl,
-    NODE_EXTRA_CA_CERTS: getCaCertPath(),
+    NODE_EXTRA_CA_CERTS: caCertPath,
   };
 }
 

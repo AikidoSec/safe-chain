@@ -86,7 +86,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       // Setup safe-chain CI shims
       const installationShell = await container.openShell(shell);
       await installationShell.runCommand(
-        "safe-chain setup-ci --include-python"
+        "safe-chain setup-ci"
       );
 
       // Add $HOME/.safe-chain/shims to PATH for subsequent shells
@@ -115,7 +115,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
     it(`setup-ci routes python -m pip through safe-chain for ${shell}`, async () => {
       const installationShell = await container.openShell(shell);
       await installationShell.runCommand(
-        "safe-chain setup-ci --include-python"
+        "safe-chain setup-ci"
       );
       await installationShell.runCommand(
         "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.zshrc"
@@ -138,7 +138,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
     it(`setup-ci routes python3 -m pip through safe-chain for ${shell}`, async () => {
       const installationShell = await container.openShell(shell);
       await installationShell.runCommand(
-        "safe-chain setup-ci --include-python"
+        "safe-chain setup-ci"
       );
       await installationShell.runCommand(
         "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.zshrc"
@@ -161,7 +161,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
     it(`setup-ci routes pip through safe-chain for ${shell}`, async () => {
       const installationShell = await container.openShell(shell);
       await installationShell.runCommand(
-        "safe-chain setup-ci --include-python"
+        "safe-chain setup-ci"
       );
       await installationShell.runCommand(
         "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.zshrc"
@@ -184,7 +184,7 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
     it(`setup-ci routes pip3 through safe-chain for ${shell}`, async () => {
       const installationShell = await container.openShell(shell);
       await installationShell.runCommand(
-        "safe-chain setup-ci --include-python"
+        "safe-chain setup-ci"
       );
       await installationShell.runCommand(
         "echo 'export PATH=\"$HOME/.safe-chain/shims:$PATH\"' >> ~/.zshrc"

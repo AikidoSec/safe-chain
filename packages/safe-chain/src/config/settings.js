@@ -81,7 +81,7 @@ function validateMinimumPackageAgeHours(value) {
     return undefined;
   }
 
-  if (numericValue > 0) {
+  if (numericValue >= 0) {
     return numericValue;
   }
 
@@ -99,29 +99,66 @@ export function skipMinimumPackageAge() {
   return defaultSkipMinimumPackageAge;
 }
 
-/** @type {string[]} */
-const defaultPipCustomRegistries = [];
-/** @returns {string[]} */
-export function getPipCustomRegistries() {
-  // Priority 1: Environment variable
-  const envValue = validatePipCustomRegistries(
-    environmentVariables.getPipCustomRegistries()
-  );
-  if (envValue !== undefined) {
-    return envValue;
-  }
-
-  return defaultPipCustomRegistries;
+/**
+ * Normalizes a registry URL by removing protocol if present
+ * @param {string} registry
+ * @returns {string}
+ */
+function normalizeRegistry(registry) {
+  // Remove protocol (http://, https://) if present
+  return registry.replace(/^https?:\/\//, "");
 }
 
 /**
- * @param {string | undefined} value
- * @returns {string[] | undefined}
+ * Parses comma-separated registries from environment variable
+ * @param {string | undefined} envValue
+ * @returns {string[]}
  */
-function validatePipCustomRegistries(value) {
-  if (!value) {
-    return undefined;
+function parseRegistriesFromEnv(envValue) {
+  if (!envValue || typeof envValue !== "string") {
+    return [];
   }
 
-  return value.split(",");
+  // Split by comma and trim whitespace
+  return envValue
+    .split(",")
+    .map((registry) => registry.trim())
+    .filter((registry) => registry.length > 0);
+}
+
+/**
+ * Gets the custom npm registries from both environment variable and config file (merged)
+ * @returns {string[]}
+ */
+export function getNpmCustomRegistries() {
+  const envRegistries = parseRegistriesFromEnv(
+    environmentVariables.getNpmCustomRegistries()
+  );
+  const configRegistries = configFile.getNpmCustomRegistries();
+
+  // Merge both sources and remove duplicates
+  const allRegistries = [...envRegistries, ...configRegistries];
+  const uniqueRegistries = [...new Set(allRegistries)];
+
+  // Normalize each registry (remove protocol if any)
+  return uniqueRegistries.map(normalizeRegistry);
+}
+
+/**
+ * Gets the custom npm registries from both environment variable and config file (merged)
+ * @returns {string[]}
+ */
+export function getPipCustomRegistries() {
+  const envRegistries = parseRegistriesFromEnv(
+    environmentVariables.getPipCustomRegistries()
+  );
+  // const configRegistries = configFile.getPipCustomRegistries();
+
+  // Merge both sources and remove duplicates
+  // const allRegistries = [...envRegistries, ...configRegistries];
+  const allRegistries = [...envRegistries];
+  const uniqueRegistries = [...new Set(allRegistries)];
+
+  // Normalize each registry (remove protocol if any)
+  return uniqueRegistries.map(normalizeRegistry);
 }

@@ -8,6 +8,7 @@ import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import ini from "ini";
+import { spawn } from "child_process";
 
 /**
  * Checks if this pip invocation should bypass safe-chain and spawn directly.
@@ -16,7 +17,7 @@ import ini from "ini";
  * @param {string[]} args - The arguments
  * @returns {boolean}
  */
-function shouldBypassSafeChain(command, args) {
+export function shouldBypassSafeChain(command, args) {
   if (command === PYTHON_COMMAND || command === PYTHON3_COMMAND) {
     // Check if args start with -m pip
     if (args.length >= 2 && args[0] === "-m" && (args[1] === PIP_COMMAND || args[1] === PIP3_COMMAND)) {
@@ -77,14 +78,16 @@ export async function runPip(command, args) {
   if (shouldBypassSafeChain(command, args)) {
     ui.writeVerbose(`Safe-chain: Bypassing safe-chain for non-pip invocation: ${command} ${args.join(" ")}`);
     // Spawn the ORIGINAL command with ORIGINAL args
-    const { spawn } = await import("child_process");
     return new Promise((_resolve) => {
       const proc = spawn(command, args, { stdio: "inherit" });
       proc.on("exit", (/** @type {number | null} */ code) => {
+        ui.writeVerbose(`${command} ${args.join(" ")} exited with status ${code}`);
+        ui.writeBufferedLogsAndStopBuffering();
         process.exit(code ?? 0);
       });
       proc.on("error", (/** @type {Error} */ err) => {
         ui.writeError(`Error executing command: ${err.message}`);
+        ui.writeBufferedLogsAndStopBuffering();
         process.exit(1);
       });
     });
@@ -93,7 +96,7 @@ export async function runPip(command, args) {
   try {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
 
-    // Always provide Python with a complete CA bundle (Safe Chain CA + Mozilla + Node built-in roots)
+    // Always provide Python with a complete CA bundle (Safe Chain CA + Mozilla + Node built-in roots + user certs)
     // so that any network request made by pip, including those outside explicit CLI args,
     // validates correctly under both MITM'd and tunneled HTTPS.
     const combinedCaPath = getCombinedCaBundlePath();

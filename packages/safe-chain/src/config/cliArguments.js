@@ -1,11 +1,12 @@
+import { ui } from "../environment/userInteraction.js";
+
 /**
- * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined, includePython: boolean}}
+ * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined}}
  */
 const state = {
   loggingLevel: undefined,
   skipMinimumPackageAge: undefined,
   minimumPackageAgeHours: undefined,
-  includePython: false,
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
@@ -34,8 +35,7 @@ export function initializeCliArguments(args) {
   setLoggingLevel(safeChainArgs);
   setSkipMinimumPackageAge(safeChainArgs);
   setMinimumPackageAgeHours(safeChainArgs);
-  setIncludePython(args);
-
+  checkDeprecatedPythonFlag(args);
   return remainingArgs;
 }
 
@@ -111,20 +111,6 @@ export function getMinimumPackageAgeHours() {
 
 /**
  * @param {string[]} args
- */
-function setIncludePython(args) {
-  // This flag doesn't have the --safe-chain- prefix because
-  // it is only used for the safe-chain command itself and
-  // not when wrapped around package manager commands.
-  state.includePython = hasFlagArg(args, "--include-python");
-}
-
-export function includePython() {
-  return state.includePython;
-}
-
-/**
- * @param {string[]} args
  * @param {string} flagName
  * @returns {boolean}
  */
@@ -135,4 +121,18 @@ function hasFlagArg(args, flagName) {
     }
   }
   return false;
+}
+
+/**
+ * Emits a deprecation warning for legacy --include-python flag
+ *
+ * @param {string[]} args
+ * @returns {void}
+ */
+export function checkDeprecatedPythonFlag(args) {
+  if (hasFlagArg(args, "--include-python")) {
+    ui.writeWarning(
+      "--include-python is deprecated and ignored. Python tooling is included by default."
+    );
+  }
 }

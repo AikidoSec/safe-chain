@@ -19,12 +19,15 @@ Aikido Safe Chain supports the following package managers:
 - 📦 **pnpx**
 - 📦 **bun**
 - 📦 **bunx**
-- 📦 **pip** (beta)
-- 📦 **pip3** (beta)
-- 📦 **uv** (beta)
-- 📦 **poetry** (beta)
+- 📦 **pip**
+- 📦 **pip3**
+- 📦 **uv**
+- 📦 **poetry**
+- 📦 **pipx**
 
 # Usage
+
+![Aikido Safe Chain demo](https://raw.githubusercontent.com/AikidoSec/safe-chain/main/docs/safe-package-manager-demo.gif)
 
 ## Installation
 
@@ -34,37 +37,39 @@ Installing the Aikido Safe Chain is easy with our one-line installer.
 
 ### Unix/Linux/macOS
 
-**Default installation (JavaScript packages only):**
-
 ```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh
-```
-
-**Include Python support (pip/pip3/uv):**
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --include-python
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh
 ```
 
 ### Windows (PowerShell)
 
-**Default installation (JavaScript packages only):**
-
 ```powershell
-iex (iwr "https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1" -UseBasicParsing)
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1" -UseBasicParsing)
 ```
 
-**Include Python support (pip/pip3/uv):**
+### Pinning to a specific version
+
+To install a specific version instead of the latest, replace `latest` with the version number in the URL (available from version 1.3.2 onwards):
+
+**Unix/Linux/macOS:**
+
+```shell
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.sh | sh
+```
+
+**Windows (PowerShell):**
 
 ```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -includepython"
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.ps1" -UseBasicParsing)
 ```
+
+You can find all available versions on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
 
 ### Verify the installation
 
 1. **❗Restart your terminal** to start using the Aikido Safe Chain.
 
-   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, and pip/pip3 are loaded correctly. If you do not restart your terminal, the aliases will not be available.
+   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
 2. **Verify the installation** by running one of the following commands:
 
@@ -74,7 +79,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
    npm install safe-chain-test
    ```
 
-   For Python (if you enabled Python support):
+   For Python:
 
    ```shell
    pip3 install safe-chain-pi-test
@@ -82,7 +87,7 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
 
    - The output should show that Aikido Safe Chain is blocking the installation of these test packages as they are flagged as malware.
 
-When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `uv`, `pip`, `pip3` or `poetry` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
+When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry` and `pipx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
 
 You can check the installed version by running:
 
@@ -94,17 +99,17 @@ safe-chain --version
 
 ### Malware Blocking
 
-The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, pip, pip3 or poetry commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
+The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, uv, poetry or pipx commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
 
 ### Minimum package age (npm only)
 
 For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours (by default) until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
-⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry).
+⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry, pipx).
 
 ### Shell Integration
 
-The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, bun, bunx, and Python package managers (uv, pip). It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:
+The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, bun, bunx, and Python package managers (pip, uv, poetry, pipx). It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:
 
 - ✅ **Bash**
 - ✅ **Zsh**
@@ -116,17 +121,21 @@ More information about the shell integration can be found in the [shell integrat
 
 ## Uninstallation
 
-To uninstall the Aikido Safe Chain, you can run the following command:
+To uninstall the Aikido Safe Chain, use our one-line uninstaller:
 
-1. **Remove all aliases from your shell** by running:
-   ```shell
-   safe-chain teardown
-   ```
-2. **Uninstall the Aikido Safe Chain package** using npm:
-   ```shell
-   npm uninstall -g @aikidosec/safe-chain
-   ```
-3. **❗Restart your terminal** to remove the aliases.
+### Unix/Linux/macOS
+
+```shell
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/uninstall-safe-chain.sh | sh
+```
+
+### Windows (PowerShell)
+
+```powershell
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/uninstall-safe-chain.ps1" -UseBasicParsing)
+```
+
+**❗Restart your terminal** after uninstalling to ensure all aliases are removed.
 
 # Configuration
 
@@ -179,24 +188,29 @@ You can set the minimum package age through multiple sources (in order of priori
    }
    ```
 
-## Custom Registries
+## Custom NPM Registries
 
-By default, Safe Chain monitors downloads from the official package registries (npm registry, PyPI, etc.). If you use a private or custom package registry, you can configure Safe Chain to also monitor downloads from those registries.
-
-⚠️ This feature **currently only applies to Python package managers** (pip, pip3, uv, poetry) and does not apply to npm-based package managers.
+Configure Safe Chain to scan packages from custom or private npm registries.
 
 ### Configuration Options
 
-You can set custom registries through the following source:
+You can set custom registries through environment variable or config file. Both sources are merged together.
 
-1. **Environment Variable**:
+1. **Environment Variable** (comma-separated):
 
    ```shell
-   export SAFE_CHAIN_PIP_CUSTOM_REGISTRIES=my-custom-registry.example.com,private-pypi.internal.com
-   pip install mypackage
+   export SAFE_CHAIN_NPM_CUSTOM_REGISTRIES="npm.company.com,registry.internal.net"
    ```
 
-   Use a comma-separated list of registry hostnames to monitor multiple custom registries.
+2. **Config File** (`~/.aikido/config.json`):
+
+   ```json
+   {
+     "npm": {
+       "customRegistries": ["npm.company.com", "registry.internal.net"]
+     }
+   }
+   ```
 
 # Usage in CI/CD
 
@@ -208,36 +222,21 @@ Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD envir
 
 ### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
-**JavaScript only:**
-
 ```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
-```
-
-**With Python support:**
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 ```
 
 ### Windows (Azure Pipelines, etc.)
 
-**JavaScript only:**
-
 ```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci"
-```
-
-**With Python support:**
-
-```powershell
-iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.ps1' -UseBasicParsing) } -ci -includepython"
+iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -ci"
 ```
 
 ## Supported Platforms
 
 - ✅ **GitHub Actions**
 - ✅ **Azure Pipelines**
+- ✅ **CircleCI**
 
 ## GitHub Actions Example
 
@@ -249,13 +248,11 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     cache: "npm"
 
 - name: Install safe-chain
-  run: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+  run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
 - name: Install dependencies
   run: npm ci
 ```
-
-> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv/poetry) support.
 
 ## Azure DevOps Example
 
@@ -265,13 +262,30 @@ iex "& { $(iwr 'https://raw.githubusercontent.com/AikidoSec/safe-chain/main/inst
     versionSpec: "22.x"
   displayName: "Install Node.js"
 
-- script: curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci --include-python
+- script: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
   displayName: "Install safe-chain"
 
 - script: npm ci
   displayName: "Install dependencies"
 ```
 
-> **Note:** Remove `--include-python` if you don't need Python (pip/pip3/uv/poetry) support.
+## CircleCI Example
+
+```yaml
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: cimg/node:lts
+    steps:
+      - checkout
+      - run: |
+          curl -fsSL https://raw.githubusercontent.com/AikidoSec/safe-chain/main/install-scripts/install-safe-chain.sh | sh -s -- --ci
+      - run: npm ci
+workflows:
+  build_and_test:
+    jobs:
+      - build
+```
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.

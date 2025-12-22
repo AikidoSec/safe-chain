@@ -54,6 +54,38 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Get currently installed version of safe-chain
+get_installed_version() {
+    if ! command_exists safe-chain; then
+        echo ""
+        return
+    fi
+
+    # Extract version from "Current safe-chain version: X.Y.Z" output
+    installed_version=$(safe-chain -v 2>/dev/null | grep "Current safe-chain version:" | sed -E 's/.*: (.*)/\1/')
+    echo "$installed_version"
+}
+
+# Check if the requested version is already installed
+is_version_installed() {
+    requested_version="$1"
+    installed_version=$(get_installed_version)
+
+    if [ -z "$installed_version" ]; then
+        return 1  # Not installed
+    fi
+
+    # Strip leading 'v' from versions if present for comparison
+    requested_clean=$(echo "$requested_version" | sed 's/^v//')
+    installed_clean=$(echo "$installed_version" | sed 's/^v//')
+
+    if [ "$requested_clean" = "$installed_clean" ]; then
+        return 0  # Same version installed
+    else
+        return 1  # Different version installed
+    fi
+}
+
 # Fetch latest release version tag from GitHub
 fetch_latest_version() {
     # Try using GitHub API to get the latest release tag
@@ -135,7 +167,7 @@ parse_arguments() {
                 USE_CI_SETUP=true
                 ;;
             --include-python)
-                INCLUDE_PYTHON=true
+                warn "--include-python is deprecated and ignored. Python ecosystem is now included by default."
                 ;;
             *)
                 error "Unknown argument: $arg"
@@ -148,7 +180,6 @@ parse_arguments() {
 main() {
     # Initialize argument flags
     USE_CI_SETUP=false
-    INCLUDE_PYTHON=false
 
     # Parse command-line arguments
     parse_arguments "$@"
@@ -159,11 +190,14 @@ main() {
         VERSION=$(fetch_latest_version)
     fi
 
+    # Check if the requested version is already installed
+    if is_version_installed "$VERSION"; then
+        info "safe-chain ${VERSION} is already installed"
+        exit 0
+    fi
+
     # Build installation message
     INSTALL_MSG="Installing safe-chain ${VERSION}"
-    if [ "$INCLUDE_PYTHON" = "true" ]; then
-        INSTALL_MSG="${INSTALL_MSG} with python"
-    fi
     if [ "$USE_CI_SETUP" = "true" ]; then
         INSTALL_MSG="${INSTALL_MSG} in ci"
     fi
@@ -207,10 +241,6 @@ main() {
 
     if [ "$USE_CI_SETUP" = "true" ]; then
         SETUP_CMD="setup-ci"
-    fi
-
-    if [ "$INCLUDE_PYTHON" = "true" ]; then
-        SETUP_ARGS="--include-python"
     fi
 
     # Execute safe-chain setup
