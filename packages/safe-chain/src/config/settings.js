@@ -152,11 +152,10 @@ export function getPipCustomRegistries() {
   const envRegistries = parseRegistriesFromEnv(
     environmentVariables.getPipCustomRegistries()
   );
-  // const configRegistries = configFile.getPipCustomRegistries();
+  const configRegistries = configFile.getPipCustomRegistries();
 
   // Merge both sources and remove duplicates
-  // const allRegistries = [...envRegistries, ...configRegistries];
-  const allRegistries = [...envRegistries];
+  const allRegistries = [...envRegistries, ...configRegistries];
   const uniqueRegistries = [...new Set(allRegistries)];
 
   // Normalize each registry (remove protocol if any)

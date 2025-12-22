@@ -232,91 +232,95 @@ describe("getMinimumPackageAgeHours", async () => {
   });
 });
 
-describe("getNpmCustomRegistries", async () => {
-  const { getNpmCustomRegistries } = await import("./configFile.js");
+for (const packageManager of ["npm", "pip"]) {
+  const fnName = `get${packageManager.charAt(0).toUpperCase()}${packageManager.slice(1)}CustomRegistries`;
 
-  afterEach(() => {
-    configFileContent = undefined;
-  });
+  describe(fnName, async () => {
+    const fn = (await import("./configFile.js"))[fnName];
 
-  it("should return empty array when config file doesn't exist", () => {
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, []);
-  });
-
-  it("should return empty array when npm config is not set", () => {
-    configFileContent = JSON.stringify({ scanTimeout: 5000 });
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, []);
-  });
-
-  it("should return empty array when customRegistries is not an array", () => {
-    configFileContent = JSON.stringify({
-      npm: { customRegistries: "not-an-array" },
+    afterEach(() => {
+      configFileContent = undefined;
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should return empty array when config file doesn't exist", () => {
+      configFileContent = undefined;
 
-    assert.deepStrictEqual(registries, []);
-  });
+      const registries = fn();
 
-  it("should return array of custom registries when set", () => {
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: ["npm.company.com", "registry.internal.net"],
-      },
+      assert.deepStrictEqual(registries, []);
     });
 
-    const registries = getNpmCustomRegistries();
+    it(`should return empty array when ${packageManager} config is not set`, () => {
+      configFileContent = JSON.stringify({ scanTimeout: 5000 });
 
-    assert.deepStrictEqual(registries, [
-      "npm.company.com",
-      "registry.internal.net",
-    ]);
-  });
+      const registries = fn();
 
-  it("should filter out non-string values", () => {
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: [
-          "npm.company.com",
-          123,
-          null,
-          "registry.internal.net",
-          undefined,
-          {},
-        ],
-      },
+      assert.deepStrictEqual(registries, []);
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should return empty array when customRegistries is not an array", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: { customRegistries: "not-an-array" },
+      });
 
-    assert.deepStrictEqual(registries, [
-      "npm.company.com",
-      "registry.internal.net",
-    ]);
-  });
+      const registries = fn();
 
-  it("should return empty array for empty customRegistries array", () => {
-    configFileContent = JSON.stringify({
-      npm: { customRegistries: [] },
+      assert.deepStrictEqual(registries, []);
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should return array of custom registries when set", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [`${packageManager}.company.com`, "registry.internal.net"],
+        },
+      });
 
-    assert.deepStrictEqual(registries, []);
+      const registries = fn();
+
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com`,
+        "registry.internal.net",
+      ]);
+    });
+
+    it("should filter out non-string values", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [
+            `${packageManager}.company.com`,
+            123,
+            null,
+            "registry.internal.net",
+            undefined,
+            {},
+          ],
+        },
+      });
+
+      const registries = fn();
+
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com`,
+        "registry.internal.net",
+      ]);
+    });
+
+    it("should return empty array for empty customRegistries array", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: { customRegistries: [] },
+      });
+
+      const registries = fn();
+
+      assert.deepStrictEqual(registries, []);
+    });
+
+    it("should handle malformed JSON and return empty array", () => {
+      configFileContent = "{ invalid json";
+
+      const registries = fn();
+
+      assert.deepStrictEqual(registries, []);
+    });
   });
-
-  it("should handle malformed JSON and return empty array", () => {
-    configFileContent = "{ invalid json";
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, []);
-  });
-});
+}
