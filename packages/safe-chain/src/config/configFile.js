@@ -11,6 +11,7 @@ import { getEcoSystem } from "./settings.js";
  * @property {unknown | Number} scanTimeout
  * @property {unknown | Number} minimumPackageAgeHours
  * @property {unknown | SafeChainRegistryConfiguration} npm
+ * @property {unknown | SafeChainRegistryConfiguration} pip
  *
  * @typedef {Object} SafeChainRegistryConfiguration
  * We cannot trust the input and should add the necessary validations.
@@ -105,6 +106,28 @@ export function getNpmCustomRegistries() {
 }
 
 /**
+ * Gets the custom npm registries from the config file (format parsing only, no validation)
+ * @returns {string[]}
+ */
+export function getPipCustomRegistries() {
+  const config = readConfigFile();
+
+  if (!config || !config.pip) {
+    return [];
+  }
+
+  // TypeScript needs help understanding that config.pip exists and has customRegistries
+  const pipConfig = /** @type {SafeChainRegistryConfiguration} */ (config.pip);
+  const customRegistries = pipConfig.customRegistries;
+
+  if (!Array.isArray(customRegistries)) {
+    return [];
+  }
+
+  return customRegistries.filter((item) => typeof item === "string");
+}
+
+/**
  * @param {import("../api/aikido.js").MalwarePackage[]} data
  * @param {string | number} version
  *
@@ -167,6 +190,9 @@ function readConfigFile() {
     scanTimeout: undefined,
     minimumPackageAgeHours: undefined,
     npm: {
+      customRegistries: undefined,
+    },
+    pip: {
       customRegistries: undefined,
     },
   };
