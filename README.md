@@ -237,6 +237,7 @@ iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download
 - ✅ **GitHub Actions**
 - ✅ **Azure Pipelines**
 - ✅ **CircleCI**
+- ✅ **Jenkins**
 
 ## GitHub Actions Example
 
@@ -287,5 +288,44 @@ workflows:
     jobs:
       - build
 ```
+
+## Jenkins Example
+
+Note: This assumes Node.js and npm are installed on the Jenkins agent.
+
+```groovy
+pipeline {
+  agent any
+
+  environment {
+    // Jenkins does not automatically persist PATH updates from setup-ci,
+    // so add the shims + binary directory explicitly for all stages.
+    PATH = "${env.HOME}/.safe-chain/shims:${env.HOME}/.safe-chain/bin:${env.PATH}"
+  }
+
+  stages {
+    stage('Install safe-chain') {
+      steps {
+        sh '''
+          set -euo pipefail
+
+          # Install Safe Chain for CI
+          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+        '''
+      }
+    }
+
+    stage('Install project dependencies etc...') {
+      steps {
+        sh '''
+          set -euo pipefail
+          npm ci
+        '''
+      }
+    }
+  }
+}
+```
+
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
