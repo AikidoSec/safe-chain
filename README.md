@@ -291,6 +291,8 @@ workflows:
 
 ## Jenkins Example
 
+Note: This assumes Node.js and npm are installed on the Jenkins agent.
+
 ```groovy
 pipeline {
   agent any
@@ -302,21 +304,6 @@ pipeline {
   }
 
   stages {
-    stage('Install Node.js') {
-      steps {
-        sh '''
-          set -euo pipefail
-
-          # install Node.js + npm (requires root, or passwordless sudo on the agent)
-          sudo -n apt-get update
-          sudo -n apt-get install -y nodejs npm
-
-          node -v
-          npm -v
-        '''
-      }
-    }
-
     stage('Install safe-chain') {
       steps {
         sh '''
