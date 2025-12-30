@@ -315,20 +315,6 @@ pipeline {
       }
     }
 
-    stage('Verify safe-chain on PATH') {
-      steps {
-        sh '''
-          set -euo pipefail
-
-          command -v safe-chain
-          command -v npm
-
-          # Test: npm should resolve to the safe-chain shim
-          test "$(command -v npm)" = "$HOME/.safe-chain/shims/npm"
-        '''
-      }
-    }
-
     stage('Install project dependencies etc...') {
       steps {
         sh '''
