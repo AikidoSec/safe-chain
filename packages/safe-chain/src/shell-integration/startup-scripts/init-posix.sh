@@ -83,10 +83,6 @@ function wrapSafeChainCommand() {
     # If the aikido command is not available, print a warning and run the original command
     printSafeChainWarning "$original_cmd"
 
-    # Remove the first argument (original_cmd) from $@
-    # so that "$@" now contains only the arguments passed to the original command
-    shift 1
-
-    command "$original_cmd" "$@"
+    command "$@"
   fi
 }
