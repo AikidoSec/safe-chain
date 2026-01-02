@@ -11,239 +11,256 @@ mock.module("fs", {
   },
 });
 
-describe("getNpmCustomRegistries", async () => {
-  let originalEnv;
-  const { getNpmCustomRegistries } = await import("./settings.js");
+const { getNpmCustomRegistries, getPipCustomRegistries } = await import(
+  "./settings.js"
+);
 
-  beforeEach(() => {
-    originalEnv = process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-  });
+for (const { packageManager, getCustomRegistries, envVarName } of [
+  {
+    packageManager: "npm",
+    getCustomRegistries: getNpmCustomRegistries,
+    envVarName: "SAFE_CHAIN_NPM_CUSTOM_REGISTRIES",
+  },
+  {
+    packageManager: "pip",
+    getCustomRegistries: getPipCustomRegistries,
+    envVarName: "SAFE_CHAIN_PIP_CUSTOM_REGISTRIES",
+  },
+])
+{
+  describe(getCustomRegistries.name, async () => {
+    let originalEnv;
 
-  afterEach(() => {
-    if (originalEnv !== undefined) {
-      process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES = originalEnv;
-    } else {
-      delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    }
-    configFileContent = undefined;
-  });
-
-  it("should return empty array when no registries configured", () => {
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, []);
-  });
-
-  it("should return registries without protocol", () => {
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: ["npm.company.com", "registry.internal.net"],
-      },
+    beforeEach(() => {
+      originalEnv = process.env[envVarName];
     });
 
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, [
-      "npm.company.com",
-      "registry.internal.net",
-    ]);
-  });
-
-  it("should strip https:// protocol from registries", () => {
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: [
-          "https://npm.company.com",
-          "https://registry.internal.net",
-        ],
-      },
+    afterEach(() => {
+      if (originalEnv !== undefined) {
+        process.env[envVarName] = originalEnv;
+      } else {
+        delete process.env[envVarName];
+      }
+      configFileContent = undefined;
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should return empty array when no registries configured", () => {
+      configFileContent = undefined;
 
-    assert.deepStrictEqual(registries, [
-      "npm.company.com",
-      "registry.internal.net",
-    ]);
-  });
+      const registries = getCustomRegistries();
 
-  it("should strip http:// protocol from registries", () => {
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: [
-          "http://npm.company.com",
-          "http://registry.internal.net",
-        ],
-      },
+      assert.deepStrictEqual(registries, []);
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should return registries without protocol", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [`${packageManager}.company.com`, "registry.internal.net"],
+        },
+      });
 
-    assert.deepStrictEqual(registries, [
-      "npm.company.com",
-      "registry.internal.net",
-    ]);
-  });
+      const registries = getCustomRegistries();
 
-  it("should handle mixed protocols and no protocol", () => {
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: [
-          "https://npm.company.com",
-          "registry.internal.net",
-          "http://private.registry.io",
-        ],
-      },
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com`,
+        "registry.internal.net",
+      ]);
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should strip https:// protocol from registries", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [
+            `https://${packageManager}.company.com`,
+            "https://registry.internal.net",
+          ],
+        },
+      });
 
-    assert.deepStrictEqual(registries, [
-      "npm.company.com",
-      "registry.internal.net",
-      "private.registry.io",
-    ]);
-  });
+      const registries = getCustomRegistries();
 
-  it("should preserve registry path after stripping protocol", () => {
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: [
-          "https://npm.company.com/custom/path",
-          "registry.internal.net/npm",
-        ],
-      },
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com`,
+        "registry.internal.net",
+      ]);
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should strip http:// protocol from registries", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [
+            `http://${packageManager}.company.com`,
+            "http://registry.internal.net",
+          ],
+        },
+      });
 
-    assert.deepStrictEqual(registries, [
-      "npm.company.com/custom/path",
-      "registry.internal.net/npm",
-    ]);
-  });
+      const registries = getCustomRegistries();
 
-  it("should parse comma-separated registries from environment variable", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES =
-      "env1.registry.com,env2.registry.net";
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, [
-      "env1.registry.com",
-      "env2.registry.net",
-    ]);
-  });
-
-  it("should trim whitespace from environment variable registries", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES =
-      "  env1.registry.com  ,  env2.registry.net  ";
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, [
-      "env1.registry.com",
-      "env2.registry.net",
-    ]);
-  });
-
-  it("should merge environment variable and config file registries", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES = "env1.registry.com";
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: ["config1.registry.net"],
-      },
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com`,
+        "registry.internal.net",
+      ]);
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should handle mixed protocols and no protocol", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [
+            `https://${packageManager}.company.com`,
+            "registry.internal.net",
+            "http://private.registry.io",
+          ],
+        },
+      });
 
-    assert.deepStrictEqual(registries, [
-      "env1.registry.com",
-      "config1.registry.net",
-    ]);
-  });
+      const registries = getCustomRegistries();
 
-  it("should remove duplicate registries when merging env and config", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES =
-      "npm.company.com,env.registry.com";
-    configFileContent = JSON.stringify({
-      npm: {
-        customRegistries: ["npm.company.com", "config.registry.net"],
-      },
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com`,
+        "registry.internal.net",
+        "private.registry.io",
+      ]);
     });
 
-    const registries = getNpmCustomRegistries();
+    it("should preserve registry path after stripping protocol", () => {
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [
+            `https://${packageManager}.company.com/custom/path`,
+            `registry.internal.net/${packageManager}`,
+          ],
+        },
+      });
 
-    assert.deepStrictEqual(registries, [
-      "npm.company.com",
-      "env.registry.com",
-      "config.registry.net",
-    ]);
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com/custom/path`,
+        `registry.internal.net/${packageManager}`,
+      ]);
+    });
+
+    it("should parse comma-separated registries from environment variable", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] =
+        "env1.registry.com,env2.registry.net";
+      configFileContent = undefined;
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, [
+        "env1.registry.com",
+        "env2.registry.net",
+      ]);
+    });
+
+    it("should trim whitespace from environment variable registries", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] =
+        "  env1.registry.com  ,  env2.registry.net  ";
+      configFileContent = undefined;
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, [
+        "env1.registry.com",
+        "env2.registry.net",
+      ]);
+    });
+
+    it("should merge environment variable and config file registries", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] = "env1.registry.com";
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: ["config1.registry.net"],
+        },
+      });
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, [
+        "env1.registry.com",
+        "config1.registry.net",
+      ]);
+    });
+
+    it("should remove duplicate registries when merging env and config", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] =
+        `${packageManager}.company.com,env.registry.com`;
+      configFileContent = JSON.stringify({
+        [packageManager]: {
+          customRegistries: [`${packageManager}.company.com`, "config.registry.net"],
+        },
+      });
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, [
+        `${packageManager}.company.com`,
+        "env.registry.com",
+        "config.registry.net",
+      ]);
+    });
+
+    it("should normalize protocols from environment variable registries", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] =
+        "https://env1.registry.com,http://env2.registry.net";
+      configFileContent = undefined;
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, [
+        "env1.registry.com",
+        "env2.registry.net",
+      ]);
+    });
+
+    it("should handle empty strings in comma-separated list", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] =
+        "env1.registry.com,,env2.registry.net,";
+      configFileContent = undefined;
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, [
+        "env1.registry.com",
+        "env2.registry.net",
+      ]);
+    });
+
+    it("should handle single registry in environment variable", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] = "single.registry.com";
+      configFileContent = undefined;
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, ["single.registry.com"]);
+    });
+
+    it("should return empty array for empty environment variable", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] = "";
+      configFileContent = undefined;
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, []);
+    });
+
+    it("should return empty array for whitespace-only environment variable", () => {
+      delete process.env[envVarName];
+      process.env[envVarName] = "   ,  ,  ";
+      configFileContent = undefined;
+
+      const registries = getCustomRegistries();
+
+      assert.deepStrictEqual(registries, []);
+    });
   });
-
-  it("should normalize protocols from environment variable registries", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES =
-      "https://env1.registry.com,http://env2.registry.net";
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, [
-      "env1.registry.com",
-      "env2.registry.net",
-    ]);
-  });
-
-  it("should handle empty strings in comma-separated list", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES =
-      "env1.registry.com,,env2.registry.net,";
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, [
-      "env1.registry.com",
-      "env2.registry.net",
-    ]);
-  });
-
-  it("should handle single registry in environment variable", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES = "single.registry.com";
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, ["single.registry.com"]);
-  });
-
-  it("should return empty array for empty environment variable", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES = "";
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, []);
-  });
-
-  it("should return empty array for whitespace-only environment variable", () => {
-    delete process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
-    process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES = "   ,  ,  ";
-    configFileContent = undefined;
-
-    const registries = getNpmCustomRegistries();
-
-    assert.deepStrictEqual(registries, []);
-  });
-});
+}
