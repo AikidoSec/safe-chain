@@ -232,12 +232,22 @@ describe("getMinimumPackageAgeHours", async () => {
   });
 });
 
-for (const packageManager of ["npm", "pip"]) {
-  const fnName = `get${packageManager.charAt(0).toUpperCase()}${packageManager.slice(1)}CustomRegistries`;
+const { getNpmCustomRegistries, getPipCustomRegistries } = await import(
+  "./configFile.js"
+);
 
-  describe(fnName, async () => {
-    const fn = (await import("./configFile.js"))[fnName];
-
+for (const { packageManager, getCustomRegistries } of [
+  {
+    packageManager: "npm",
+    getCustomRegistries: getNpmCustomRegistries,
+  },
+  {
+    packageManager: "pip",
+    getCustomRegistries: getPipCustomRegistries,
+  },
+])
+{
+  describe(getCustomRegistries.name, async () => {
     afterEach(() => {
       configFileContent = undefined;
     });
@@ -245,7 +255,7 @@ for (const packageManager of ["npm", "pip"]) {
     it("should return empty array when config file doesn't exist", () => {
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });
@@ -253,7 +263,7 @@ for (const packageManager of ["npm", "pip"]) {
     it(`should return empty array when ${packageManager} config is not set`, () => {
       configFileContent = JSON.stringify({ scanTimeout: 5000 });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });
@@ -263,7 +273,7 @@ for (const packageManager of ["npm", "pip"]) {
         [packageManager]: { customRegistries: "not-an-array" },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });
@@ -275,7 +285,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com`,
@@ -297,7 +307,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com`,
@@ -310,7 +320,7 @@ for (const packageManager of ["npm", "pip"]) {
         [packageManager]: { customRegistries: [] },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });
@@ -318,7 +328,7 @@ for (const packageManager of ["npm", "pip"]) {
     it("should handle malformed JSON and return empty array", () => {
       configFileContent = "{ invalid json";
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });

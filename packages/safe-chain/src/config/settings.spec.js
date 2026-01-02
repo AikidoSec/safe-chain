@@ -11,13 +11,25 @@ mock.module("fs", {
   },
 });
 
-for (const packageManager of ["npm", "pip"]) {
-  const fnName = `get${packageManager.charAt(0).toUpperCase()}${packageManager.slice(1)}CustomRegistries`;
-  const envVarName = `SAFE_CHAIN_${packageManager.toUpperCase()}_CUSTOM_REGISTRIES`;
+const { getNpmCustomRegistries, getPipCustomRegistries } = await import(
+  "./settings.js"
+);
 
-  describe(fnName, async () => {
+for (const { packageManager, getCustomRegistries, envVarName } of [
+  {
+    packageManager: "npm",
+    getCustomRegistries: getNpmCustomRegistries,
+    envVarName: "SAFE_CHAIN_NPM_CUSTOM_REGISTRIES",
+  },
+  {
+    packageManager: "pip",
+    getCustomRegistries: getPipCustomRegistries,
+    envVarName: "SAFE_CHAIN_PIP_CUSTOM_REGISTRIES",
+  },
+])
+{
+  describe(getCustomRegistries.name, async () => {
     let originalEnv;
-    const fn = (await import("./settings.js"))[fnName];
 
     beforeEach(() => {
       originalEnv = process.env[envVarName];
@@ -35,7 +47,7 @@ for (const packageManager of ["npm", "pip"]) {
     it("should return empty array when no registries configured", () => {
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });
@@ -47,7 +59,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com`,
@@ -65,7 +77,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com`,
@@ -83,7 +95,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com`,
@@ -102,7 +114,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com`,
@@ -121,7 +133,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com/custom/path`,
@@ -135,7 +147,7 @@ for (const packageManager of ["npm", "pip"]) {
         "env1.registry.com,env2.registry.net";
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         "env1.registry.com",
@@ -149,7 +161,7 @@ for (const packageManager of ["npm", "pip"]) {
         "  env1.registry.com  ,  env2.registry.net  ";
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         "env1.registry.com",
@@ -166,7 +178,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         "env1.registry.com",
@@ -184,7 +196,7 @@ for (const packageManager of ["npm", "pip"]) {
         },
       });
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         `${packageManager}.company.com`,
@@ -199,7 +211,7 @@ for (const packageManager of ["npm", "pip"]) {
         "https://env1.registry.com,http://env2.registry.net";
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         "env1.registry.com",
@@ -213,7 +225,7 @@ for (const packageManager of ["npm", "pip"]) {
         "env1.registry.com,,env2.registry.net,";
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, [
         "env1.registry.com",
@@ -226,7 +238,7 @@ for (const packageManager of ["npm", "pip"]) {
       process.env[envVarName] = "single.registry.com";
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, ["single.registry.com"]);
     });
@@ -236,7 +248,7 @@ for (const packageManager of ["npm", "pip"]) {
       process.env[envVarName] = "";
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });
@@ -246,7 +258,7 @@ for (const packageManager of ["npm", "pip"]) {
       process.env[envVarName] = "   ,  ,  ";
       configFileContent = undefined;
 
-      const registries = fn();
+      const registries = getCustomRegistries();
 
       assert.deepStrictEqual(registries, []);
     });
