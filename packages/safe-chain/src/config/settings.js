@@ -143,3 +143,21 @@ export function getNpmCustomRegistries() {
   // Normalize each registry (remove protocol if any)
   return uniqueRegistries.map(normalizeRegistry);
 }
+
+/**
+ * Gets the custom npm registries from both environment variable and config file (merged)
+ * @returns {string[]}
+ */
+export function getPipCustomRegistries() {
+  const envRegistries = parseRegistriesFromEnv(
+    environmentVariables.getPipCustomRegistries()
+  );
+  const configRegistries = configFile.getPipCustomRegistries();
+
+  // Merge both sources and remove duplicates
+  const allRegistries = [...envRegistries, ...configRegistries];
+  const uniqueRegistries = [...new Set(allRegistries)];
+
+  // Normalize each registry (remove protocol if any)
+  return uniqueRegistries.map(normalizeRegistry);
+}

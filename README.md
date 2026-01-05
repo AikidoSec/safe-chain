@@ -201,9 +201,13 @@ You can set the minimum package age through multiple sources (in order of priori
    }
    ```
 
-## Custom NPM Registries
+## Custom Registries
 
-Configure Safe Chain to scan packages from custom or private npm registries.
+Configure Safe Chain to scan packages from custom or private registries.
+
+Supported ecosystems:
+- Node.js
+- Python
 
 ### Configuration Options
 
@@ -213,6 +217,7 @@ You can set custom registries through environment variable or config file. Both 
 
    ```shell
    export SAFE_CHAIN_NPM_CUSTOM_REGISTRIES="npm.company.com,registry.internal.net"
+   export SAFE_CHAIN_PIP_CUSTOM_REGISTRIES="pip.company.com,registry.internal.net"
    ```
 
 2. **Config File** (`~/.aikido/config.json`):
@@ -221,6 +226,9 @@ You can set custom registries through environment variable or config file. Both 
    {
      "npm": {
        "customRegistries": ["npm.company.com", "registry.internal.net"]
+     },
+     "pip": {
+       "customRegistries": ["pip.company.com", "registry.internal.net"]
      }
    }
    ```
