@@ -13,6 +13,10 @@ import { getAuditStats } from "./scanning/audit/index.js";
  * @returns {Promise<number>}
  */
 export async function main(args) {
+  if (isSafeChainVerify(args)) {
+    return 0;
+  }
+
   process.on("SIGINT", handleProcessTermination);
   process.on("SIGTERM", handleProcessTermination);
 
@@ -103,4 +107,13 @@ export async function main(args) {
 
 function handleProcessTermination() {
   ui.writeBufferedLogsAndStopBuffering();
+}
+
+/** @param {string[]} args  */
+function isSafeChainVerify(args) {
+  const safeChainCheckCommand = "safe-chain-verify";
+  if (args.length > 0 && args[0] === safeChainCheckCommand) {
+    ui.writeInformation("OK: Safe-chain works!");
+    return true;
+  }
 }
