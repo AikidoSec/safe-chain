@@ -348,7 +348,3 @@ pipeline {
 ```
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
-
-# Troubleshooting
-
-Having issues? See the [Troubleshooting Guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/troubleshooting.md) for help with common problems.
