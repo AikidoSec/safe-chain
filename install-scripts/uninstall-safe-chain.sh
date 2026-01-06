@@ -77,7 +77,9 @@ remove_volta_installation() {
 
 # Check and uninstall nvm-managed package if present across all Node versions
 remove_nvm_installation() {
-    # nvm is a shell function, not a binary, so we need to source it first
+    # This script is run in sh shell for greatest compatibility.
+    # Because nvm is usually setup in bash/zsh/fish startup scripts, we need to source it.
+    # Otherwise it won't be available in sh.
     if [ -s "$HOME/.nvm/nvm.sh" ]; then
         # Source nvm to make it available in this script
         . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
