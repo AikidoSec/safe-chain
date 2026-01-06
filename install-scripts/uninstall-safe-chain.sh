@@ -75,6 +75,58 @@ remove_volta_installation() {
     fi
 }
 
+# Check and uninstall nvm-managed package if present across all Node versions
+remove_nvm_installation() {
+    # Check if nvm is available as a command
+    if ! command_exists nvm; then
+        return
+    fi
+
+    # Get list of installed Node versions
+    nvm_versions=$(nvm list 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+
+    if [ -z "$nvm_versions" ]; then
+        return
+    fi
+
+    # Track if we found any installations
+    found_installation=false
+    uninstall_failed=false
+    current_version=$(nvm current 2>/dev/null || echo "")
+
+    # Check each version for safe-chain installation
+    for version in $nvm_versions; do
+        # Check if this version has safe-chain installed
+        # Use nvm exec to run npm list in the context of that Node version
+        if nvm exec "$version" npm list -g @aikidosec/safe-chain >/dev/null 2>&1; then
+            if [ "$found_installation" = false ]; then
+                info "Detected nvm installation(s) of @aikidosec/safe-chain"
+                info "Uninstalling from all Node versions..."
+                found_installation=true
+            fi
+
+            info "  Removing from Node $version..."
+            if nvm exec "$version" npm uninstall -g @aikidosec/safe-chain >/dev/null 2>&1; then
+                info "  Successfully uninstalled from Node $version"
+            else
+                warn "  Failed to uninstall from Node $version"
+                uninstall_failed=true
+            fi
+        fi
+    done
+
+    # Restore original Node version if it was set
+    if [ -n "$current_version" ] && [ "$current_version" != "none" ] && [ "$current_version" != "system" ]; then
+        nvm use "$current_version" >/dev/null 2>&1 || true
+    fi
+
+    # Show warning if any uninstall failed (but don't error out during uninstall)
+    if [ "$uninstall_failed" = true ]; then
+        warn "Failed to uninstall @aikidosec/safe-chain from some nvm Node versions"
+        warn "You may need to manually run: nvm exec <version> npm uninstall -g @aikidosec/safe-chain"
+    fi
+}
+
 # Main uninstallation
 main() {
     SAFE_CHAIN_LOCATION="$INSTALL_DIR/safe-chain"
@@ -89,8 +141,10 @@ main() {
         warn "safe-chain command not found. Proceeding with uninstallation."
     fi
 
-    remove_npm_installation
+    # Remove npm-based installations (nvm must be checked first)
+    remove_nvm_installation
     remove_volta_installation
+    remove_npm_installation
 
     # Remove install dir recursively if it exists
     if [ -d "$INSTALL_DIR" ]; then
