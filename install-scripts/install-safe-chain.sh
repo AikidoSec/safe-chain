@@ -265,10 +265,9 @@ main() {
     info "$INSTALL_MSG"
 
     # Check for existing safe-chain installation through nvm, volta, or npm
-    # nvm must be checked first as it manages multiple Node versions
-    remove_nvm_installation
-    remove_volta_installation
     remove_npm_installation
+    remove_volta_installation
+    remove_nvm_installation
 
     # Detect platform
     OS=$(detect_os)

@@ -151,10 +151,10 @@ main() {
         warn "safe-chain command not found. Proceeding with uninstallation."
     fi
 
-    # Remove npm-based installations (nvm must be checked first)
-    remove_nvm_installation
-    remove_volta_installation
+    # Check for existing safe-chain installation through nvm, volta, or npm
     remove_npm_installation
+    remove_volta_installation
+    remove_nvm_installation
 
     # Remove install dir recursively if it exists
     if [ -d "$INSTALL_DIR" ]; then
