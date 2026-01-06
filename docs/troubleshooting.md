@@ -133,6 +133,7 @@ type pip
 ```
 
 **Expected `which` output:**
+
 - Standalone binary (correct): `~/.safe-chain/bin/safe-chain` or `/Users/<username>/.safe-chain/bin/safe-chain`
 - npm global (outdated): path containing `node_modules` or nvm version paths
 
@@ -160,7 +161,7 @@ ls ~/.safe-chain/scripts/
 
 ### Check for Conflicting Installations
 
-The install/uninstall scripts automatically detect and remove conflicting installations, but you can manually check:
+> **Note:** The install/uninstall scripts automatically detect and remove conflicting installations, but you can manually check:
 
 ```bash
 # Check npm global
