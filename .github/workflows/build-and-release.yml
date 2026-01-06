@@ -17,6 +17,9 @@ jobs:
       version: ${{ steps.get_version.outputs.tag }}
       is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set version number
         id: get_version
         run: |
