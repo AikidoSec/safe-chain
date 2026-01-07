@@ -32,9 +32,16 @@ error() {
 }
 
 # Detect OS
+# For legacy versions (when SAFE_CHAIN_VERSION is set), use 'linux' instead of 'linuxstatic'
 detect_os() {
     case "$(uname -s)" in
-        Linux*)     echo "linuxstatic" ;;
+        Linux*)
+            if [ -n "$SAFE_CHAIN_VERSION" ]; then
+                echo "linux"
+            else
+                echo "linuxstatic"
+            fi
+            ;;
         Darwin*)    echo "macos" ;;
         *)          error "Unsupported operating system: $(uname -s)" ;;
     esac
@@ -243,6 +250,20 @@ main() {
 
     # Parse command-line arguments
     parse_arguments "$@"
+
+    # Show deprecation warning if SAFE_CHAIN_VERSION is set
+    if [ -n "$SAFE_CHAIN_VERSION" ]; then
+        warn "SAFE_CHAIN_VERSION environment variable is deprecated."
+        warn ""
+        warn "Please use direct download URLs for version pinning instead:"
+        warn ""
+        if [ "$USE_CI_SETUP" = "true" ]; then
+            warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh -s -- --ci"
+        else
+            warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh"
+        fi
+        warn ""
+    fi
 
     # Fetch latest version if VERSION is not set
     if [ -z "$VERSION" ]; then
