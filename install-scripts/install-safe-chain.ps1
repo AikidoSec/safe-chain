@@ -149,6 +149,20 @@ function Remove-VoltaInstallation {
 
 # Main installation
 function Install-SafeChain {
+    # Show deprecation warning if SAFE_CHAIN_VERSION is set
+    if (-not [string]::IsNullOrWhiteSpace($env:SAFE_CHAIN_VERSION)) {
+        Write-Warn "SAFE_CHAIN_VERSION environment variable is deprecated."
+        Write-Warn ""
+        Write-Warn "Please use direct download URLs for version pinning instead:"
+        Write-Warn ""
+        if ($ci) {
+            Write-Warn "  iex `"& { `$(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1' -UseBasicParsing) } -ci`""
+        } else {
+            Write-Warn "  iex (iwr `"https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1`" -UseBasicParsing)"
+        }
+        Write-Warn ""
+    }
+
     # Fetch latest version if VERSION is not set
     if ([string]::IsNullOrWhiteSpace($Version)) {
         Write-Info "Fetching latest release version..."
