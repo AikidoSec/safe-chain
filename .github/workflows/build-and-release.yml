@@ -64,6 +64,8 @@ jobs:
           mv binaries/safe-chain-macos-arm64/safe-chain release-artifacts/safe-chain-macos-arm64
           mv binaries/safe-chain-linux-x64/safe-chain release-artifacts/safe-chain-linux-x64
           mv binaries/safe-chain-linux-arm64/safe-chain release-artifacts/safe-chain-linux-arm64
+          mv binaries/safe-chain-linuxstatic-x64/safe-chain release-artifacts/safe-chain-linuxstatic-x64
+          mv binaries/safe-chain-linuxstatic-arm64/safe-chain release-artifacts/safe-chain-linuxstatic-arm64
           mv binaries/safe-chain-win-x64/safe-chain.exe release-artifacts/safe-chain-win-x64.exe
           mv binaries/safe-chain-win-arm64/safe-chain.exe release-artifacts/safe-chain-win-arm64.exe
 
@@ -85,6 +87,8 @@ jobs:
             release-artifacts/safe-chain-macos-arm64 \
             release-artifacts/safe-chain-linux-x64 \
             release-artifacts/safe-chain-linux-arm64 \
+            release-artifacts/safe-chain-linuxstatic-x64 \
+            release-artifacts/safe-chain-linuxstatic-arm64 \
             release-artifacts/safe-chain-win-x64.exe \
             release-artifacts/safe-chain-win-arm64.exe \
             release-artifacts/install-safe-chain.sh \
