@@ -11,15 +11,29 @@ permissions:
 
 jobs:
   set-version:
+    name: Set version number
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.tag }}
+      is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set version number
         id: get_version
         run: |
           version="${{ github.ref_name }}"
           echo "tag=$version" >> $GITHUB_OUTPUT
+
+      - name: Check if pre-release
+        id: check_prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IS_PRERELEASE=$(gh release view ${{ steps.get_version.outputs.tag }} --json isPrerelease --jq '.isPrerelease')
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Release ${{ steps.get_version.outputs.tag }} is pre-release: $IS_PRERELEASE"
 
   create-binaries:
     needs: set-version
@@ -27,33 +41,14 @@ jobs:
     with:
       version: ${{ needs.set-version.outputs.version }}
 
-  build:
+  publish-binaries:
+    name: Publish to GitHub release
     needs: [set-version, create-binaries]
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "lts/*"
-          registry-url: "https://registry.npmjs.org/"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
-
-      - name: Setup safe-chain
-        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/0.0.1-docker-linux-exec-beta/install-safe-chain.sh | sh -s -- --ci
-
-      - name: Set the version in safe-chain package
-        run: npm --no-git-tag-version version ${{ needs.set-version.outputs.version }} --workspace=packages/safe-chain
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm run test
 
       - name: Download all binary artifacts
         uses: actions/download-artifact@v4
@@ -96,6 +91,36 @@ jobs:
             release-artifacts/install-safe-chain.ps1 \
             release-artifacts/uninstall-safe-chain.sh \
             release-artifacts/uninstall-safe-chain.ps1
+
+  publish-npm:
+    name: Publish to npm
+    needs: [set-version, create-binaries]
+    if: needs.set-version.outputs.is_prerelease != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+          registry-url: "https://registry.npmjs.org/"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+      - name: Setup safe-chain
+        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+
+      - name: Set the version in safe-chain package
+        run: npm --no-git-tag-version version ${{ needs.set-version.outputs.version }} --workspace=packages/safe-chain
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
 
       - name: Copy documentation files to package
         run: |

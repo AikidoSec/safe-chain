@@ -33,8 +33,6 @@ Aikido Safe Chain supports the following package managers:
 
 Installing the Aikido Safe Chain is easy with our one-line installer.
 
-> ⚠️ **Already installed via npm?** See the [migration guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/npm-to-binary-migration.md) to switch to the binary version.
-
 ### Unix/Linux/macOS
 
 ```shell
@@ -206,6 +204,7 @@ You can set the minimum package age through multiple sources (in order of priori
 Configure Safe Chain to scan packages from custom or private registries.
 
 Supported ecosystems:
+
 - Node.js
 - Python
 
@@ -348,5 +347,8 @@ pipeline {
 }
 ```
 
-
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
+
+# Troubleshooting
+
+Having issues? See the [Troubleshooting Guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/troubleshooting.md) for help with common problems.
