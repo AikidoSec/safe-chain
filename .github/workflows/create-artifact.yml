@@ -39,6 +39,16 @@ jobs:
             runner: ubuntu-24.04-arm
             target: node20-linux-arm64
             extension: ""
+          - os: linuxstatic
+            arch: x64
+            runner: ubuntu-latest
+            target: node20-linuxstatic-x64
+            extension: ""
+          - os: linuxstatic
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            target: node20-linuxstatic-arm64
+            extension: ""
           - os: win
             arch: x64
             runner: windows-latest

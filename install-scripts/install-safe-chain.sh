@@ -34,7 +34,7 @@ error() {
 # Detect OS
 detect_os() {
     case "$(uname -s)" in
-        Linux*)     echo "linux" ;;
+        Linux*)     echo "linuxstatic" ;;
         Darwin*)    echo "macos" ;;
         *)          error "Unsupported operating system: $(uname -s)" ;;
     esac
