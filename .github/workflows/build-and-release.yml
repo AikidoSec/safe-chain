@@ -115,7 +115,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
       - name: Setup safe-chain
-        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/0.0.4-docker-linux-exec-beta/install-safe-chain.sh | sh -s -- --ci
+        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
       - name: Set the version in safe-chain package
         run: npm --no-git-tag-version version ${{ needs.set-version.outputs.version }} --workspace=packages/safe-chain

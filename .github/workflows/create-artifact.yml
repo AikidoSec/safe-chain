@@ -71,12 +71,12 @@ jobs:
 
       - name: Setup safe-chain (Mac/Linux)
         if: runner.os != 'Windows'
-        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/0.0.4-docker-linux-exec-beta/install-safe-chain.sh | sh -s -- --ci
+        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
       - name: Setup safe-chain (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/0.0.4-docker-linux-exec-beta/install-safe-chain.ps1' -UseBasicParsing) } -ci"
+        run: iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -ci"
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
