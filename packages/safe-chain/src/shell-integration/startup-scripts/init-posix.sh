@@ -80,7 +80,7 @@ function wrapSafeChainCommand() {
     # If the original command is not available, don't try to wrap it: invoke it
     # transparently, so the shell can report errors as if this wrapper didn't
     # exist.
-    command $@
+    command "$@"
     return $?
   fi
 
