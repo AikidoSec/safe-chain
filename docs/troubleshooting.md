@@ -93,7 +93,7 @@ When a package is already cached locally, the package manager skips downloading 
 
    > **⚠️ Warning:** Cache clearing is safe but will remove all cached packages. Subsequent installations will need to re-download packages. In CI/CD environments or monorepos, this may affect build times.
 
-2. **Clean local installation artifacts (optional):**
+2. **Clean local installation artifacts:**
 
    ```bash
    # Remove node_modules if you want a completely fresh install
