@@ -10,7 +10,7 @@ import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/reg
 export async function runYarnCommand(args) {
   try {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
-    await fixYarnProxyEnvironmentVariables(env);
+    // await fixYarnProxyEnvironmentVariables(env);
 
     const result = await safeSpawn("yarn", args, {
       stdio: "inherit",

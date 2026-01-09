@@ -20,8 +20,8 @@ export async function main(args) {
   process.on("SIGINT", handleProcessTermination);
   process.on("SIGTERM", handleProcessTermination);
 
-  const proxy = createSafeChainProxy();
-  await proxy.startServer();
+  // const proxy = createSafeChainProxy();
+  // await proxy.startServer();
 
   // Global error handlers to log unhandled errors
   process.on("uncaughtException", (error) => {
@@ -64,9 +64,9 @@ export async function main(args) {
     // Write all buffered logs
     ui.writeBufferedLogsAndStopBuffering();
 
-    if (!proxy.verifyNoMaliciousPackages()) {
-      return 1;
-    }
+    // if (!proxy.verifyNoMaliciousPackages()) {
+    //   return 1;
+    // }
 
     const auditStats = getAuditStats();
     if (auditStats.totalPackages > 0) {
@@ -77,18 +77,18 @@ export async function main(args) {
       );
     }
 
-    if (proxy.hasSuppressedVersions()) {
-      ui.writeInformation(
-        `${chalk.yellow(
-          "ℹ"
-        )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`
-      );
-      ui.writeInformation(
-        `  To disable this check, use: ${chalk.cyan(
-          "--safe-chain-skip-minimum-package-age"
-        )}`
-      );
-    }
+    // if (proxy.hasSuppressedVersions()) {
+    //   ui.writeInformation(
+    //     `${chalk.yellow(
+    //       "ℹ"
+    //     )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`
+    //   );
+    //   ui.writeInformation(
+    //     `  To disable this check, use: ${chalk.cyan(
+    //       "--safe-chain-skip-minimum-package-age"
+    //     )}`
+    //   );
+    // }
 
     // Returning the exit code back to the caller allows the promise
     //  to be awaited in the bin files and return the correct exit code
@@ -100,9 +100,10 @@ export async function main(args) {
     // Returning the exit code back to the caller allows the promise
     //  to be awaited in the bin files and return the correct exit code
     return 1;
-  } finally {
-    await proxy.stopServer();
   }
+  // finally {
+  //   // await proxy.stopServer();
+  // }
 }
 
 function handleProcessTermination() {
