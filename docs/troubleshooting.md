@@ -44,6 +44,8 @@ pip3 install safe-chain-pi-test
 
 These test packages are flagged as malware and should be blocked by Safe Chain.
 
+**If the test package installs successfully instead of being blocked**, see [Malware Not Being Blocked](#malware-not-being-blocked) below.
+
 ### Logging Options
 
 Use logging flags to get more information:
@@ -57,6 +59,52 @@ npm install express --safe-chain-logging=silent
 ```
 
 ## Common Issues
+
+### Malware Not Being Blocked
+
+**Symptom:** Test malware packages (like `safe-chain-test`) install successfully when they should be blocked
+
+**Most Common Cause:** The package is cached in your package manager's local store
+
+Safe-chain blocks malicious packages by intercepting network requests to package registries using its proxy.
+
+When a package is already cached locally, the package manager skips downloading it from the registry, which bypasses the proxy.
+
+**Resolution Steps:**
+
+1. **Clear your package manager's cache:**
+
+   ```bash
+   # For npm
+   npm cache clean --force
+
+   # For pnpm
+   pnpm store prune
+
+   # For yarn (classic)
+   yarn cache clean
+
+   # For yarn (berry/v2+)
+   yarn cache clean --all
+
+   # For bun
+   bun pm cache rm
+   ```
+
+   > **⚠️ Warning:** Cache clearing is safe but will remove all cached packages. Subsequent installations will need to re-download packages. In CI/CD environments or monorepos, this may affect build times.
+
+2. **Clean local installation artifacts:**
+
+   ```bash
+   # Remove node_modules if you want a completely fresh install
+   rm -rf node_modules
+   ```
+
+3. **Re-test malware blocking:**
+
+   ```bash
+   npm install safe-chain-test    # Should be blocked
+   ```
 
 ### Shell Aliases Not Working After Installation
 
@@ -246,4 +294,4 @@ If you encounter problems:
    - Shell type and version
    - `safe-chain --version` output
    - Output from verification commands
-   - Verbose logs of the failing command
+   - Verbose logs of the failing command (add the `--safe-chain-logging=verbose` argument)
