@@ -108,6 +108,40 @@ function Invoke-RealCommand {
     }
 }
 
+function Get-ReconstructedArguments {
+    param(
+        [string]$RawLine,
+        [int]$RawOffset
+    )
+
+    if (-not $RawLine) { return $null }
+
+    $tokens = [System.Management.Automation.PSParser]::Tokenize($RawLine, [ref]$null)
+    $newArgs = @()
+    $foundCommand = $false
+
+    foreach ($t in $tokens) {
+        if (-not $foundCommand) {
+            if ($t.Start -eq ($RawOffset - 1)) { $foundCommand = $true }
+            continue
+        }
+        
+        if ($t.Type -eq 'Operator' -and $t.Content -match '[|;&]') { break }
+        
+        # Stop if complex variable expansion is used
+        if ($t.Type -eq 'Variable' -or $t.Type -eq 'Group' -or $t.Type -eq 'SubExpression') {
+            return $null
+        }
+        
+        $newArgs += $t.Content
+    }
+
+    if ($foundCommand) {
+        return ,$newArgs
+    }
+    return $null
+}
+
 function Invoke-WrappedCommand {
     param(
         [string]$OriginalCmd,
@@ -118,29 +152,9 @@ function Invoke-WrappedCommand {
 
     # Use raw line parsing to recover arguments like '--' that PowerShell consumes
     if ($RawLine) {
-        $tokens = [System.Management.Automation.PSParser]::Tokenize($RawLine, [ref]$null)
-        $newArgs = @()
-        $foundCommand = $false
-        $canUseRaw = $true
-
-        foreach ($t in $tokens) {
-            # Find the command token based on offset
-            if (-not $foundCommand) {
-                if ($t.Start -eq ($RawOffset - 1)) { $foundCommand = $true }
-                continue
-            }
-            # Stop at command separators
-            if ($t.Type -eq 'Operator' -and $t.Content -match '[|;&]') { break }
-            # Stop if complex variable expansion is used
-            if ($t.Type -eq 'Variable' -or $t.Type -eq 'Group' -or $t.Type -eq 'SubExpression') {
-                $canUseRaw = $false
-                break
-            }
-            $newArgs += $t.Content
-        }
-
-        if ($foundCommand -and $canUseRaw) { 
-            $Arguments = $newArgs 
+        $reconstructedArgs = Get-ReconstructedArguments $RawLine $RawOffset
+        if ($null -ne $reconstructedArgs) {
+            $Arguments = $reconstructedArgs
             Write-Host "Safe-chain Powershell Wrapper: Reconstructed args: $($Arguments -join ' ')" 
         }
     }
