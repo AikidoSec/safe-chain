@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { ui } from "../environment/userInteraction.js";
+import { getLoggingLevel, LOGGING_VERBOSE } from "../config/settings.js";
 
 const readFilePromise = promisify(readFile);
 const writeFilePromise = promisify(writeFile);
@@ -72,9 +73,13 @@ export function createRamaProxy(ramaPath) {
  * @returns {Promise<RamaProxyInstance>}
  */
 async function startRama(ramaPath, dataFolder) {
-  let process = spawn(ramaPath, ["--secrets", "memory", "--data", dataFolder], {
-    stdio: "inherit",
-  });
+  const args = ["--secrets", "memory", "--data", dataFolder];
+  const process =
+    getLoggingLevel() === LOGGING_VERBOSE
+      ? spawn(ramaPath, args, {
+          stdio: "inherit",
+        })
+      : spawn(ramaPath, args);
 
   // wait some time to allow the proxy process to start
   await new Promise((resolve) => setTimeout(resolve, 5000));
