@@ -25,3 +25,12 @@ export function getNpmCustomRegistries() {
 export function getPipCustomRegistries() {
   return process.env.SAFE_CHAIN_PIP_CUSTOM_REGISTRIES;
 }
+
+/**
+ * Gets the logging level from environment variable
+ * Valid values: "silent", "normal", "verbose"
+ * @returns {string | undefined}
+ */
+export function getLoggingLevel() {
+  return process.env.SAFE_CHAIN_LOGGING;
+}
