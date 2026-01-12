@@ -11,9 +11,15 @@ mock.module("fs", {
   },
 });
 
-const { getNpmCustomRegistries, getPipCustomRegistries } = await import(
-  "./settings.js"
-);
+const {
+  getNpmCustomRegistries,
+  getPipCustomRegistries,
+  getLoggingLevel,
+  LOGGING_SILENT,
+  LOGGING_NORMAL,
+  LOGGING_VERBOSE,
+} = await import("./settings.js");
+const { initializeCliArguments } = await import("./cliArguments.js");
 
 for (const { packageManager, getCustomRegistries, envVarName } of [
   {
@@ -26,8 +32,7 @@ for (const { packageManager, getCustomRegistries, envVarName } of [
     getCustomRegistries: getPipCustomRegistries,
     envVarName: "SAFE_CHAIN_PIP_CUSTOM_REGISTRIES",
   },
-])
-{
+]) {
   describe(getCustomRegistries.name, async () => {
     let originalEnv;
 
@@ -55,7 +60,10 @@ for (const { packageManager, getCustomRegistries, envVarName } of [
     it("should return registries without protocol", () => {
       configFileContent = JSON.stringify({
         [packageManager]: {
-          customRegistries: [`${packageManager}.company.com`, "registry.internal.net"],
+          customRegistries: [
+            `${packageManager}.company.com`,
+            "registry.internal.net",
+          ],
         },
       });
 
@@ -143,8 +151,7 @@ for (const { packageManager, getCustomRegistries, envVarName } of [
 
     it("should parse comma-separated registries from environment variable", () => {
       delete process.env[envVarName];
-      process.env[envVarName] =
-        "env1.registry.com,env2.registry.net";
+      process.env[envVarName] = "env1.registry.com,env2.registry.net";
       configFileContent = undefined;
 
       const registries = getCustomRegistries();
@@ -157,8 +164,7 @@ for (const { packageManager, getCustomRegistries, envVarName } of [
 
     it("should trim whitespace from environment variable registries", () => {
       delete process.env[envVarName];
-      process.env[envVarName] =
-        "  env1.registry.com  ,  env2.registry.net  ";
+      process.env[envVarName] = "  env1.registry.com  ,  env2.registry.net  ";
       configFileContent = undefined;
 
       const registries = getCustomRegistries();
@@ -188,11 +194,15 @@ for (const { packageManager, getCustomRegistries, envVarName } of [
 
     it("should remove duplicate registries when merging env and config", () => {
       delete process.env[envVarName];
-      process.env[envVarName] =
-        `${packageManager}.company.com,env.registry.com`;
+      process.env[
+        envVarName
+      ] = `${packageManager}.company.com,env.registry.com`;
       configFileContent = JSON.stringify({
         [packageManager]: {
-          customRegistries: [`${packageManager}.company.com`, "config.registry.net"],
+          customRegistries: [
+            `${packageManager}.company.com`,
+            "config.registry.net",
+          ],
         },
       });
 
@@ -221,8 +231,7 @@ for (const { packageManager, getCustomRegistries, envVarName } of [
 
     it("should handle empty strings in comma-separated list", () => {
       delete process.env[envVarName];
-      process.env[envVarName] =
-        "env1.registry.com,,env2.registry.net,";
+      process.env[envVarName] = "env1.registry.com,,env2.registry.net,";
       configFileContent = undefined;
 
       const registries = getCustomRegistries();
@@ -264,3 +273,95 @@ for (const { packageManager, getCustomRegistries, envVarName } of [
     });
   });
 }
+
+describe("getLoggingLevel", () => {
+  let originalEnv;
+
+  beforeEach(() => {
+    originalEnv = process.env.SAFE_CHAIN_LOGGING;
+    delete process.env.SAFE_CHAIN_LOGGING;
+    // Reset CLI arguments state
+    initializeCliArguments([]);
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env.SAFE_CHAIN_LOGGING = originalEnv;
+    } else {
+      delete process.env.SAFE_CHAIN_LOGGING;
+    }
+  });
+
+  it("should return normal by default when nothing is configured", () => {
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_NORMAL);
+  });
+
+  it("should return silent from environment variable", () => {
+    process.env.SAFE_CHAIN_LOGGING = "silent";
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_SILENT);
+  });
+
+  it("should return verbose from environment variable", () => {
+    process.env.SAFE_CHAIN_LOGGING = "verbose";
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_VERBOSE);
+  });
+
+  it("should handle uppercase environment variable values", () => {
+    process.env.SAFE_CHAIN_LOGGING = "VERBOSE";
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_VERBOSE);
+  });
+
+  it("should handle mixed case environment variable values", () => {
+    process.env.SAFE_CHAIN_LOGGING = "Silent";
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_SILENT);
+  });
+
+  it("should return normal for invalid environment variable values", () => {
+    process.env.SAFE_CHAIN_LOGGING = "invalid";
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_NORMAL);
+  });
+
+  it("should prioritize CLI argument over environment variable", () => {
+    process.env.SAFE_CHAIN_LOGGING = "verbose";
+    initializeCliArguments(["--safe-chain-logging=silent"]);
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_SILENT);
+  });
+
+  it("should use environment variable when CLI argument is not set", () => {
+    process.env.SAFE_CHAIN_LOGGING = "silent";
+    initializeCliArguments(["install", "express"]);
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_SILENT);
+  });
+
+  it("should return normal when CLI argument is invalid (even if env var is valid)", () => {
+    process.env.SAFE_CHAIN_LOGGING = "verbose";
+    initializeCliArguments(["--safe-chain-logging=invalid"]);
+
+    const level = getLoggingLevel();
+
+    assert.strictEqual(level, LOGGING_NORMAL);
+  });
+});
