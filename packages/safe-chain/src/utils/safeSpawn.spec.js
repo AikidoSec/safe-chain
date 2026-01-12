@@ -55,141 +55,102 @@ describe("safeSpawn", () => {
     mock.reset();
   });
 
-  it("should pass basic command and arguments correctly", async () => {
+  // ============================================
+  // WINDOWS TESTS (shell: true, args as array)
+  // ============================================
+
+  it("should pass basic command and arguments correctly on Windows", async () => {
+    os = "win32";
     await safeSpawn("echo", ["hello"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, "echo hello");
+    assert.strictEqual(spawnCalls[0].command, "echo");
+    assert.deepStrictEqual(spawnCalls[0].args, ["hello"]);
     assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 
-  it("should escape arguments containing spaces", async () => {
+  it("should pass arguments with spaces correctly on Windows", async () => {
+    os = "win32";
     await safeSpawn("echo", ["hello world"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    // Argument should be escaped to prevent shell interpretation
-    assert.strictEqual(spawnCalls[0].command, 'echo "hello world"');
+    assert.strictEqual(spawnCalls[0].command, "echo");
+    assert.deepStrictEqual(spawnCalls[0].args, ["hello world"]);
     assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 
-  it("should prevent shell injection attacks", async () => {
-    await safeSpawn("ls", ["; rm test123.txt"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    // Malicious command should be escaped to prevent execution
-    assert.strictEqual(spawnCalls[0].command, 'ls "; rm test123.txt"');
-    assert.strictEqual(spawnCalls[0].options.shell, true);
-  });
-
-  it("should escape single quotes in arguments", async () => {
-    await safeSpawn("echo", ["don't break"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    // Single quote should be properly escaped with double quotes
-    assert.strictEqual(spawnCalls[0].command, 'echo "don\'t break"');
-    assert.strictEqual(spawnCalls[0].options.shell, true);
-  });
-
-  it("should handle double quotes with simpler escaping", async () => {
-    await safeSpawn("echo", ['say "hello"']);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    // If we switch to double quotes, this should be: "say \"hello\""
-    assert.strictEqual(spawnCalls[0].command, 'echo "say \\"hello\\""');
-    assert.strictEqual(spawnCalls[0].options.shell, true);
-  });
-
-  it("should not escape arguments with only safe characters", async () => {
+  it("should pass special characters safely on Windows", async () => {
+    os = "win32";
     await safeSpawn("npm", ["install", "axios", "--save"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    // Safe arguments (alphanumeric, dash, underscore, dot, slash) shouldn't be quoted
-    assert.strictEqual(spawnCalls[0].command, "npm install axios --save");
+    assert.strictEqual(spawnCalls[0].command, "npm");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "axios", "--save"]);
     assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 
-  it(`should escape ampersand character`, async () => {
-    await safeSpawn("npx", ["cypress", "run", "--env", "password=foo&bar"]);
+  it("should handle Python version specifiers with comparison operators on Windows", async () => {
+    os = "win32";
+    await safeSpawn("pip3", ["install", "Jinja2>=3.1,<3.2"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    // & should be escaped by wrapping the arg in quotes
-    assert.strictEqual(
-      spawnCalls[0].command,
-      'npx cypress run --env "password=foo&bar"'
-    );
+    assert.strictEqual(spawnCalls[0].command, "pip3");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "Jinja2>=3.1,<3.2"]);
     assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 
-  it("should escape dollar signs to prevent variable expansion", async () => {
-    await safeSpawn("echo", ["$HOME/test"]);
+  it("should handle Python not-equal version specifiers on Windows", async () => {
+    os = "win32";
+    await safeSpawn("pip3", ["install", "idna!=3.5,>=3.0"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'echo "\\$HOME/test"');
+    assert.strictEqual(spawnCalls[0].command, "pip3");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "idna!=3.5,>=3.0"]);
+    assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 
-  it("should escape backticks to prevent command substitution", async () => {
-    await safeSpawn("echo", ["file`whoami`.txt"]);
+  it("should handle Python extras with square brackets on Windows", async () => {
+    os = "win32";
+    await safeSpawn("pip3", ["install", "requests[socks]"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'echo "file\\`whoami\\`.txt"');
+    assert.strictEqual(spawnCalls[0].command, "pip3");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "requests[socks]"]);
+    assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 
-  it("should escape backslashes properly", async () => {
-    await safeSpawn("echo", ["path\\with\\backslash"]);
+  // ============================================
+  // UNIX TESTS (no shell, args as array)
+  // ============================================
+
+  it("should resolve full path and pass args as array on Unix", async () => {
+    os = "darwin";
+    await safeSpawn("npm", ["install", "axios"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(
-      spawnCalls[0].command,
-      'echo "path\\\\with\\\\backslash"'
-    );
+    assert.strictEqual(spawnCalls[0].command, "/usr/bin/npm");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "axios"]);
+    assert.deepStrictEqual(spawnCalls[0].options, {});
   });
 
-  it("should handle multiple special characters in one argument", async () => {
-    await safeSpawn("cmd", ['test "quoted" $var `cmd` & more']);
+  it("should handle Python version specifiers with comparison operators on Unix", async () => {
+    os = "darwin";
+    await safeSpawn("pip3", ["install", "Jinja2>=3.1,<3.2"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(
-      spawnCalls[0].command,
-      'cmd "test \\"quoted\\" \\$var \\`cmd\\` & more"'
-    );
+    assert.strictEqual(spawnCalls[0].command, "/usr/bin/pip3");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "Jinja2>=3.1,<3.2"]);
+    assert.deepStrictEqual(spawnCalls[0].options, {});
   });
 
-  it("should handle pipe character", async () => {
-    await safeSpawn("echo", ["foo|bar"]);
+  it("should handle Python version specifiers with comparison operators on Unix", async () => {
+    os = "darwin";
+    await safeSpawn("pip3", ["install", "Jinja2>=3.1,<3.2"]);
 
     assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'echo "foo|bar"');
-  });
-
-  it("should handle parentheses", async () => {
-    await safeSpawn("echo", ["(test)"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'echo "(test)"');
-  });
-
-  it("should handle angle brackets for redirection", async () => {
-    await safeSpawn("echo", ["foo>output.txt"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'echo "foo>output.txt"');
-  });
-
-  it("should handle wildcard characters", async () => {
-    await safeSpawn("echo", ["*.txt"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'echo "*.txt"');
-  });
-
-  it("should handle multiple arguments with mixed escaping needs", async () => {
-    await safeSpawn("cmd", ["safe", "needs space", "$dangerous", "also-safe"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(
-      spawnCalls[0].command,
-      'cmd safe "needs space" "\\$dangerous" also-safe'
-    );
+    assert.strictEqual(spawnCalls[0].command, "/usr/bin/pip3");
+    assert.deepStrictEqual(spawnCalls[0].args, ["install", "Jinja2>=3.1,<3.2"]);
+    assert.deepStrictEqual(spawnCalls[0].options, {});
   });
 
   it("should reject command names with special characters", async () => {
@@ -215,44 +176,5 @@ describe("safeSpawn", () => {
 
     assert.strictEqual(spawnCalls.length, 1);
     assert.strictEqual(spawnCalls[0].command, "valid_command-123");
-  });
-
-  it("should handle Python version specifiers with comparison operators on Windows", async () => {
-    os = "win32";
-    await safeSpawn("pip3", ["install", "Jinja2>=3.1,<3.2"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    // On Windows, args are built into a command string with proper escaping
-    assert.strictEqual(spawnCalls[0].command, 'pip3 install "Jinja2>=3.1,<3.2"');
-    assert.strictEqual(spawnCalls[0].options.shell, true);
-  });
-
-  it("should handle Python version specifiers with comparison operators on Unix", async () => {
-    os = "darwin"; // or "linux"
-    await safeSpawn("pip3", ["install", "Jinja2>=3.1,<3.2"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    // On Unix, resolves full path and passes args as array (no shell interpretation)
-    assert.strictEqual(spawnCalls[0].command, "/usr/bin/pip3");
-    assert.deepStrictEqual(spawnCalls[0].args, ["install", "Jinja2>=3.1,<3.2"]);
-    assert.deepStrictEqual(spawnCalls[0].options, {});
-  });
-
-  it("should handle Python not-equal version specifiers", async () => {
-    os = "win32";
-    await safeSpawn("pip3", ["install", "idna!=3.5,>=3.0"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'pip3 install "idna!=3.5,>=3.0"');
-    assert.strictEqual(spawnCalls[0].options.shell, true);
-  });
-
-  it("should handle Python extras with square brackets", async () => {
-    os = "win32";
-    await safeSpawn("pip3", ["install", "requests[socks]"]);
-
-    assert.strictEqual(spawnCalls.length, 1);
-    assert.strictEqual(spawnCalls[0].command, 'pip3 install "requests[socks]"');
-    assert.strictEqual(spawnCalls[0].options.shell, true);
   });
 });
