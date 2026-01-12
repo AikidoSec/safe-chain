@@ -1,3 +1,4 @@
+import { getPipCustomRegistries } from "../../config/settings.js";
 import { isMalwarePackage } from "../../scanning/audit/index.js";
 import { interceptRequests } from "./interceptorBuilder.js";
 
@@ -13,7 +14,9 @@ const knownPipRegistries = [
  * @returns {import("./interceptorBuilder.js").Interceptor | undefined}
  */
 export function pipInterceptorForUrl(url) {
-  const registry = knownPipRegistries.find((reg) => url.includes(reg));
+  const customRegistries = getPipCustomRegistries();
+  const registries = [...knownPipRegistries, ...customRegistries];
+  const registry = registries.find((reg) => url.includes(reg));
 
   if (registry) {
     return buildPipInterceptor(registry);
@@ -37,8 +40,8 @@ function buildPipInterceptor(registry) {
     // Per python, packages that differ only by hyphen vs underscore are considered the same.
     const hyphenName = packageName?.includes("_") ? packageName.replace(/_/g, "-") : packageName;
 
-    const isMalicious = 
-       await isMalwarePackage(packageName, version) 
+    const isMalicious =
+       await isMalwarePackage(packageName, version)
     || await isMalwarePackage(hyphenName, version);
 
     if (isMalicious) {

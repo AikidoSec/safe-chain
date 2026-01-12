@@ -33,8 +33,6 @@ Aikido Safe Chain supports the following package managers:
 
 Installing the Aikido Safe Chain is easy with our one-line installer.
 
-> ⚠️ **Already installed via npm?** See the [migration guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/npm-to-binary-migration.md) to switch to the binary version.
-
 ### Unix/Linux/macOS
 
 ```shell
@@ -71,7 +69,20 @@ You can find all available versions on the [releases page](https://github.com/Ai
 
    - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
-2. **Verify the installation** by running one of the following commands:
+2. **Verify the installation** by running the verification command:
+
+   ```shell
+   npm safe-chain-verify
+   pnpm safe-chain-verify
+   pip safe-chain-verify
+   uv safe-chain-verify
+
+   # Any other supported package manager: {packagemanager} safe-chain-verify
+   ```
+
+   - The output should display "OK: Safe-chain works!" confirming that Aikido Safe Chain is properly installed and running.
+
+3. **(Optional) Test malware blocking** by attempting to install a test package:
 
    For JavaScript/Node.js:
 
@@ -141,23 +152,36 @@ iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/unins
 
 ## Logging
 
-You can control the output from Aikido Safe Chain using the `--safe-chain-logging` flag:
+You can control the output from Aikido Safe Chain using the `--safe-chain-logging` flag or the `SAFE_CHAIN_LOGGING` environment variable.
 
-- `--safe-chain-logging=silent` - Suppresses all Aikido Safe Chain output except when malware is blocked. The package manager output is written to stdout as normal, and Safe Chain only writes a short message if it has blocked malware and causes the process to exit.
+### Configuration Options
 
-  Example usage:
+You can set the logging level through multiple sources (in order of priority):
 
-  ```shell
-  npm install express --safe-chain-logging=silent
-  ```
+1. **CLI Argument** (highest priority):
 
-- `--safe-chain-logging=verbose` - Enables detailed diagnostic output from Aikido Safe Chain. Useful for troubleshooting issues or understanding what Safe Chain is doing behind the scenes.
+   - `--safe-chain-logging=silent` - Suppresses all Aikido Safe Chain output except when malware is blocked. The package manager output is written to stdout as normal, and Safe Chain only writes a short message if it has blocked malware and causes the process to exit.
 
-  Example usage:
+     ```shell
+     npm install express --safe-chain-logging=silent
+     ```
 
-  ```shell
-  npm install express --safe-chain-logging=verbose
-  ```
+   - `--safe-chain-logging=verbose` - Enables detailed diagnostic output from Aikido Safe Chain. Useful for troubleshooting issues or understanding what Safe Chain is doing behind the scenes.
+
+     ```shell
+     npm install express --safe-chain-logging=verbose
+     ```
+
+2. **Environment Variable**:
+
+   ```shell
+   export SAFE_CHAIN_LOGGING=verbose
+   npm install express
+   ```
+
+   Valid values: `silent`, `normal`, `verbose`
+
+   This is useful for setting a default logging level for all package manager commands in your terminal session or CI/CD environment.
 
 ## Minimum Package Age
 
@@ -188,9 +212,14 @@ You can set the minimum package age through multiple sources (in order of priori
    }
    ```
 
-## Custom NPM Registries
+## Custom Registries
 
-Configure Safe Chain to scan packages from custom or private npm registries.
+Configure Safe Chain to scan packages from custom or private registries.
+
+Supported ecosystems:
+
+- Node.js
+- Python
 
 ### Configuration Options
 
@@ -200,6 +229,7 @@ You can set custom registries through environment variable or config file. Both 
 
    ```shell
    export SAFE_CHAIN_NPM_CUSTOM_REGISTRIES="npm.company.com,registry.internal.net"
+   export SAFE_CHAIN_PIP_CUSTOM_REGISTRIES="pip.company.com,registry.internal.net"
    ```
 
 2. **Config File** (`~/.aikido/config.json`):
@@ -208,6 +238,9 @@ You can set custom registries through environment variable or config file. Both 
    {
      "npm": {
        "customRegistries": ["npm.company.com", "registry.internal.net"]
+     },
+     "pip": {
+       "customRegistries": ["pip.company.com", "registry.internal.net"]
      }
    }
    ```
@@ -327,5 +360,8 @@ pipeline {
 }
 ```
 
-
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
+
+# Troubleshooting
+
+Having issues? See the [Troubleshooting Guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/troubleshooting.md) for help with common problems.

@@ -15,3 +15,22 @@ export function getMinimumPackageAgeHours() {
 export function getNpmCustomRegistries() {
   return process.env.SAFE_CHAIN_NPM_CUSTOM_REGISTRIES;
 }
+
+/**
+ * Gets the custom pip registries from environment variable
+ * Expected format: comma-separated list of registry domains
+ * Example: "pip.company.com,registry.internal.net"
+ * @returns {string | undefined}
+ */
+export function getPipCustomRegistries() {
+  return process.env.SAFE_CHAIN_PIP_CUSTOM_REGISTRIES;
+}
+
+/**
+ * Gets the logging level from environment variable
+ * Valid values: "silent", "normal", "verbose"
+ * @returns {string | undefined}
+ */
+export function getLoggingLevel() {
+  return process.env.SAFE_CHAIN_LOGGING;
+}

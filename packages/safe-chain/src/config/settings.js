@@ -7,14 +7,20 @@ export const LOGGING_NORMAL = "normal";
 export const LOGGING_VERBOSE = "verbose";
 
 export function getLoggingLevel() {
-  const level = cliArguments.getLoggingLevel();
-
-  if (level === LOGGING_SILENT) {
-    return LOGGING_SILENT;
+  // Priority 1: CLI argument
+  const cliLevel = cliArguments.getLoggingLevel();
+  if (cliLevel === LOGGING_SILENT || cliLevel === LOGGING_VERBOSE) {
+    return cliLevel;
+  }
+  if (cliLevel) {
+    // CLI arg was set but invalid, default to normal for backwards compatibility.
+    return LOGGING_NORMAL;
   }
 
-  if (level === LOGGING_VERBOSE) {
-    return LOGGING_VERBOSE;
+  // Priority 2: Environment variable
+  const envLevel = environmentVariables.getLoggingLevel()?.toLowerCase();
+  if (envLevel === LOGGING_SILENT || envLevel === LOGGING_VERBOSE) {
+    return envLevel;
   }
 
   return LOGGING_NORMAL;
@@ -135,6 +141,24 @@ export function getNpmCustomRegistries() {
     environmentVariables.getNpmCustomRegistries()
   );
   const configRegistries = configFile.getNpmCustomRegistries();
+
+  // Merge both sources and remove duplicates
+  const allRegistries = [...envRegistries, ...configRegistries];
+  const uniqueRegistries = [...new Set(allRegistries)];
+
+  // Normalize each registry (remove protocol if any)
+  return uniqueRegistries.map(normalizeRegistry);
+}
+
+/**
+ * Gets the custom npm registries from both environment variable and config file (merged)
+ * @returns {string[]}
+ */
+export function getPipCustomRegistries() {
+  const envRegistries = parseRegistriesFromEnv(
+    environmentVariables.getPipCustomRegistries()
+  );
+  const configRegistries = configFile.getPipCustomRegistries();
 
   // Merge both sources and remove duplicates
   const allRegistries = [...envRegistries, ...configRegistries];

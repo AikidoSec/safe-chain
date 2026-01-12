@@ -11,15 +11,29 @@ permissions:
 
 jobs:
   set-version:
+    name: Set version number
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.tag }}
+      is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set version number
         id: get_version
         run: |
           version="${{ github.ref_name }}"
           echo "tag=$version" >> $GITHUB_OUTPUT
+
+      - name: Check if pre-release
+        id: check_prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IS_PRERELEASE=$(gh release view ${{ steps.get_version.outputs.tag }} --json isPrerelease --jq '.isPrerelease')
+          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Release ${{ steps.get_version.outputs.tag }} is pre-release: $IS_PRERELEASE"
 
   create-binaries:
     needs: set-version
@@ -27,8 +41,65 @@ jobs:
     with:
       version: ${{ needs.set-version.outputs.version }}
 
-  build:
+  publish-binaries:
+    name: Publish to GitHub release
     needs: [set-version, create-binaries]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: binaries/
+          pattern: safe-chain-*
+          merge-multiple: false
+
+      - name: Rename binaries to include platform and architecture
+        run: |
+          mkdir release-artifacts
+          mv binaries/safe-chain-macos-x64/safe-chain release-artifacts/safe-chain-macos-x64
+          mv binaries/safe-chain-macos-arm64/safe-chain release-artifacts/safe-chain-macos-arm64
+          mv binaries/safe-chain-linux-x64/safe-chain release-artifacts/safe-chain-linux-x64
+          mv binaries/safe-chain-linux-arm64/safe-chain release-artifacts/safe-chain-linux-arm64
+          mv binaries/safe-chain-linuxstatic-x64/safe-chain release-artifacts/safe-chain-linuxstatic-x64
+          mv binaries/safe-chain-linuxstatic-arm64/safe-chain release-artifacts/safe-chain-linuxstatic-arm64
+          mv binaries/safe-chain-win-x64/safe-chain.exe release-artifacts/safe-chain-win-x64.exe
+          mv binaries/safe-chain-win-arm64/safe-chain.exe release-artifacts/safe-chain-win-arm64.exe
+
+      - name: Move install scripts and hard-code version
+        env:
+          VERSION: ${{ needs.set-version.outputs.version }}
+        run: |
+          sed "s/\$(fetch_latest_version)/${VERSION}/" install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
+          sed "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
+          cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
+          cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
+
+      - name: Upload binaries to existing GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ needs.set-version.outputs.version }} \
+            release-artifacts/safe-chain-macos-x64 \
+            release-artifacts/safe-chain-macos-arm64 \
+            release-artifacts/safe-chain-linux-x64 \
+            release-artifacts/safe-chain-linux-arm64 \
+            release-artifacts/safe-chain-linuxstatic-x64 \
+            release-artifacts/safe-chain-linuxstatic-arm64 \
+            release-artifacts/safe-chain-win-x64.exe \
+            release-artifacts/safe-chain-win-arm64.exe \
+            release-artifacts/install-safe-chain.sh \
+            release-artifacts/install-safe-chain.ps1 \
+            release-artifacts/uninstall-safe-chain.sh \
+            release-artifacts/uninstall-safe-chain.ps1
+
+  publish-npm:
+    name: Publish to npm
+    needs: [set-version, create-binaries]
+    if: needs.set-version.outputs.is_prerelease != 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -65,45 +136,3 @@ jobs:
         run: |
           echo "Publishing version ${{ needs.set-version.outputs.version }} to NPM"
           npm publish --workspace=packages/safe-chain --access public --provenance
-
-      - name: Download all binary artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: binaries/
-          pattern: safe-chain-*
-          merge-multiple: false
-
-      - name: Rename binaries to include platform and architecture
-        run: |
-          mkdir release-artifacts
-          mv binaries/safe-chain-macos-x64/safe-chain release-artifacts/safe-chain-macos-x64
-          mv binaries/safe-chain-macos-arm64/safe-chain release-artifacts/safe-chain-macos-arm64
-          mv binaries/safe-chain-linux-x64/safe-chain release-artifacts/safe-chain-linux-x64
-          mv binaries/safe-chain-linux-arm64/safe-chain release-artifacts/safe-chain-linux-arm64
-          mv binaries/safe-chain-win-x64/safe-chain.exe release-artifacts/safe-chain-win-x64.exe
-          mv binaries/safe-chain-win-arm64/safe-chain.exe release-artifacts/safe-chain-win-arm64.exe
-
-      - name: Move install scripts and hard-code version
-        env:
-          VERSION: ${{ needs.set-version.outputs.version }}
-        run: |
-          sed "s/\$(fetch_latest_version)/${VERSION}/" install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
-          sed "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
-          cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
-          cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
-
-      - name: Upload binaries to existing GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ needs.set-version.outputs.version }} \
-            release-artifacts/safe-chain-macos-x64 \
-            release-artifacts/safe-chain-macos-arm64 \
-            release-artifacts/safe-chain-linux-x64 \
-            release-artifacts/safe-chain-linux-arm64 \
-            release-artifacts/safe-chain-win-x64.exe \
-            release-artifacts/safe-chain-win-arm64.exe \
-            release-artifacts/install-safe-chain.sh \
-            release-artifacts/install-safe-chain.ps1 \
-            release-artifacts/uninstall-safe-chain.sh \
-            release-artifacts/uninstall-safe-chain.ps1

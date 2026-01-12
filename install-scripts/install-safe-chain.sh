@@ -32,9 +32,16 @@ error() {
 }
 
 # Detect OS
+# For legacy versions (when SAFE_CHAIN_VERSION is set), use 'linux' instead of 'linuxstatic'
 detect_os() {
     case "$(uname -s)" in
-        Linux*)     echo "linux" ;;
+        Linux*)
+            if [ -n "$SAFE_CHAIN_VERSION" ]; then
+                echo "linux"
+            else
+                echo "linuxstatic"
+            fi
+            ;;
         Darwin*)    echo "macos" ;;
         *)          error "Unsupported operating system: $(uname -s)" ;;
     esac
@@ -159,6 +166,66 @@ remove_volta_installation() {
     fi
 }
 
+# Check and uninstall nvm-managed package if present across all Node versions
+remove_nvm_installation() {
+    # This script is run in sh shell for greatest compatibility.
+    # Because nvm is usually setup in bash/zsh/fish startup scripts, we need to source it.
+    # Otherwise it won't be available in sh.
+    if [ -s "$HOME/.nvm/nvm.sh" ]; then
+        # Source nvm to make it available in this script
+        . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
+    elif [ -s "$NVM_DIR/nvm.sh" ]; then
+        . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+    fi
+
+    # Check if nvm is now available
+    if ! command_exists nvm; then
+        return
+    fi
+
+    nvm_versions=$(nvm list 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+
+    if [ -z "$nvm_versions" ]; then
+        return
+    fi
+
+    # Track if we found any installations
+    found_installation=false
+    uninstall_failed=false
+    current_version=$(nvm current 2>/dev/null || echo "")
+
+    # Check each version for safe-chain installation
+    for version in $nvm_versions; do
+        # Check if this version has safe-chain installed
+        # Use nvm exec to run npm list in the context of that Node version
+        if nvm exec "$version" npm list -g @aikidosec/safe-chain >/dev/null 2>&1; then
+            if [ "$found_installation" = false ]; then
+                info "Detected nvm installation(s) of @aikidosec/safe-chain"
+                info "Uninstalling from all Node versions..."
+                found_installation=true
+            fi
+
+            info "  Removing from Node $version..."
+            if nvm exec "$version" npm uninstall -g @aikidosec/safe-chain >/dev/null 2>&1; then
+                info "  Successfully uninstalled from Node $version"
+            else
+                warn "  Failed to uninstall from Node $version"
+                uninstall_failed=true
+            fi
+        fi
+    done
+
+    # Restore original Node version if it was set
+    if [ -n "$current_version" ] && [ "$current_version" != "none" ] && [ "$current_version" != "system" ]; then
+        nvm use "$current_version" >/dev/null 2>&1 || true
+    fi
+
+    # If any uninstall failed, error out instead of continuing
+    if [ "$uninstall_failed" = true ]; then
+        error "Failed to uninstall @aikidosec/safe-chain from all nvm Node versions. Please uninstall manually and try again."
+    fi
+}
+
 # Parse command-line arguments
 parse_arguments() {
     for arg in "$@"; do
@@ -184,6 +251,20 @@ main() {
     # Parse command-line arguments
     parse_arguments "$@"
 
+    # Show deprecation warning if SAFE_CHAIN_VERSION is set
+    if [ -n "$SAFE_CHAIN_VERSION" ]; then
+        warn "SAFE_CHAIN_VERSION environment variable is deprecated."
+        warn ""
+        warn "Please use direct download URLs for version pinning instead:"
+        warn ""
+        if [ "$USE_CI_SETUP" = "true" ]; then
+            warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh -s -- --ci"
+        else
+            warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh"
+        fi
+        warn ""
+    fi
+
     # Fetch latest version if VERSION is not set
     if [ -z "$VERSION" ]; then
         info "Fetching latest release version..."
@@ -204,9 +285,10 @@ main() {
 
     info "$INSTALL_MSG"
 
-    # Check for existing safe-chain installation through npm or volta
+    # Check for existing safe-chain installation through nvm, volta, or npm
     remove_npm_installation
     remove_volta_installation
+    remove_nvm_installation
 
     # Detect platform
     OS=$(detect_os)
