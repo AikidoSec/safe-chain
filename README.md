@@ -152,23 +152,36 @@ iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/unins
 
 ## Logging
 
-You can control the output from Aikido Safe Chain using the `--safe-chain-logging` flag:
+You can control the output from Aikido Safe Chain using the `--safe-chain-logging` flag or the `SAFE_CHAIN_LOGGING` environment variable.
 
-- `--safe-chain-logging=silent` - Suppresses all Aikido Safe Chain output except when malware is blocked. The package manager output is written to stdout as normal, and Safe Chain only writes a short message if it has blocked malware and causes the process to exit.
+### Configuration Options
 
-  Example usage:
+You can set the logging level through multiple sources (in order of priority):
 
-  ```shell
-  npm install express --safe-chain-logging=silent
-  ```
+1. **CLI Argument** (highest priority):
 
-- `--safe-chain-logging=verbose` - Enables detailed diagnostic output from Aikido Safe Chain. Useful for troubleshooting issues or understanding what Safe Chain is doing behind the scenes.
+   - `--safe-chain-logging=silent` - Suppresses all Aikido Safe Chain output except when malware is blocked. The package manager output is written to stdout as normal, and Safe Chain only writes a short message if it has blocked malware and causes the process to exit.
 
-  Example usage:
+     ```shell
+     npm install express --safe-chain-logging=silent
+     ```
 
-  ```shell
-  npm install express --safe-chain-logging=verbose
-  ```
+   - `--safe-chain-logging=verbose` - Enables detailed diagnostic output from Aikido Safe Chain. Useful for troubleshooting issues or understanding what Safe Chain is doing behind the scenes.
+
+     ```shell
+     npm install express --safe-chain-logging=verbose
+     ```
+
+2. **Environment Variable**:
+
+   ```shell
+   export SAFE_CHAIN_LOGGING=verbose
+   npm install express
+   ```
+
+   Valid values: `silent`, `normal`, `verbose`
+
+   This is useful for setting a default logging level for all package manager commands in your terminal session or CI/CD environment.
 
 ## Minimum Package Age
 

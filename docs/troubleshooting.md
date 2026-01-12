@@ -48,11 +48,15 @@ These test packages are flagged as malware and should be blocked by Safe Chain.
 
 ### Logging Options
 
-Use logging flags to get more information:
+Use logging flags or environment variables to get more information:
 
 ```bash
 # Verbose mode - detailed diagnostic output for troubleshooting
 npm install express --safe-chain-logging=verbose
+
+# Or set it globally for all commands in your session
+export SAFE_CHAIN_LOGGING=verbose
+npm install express
 
 # Silent mode - suppress all output except malware blocking
 npm install express --safe-chain-logging=silent
@@ -277,11 +281,16 @@ rm -rf ~/.safe-chain
 
 ### Enable Verbose Logging
 
-Get detailed diagnostic output:
+Get detailed diagnostic output using a CLI flag or environment variable:
 
 ```bash
+# Using CLI flag
 npm install express --safe-chain-logging=verbose
 pip install requests --safe-chain-logging=verbose
+
+# Using environment variable (applies to all commands)
+export SAFE_CHAIN_LOGGING=verbose
+npm install express
 ```
 
 ### Report Issues
