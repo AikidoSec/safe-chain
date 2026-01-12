@@ -317,6 +317,22 @@ main() {
 
     info "Binary installed to: $FINAL_FILE"
 
+    # Download safechain-proxy for macOS only
+    if [ "$OS" = "macos" ]; then
+        info "Downloading safechain-proxy..."
+
+        if [ "$ARCH" = "arm64" ]; then
+            PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.2.0/safechain-proxy-darwin-arm64"
+        else
+            PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.2.0/safechain-proxy-darwin-amd64"
+        fi
+
+        PROXY_FILE="${INSTALL_DIR}/safechain-proxy"
+        download "$PROXY_URL" "$PROXY_FILE"
+        chmod +x "$PROXY_FILE" || error "Failed to make proxy executable"
+        info "Proxy installed to: $PROXY_FILE"
+    fi
+
     # Build setup command based on arguments
     SETUP_CMD="setup"
     SETUP_ARGS=""
