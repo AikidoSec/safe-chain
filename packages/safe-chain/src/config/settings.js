@@ -13,7 +13,7 @@ export function getLoggingLevel() {
     return cliLevel;
   }
   if (cliLevel) {
-    // CLI arg was set but invalid, default to normal
+    // CLI arg was set but invalid, default to normal for backwards compatibility.
     return LOGGING_NORMAL;
   }
 
