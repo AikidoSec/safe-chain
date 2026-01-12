@@ -155,7 +155,6 @@ function Invoke-WrappedCommand {
         $reconstructedArgs = Get-ReconstructedArguments $RawLine $RawOffset
         if ($null -ne $reconstructedArgs) {
             $Arguments = $reconstructedArgs
-            Write-Host "Safe-chain Powershell Wrapper: Reconstructed args: $($Arguments -join ' ')" 
         }
     }
 
