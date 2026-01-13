@@ -25,8 +25,6 @@ export function getRamaPath() {
   const executableDir = dirname(process.execPath);
   const ramaPath = join(executableDir, "safechain-proxy");
 
-  ui.writeWarning(ramaPath);
-
   if (existsSync(ramaPath)) {
     return ramaPath;
   }
@@ -46,7 +44,7 @@ export function createRamaProxy(ramaPath) {
   return {
     startServer: async () => {
       ramaInstance = await startRama(ramaPath, tempDir);
-      ui.writeInformation(
+      ui.writeVerbose(
         `Proxy started at address "${ramaInstance.proxyAddress}"`
       );
     },
@@ -73,6 +71,7 @@ export function createRamaProxy(ramaPath) {
  * @returns {Promise<RamaProxyInstance>}
  */
 async function startRama(ramaPath, dataFolder) {
+  const startTime = Date.now();
   const args = ["--secrets", "memory", "--data", dataFolder];
   const process =
     getLoggingLevel() === LOGGING_VERBOSE
@@ -81,13 +80,22 @@ async function startRama(ramaPath, dataFolder) {
         })
       : spawn(ramaPath, args);
 
-  // wait some time to allow the proxy process to start
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  // wait for the proxy process to start (poll for proxy.addr.txt file)
+  const proxyAddrPath = join(dataFolder, "proxy.addr.txt");
+  const maxWaitTime = 60000; // 60 seconds
+  const pollInterval = 500; // 500 ms
 
-  const proxyAddress = await readFilePromise(
-    join(dataFolder, "proxy.addr.txt"),
-    "utf-8"
-  );
+  while (!existsSync(proxyAddrPath)) {
+    if (Date.now() - startTime > maxWaitTime) {
+      throw new Error("Timeout waiting for proxy to start");
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+
+  const elapsedTime = Date.now() - startTime;
+  ui.writeVerbose(`Proxy started in ${elapsedTime}ms`);
+
+  const proxyAddress = await readFilePromise(proxyAddrPath, "utf-8");
   const metaAddress = await readFilePromise(
     join(dataFolder, "meta.addr.txt"),
     "utf-8"
