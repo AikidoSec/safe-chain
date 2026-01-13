@@ -271,6 +271,7 @@ iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download
 - ✅ **Azure Pipelines**
 - ✅ **CircleCI**
 - ✅ **Jenkins**
+- ✅ **Bitbucket Pipelines**
 
 ## GitHub Actions Example
 
@@ -358,6 +359,21 @@ pipeline {
     }
   }
 }
+```
+
+## Bitbucket Pipelines Example
+
+```yaml
+image: node:22
+
+steps:
+  - step:
+      name: Install
+      script:
+        - npm install -g @aikidosec/safe-chain
+        - safe-chain setup-ci
+        - export PATH=~/.safe-chain/shims:$PATH
+        - npm ci
 ```
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
