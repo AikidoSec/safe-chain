@@ -323,14 +323,14 @@ main() {
 
         if [ "$OS" = "macos" ]; then
             if [ "$ARCH" = "arm64" ]; then
-                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.4-linux-proxy-bins/safechain-proxy-darwin-arm64"
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.5-linux-proxy-bins/safechain-proxy-darwin-arm64"
             else
-                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.4-linux-proxy-bins/safechain-proxy-darwin-amd64"
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.5-linux-proxy-bins/safechain-proxy-darwin-amd64"
             fi
         else
             # Linux (both linux and linuxstatic)
             if [ "$ARCH" = "x64" ]; then
-                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.4-linux-proxy-bins/safechain-proxy-linux-amd64"
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.5-linux-proxy-bins/safechain-proxy-linux-amd64"
             else
                 # Skip for non-x64 Linux architectures
                 info "Skipping safechain-proxy download (not available for linux-${ARCH})"
