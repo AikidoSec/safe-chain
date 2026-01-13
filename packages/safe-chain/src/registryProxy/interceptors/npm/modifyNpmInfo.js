@@ -118,7 +118,7 @@ function deleteVersionFromJson(json, version) {
 
   const packageName = typeof json?.name === "string" ? json.name : "(unknown)";
 
-  ui.writeInformation(
+  ui.writeVerbose(
     `Safe-chain: ${packageName}@${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`
   );
 
