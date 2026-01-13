@@ -116,8 +116,10 @@ export function modifyNpmInfoResponse(body, headers) {
 function deleteVersionFromJson(json, version) {
   state.hasSuppressedVersions = true;
 
+  const packageName = typeof json?.name === "string" ? json.name : "(unknown)";
+
   ui.writeVerbose(
-    `Safe-chain: ${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`
+    `Safe-chain: ${packageName}@${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`
   );
 
   delete json.time[version];
