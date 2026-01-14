@@ -6,27 +6,27 @@ $safeChainBin = Join-Path (Join-Path $HOME '.safe-chain') 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
 function npx {
-    Invoke-WrappedCommand "npx" $args
+    Invoke-WrappedCommand "npx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function yarn {
-    Invoke-WrappedCommand "yarn" $args
+    Invoke-WrappedCommand "yarn" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function pnpm {
-    Invoke-WrappedCommand "pnpm" $args
+    Invoke-WrappedCommand "pnpm" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function pnpx {
-    Invoke-WrappedCommand "pnpx" $args
+    Invoke-WrappedCommand "pnpx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function bun {
-    Invoke-WrappedCommand "bun" $args
+    Invoke-WrappedCommand "bun" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function bunx {
-    Invoke-WrappedCommand "bunx" $args
+    Invoke-WrappedCommand "bunx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function npm {
@@ -37,37 +37,37 @@ function npm {
         return
     }
 
-    Invoke-WrappedCommand "npm" $args
+    Invoke-WrappedCommand "npm" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function pip {
-    Invoke-WrappedCommand "pip" $args
+    Invoke-WrappedCommand "pip" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function pip3 {
-    Invoke-WrappedCommand "pip3" $args
+    Invoke-WrappedCommand "pip3" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function uv {
-    Invoke-WrappedCommand "uv" $args
+    Invoke-WrappedCommand "uv" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function poetry {
-    Invoke-WrappedCommand "poetry" $args
+    Invoke-WrappedCommand "poetry" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 # `python -m pip`, `python -m pip3`.
 function python {
-    Invoke-WrappedCommand 'python' $args
+    Invoke-WrappedCommand 'python' $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 # `python3 -m pip`, `python3 -m pip3'.
 function python3 {
-    Invoke-WrappedCommand 'python3' $args
+    Invoke-WrappedCommand 'python3' $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function pipx {
-    Invoke-WrappedCommand "pipx" $args
+    Invoke-WrappedCommand "pipx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function Write-SafeChainWarning {
@@ -108,13 +108,60 @@ function Invoke-RealCommand {
     }
 }
 
+function Get-ReconstructedArguments {
+    param(
+        [string]$RawLine,
+        [int]$RawOffset
+    )
+
+    if (-not $RawLine) { return $null }
+
+    $tokens = [System.Management.Automation.PSParser]::Tokenize($RawLine, [ref]$null)
+    $newArgs = @()
+    $foundCommand = $false
+
+    foreach ($t in $tokens) {
+        if (-not $foundCommand) {
+            if ($t.Start -eq ($RawOffset - 1)) { $foundCommand = $true }
+            continue
+        }
+        
+        if ($t.Type -eq 'Operator' -and $t.Content -match '[|;&]') { break }
+        
+        # Stop if complex variable expansion is used
+        if ($t.Type -eq 'Variable' -or $t.Type -eq 'Group' -or $t.Type -eq 'SubExpression') {
+            return $null
+        }
+        
+        $newArgs += $t.Content
+    }
+
+    if ($foundCommand) {
+        return ,$newArgs
+    }
+    return $null
+}
+
 function Invoke-WrappedCommand {
     param(
         [string]$OriginalCmd,
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [string]$RawLine = $null,
+        [int]$RawOffset = 0
     )
 
-    if (Test-CommandAvailable "safe-chain") {
+    # Use raw line parsing to recover arguments like '--' that PowerShell consumes
+    if ($RawLine) {
+        $reconstructedArgs = Get-ReconstructedArguments $RawLine $RawOffset
+        if ($null -ne $reconstructedArgs) {
+            $Arguments = $reconstructedArgs
+        }
+    }
+
+    if ($isWindowsPlatform -and (Test-CommandAvailable "safe-chain.cmd")) {
+        & safe-chain.cmd $OriginalCmd @Arguments
+    }
+    elseif (Test-CommandAvailable "safe-chain") {
         & safe-chain $OriginalCmd @Arguments
     }
     else {
