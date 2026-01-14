@@ -98,7 +98,7 @@ async function retry(func, attempts) {
     }
 
     if (i < attempts - 1) {
-      // When this is not the last try, back-off expenentially:
+      // When this is not the last try, back-off exponentially:
       //  1st attempt - 500ms delay
       //  2nd attempt - 1000ms delay
       //  3rd attempt - 2000ms delay
