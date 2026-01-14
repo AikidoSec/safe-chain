@@ -481,6 +481,87 @@ describe("npmInterceptor minimum package age", async () => {
     assert.equal(Object.keys(modifiedJson.versions).length, 2);
   });
 
+  it("Should exclude packages matching wildcard pattern @scope/*", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["@aikidosec/*"];
+
+    const packageUrl = "https://registry.npmjs.org/@aikidosec/safe-chain";
+
+    const originalBody = JSON.stringify({
+      name: "@aikidosec/safe-chain",
+      ["dist-tags"]: { latest: "2.0.0" },
+      versions: { ["1.0.0"]: {}, ["2.0.0"]: {} },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-1),
+        ["1.0.0"]: getDate(-100),
+        ["2.0.0"]: getDate(-1), // Would normally be filtered
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // All versions should remain since @aikidosec/* matches @aikidosec/safe-chain
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("2.0.0"));
+  });
+
+  it("Should exclude packages matching wildcard pattern prefix-*", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["react-*"];
+
+    const packageUrl = "https://registry.npmjs.org/react-dom";
+
+    const originalBody = JSON.stringify({
+      name: "react-dom",
+      ["dist-tags"]: { latest: "18.0.0" },
+      versions: { ["17.0.0"]: {}, ["18.0.0"]: {} },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-1),
+        ["17.0.0"]: getDate(-100),
+        ["18.0.0"]: getDate(-1), // Would normally be filtered
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // All versions should remain since react-* matches react-dom
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+  });
+
+  it("Should NOT exclude packages that don't match wildcard pattern", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["@aikidosec/*"];
+
+    const packageUrl = "https://registry.npmjs.org/@other/package";
+
+    const originalBody = JSON.stringify({
+      name: "@other/package",
+      ["dist-tags"]: { latest: "2.0.0" },
+      versions: { ["1.0.0"]: {}, ["2.0.0"]: {} },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-1),
+        ["1.0.0"]: getDate(-100),
+        ["2.0.0"]: getDate(-1),
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // Version 2.0.0 should be filtered since @other/package doesn't match @aikidosec/*
+    assert.equal(Object.keys(modifiedJson.versions).length, 1);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+  });
+
   it("Should reset exclusions between tests", async () => {
     minimumPackageAgeSettings = 5;
     skipMinimumPackageAgeSetting = false;

@@ -214,16 +214,16 @@ You can set the minimum package age through multiple sources (in order of priori
 
 ### Excluding Packages
 
-Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged):
+Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged). Supports wildcard patterns with trailing `*`:
 
 ```shell
-export SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS="react,@aikidosec/safe-chain"
+export SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*,react-*,lodash"
 ```
 
 ```json
 {
   "npm": {
-    "minimumPackageAgeExclusions": ["react", "@aikidosec/safe-chain"]
+    "minimumPackageAgeExclusions": ["@aikidosec/*", "react-*", "lodash"]
   }
 }
 ```
