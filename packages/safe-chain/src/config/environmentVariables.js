@@ -34,3 +34,13 @@ export function getPipCustomRegistries() {
 export function getLoggingLevel() {
   return process.env.SAFE_CHAIN_LOGGING;
 }
+
+/**
+ * Gets the minimum package age exclusions from environment variable
+ * Expected format: comma-separated list of package names
+ * Example: "react,@aikidosec/safe-chain,lodash"
+ * @returns {string | undefined}
+ */
+export function getNpmMinimumPackageAgeExclusions() {
+  return process.env.SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS;
+}
