@@ -21,6 +21,8 @@ const malwareDatabaseUrls = {
  * @returns {Promise<{malwareDatabase: MalwarePackage[], version: string | undefined}>}
  */
 export async function fetchMalwareDatabase() {
+  const numberOfAttempts = 4;
+
   return retry(async () => {
     const ecosystem = getEcoSystem();
     const malwareDatabaseUrl =
@@ -43,13 +45,15 @@ export async function fetchMalwareDatabase() {
     } catch (/** @type {any} */ error) {
       throw new Error(`Error parsing malware database: ${error.message}`);
     }
-  }, 3);
+  }, numberOfAttempts);
 }
 
 /**
  * @returns {Promise<string | undefined>}
  */
 export async function fetchMalwareDatabaseVersion() {
+  const numberOfAttempts = 4;
+
   return retry(async () => {
     const ecosystem = getEcoSystem();
     const malwareDatabaseUrl =
@@ -66,7 +70,7 @@ export async function fetchMalwareDatabaseVersion() {
       );
     }
     return response.headers.get("etag") || undefined;
-  }, 3);
+  }, numberOfAttempts);
 }
 
 /**
@@ -74,21 +78,27 @@ export async function fetchMalwareDatabaseVersion() {
  *
  * @template T
  * @param {() => Promise<T>} func - The asynchronous function to retry
- * @param {number} times - The number of retry attempts (will execute times + 1 total attempts)
+ * @param {number} attempts - The number of attempts
  * @returns {Promise<T>} The return value of the function if successful
  * @throws {Error} The last error encountered if all retry attempts fail
  */
-async function retry(func, times) {
+async function retry(func, attempts) {
   let lastError;
 
-  for (let i = 0; i <= times; i++) {
+  for (let i = 0; i < attempts; i++) {
     try {
       return await func();
     } catch (error) {
       lastError = error;
     }
 
-    if (i < times) {
+    if (i < attempts - 1) {
+      // When this is not the last try, back-off expenentially:
+      //  1st attempt - 500ms delay
+      //  2nd attempt - 1000ms delay
+      //  3rd attempt - 2000ms delay
+      //  4th attempt - 4000ms delay
+      //  ...
       await new Promise((resolve) => setTimeout(resolve, Math.pow(2, i) * 500));
     }
   }
