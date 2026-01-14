@@ -167,3 +167,34 @@ export function getPipCustomRegistries() {
   // Normalize each registry (remove protocol if any)
   return uniqueRegistries.map(normalizeRegistry);
 }
+
+/**
+ * Parses comma-separated exclusions from environment variable
+ * @param {string | undefined} envValue
+ * @returns {string[]}
+ */
+function parseExclusionsFromEnv(envValue) {
+  if (!envValue || typeof envValue !== "string") {
+    return [];
+  }
+
+  return envValue
+    .split(",")
+    .map((exclusion) => exclusion.trim())
+    .filter((exclusion) => exclusion.length > 0);
+}
+
+/**
+ * Gets the minimum package age exclusions from both environment variable and config file (merged)
+ * @returns {string[]}
+ */
+export function getNpmMinimumPackageAgeExclusions() {
+  const envExclusions = parseExclusionsFromEnv(
+    environmentVariables.getNpmMinimumPackageAgeExclusions()
+  );
+  const configExclusions = configFile.getNpmMinimumPackageAgeExclusions();
+
+  // Merge both sources and remove duplicates
+  const allExclusions = [...envExclusions, ...configExclusions];
+  return [...new Set(allExclusions)];
+}

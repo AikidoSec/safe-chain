@@ -14,6 +14,7 @@ mock.module("fs", {
 const {
   getNpmCustomRegistries,
   getPipCustomRegistries,
+  getNpmMinimumPackageAgeExclusions,
   getLoggingLevel,
   LOGGING_SILENT,
   LOGGING_NORMAL,
@@ -363,5 +364,139 @@ describe("getLoggingLevel", () => {
     const level = getLoggingLevel();
 
     assert.strictEqual(level, LOGGING_NORMAL);
+  });
+});
+
+describe("getNpmMinimumPackageAgeExclusions", () => {
+  let originalEnv;
+  const envVarName = "SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS";
+
+  beforeEach(() => {
+    originalEnv = process.env[envVarName];
+    delete process.env[envVarName];
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env[envVarName] = originalEnv;
+    } else {
+      delete process.env[envVarName];
+    }
+    configFileContent = undefined;
+  });
+
+  it("should return empty array when no exclusions configured", () => {
+    configFileContent = undefined;
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, []);
+  });
+
+  it("should return exclusions from config file", () => {
+    configFileContent = JSON.stringify({
+      npm: {
+        minimumPackageAgeExclusions: ["react", "@aikidosec/safe-chain"],
+      },
+    });
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["react", "@aikidosec/safe-chain"]);
+  });
+
+  it("should parse comma-separated exclusions from environment variable", () => {
+    process.env[envVarName] = "lodash,express,@types/node";
+    configFileContent = undefined;
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["lodash", "express", "@types/node"]);
+  });
+
+  it("should merge environment variable and config file exclusions", () => {
+    process.env[envVarName] = "lodash";
+    configFileContent = JSON.stringify({
+      npm: {
+        minimumPackageAgeExclusions: ["react"],
+      },
+    });
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["lodash", "react"]);
+  });
+
+  it("should remove duplicate exclusions when merging", () => {
+    process.env[envVarName] = "lodash,react";
+    configFileContent = JSON.stringify({
+      npm: {
+        minimumPackageAgeExclusions: ["react", "express"],
+      },
+    });
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["lodash", "react", "express"]);
+  });
+
+  it("should trim whitespace from environment variable exclusions", () => {
+    process.env[envVarName] = "  lodash  ,  react  ";
+    configFileContent = undefined;
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["lodash", "react"]);
+  });
+
+  it("should handle scoped packages", () => {
+    configFileContent = JSON.stringify({
+      npm: {
+        minimumPackageAgeExclusions: ["@babel/core", "@types/react"],
+      },
+    });
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["@babel/core", "@types/react"]);
+  });
+
+  it("should handle empty strings in comma-separated list", () => {
+    process.env[envVarName] = "lodash,,react,";
+    configFileContent = undefined;
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["lodash", "react"]);
+  });
+
+  it("should return empty array for empty environment variable", () => {
+    process.env[envVarName] = "";
+    configFileContent = undefined;
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, []);
+  });
+
+  it("should return empty array for whitespace-only environment variable", () => {
+    process.env[envVarName] = "   ,  ,  ";
+    configFileContent = undefined;
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, []);
+  });
+
+  it("should filter non-string values from config file", () => {
+    configFileContent = JSON.stringify({
+      npm: {
+        minimumPackageAgeExclusions: ["react", 123, null, "lodash", undefined],
+      },
+    });
+
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["react", "lodash"]);
   });
 });
