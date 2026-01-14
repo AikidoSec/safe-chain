@@ -4,6 +4,7 @@ import {
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
 } from "../config/settings.js";
+import { ui } from "../environment/userInteraction.js";
 
 const malwareDatabaseUrls = {
   [ECOSYSTEM_JS]: "https://malware-list.aikido.dev/malware_predictions.json",
@@ -89,6 +90,10 @@ async function retry(func, attempts) {
     try {
       return await func();
     } catch (error) {
+      ui.writeVerbose(
+        "An error occurred while trying to download the Aikido Malware database",
+        error
+      );
       lastError = error;
     }
 
