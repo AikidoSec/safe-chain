@@ -76,6 +76,14 @@ function printSafeChainWarning() {
 function wrapSafeChainCommand() {
   local original_cmd="$1"
 
+  if ! type -f "${original_cmd}" > /dev/null 2>&1; then
+    # If the original command is not available, don't try to wrap it: invoke it
+    # transparently, so the shell can report errors as if this wrapper didn't
+    # exist.
+    command "$@"
+    return $?
+  fi
+
   if command -v safe-chain > /dev/null 2>&1; then
     # If the aikido command is available, just run it with the provided arguments
     safe-chain "$@"

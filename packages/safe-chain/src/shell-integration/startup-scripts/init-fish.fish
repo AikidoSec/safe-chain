@@ -71,13 +71,13 @@ end
 
 function printSafeChainWarning
     set original_cmd $argv[1]
-    
+
     # Fish equivalent of ANSI color codes: yellow background, black text for "Warning:"
     set_color -b yellow black
     printf "Warning:"
     set_color normal
     printf " safe-chain is not available to protect you from installing malware. %s will run without it.\n" $original_cmd
-    
+
     # Cyan text for the install command
     printf "Install safe-chain by using "
     set_color cyan
@@ -89,6 +89,20 @@ end
 function wrapSafeChainCommand
     set original_cmd $argv[1]
     set cmd_args $argv[2..-1]
+
+    if not type -fq $original_cmd
+       # If the original command is not available, don't try to wrap it: invoke
+       # it transparently, so the shell can report errors as if this wrapper
+       # didn't exist. fish always adds extra debug information when executing
+       # missing commands from within a function, so after the "command not
+       # found" handler, there will be information about how the
+       # wrapSafeChainCommand function errored out. To avoid users assuming this
+       # is a safe-chain bug, display an explicit error message afterwards.
+       command $original_cmd $cmd_args
+       set oldstatus $status
+       echo "safe-chain tried to run $original_cmd but it doesn't seem to be installed in your \$PATH." >&2
+       return $oldstatus
+    end
 
     if type -q safe-chain
         # If the safe-chain command is available, just run it with the provided arguments
