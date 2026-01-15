@@ -1,4 +1,4 @@
-import { getMinimumPackageAgeHours } from "../../../config/settings.js";
+import { getMinimumPackageAgeHours, getNpmMinimumPackageAgeExclusions } from "../../../config/settings.js";
 import { ui } from "../../../environment/userInteraction.js";
 import { getHeaderValueAsString } from "../../http-utils.js";
 
@@ -62,6 +62,16 @@ export function modifyNpmInfoResponse(body, headers) {
 
     if (!bodyJson.time || !bodyJson["dist-tags"] || !bodyJson.versions) {
       // Just return the current body if the format is not
+      return body;
+    }
+
+    // Check if this package is excluded from minimum age filtering
+    const packageName = bodyJson.name;
+    const exclusions = getNpmMinimumPackageAgeExclusions();
+    if (packageName && exclusions.some((pattern) => matchesExclusionPattern(packageName, pattern))) {
+      ui.writeVerbose(
+        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`
+      );
       return body;
     }
 
@@ -176,4 +186,18 @@ function getMostRecentTag(tagList) {
  */
 export function getHasSuppressedVersions() {
   return state.hasSuppressedVersions;
+}
+
+/**
+ * Checks if a package name matches an exclusion pattern.
+ * Supports trailing wildcard (*) for prefix matching.
+ * @param {string} packageName
+ * @param {string} pattern
+ * @returns {boolean}
+ */
+function matchesExclusionPattern(packageName, pattern) {
+  if (pattern.endsWith("/*")) {
+    return packageName.startsWith(pattern.slice(0, -1));
+  }
+  return packageName === pattern;
 }

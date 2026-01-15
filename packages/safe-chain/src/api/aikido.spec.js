@@ -8,6 +8,14 @@ describe("aikido API", async () => {
     defaultExport: mockFetch,
   });
 
+  mock.module("../environment/userInteraction.js", {
+    namedExports: {
+      ui: {
+        writeVerbose: () => {},
+      },
+    },
+  });
+
   mock.module("../config/settings.js", {
     namedExports: {
       getEcoSystem: () => "js",

@@ -16,6 +16,7 @@ import { getEcoSystem } from "./settings.js";
  * @typedef {Object} SafeChainRegistryConfiguration
  * We cannot trust the input and should add the necessary validations.
  * @property {unknown | string[]} customRegistries
+ * @property {unknown | string[]} minimumPackageAgeExclusions
  */
 
 /**
@@ -125,6 +126,27 @@ export function getPipCustomRegistries() {
   }
 
   return customRegistries.filter((item) => typeof item === "string");
+}
+
+/**
+ * Gets the minimum package age exclusions from the config file
+ * @returns {string[]}
+ */
+export function getNpmMinimumPackageAgeExclusions() {
+  const config = readConfigFile();
+
+  if (!config || !config.npm) {
+    return [];
+  }
+
+  const npmConfig = /** @type {SafeChainRegistryConfiguration} */ (config.npm);
+  const exclusions = npmConfig.minimumPackageAgeExclusions;
+
+  if (!Array.isArray(exclusions)) {
+    return [];
+  }
+
+  return exclusions.filter((item) => typeof item === "string");
 }
 
 /**

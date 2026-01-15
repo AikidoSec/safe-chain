@@ -4,12 +4,14 @@ import assert from "node:assert";
 describe("npmInterceptor minimum package age", async () => {
   let minimumPackageAgeSettings = 48;
   let skipMinimumPackageAgeSetting = false;
+  let minimumPackageAgeExclusionsSetting = [];
 
   mock.module("../../../config/settings.js", {
     namedExports: {
       getMinimumPackageAgeHours: () => minimumPackageAgeSettings,
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
       getNpmCustomRegistries: () => [],
+      getNpmMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
     },
   });
 
@@ -355,6 +357,212 @@ describe("npmInterceptor minimum package age", async () => {
     assert.ok(Object.keys(modifiedJson.versions).includes("2.0.0"));
     assert.ok(!Object.keys(modifiedJson.versions).includes("3.0.0"));
     assert.equal(modifiedJson["dist-tags"]["latest"], "2.0.0");
+  });
+
+  it("Should not filter packages when package is in exclusion list", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["lodash"];
+
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const originalBody = JSON.stringify({
+      name: "lodash",
+      ["dist-tags"]: {
+        latest: "3.0.0",
+      },
+      versions: {
+        ["1.0.0"]: {},
+        ["2.0.0"]: {},
+        ["3.0.0"]: {},
+      },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-3),
+        ["1.0.0"]: getDate(-7),
+        // cutoff-date here
+        ["2.0.0"]: getDate(-4),
+        ["3.0.0"]: getDate(-3), // Would normally be filtered
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // All versions should remain unchanged since lodash is excluded
+    assert.equal(Object.keys(modifiedJson.versions).length, 3);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("2.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("3.0.0"));
+    assert.equal(modifiedJson["dist-tags"]["latest"], "3.0.0");
+  });
+
+  it("Should filter packages when package is NOT in exclusion list", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["react"]; // Different package
+
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      JSON.stringify({
+        name: "lodash",
+        ["dist-tags"]: { latest: "3.0.0" },
+        versions: { ["1.0.0"]: {}, ["3.0.0"]: {} },
+        time: {
+          created: getDate(-365 * 24),
+          modified: getDate(-3),
+          ["1.0.0"]: getDate(-7),
+          ["3.0.0"]: getDate(-3),
+        },
+      })
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // lodash should still be filtered since it's not in exclusions
+    assert.equal(Object.keys(modifiedJson.versions).length, 1);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+    assert.ok(!Object.keys(modifiedJson.versions).includes("3.0.0"));
+  });
+
+  it("Should handle scoped packages in exclusion list", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["@babel/core"];
+
+    const packageUrl = "https://registry.npmjs.org/@babel/core";
+
+    const originalBody = JSON.stringify({
+      name: "@babel/core",
+      ["dist-tags"]: { latest: "7.0.0" },
+      versions: { ["6.0.0"]: {}, ["7.0.0"]: {} },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-1),
+        ["6.0.0"]: getDate(-100),
+        ["7.0.0"]: getDate(-1), // Would normally be filtered
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // All versions should remain for excluded scoped package
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+    assert.ok(Object.keys(modifiedJson.versions).includes("6.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("7.0.0"));
+  });
+
+  it("Should handle multiple packages in exclusion list", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["react", "lodash", "@types/node"];
+
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const originalBody = JSON.stringify({
+      name: "lodash",
+      ["dist-tags"]: { latest: "2.0.0" },
+      versions: { ["1.0.0"]: {}, ["2.0.0"]: {} },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-1),
+        ["1.0.0"]: getDate(-100),
+        ["2.0.0"]: getDate(-1),
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // All versions should remain since lodash is in the exclusion list
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+  });
+
+  it("Should exclude packages matching wildcard pattern @scope/*", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["@aikidosec/*"];
+
+    const packageUrl = "https://registry.npmjs.org/@aikidosec/safe-chain";
+
+    const originalBody = JSON.stringify({
+      name: "@aikidosec/safe-chain",
+      ["dist-tags"]: { latest: "2.0.0" },
+      versions: { ["1.0.0"]: {}, ["2.0.0"]: {} },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-1),
+        ["1.0.0"]: getDate(-100),
+        ["2.0.0"]: getDate(-1), // Would normally be filtered
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // All versions should remain since @aikidosec/* matches @aikidosec/safe-chain
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+    assert.ok(Object.keys(modifiedJson.versions).includes("2.0.0"));
+  });
+
+  it("Should NOT exclude packages that don't match wildcard pattern", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["@aikidosec/*"];
+
+    const packageUrl = "https://registry.npmjs.org/@other/package";
+
+    const originalBody = JSON.stringify({
+      name: "@other/package",
+      ["dist-tags"]: { latest: "2.0.0" },
+      versions: { ["1.0.0"]: {}, ["2.0.0"]: {} },
+      time: {
+        created: getDate(-365 * 24),
+        modified: getDate(-1),
+        ["1.0.0"]: getDate(-100),
+        ["2.0.0"]: getDate(-1),
+      },
+    });
+
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // Version 2.0.0 should be filtered since @other/package doesn't match @aikidosec/*
+    assert.equal(Object.keys(modifiedJson.versions).length, 1);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
+  });
+
+  it("Should reset exclusions between tests", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = []; // Reset to empty
+
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      JSON.stringify({
+        name: "lodash",
+        ["dist-tags"]: { latest: "2.0.0" },
+        versions: { ["1.0.0"]: {}, ["2.0.0"]: {} },
+        time: {
+          created: getDate(-365 * 24),
+          modified: getDate(-1),
+          ["1.0.0"]: getDate(-100),
+          ["2.0.0"]: getDate(-1),
+        },
+      })
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    // Version 2.0.0 should be filtered since exclusions are empty
+    assert.equal(Object.keys(modifiedJson.versions).length, 1);
+    assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
   });
 
   function getDate(plusHours) {
