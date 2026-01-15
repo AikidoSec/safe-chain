@@ -332,9 +332,7 @@ main() {
             if [ "$ARCH" = "x64" ]; then
                 PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.7-linux-proxy-bins/safechain-proxy-linux-amd64"
             else
-                # Skip for non-x64 Linux architectures
-                info "Skipping safechain-proxy download (not available for linux-${ARCH})"
-                PROXY_URL=""
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.7-linux-proxy-bins/safechain-proxy-linux-arm64"
             fi
         fi
 
