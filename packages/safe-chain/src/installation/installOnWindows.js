@@ -26,7 +26,7 @@ export async function installOnWindows() {
 
   ui.emptyLine();
   ui.writeInformation(
-    `📥 Downloading SafeChain Agent ${getAgentVersion()} (${architecture})...`,
+    `📥 Downloading SafeChain Ultimate ${getAgentVersion()} (${architecture})...`,
   );
   ui.writeVerbose(`Download URL: ${downloadUrl}`);
   ui.writeVerbose(`Destination: ${msiPath}`);
