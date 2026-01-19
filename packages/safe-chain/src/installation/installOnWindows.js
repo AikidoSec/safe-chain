@@ -82,16 +82,17 @@ async function uninstallIfInstalled() {
 
   const productCode = result.stdout.trim();
 
-  if (productCode) {
-    ui.writeInformation("🗑️  Removing previous installation...");
-    ui.writeVerbose(`Found product code: ${productCode}`);
-    ui.writeVerbose(`Running: msiexec /x ${productCode} /qn /norestart`);
-    await safeSpawn("msiexec", ["/x", productCode, "/qn", "/norestart"], {
-      stdio: "inherit",
-    });
-  } else {
+  if (!productCode) {
     ui.writeVerbose("No existing installation found (fresh install).");
+    return;
   }
+
+  ui.writeInformation("🗑️  Removing previous installation...");
+  ui.writeVerbose(`Found product code: ${productCode}`);
+  ui.writeVerbose(`Running: msiexec /x ${productCode} /qn /norestart`);
+  await safeSpawn("msiexec", ["/x", productCode, "/qn", "/norestart"], {
+    stdio: "inherit",
+  });
 }
 
 /**
