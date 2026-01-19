@@ -31,31 +31,43 @@ export async function installOnWindows() {
   ui.writeVerbose(`Destination: ${msiPath}`);
   await downloadFile(downloadUrl, msiPath);
 
-  ui.emptyLine();
-  await stopServiceIfRunning();
-  await uninstallIfInstalled();
+  try {
+    ui.emptyLine();
+    await stopServiceIfRunning();
+    await uninstallIfInstalled();
 
-  // Wait a moment for uninstall to complete
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Wait a moment for uninstall to complete
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  ui.writeInformation("⚙️  Installing SafeChain Agent...");
-  await runMsiInstaller(msiPath);
+    ui.writeInformation("⚙️  Installing SafeChain Agent...");
+    await runMsiInstaller(msiPath);
 
-  ui.emptyLine();
-  ui.writeInformation("🚀 Starting SafeChain Agent service...");
-  await startService();
+    ui.emptyLine();
+    ui.writeInformation("🚀 Starting SafeChain Agent service...");
+    await startService();
 
-  ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
-  cleanup(msiPath);
-
-  ui.emptyLine();
-  ui.writeInformation("✅ SafeChain Agent installed and started successfully!");
-  ui.emptyLine();
+    ui.emptyLine();
+    ui.writeInformation(
+      "✅ SafeChain Agent installed and started successfully!",
+    );
+    ui.emptyLine();
+  } finally {
+    ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
+    cleanup(msiPath);
+  }
 }
 
 async function isRunningAsAdmin() {
-  const result = await safeSpawn("net", ["session"], { stdio: "ignore" });
-  return result.status === 0;
+  const result = await safeSpawn(
+    "powershell",
+    [
+      "-Command",
+      "([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+    ],
+    { stdio: "pipe" },
+  );
+
+  return result.status === 0 && result.stdout.trim() === "True";
 }
 
 function getWindowsArchitecture() {
@@ -66,8 +78,6 @@ function getWindowsArchitecture() {
 }
 
 async function uninstallIfInstalled() {
-  // Use PowerShell to find the product code, then use msiexec to uninstall
-  // This is the modern alternative to wmic which is deprecated
   const powershellScript = `$app = Get-WmiObject -Class Win32_Product -Filter "Name='SafeChain Agent'"; if ($app) { Write-Output $app.IdentifyingNumber }`;
   ui.writeVerbose(`Finding product code with PowerShell`);
 
@@ -81,7 +91,6 @@ async function uninstallIfInstalled() {
   }
 
   const productCode = result.stdout.trim();
-
   if (!productCode) {
     ui.writeVerbose("No existing installation found (fresh install).");
     return;
@@ -89,27 +98,38 @@ async function uninstallIfInstalled() {
 
   ui.writeInformation("🗑️  Removing previous installation...");
   ui.writeVerbose(`Found product code: ${productCode}`);
-  ui.writeVerbose(`Running: msiexec /x ${productCode} /qn /norestart`);
-  await safeSpawn("msiexec", ["/x", productCode, "/qn", "/norestart"], {
-    stdio: "inherit",
-  });
+
+  const uninstallResult = await safeSpawn(
+    "msiexec",
+    ["/x", productCode, "/qn", "/norestart"],
+    { stdio: "inherit" },
+  );
+
+  if (uninstallResult.status !== 0) {
+    throw new Error(`Uninstall failed (exit code: ${uninstallResult.status})`);
+  }
 }
 
 /**
  * @param {string} msiPath
  */
 async function runMsiInstaller(msiPath) {
-  // /i = install
-  // /qn = quiet mode (no UI)
   ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn`);
-  await safeSpawn("msiexec", ["/i", msiPath, "/qn"], { stdio: "inherit" });
+
+  const result = await safeSpawn("msiexec", ["/i", msiPath, "/qn"], {
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`MSI installer failed (exit code: ${result.status})`);
+  }
 }
 
 async function stopServiceIfRunning() {
   ui.writeInformation("⏹️  Stopping running service...");
-  ui.writeVerbose('Running: net stop "SafeChainAgent"');
+
   const result = await safeSpawn("net", ["stop", "SafeChainAgent"], {
-    stdio: "inherit",
+    stdio: "pipe",
   });
 
   if (result.status !== 0) {
@@ -118,7 +138,6 @@ async function stopServiceIfRunning() {
 }
 
 async function startService() {
-  // Check if service is already running
   ui.writeVerbose('Checking service status: sc query "SafeChainAgent"');
   const queryResult = await safeSpawn("sc", ["query", "SafeChainAgent"], {
     stdio: "pipe",
@@ -129,12 +148,14 @@ async function startService() {
     return;
   }
 
-  if (queryResult.status !== 0) {
-    ui.writeVerbose("Service not found or query failed, attempting to start.");
-  }
-
   ui.writeVerbose('Running: net start "SafeChainAgent"');
-  await safeSpawn("net", ["start", "SafeChainAgent"], { stdio: "inherit" });
+  const startResult = await safeSpawn("net", ["start", "SafeChainAgent"], {
+    stdio: "pipe",
+  });
+
+  if (startResult.status !== 0) {
+    throw new Error(`Failed to start service (exit code: ${startResult.status})`);
+  }
 }
 
 /**
