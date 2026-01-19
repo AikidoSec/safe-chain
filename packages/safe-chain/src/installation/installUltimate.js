@@ -38,13 +38,18 @@ async function installOnWindows() {
   ui.writeVerbose(`Destination: ${msiPath}`);
   await downloadFile(downloadUrl, msiPath);
 
+  stopServiceIfRunning();
+
   ui.writeInformation("Installing SafeChain Agent...");
   ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn`);
   runMsiInstaller(msiPath);
 
+  ui.writeInformation("Starting SafeChain Agent service...");
+  startService();
+
   ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
   cleanup(msiPath);
-  ui.writeInformation("SafeChain Agent installed successfully!");
+  ui.writeInformation("SafeChain Agent installed and started successfully!");
 }
 
 function isRunningAsAdmin() {
@@ -87,6 +92,22 @@ async function downloadFile(url, destPath) {
  */
 function runMsiInstaller(msiPath) {
   execSync(`msiexec /i "${msiPath}" /qn`, { stdio: "inherit" });
+}
+
+function stopServiceIfRunning() {
+  try {
+    ui.writeInformation("Stopping existing SafeChain Agent service...");
+    ui.writeVerbose('Running: net stop "SafeChainAgent"');
+    execSync('net stop "SafeChainAgent"', { stdio: "inherit" });
+  } catch {
+    // Service is not running or doesn't exist, which is fine
+    ui.writeVerbose("SafeChain Agent service not running or not installed.");
+  }
+}
+
+function startService() {
+  ui.writeVerbose('Running: net start "SafeChainAgent"');
+  execSync('net start "SafeChainAgent"', { stdio: "inherit" });
 }
 
 /**
