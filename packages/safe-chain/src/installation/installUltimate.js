@@ -24,7 +24,7 @@ async function installOnWindows() {
   if (!isRunningAsAdmin()) {
     ui.writeError("Administrator privileges required.");
     ui.writeInformation(
-      "Please run this command in an elevated terminal (Run as Administrator)."
+      "Please run this command in an elevated terminal (Run as Administrator).",
     );
     return;
   }
@@ -33,15 +33,20 @@ async function installOnWindows() {
   const downloadUrl = buildDownloadUrl(architecture);
   const msiPath = join(tmpdir(), `SafeChainAgent-${Date.now()}.msi`);
 
-  ui.writeInformation(`Downloading SafeChain Agent ${ULTIMATE_VERSION} for ${architecture}...`);
+  ui.writeInformation(
+    `Downloading SafeChain Agent ${ULTIMATE_VERSION} for ${architecture}...`,
+  );
   ui.writeVerbose(`Download URL: ${downloadUrl}`);
   ui.writeVerbose(`Destination: ${msiPath}`);
   await downloadFile(downloadUrl, msiPath);
 
   stopServiceIfRunning();
 
+  // Wait a moment for the service to fully stop before installing
+  await new Promise((resolve) => setTimeout(resolve, 10000));
+
   ui.writeInformation("Installing SafeChain Agent...");
-  ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn REINSTALL=ALL REINSTALLMODE=vomus`);
+  ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn /norestart`);
   runMsiInstaller(msiPath);
 
   ui.writeInformation("Starting SafeChain Agent service...");
@@ -91,10 +96,23 @@ async function downloadFile(url, destPath) {
  * @param {string} msiPath
  */
 function runMsiInstaller(msiPath) {
-  // Use /i for install/upgrade with REINSTALL=ALL REINSTALLMODE=vomus
-  // This forces a reinstall of all features if the product is already installed
+  // Try to install/upgrade
+  // /i = install (will upgrade if product code matches)
   // /qn = quiet mode (no UI)
-  execSync(`msiexec /i "${msiPath}" /qn REINSTALL=ALL REINSTALLMODE=vomus`, { stdio: "inherit" });
+  // /norestart = suppress restarts
+  try {
+    execSync(`msiexec /i "${msiPath}" /qn /norestart`, { stdio: "inherit" });
+  } catch (error) {
+    // If installation fails, it might be because it's already installed
+    // Try to force a reinstall
+    ui.writeVerbose(
+      "Initial installation failed, attempting to force reinstall...",
+    );
+    execSync(
+      `msiexec /i "${msiPath}" /qn /norestart REINSTALL=ALL REINSTALLMODE=vomus`,
+      { stdio: "inherit" },
+    );
+  }
 }
 
 function stopServiceIfRunning() {
