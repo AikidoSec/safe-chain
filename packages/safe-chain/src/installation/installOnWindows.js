@@ -59,6 +59,8 @@ export async function installOnWindows() {
 }
 
 async function isRunningAsAdmin() {
+  // Uses Windows Security API to check if current process has admin privileges.
+  // Returns "True" or "False" as a string.
   const result = await safeSpawn(
     "powershell",
     [
@@ -79,6 +81,8 @@ function getWindowsArchitecture() {
 }
 
 async function uninstallIfInstalled() {
+  // Query Win32_Product via WMI to find the installed SafeChain Agent.
+  // If found, outputs the product GUID (e.g., "{12345678-1234-...}") needed for msiexec uninstall.
   ui.writeVerbose(`Finding product code with PowerShell`);
 
   let productCode;
