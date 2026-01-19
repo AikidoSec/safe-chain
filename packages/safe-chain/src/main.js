@@ -73,20 +73,20 @@ export async function main(args) {
       ui.writeVerbose(
         `${chalk.green("✔")} Safe-chain: Scanned ${
           auditStats.totalPackages
-        } packages, no malware found.`
+        } packages, no malware found.`,
       );
     }
 
     if (proxy.hasSuppressedVersions()) {
       ui.writeInformation(
         `${chalk.yellow(
-          "ℹ"
-        )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`
+          "ℹ",
+        )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`,
       );
       ui.writeInformation(
         `  To disable this check, use: ${chalk.cyan(
-          "--safe-chain-skip-minimum-package-age"
-        )}`
+          "--safe-chain-skip-minimum-package-age",
+        )}`,
       );
     }
 
