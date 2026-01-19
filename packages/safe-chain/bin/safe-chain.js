@@ -64,7 +64,9 @@ if (tool) {
 } else if (command === "setup") {
   setup();
 } else if (command === "--ultimate") {
-  installUltimate();
+  (async () => {
+    await installUltimate();
+  })();
 } else if (command === "teardown") {
   teardownDirectories();
   teardown();
