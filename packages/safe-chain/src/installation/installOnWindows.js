@@ -19,7 +19,8 @@ export async function installOnWindows() {
   }
 
   const architecture = getWindowsArchitecture();
-  const downloadUrl = getAgentDownloadUrl("windows", architecture);
+  const fileName = `SafeChainAgent-windows-${architecture}.msi`;
+  const downloadUrl = getAgentDownloadUrl(fileName);
   const msiPath = join(tmpdir(), `SafeChainAgent-${Date.now()}.msi`);
 
   ui.emptyLine();

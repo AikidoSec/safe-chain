@@ -5,18 +5,11 @@ import fetch from "make-fetch-happen";
 const ULTIMATE_VERSION = "v0.2.0";
 
 /**
- * @typedef {"windows"} Platform
- * @typedef {"amd64" | "arm64"} Architecture
- */
-
-/**
  * Builds the download URL for the SafeChain Agent installer.
- * @param {Platform} platform
- * @param {Architecture} architecture
+ * @param {string} fileName
  */
-export function getAgentDownloadUrl(platform, architecture) {
-  const extension = platform === "windows" ? "msi" : "pkg";
-  return `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainAgent-${platform}-${architecture}.${extension}`;
+export function getAgentDownloadUrl(fileName) {
+  return `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/${fileName}`;
 }
 
 /**
