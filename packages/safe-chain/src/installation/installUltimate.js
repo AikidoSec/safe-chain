@@ -146,6 +146,19 @@ function stopServiceIfRunning() {
 }
 
 function startService() {
+  try {
+    // Check if service is already running
+    ui.writeVerbose('Checking service status: sc query "SafeChainAgent"');
+    const status = execSync('sc query "SafeChainAgent"', { encoding: "utf8" });
+
+    if (status.includes("RUNNING")) {
+      ui.writeVerbose("SafeChain Agent service is already running.");
+      return;
+    }
+  } catch {
+    // Service might not exist yet or query failed, proceed with start
+  }
+
   ui.writeVerbose('Running: net start "SafeChainAgent"');
   execSync('net start "SafeChainAgent"', { stdio: "inherit" });
 }
