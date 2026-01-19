@@ -106,8 +106,6 @@ async function uninstallIfInstalled() {
   );
 
   if (uninstallResult.status !== 0) {
-    ui.writeInformation(uninstallResult.stdout);
-    ui.writeInformation(uninstallResult.stderr);
     throw new Error(`Uninstall failed (exit code: ${uninstallResult.status})`);
   }
 }
