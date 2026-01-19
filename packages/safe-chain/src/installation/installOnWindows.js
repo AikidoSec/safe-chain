@@ -106,6 +106,8 @@ async function uninstallIfInstalled() {
   );
 
   if (uninstallResult.status !== 0) {
+    ui.writeInformation(uninstallResult.stdout);
+    ui.writeInformation(uninstallResult.stderr);
     throw new Error(`Uninstall failed (exit code: ${uninstallResult.status})`);
   }
 }
@@ -154,7 +156,9 @@ async function startService() {
   });
 
   if (startResult.status !== 0) {
-    throw new Error(`Failed to start service (exit code: ${startResult.status})`);
+    throw new Error(
+      `Failed to start service (exit code: ${startResult.status})`,
+    );
   }
 }
 
