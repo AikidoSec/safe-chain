@@ -36,29 +36,35 @@ async function installOnWindows() {
   const downloadUrl = buildDownloadUrl(architecture);
   const msiPath = join(tmpdir(), `SafeChainAgent-${Date.now()}.msi`);
 
+  ui.emptyLine();
   ui.writeInformation(
-    `Downloading SafeChain Agent ${ULTIMATE_VERSION} for ${architecture}...`,
+    `📥 Downloading SafeChain Agent ${ULTIMATE_VERSION} (${architecture})...`,
   );
   ui.writeVerbose(`Download URL: ${downloadUrl}`);
   ui.writeVerbose(`Destination: ${msiPath}`);
   await downloadFile(downloadUrl, msiPath);
 
+  ui.emptyLine();
   stopServiceIfRunning();
   uninstallIfInstalled();
 
   // Wait a moment for uninstall to complete
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  ui.writeInformation("Installing SafeChain Agent...");
+  ui.writeInformation("⚙️  Installing SafeChain Agent...");
   ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn /norestart`);
   runMsiInstaller(msiPath);
 
-  ui.writeInformation("Starting SafeChain Agent service...");
+  ui.emptyLine();
+  ui.writeInformation("🚀 Starting SafeChain Agent service...");
   startService();
 
   ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
   cleanup(msiPath);
-  ui.writeInformation("SafeChain Agent installed and started successfully!");
+
+  ui.emptyLine();
+  ui.writeInformation("✅ SafeChain Agent installed and started successfully!");
+  ui.emptyLine();
 }
 
 function isRunningAsAdmin() {
@@ -98,8 +104,6 @@ async function downloadFile(url, destPath) {
 
 function uninstallIfInstalled() {
   try {
-    ui.writeInformation("Uninstalling existing SafeChain Agent...");
-
     // Use PowerShell to find the product code, then use msiexec to uninstall
     // This is the modern alternative to wmic which is deprecated
     const findProductCodeCmd = `powershell -Command "$app = Get-WmiObject -Class Win32_Product -Filter \\"Name='SafeChain Agent'\\"; if ($app) { Write-Output $app.IdentifyingNumber }"`;
@@ -110,17 +114,18 @@ function uninstallIfInstalled() {
     }).trim();
 
     if (productCode) {
+      ui.writeInformation("🗑️  Removing previous installation...");
       ui.writeVerbose(`Found product code: ${productCode}`);
       ui.writeVerbose(`Running: msiexec /x ${productCode} /qn /norestart`);
       execSync(`msiexec /x ${productCode} /qn /norestart`, {
         stdio: "inherit",
       });
     } else {
-      ui.writeVerbose("No existing SafeChain Agent installation found.");
+      ui.writeVerbose("No existing installation found (fresh install).");
     }
   } catch {
     // Not installed or uninstall failed, which is fine for a fresh install
-    ui.writeVerbose("No existing SafeChain Agent installation found.");
+    ui.writeVerbose("No existing installation found (fresh install).");
   }
 }
 
@@ -136,12 +141,12 @@ function runMsiInstaller(msiPath) {
 
 function stopServiceIfRunning() {
   try {
-    ui.writeInformation("Stopping existing SafeChain Agent service...");
+    ui.writeInformation("⏹️  Stopping running service...");
     ui.writeVerbose('Running: net stop "SafeChainAgent"');
     execSync('net stop "SafeChainAgent"', { stdio: "inherit" });
   } catch {
     // Service is not running or doesn't exist, which is fine
-    ui.writeVerbose("SafeChain Agent service not running or not installed.");
+    ui.writeVerbose("Service not running (will start after installation).");
   }
 }
 
