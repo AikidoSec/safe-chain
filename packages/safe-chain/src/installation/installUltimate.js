@@ -102,7 +102,7 @@ function runMsiInstaller(msiPath) {
   // /norestart = suppress restarts
   try {
     execSync(`msiexec /i "${msiPath}" /qn /norestart`, { stdio: "inherit" });
-  } catch (error) {
+  } catch {
     // If installation fails, it might be because it's already installed
     // Try to force a reinstall
     ui.writeVerbose(
