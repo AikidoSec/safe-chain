@@ -103,7 +103,7 @@ function runMsiInstaller(msiPath) {
   // /i = install
   // /qn = quiet mode (no UI)
   ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn`);
-  execSync(`msiexec /i "${msiPath}" /qn`, { stdio: "inherit" });
+  execSync(`msiexec /i "${msiPath}" /qn`, { stdio: "inherit" }); // noopengrep this is ok, we control the msiPath
 }
 
 function stopServiceIfRunning() {
@@ -128,7 +128,7 @@ function startService() {
       return;
     }
   } catch {
-    // Service might not exist yet or query failed, proceed with start
+    ui.writeVerbose("Service not found or query failed, attempting to start.");
   }
 
   ui.writeVerbose('Running: net start "SafeChainAgent"');
