@@ -12,7 +12,7 @@ export async function installUltimate() {
     await installOnWindows();
   } else {
     ui.writeInformation(
-      `${operatingSystem} is not supported yet by safe-chain's ultimate version.`,
+      `${operatingSystem} is not supported yet by SafeChain's ultimate version.`,
     );
   }
 }

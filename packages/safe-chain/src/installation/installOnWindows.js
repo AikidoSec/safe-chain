@@ -40,16 +40,16 @@ export async function installOnWindows() {
     // Wait a moment for uninstall to complete
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    ui.writeInformation("⚙️  Installing SafeChain Agent...");
+    ui.writeInformation("⚙️  Installing SafeChain Ultimate...");
     await runMsiInstaller(msiPath);
 
     ui.emptyLine();
-    ui.writeInformation("🚀 Starting SafeChain Agent service...");
+    ui.writeInformation("🚀 Starting SafeChain Ultimate service...");
     await startService();
 
     ui.emptyLine();
     ui.writeInformation(
-      "✅ SafeChain Agent installed and started successfully!",
+      "✅ SafeChain Ultimate installed and started successfully!",
     );
     ui.emptyLine();
   } finally {
@@ -148,7 +148,7 @@ async function startService() {
   });
 
   if (queryResult.status === 0 && queryResult.stdout.includes("RUNNING")) {
-    ui.writeVerbose("SafeChain Agent service is already running.");
+    ui.writeVerbose("SafeChain Ultimate service is already running.");
     return;
   }
 
