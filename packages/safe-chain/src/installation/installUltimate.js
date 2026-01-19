@@ -5,10 +5,13 @@ import { execSync } from "child_process";
 import { pipeline } from "stream/promises";
 import fetch from "make-fetch-happen";
 import { ui } from "../environment/userInteraction.js";
+import { initializeCliArguments } from "../config/cliArguments.js";
 
 const ULTIMATE_VERSION = "v0.2.0";
 
 export function installUltimate() {
+  initializeCliArguments(process.argv);
+
   const operatingSystem = platform();
 
   if (operatingSystem === "win32") {
@@ -96,8 +99,25 @@ async function downloadFile(url, destPath) {
 function uninstallIfInstalled() {
   try {
     ui.writeInformation("Uninstalling existing SafeChain Agent...");
-    ui.writeVerbose('Running: wmic product where "name=\'SafeChain Agent\'" call uninstall /nointeractive');
-    execSync('wmic product where "name=\'SafeChain Agent\'" call uninstall /nointeractive', { stdio: "inherit" });
+
+    // Use PowerShell to find the product code, then use msiexec to uninstall
+    // This is the modern alternative to wmic which is deprecated
+    const findProductCodeCmd = `powershell -Command "$app = Get-WmiObject -Class Win32_Product -Filter \\"Name='SafeChain Agent'\\"; if ($app) { Write-Output $app.IdentifyingNumber }"`;
+    ui.writeVerbose(`Finding product code: ${findProductCodeCmd}`);
+
+    const productCode = execSync(findProductCodeCmd, {
+      encoding: "utf8",
+    }).trim();
+
+    if (productCode) {
+      ui.writeVerbose(`Found product code: ${productCode}`);
+      ui.writeVerbose(`Running: msiexec /x ${productCode} /qn /norestart`);
+      execSync(`msiexec /x ${productCode} /qn /norestart`, {
+        stdio: "inherit",
+      });
+    } else {
+      ui.writeVerbose("No existing SafeChain Agent installation found.");
+    }
   } catch {
     // Not installed or uninstall failed, which is fine for a fresh install
     ui.writeVerbose("No existing SafeChain Agent installation found.");
