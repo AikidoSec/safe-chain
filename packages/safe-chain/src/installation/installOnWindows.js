@@ -142,6 +142,6 @@ function cleanup(msiPath) {
   try {
     unlinkSync(msiPath);
   } catch {
-    // Ignore cleanup errors
+    ui.writeVerbose("Failed to clean up temporary installer file.");
   }
 }
