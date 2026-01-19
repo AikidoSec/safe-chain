@@ -1,6 +1,7 @@
 import { arch, tmpdir } from "os";
 import { unlinkSync } from "fs";
 import { join } from "path";
+import { execSync } from "child_process";
 import { ui } from "../environment/userInteraction.js";
 import { safeSpawn } from "../utils/safeSpawn.js";
 import {
@@ -81,18 +82,15 @@ async function uninstallIfInstalled() {
   const powershellScript = `$app = Get-WmiObject -Class Win32_Product -Filter "Name='SafeChain Agent'"; if ($app) { Write-Output $app.IdentifyingNumber }`;
   ui.writeVerbose(`Finding product code with PowerShell`);
 
-  const result = await safeSpawn("powershell", ["-Command", powershellScript], {
-    stdio: "pipe",
-  });
-
-  if (result.status !== 0) {
-    ui.writeVerbose(
-      `No existing installation found (fresh install). Output: ${result.stdout} ${result.stderr}`,
-    );
+  let productCode;
+  try {
+    productCode = execSync(`powershell -Command "${powershellScript}"`, {
+      encoding: "utf8",
+    }).trim();
+  } catch {
+    ui.writeVerbose("No existing installation found (fresh install).");
     return;
   }
-
-  const productCode = result.stdout.trim();
   if (!productCode) {
     ui.writeVerbose("No existing installation found (fresh install).");
     return;
