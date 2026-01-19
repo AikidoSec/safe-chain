@@ -41,7 +41,7 @@ async function installOnWindows() {
   stopServiceIfRunning();
 
   ui.writeInformation("Installing SafeChain Agent...");
-  ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn`);
+  ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn REINSTALL=ALL REINSTALLMODE=vomus`);
   runMsiInstaller(msiPath);
 
   ui.writeInformation("Starting SafeChain Agent service...");
@@ -91,7 +91,10 @@ async function downloadFile(url, destPath) {
  * @param {string} msiPath
  */
 function runMsiInstaller(msiPath) {
-  execSync(`msiexec /i "${msiPath}" /qn`, { stdio: "inherit" });
+  // Use /i for install/upgrade with REINSTALL=ALL REINSTALLMODE=vomus
+  // This forces a reinstall of all features if the product is already installed
+  // /qn = quiet mode (no UI)
+  execSync(`msiexec /i "${msiPath}" /qn REINSTALL=ALL REINSTALLMODE=vomus`, { stdio: "inherit" });
 }
 
 function stopServiceIfRunning() {
