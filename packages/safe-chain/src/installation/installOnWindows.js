@@ -1,8 +1,8 @@
 import { arch, tmpdir } from "os";
 import { unlinkSync } from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
 import { ui } from "../environment/userInteraction.js";
+import { safeSpawn } from "../utils/safeSpawn.js";
 import {
   getAgentDownloadUrl,
   getAgentVersion,
@@ -10,7 +10,7 @@ import {
 } from "./downloadAgent.js";
 
 export async function installOnWindows() {
-  if (!isRunningAsAdmin()) {
+  if (!(await isRunningAsAdmin())) {
     ui.writeError("Administrator privileges required.");
     ui.writeInformation(
       "Please run this command in an elevated terminal (Run as Administrator).",
@@ -32,18 +32,18 @@ export async function installOnWindows() {
   await downloadFile(downloadUrl, msiPath);
 
   ui.emptyLine();
-  stopServiceIfRunning();
-  uninstallIfInstalled();
+  await stopServiceIfRunning();
+  await uninstallIfInstalled();
 
   // Wait a moment for uninstall to complete
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
   ui.writeInformation("⚙️  Installing SafeChain Agent...");
-  runMsiInstaller(msiPath);
+  await runMsiInstaller(msiPath);
 
   ui.emptyLine();
   ui.writeInformation("🚀 Starting SafeChain Agent service...");
-  startService();
+  await startService();
 
   ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
   cleanup(msiPath);
@@ -53,13 +53,9 @@ export async function installOnWindows() {
   ui.emptyLine();
 }
 
-function isRunningAsAdmin() {
-  try {
-    execSync("net session", { stdio: "ignore" });
-    return true;
-  } catch {
-    return false;
-  }
+async function isRunningAsAdmin() {
+  const result = await safeSpawn("net", ["session"], { stdio: "ignore" });
+  return result.status === 0;
 }
 
 function getWindowsArchitecture() {
@@ -69,29 +65,31 @@ function getWindowsArchitecture() {
   throw new Error(`Unsupported architecture: ${nodeArch}`);
 }
 
-function uninstallIfInstalled() {
-  try {
-    // Use PowerShell to find the product code, then use msiexec to uninstall
-    // This is the modern alternative to wmic which is deprecated
-    const findProductCodeCmd = `powershell -Command "$app = Get-WmiObject -Class Win32_Product -Filter \\"Name='SafeChain Agent'\\"; if ($app) { Write-Output $app.IdentifyingNumber }"`;
-    ui.writeVerbose(`Finding product code: ${findProductCodeCmd}`);
+async function uninstallIfInstalled() {
+  // Use PowerShell to find the product code, then use msiexec to uninstall
+  // This is the modern alternative to wmic which is deprecated
+  const powershellScript = `$app = Get-WmiObject -Class Win32_Product -Filter "Name='SafeChain Agent'"; if ($app) { Write-Output $app.IdentifyingNumber }`;
+  ui.writeVerbose(`Finding product code with PowerShell`);
 
-    const productCode = execSync(findProductCodeCmd, {
-      encoding: "utf8",
-    }).trim();
+  const result = await safeSpawn("powershell", ["-Command", powershellScript], {
+    stdio: "pipe",
+  });
 
-    if (productCode) {
-      ui.writeInformation("🗑️  Removing previous installation...");
-      ui.writeVerbose(`Found product code: ${productCode}`);
-      ui.writeVerbose(`Running: msiexec /x ${productCode} /qn /norestart`);
-      execSync(`msiexec /x ${productCode} /qn /norestart`, {
-        stdio: "inherit",
-      });
-    } else {
-      ui.writeVerbose("No existing installation found (fresh install).");
-    }
-  } catch {
-    // Not installed or uninstall failed, which is fine for a fresh install
+  if (result.status !== 0) {
+    ui.writeVerbose("No existing installation found (fresh install).");
+    return;
+  }
+
+  const productCode = result.stdout.trim();
+
+  if (productCode) {
+    ui.writeInformation("🗑️  Removing previous installation...");
+    ui.writeVerbose(`Found product code: ${productCode}`);
+    ui.writeVerbose(`Running: msiexec /x ${productCode} /qn /norestart`);
+    await safeSpawn("msiexec", ["/x", productCode, "/qn", "/norestart"], {
+      stdio: "inherit",
+    });
+  } else {
     ui.writeVerbose("No existing installation found (fresh install).");
   }
 }
@@ -99,40 +97,43 @@ function uninstallIfInstalled() {
 /**
  * @param {string} msiPath
  */
-function runMsiInstaller(msiPath) {
+async function runMsiInstaller(msiPath) {
   // /i = install
   // /qn = quiet mode (no UI)
   ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn`);
-  execSync(`msiexec /i "${msiPath}" /qn`, { stdio: "inherit" }); // noopengrep this is ok, we control the msiPath
+  await safeSpawn("msiexec", ["/i", msiPath, "/qn"], { stdio: "inherit" });
 }
 
-function stopServiceIfRunning() {
-  try {
-    ui.writeInformation("⏹️  Stopping running service...");
-    ui.writeVerbose('Running: net stop "SafeChainAgent"');
-    execSync('net stop "SafeChainAgent"', { stdio: "inherit" });
-  } catch {
-    // Service is not running or doesn't exist, which is fine
+async function stopServiceIfRunning() {
+  ui.writeInformation("⏹️  Stopping running service...");
+  ui.writeVerbose('Running: net stop "SafeChainAgent"');
+  const result = await safeSpawn("net", ["stop", "SafeChainAgent"], {
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
     ui.writeVerbose("Service not running (will start after installation).");
   }
 }
 
-function startService() {
-  try {
-    // Check if service is already running
-    ui.writeVerbose('Checking service status: sc query "SafeChainAgent"');
-    const status = execSync('sc query "SafeChainAgent"', { encoding: "utf8" });
+async function startService() {
+  // Check if service is already running
+  ui.writeVerbose('Checking service status: sc query "SafeChainAgent"');
+  const queryResult = await safeSpawn("sc", ["query", "SafeChainAgent"], {
+    stdio: "pipe",
+  });
 
-    if (status.includes("RUNNING")) {
-      ui.writeVerbose("SafeChain Agent service is already running.");
-      return;
-    }
-  } catch {
+  if (queryResult.status === 0 && queryResult.stdout.includes("RUNNING")) {
+    ui.writeVerbose("SafeChain Agent service is already running.");
+    return;
+  }
+
+  if (queryResult.status !== 0) {
     ui.writeVerbose("Service not found or query failed, attempting to start.");
   }
 
   ui.writeVerbose('Running: net start "SafeChainAgent"');
-  execSync('net start "SafeChainAgent"', { stdio: "inherit" });
+  await safeSpawn("net", ["start", "SafeChainAgent"], { stdio: "inherit" });
 }
 
 /**
