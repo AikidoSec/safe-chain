@@ -79,14 +79,14 @@ function getWindowsArchitecture() {
 }
 
 async function uninstallIfInstalled() {
-  const powershellScript = `$app = Get-WmiObject -Class Win32_Product -Filter "Name='SafeChain Agent'"; if ($app) { Write-Output $app.IdentifyingNumber }`;
   ui.writeVerbose(`Finding product code with PowerShell`);
 
   let productCode;
   try {
-    productCode = execSync(`powershell -Command "${powershellScript}"`, {
-      encoding: "utf8",
-    }).trim();
+    productCode = execSync(
+      `powershell -Command "$app = Get-WmiObject -Class Win32_Product -Filter \\"Name='SafeChain Agent'\\"; if ($app) { Write-Output $app.IdentifyingNumber }"`,
+      { encoding: "utf8" },
+    ).trim();
   } catch {
     ui.writeVerbose("No existing installation found (fresh install).");
     return;
