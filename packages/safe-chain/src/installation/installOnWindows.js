@@ -31,29 +31,30 @@ export async function installOnWindows() {
   ui.writeVerbose(`Destination: ${msiPath}`);
   await downloadFile(downloadUrl, msiPath);
 
-  // try {
-  ui.emptyLine();
-  await stopServiceIfRunning();
-  await uninstallIfInstalled();
+  try {
+    ui.emptyLine();
+    await stopServiceIfRunning();
+    await uninstallIfInstalled();
 
-  // Wait a moment for uninstall to complete
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Wait a moment for uninstall to complete
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-  ui.writeInformation("⚙️  Installing SafeChain Agent...");
-  await runMsiInstaller(msiPath);
+    ui.writeInformation("⚙️  Installing SafeChain Agent...");
+    await runMsiInstaller(msiPath);
 
-  ui.emptyLine();
-  ui.writeInformation("🚀 Starting SafeChain Agent service...");
-  await startService();
+    ui.emptyLine();
+    ui.writeInformation("🚀 Starting SafeChain Agent service...");
+    await startService();
 
-  ui.emptyLine();
-  ui.writeInformation("✅ SafeChain Agent installed and started successfully!");
-  ui.emptyLine();
-  // }
-  // finally {
-  //   ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
-  //   cleanup(msiPath);
-  // }
+    ui.emptyLine();
+    ui.writeInformation(
+      "✅ SafeChain Agent installed and started successfully!",
+    );
+    ui.emptyLine();
+  } finally {
+    ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
+    cleanup(msiPath);
+  }
 }
 
 async function isRunningAsAdmin() {
@@ -85,7 +86,9 @@ async function uninstallIfInstalled() {
   });
 
   if (result.status !== 0) {
-    ui.writeVerbose("No existing installation found (fresh install).");
+    ui.writeVerbose(
+      `No existing installation found (fresh install). Output: ${result.stdout} ${result.stderr}`,
+    );
     return;
   }
 
