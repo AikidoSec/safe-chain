@@ -41,9 +41,10 @@ async function installOnWindows() {
   await downloadFile(downloadUrl, msiPath);
 
   stopServiceIfRunning();
+  uninstallIfInstalled();
 
-  // Wait a moment for the service to fully stop before installing
-  await new Promise((resolve) => setTimeout(resolve, 10000));
+  // Wait a moment for uninstall to complete
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 
   ui.writeInformation("Installing SafeChain Agent...");
   ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn /norestart`);
@@ -92,27 +93,25 @@ async function downloadFile(url, destPath) {
   await pipeline(response.body, createWriteStream(destPath));
 }
 
+function uninstallIfInstalled() {
+  try {
+    ui.writeInformation("Uninstalling existing SafeChain Agent...");
+    ui.writeVerbose('Running: wmic product where "name=\'SafeChain Agent\'" call uninstall /nointeractive');
+    execSync('wmic product where "name=\'SafeChain Agent\'" call uninstall /nointeractive', { stdio: "inherit" });
+  } catch {
+    // Not installed or uninstall failed, which is fine for a fresh install
+    ui.writeVerbose("No existing SafeChain Agent installation found.");
+  }
+}
+
 /**
  * @param {string} msiPath
  */
 function runMsiInstaller(msiPath) {
-  // Try to install/upgrade
-  // /i = install (will upgrade if product code matches)
+  // /i = install
   // /qn = quiet mode (no UI)
   // /norestart = suppress restarts
-  try {
-    execSync(`msiexec /i "${msiPath}" /qn /norestart`, { stdio: "inherit" });
-  } catch {
-    // If installation fails, it might be because it's already installed
-    // Try to force a reinstall
-    ui.writeVerbose(
-      "Initial installation failed, attempting to force reinstall...",
-    );
-    execSync(
-      `msiexec /i "${msiPath}" /qn /norestart REINSTALL=ALL REINSTALLMODE=vomus`,
-      { stdio: "inherit" },
-    );
-  }
+  execSync(`msiexec /i "${msiPath}" /qn /norestart`, { stdio: "inherit" });
 }
 
 function stopServiceIfRunning() {
