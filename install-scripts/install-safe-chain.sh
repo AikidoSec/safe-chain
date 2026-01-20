@@ -42,8 +42,9 @@ detect_os() {
                 echo "linuxstatic"
             fi
             ;;
-        Darwin*)    echo "macos" ;;
-        *)          error "Unsupported operating system: $(uname -s)" ;;
+        Darwin*)                echo "macos" ;;
+        MINGW*|MSYS*|CYGWIN*)   echo "win" ;;
+        *)                      error "Unsupported operating system: $(uname -s)" ;;
     esac
 }
 
@@ -293,7 +294,11 @@ main() {
     # Detect platform
     OS=$(detect_os)
     ARCH=$(detect_arch)
-    BINARY_NAME="safe-chain-${OS}-${ARCH}"
+    if [ "$OS" = "win" ]; then
+        BINARY_NAME="safe-chain-${OS}-${ARCH}.exe"
+    else
+        BINARY_NAME="safe-chain-${OS}-${ARCH}"
+    fi
 
     info "Detected platform: ${OS}-${ARCH}"
 
@@ -311,9 +316,15 @@ main() {
     download "$DOWNLOAD_URL" "$TEMP_FILE"
 
     # Rename and make executable
-    FINAL_FILE="${INSTALL_DIR}/safe-chain"
+    if [ "$OS" = "win" ]; then
+        FINAL_FILE="${INSTALL_DIR}/safe-chain.exe"
+    else
+        FINAL_FILE="${INSTALL_DIR}/safe-chain"
+    fi
     mv "$TEMP_FILE" "$FINAL_FILE" || error "Failed to move binary to $FINAL_FILE"
-    chmod +x "$FINAL_FILE" || error "Failed to make binary executable"
+    if [ "$OS" != "win" ]; then
+        chmod +x "$FINAL_FILE" || error "Failed to make binary executable"
+    fi
 
     info "Binary installed to: $FINAL_FILE"
 
