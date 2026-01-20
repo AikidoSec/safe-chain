@@ -1,14 +1,13 @@
-import { arch, tmpdir } from "os";
+import { tmpdir } from "os";
 import { unlinkSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 import { ui } from "../environment/userInteraction.js";
 import { safeSpawn } from "../utils/safeSpawn.js";
-import {
-  getAgentDownloadUrl,
-  getAgentVersion,
-  downloadFile,
-} from "./downloadAgent.js";
+import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
+
+const WINDOWS_SERVICE_NAME = "SafeChainAgent";
+const WINDOWS_APP_NAME = "SafeChain Agent";
 
 export async function installOnWindows() {
   if (!(await isRunningAsAdmin())) {
@@ -19,18 +18,17 @@ export async function installOnWindows() {
     return;
   }
 
-  const architecture = getWindowsArchitecture();
-  const fileName = `SafeChainAgent-windows-${architecture}.msi`;
-  const downloadUrl = getAgentDownloadUrl(fileName);
-  const msiPath = join(tmpdir(), `SafeChainAgent-${Date.now()}.msi`);
+  const msiPath = join(tmpdir(), `SafeChainUltimate-${Date.now()}.msi`);
 
   ui.emptyLine();
-  ui.writeInformation(
-    `📥 Downloading SafeChain Ultimate ${getAgentVersion()} (${architecture})...`,
-  );
-  ui.writeVerbose(`Download URL: ${downloadUrl}`);
+  ui.writeInformation(`📥 Downloading SafeChain Ultimate ${getAgentVersion()}`);
   ui.writeVerbose(`Destination: ${msiPath}`);
-  await downloadFile(downloadUrl, msiPath);
+
+  const result = await downloadAgentToFile(msiPath);
+  if (!result) {
+    ui.writeError("No download available for this platform/architecture.");
+    return;
+  }
 
   try {
     ui.emptyLine();
@@ -73,13 +71,6 @@ async function isRunningAsAdmin() {
   return result.status === 0 && result.stdout.trim() === "True";
 }
 
-function getWindowsArchitecture() {
-  const nodeArch = arch();
-  if (nodeArch === "x64") return "amd64";
-  if (nodeArch === "arm64") return "arm64";
-  throw new Error(`Unsupported architecture: ${nodeArch}`);
-}
-
 async function uninstallIfInstalled() {
   // Query Win32_Product via WMI to find the installed SafeChain Agent.
   // If found, outputs the product GUID (e.g., "{12345678-1234-...}") needed for msiexec uninstall.
@@ -88,7 +79,7 @@ async function uninstallIfInstalled() {
   let productCode;
   try {
     productCode = execSync(
-      `powershell -Command "$app = Get-WmiObject -Class Win32_Product -Filter \\"Name='SafeChain Agent'\\"; if ($app) { Write-Output $app.IdentifyingNumber }"`,
+      `powershell -Command "$app = Get-WmiObject -Class Win32_Product -Filter \\"Name='${WINDOWS_APP_NAME}'\\"; if ($app) { Write-Output $app.IdentifyingNumber }"`,
       { encoding: "utf8" },
     ).trim();
   } catch {
@@ -132,7 +123,7 @@ async function runMsiInstaller(msiPath) {
 async function stopServiceIfRunning() {
   ui.writeInformation("⏹️  Stopping running service...");
 
-  const result = await safeSpawn("net", ["stop", "SafeChainAgent"], {
+  const result = await safeSpawn("net", ["stop", WINDOWS_SERVICE_NAME], {
     stdio: "pipe",
   });
 
@@ -142,8 +133,10 @@ async function stopServiceIfRunning() {
 }
 
 async function startService() {
-  ui.writeVerbose('Checking service status: sc query "SafeChainAgent"');
-  const queryResult = await safeSpawn("sc", ["query", "SafeChainAgent"], {
+  ui.writeVerbose(
+    `Checking service status: sc query "${WINDOWS_SERVICE_NAME}"`,
+  );
+  const queryResult = await safeSpawn("sc", ["query", WINDOWS_SERVICE_NAME], {
     stdio: "pipe",
   });
 
@@ -152,8 +145,8 @@ async function startService() {
     return;
   }
 
-  ui.writeVerbose('Running: net start "SafeChainAgent"');
-  const startResult = await safeSpawn("net", ["start", "SafeChainAgent"], {
+  ui.writeVerbose(`Running: net start "${WINDOWS_SERVICE_NAME}"`);
+  const startResult = await safeSpawn("net", ["start", WINDOWS_SERVICE_NAME], {
     stdio: "pipe",
   });
 
