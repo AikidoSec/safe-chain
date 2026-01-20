@@ -35,15 +35,8 @@ export async function installOnWindows() {
     await stopServiceIfRunning();
     await uninstallIfInstalled();
 
-    // Wait a moment for uninstall to complete
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
     ui.writeInformation("⚙️  Installing SafeChain Ultimate...");
     await runMsiInstaller(msiPath);
-
-    ui.emptyLine();
-    ui.writeInformation("🚀 Starting SafeChain Ultimate service...");
-    await startService();
 
     ui.emptyLine();
     ui.writeInformation(
@@ -129,31 +122,6 @@ async function stopServiceIfRunning() {
 
   if (result.status !== 0) {
     ui.writeVerbose("Service not running (will start after installation).");
-  }
-}
-
-async function startService() {
-  ui.writeVerbose(
-    `Checking service status: sc query "${WINDOWS_SERVICE_NAME}"`,
-  );
-  const queryResult = await safeSpawn("sc", ["query", WINDOWS_SERVICE_NAME], {
-    stdio: "pipe",
-  });
-
-  if (queryResult.status === 0 && queryResult.stdout.includes("RUNNING")) {
-    ui.writeVerbose("SafeChain Ultimate service is already running.");
-    return;
-  }
-
-  ui.writeVerbose(`Running: net start "${WINDOWS_SERVICE_NAME}"`);
-  const startResult = await safeSpawn("net", ["start", WINDOWS_SERVICE_NAME], {
-    stdio: "pipe",
-  });
-
-  if (startResult.status !== 0) {
-    throw new Error(
-      `Failed to start service (exit code: ${startResult.status})`,
-    );
   }
 }
 
