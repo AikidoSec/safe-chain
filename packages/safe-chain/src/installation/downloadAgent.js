@@ -8,14 +8,26 @@ const ULTIMATE_VERSION = "v0.2.0";
 const DOWNLOAD_URLS = {
   win32: {
     x64: {
-      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.2.0/SafeChainAgent-windows-amd64.msi",
+      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-windows-amd64.msi",
       checksum:
-        "sha256:c699f74a3666d85b70b8ede076a2192a6a023f1b395e8e6c7556927ee698a020",
+        "sha256:bba5deb250ebc6008f1cb33fa4209d2455a2f47fa99f0a40e3babef64939ac77",
     },
     arm64: {
-      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.2.0/SafeChainAgent-windows-arm64.msi",
+      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-windows-arm64.msi",
       checksum:
-        "sha256:5b08dd4749c8befe5379bc01f7a8a5ac1d6a35b6bee37c6c72a4ba8744c3b052",
+        "sha256:9553ed15d5efed4185b990a1b86af0b11c23f11d96f8ce04e16b6b98aaf0506e",
+    },
+  },
+  darwin: {
+    x64: {
+      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-darwin-amd64.pkg",
+      checksum:
+        "sha256:cbccf32e987a45bc8cc20b620f7b597ff7f9c2f966c2bc21132349612ddb619f",
+    },
+    arm64: {
+      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-darwin-arm64.pkg",
+      checksum:
+        "sha256:4d53a43a47bf7e8133eb61d306a1fb16348b9ec89c1c825e5f746f4fe847796e",
     },
   },
 };
