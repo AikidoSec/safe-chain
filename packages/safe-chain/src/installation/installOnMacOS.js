@@ -5,8 +5,6 @@ import { ui } from "../environment/userInteraction.js";
 import { safeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
 
-const MACOS_SERVICE_LABEL = "com.aikido.SafeChainAgent";
-
 export async function installOnMacOS() {
   if (!isRunningAsRoot()) {
     ui.writeError("Root privileges required.");
