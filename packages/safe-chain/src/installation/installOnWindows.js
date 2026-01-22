@@ -3,7 +3,7 @@ import { unlinkSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 import { ui } from "../environment/userInteraction.js";
-import { safeSpawn } from "../utils/safeSpawn.js";
+import { printVerboseAndSafeSpawn, safeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
 
 const WINDOWS_SERVICE_NAME = "SafeChainAgent";
@@ -87,7 +87,12 @@ async function uninstallIfInstalled() {
   ui.writeInformation("🗑️  Removing previous installation...");
   ui.writeVerbose(`Found product code: ${productCode}`);
 
-  const uninstallResult = await safeSpawn(
+  // Use msiexec to run the msi installer quitely (https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/msiexec)
+  // Options:
+  //  - /x:         Uninstalls the package.
+  //  - /qn:        Specifies there's no UI during the installation process.
+  //  - /norestart: Stops the device from restarting after the installation completes.
+  const uninstallResult = await printVerboseAndSafeSpawn(
     "msiexec",
     ["/x", productCode, "/qn", "/norestart"],
     { stdio: "inherit" },
@@ -102,11 +107,18 @@ async function uninstallIfInstalled() {
  * @param {string} msiPath
  */
 async function runMsiInstaller(msiPath) {
-  ui.writeVerbose(`Running: msiexec /i "${msiPath}" /qn`);
+  // Use msiexec to run the msi installer quitely (https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/msiexec)
+  // Options:
+  //  - /i:  Specifies normal installation
+  //  - /qn: Specifies there's no UI during the installation process.
 
-  const result = await safeSpawn("msiexec", ["/i", msiPath, "/qn"], {
-    stdio: "inherit",
-  });
+  const result = await printVerboseAndSafeSpawn(
+    "msiexec",
+    ["/i", msiPath, "/qn"],
+    {
+      stdio: "inherit",
+    },
+  );
 
   if (result.status !== 0) {
     throw new Error(`MSI installer failed (exit code: ${result.status})`);
@@ -116,9 +128,13 @@ async function runMsiInstaller(msiPath) {
 async function stopServiceIfRunning() {
   ui.writeInformation("⏹️  Stopping running service...");
 
-  const result = await safeSpawn("net", ["stop", WINDOWS_SERVICE_NAME], {
-    stdio: "pipe",
-  });
+  const result = await printVerboseAndSafeSpawn(
+    "net",
+    ["stop", WINDOWS_SERVICE_NAME],
+    {
+      stdio: "pipe",
+    },
+  );
 
   if (result.status !== 0) {
     ui.writeVerbose("Service not running (will start after installation).");
