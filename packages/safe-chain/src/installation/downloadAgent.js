@@ -3,31 +3,31 @@ import { createHash } from "crypto";
 import { pipeline } from "stream/promises";
 import fetch from "make-fetch-happen";
 
-const ULTIMATE_VERSION = "v0.2.0";
+const ULTIMATE_VERSION = "v0.2.1";
 
 const DOWNLOAD_URLS = {
   win32: {
     x64: {
-      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-windows-amd64.msi",
+      url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainAgent-windows-amd64.msi`,
       checksum:
-        "sha256:bba5deb250ebc6008f1cb33fa4209d2455a2f47fa99f0a40e3babef64939ac77",
+        "sha256:8d86a44d314746099ba50cfae0cc1eae6232522deb348b226da92aae12754eec",
     },
     arm64: {
-      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-windows-arm64.msi",
+      url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainAgent-windows-arm64.msi`,
       checksum:
-        "sha256:9553ed15d5efed4185b990a1b86af0b11c23f11d96f8ce04e16b6b98aaf0506e",
+        "sha256:ab5b8335cc257d53424f73d6681920875083cd9b3f53e52d944bf867a415e027",
     },
   },
   darwin: {
     x64: {
-      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-darwin-amd64.pkg",
+      url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainAgent-darwin-amd64.pkg`,
       checksum:
-        "sha256:cbccf32e987a45bc8cc20b620f7b597ff7f9c2f966c2bc21132349612ddb619f",
+        "sha256:73f83d9352c4fd25f7693d9e53bbbb2b7ac70d16217d745495c9efb50dc4a3a6",
     },
     arm64: {
-      url: "https://github.com/AikidoSec/safechain-internals/releases/download/v0.0.2-macos-release-artifact/SafeChainAgent-darwin-arm64.pkg",
+      url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainAgent-darwin-arm64.pkg`,
       checksum:
-        "sha256:4d53a43a47bf7e8133eb61d306a1fb16348b9ec89c1c825e5f746f4fe847796e",
+        "sha256:bd419e9c82488539b629b04c97aa1d2dc90e54ff045bd7277a6b40d26f8ebc73",
     },
   },
 };

@@ -2,7 +2,7 @@ import { tmpdir } from "os";
 import { unlinkSync } from "fs";
 import { join } from "path";
 import { ui } from "../environment/userInteraction.js";
-import { safeSpawn } from "../utils/safeSpawn.js";
+import { printVerboseAndSafeSpawn, safeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
 
 export async function installOnMacOS() {
@@ -49,9 +49,13 @@ function isRunningAsRoot() {
  * @param {string} pkgPath
  */
 async function runPkgInstaller(pkgPath) {
-  ui.writeVerbose(`Running: installer -pkg "${pkgPath}" -target /`);
+  // Uses installer to install the package (https://ss64.com/mac/installer.html)
+  // Options:
+  //  -pkg (required):    The package to be installed.
+  //  -target (required): The target volume is specified with the -target parameter.
+  //                       --> "-target /" installs to the current boot volume.
 
-  const result = await safeSpawn(
+  const result = await printVerboseAndSafeSpawn(
     "installer",
     ["-pkg", pkgPath, "-target", "/"],
     {

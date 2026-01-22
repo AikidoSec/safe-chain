@@ -1,5 +1,6 @@
 import { spawn, execSync } from "child_process";
 import os from "os";
+import { ui } from "../environment/userInteraction.js";
 
 /**
  * @param {string} arg
@@ -134,4 +135,19 @@ export async function safeSpawn(command, args, options = {}) {
       reject(error);
     });
   });
+}
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {import("child_process").SpawnOptions} options
+ *
+ * @returns {Promise<{status: number, stdout: string, stderr: string}>}
+ */
+export async function printVerboseAndSafeSpawn(command, args, options = {}) {
+  ui.writeVerbose(`Running: ${command} ${args.join(" ")}`);
+
+  const result = await safeSpawn(command, args, options);
+
+  return result;
 }
