@@ -7,37 +7,47 @@ import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
+import { createRamaProxy, getRamaPath } from "./createRamaProxy.js";
 
-const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
- * @type {{port: number | null, blockedRequests: {packageName: string, version: string, url: string}[]}}
+ * @typedef {Object} SafeChainProxy
+ * @prop {() => Promise<void>} startServer
+ * @prop {() => Promise<void>} stopServer
+ * @prop {() => boolean} verifyNoMaliciousPackages
+ * @prop {() => boolean} hasSuppressedVersions
+ * @prop {() => Number | null} getServerPort
+ * @prop {() => string} getCombinedCaBundlePath
  */
-const state = {
-  port: null,
-  blockedRequests: [],
-};
+
+/** @type {SafeChainProxy} */
+let server;
 
 export function createSafeChainProxy() {
-  const server = createProxyServer();
+  if (server) {
+    return server;
+  }
 
-  return {
-    startServer: () => startServer(server),
-    stopServer: () => stopServer(server),
-    verifyNoMaliciousPackages,
-    hasSuppressedVersions: getHasSuppressedVersions,
-  };
+  let ramaPath = getRamaPath();
+  if (ramaPath) {
+    ui.writeInformation("Starting safe-chain rama proxy");
+    server = createRamaProxy(ramaPath);
+  } else {
+    server = createBuiltInProxyServer();
+  }
+
+  return server;
 }
 
 /**
  * @returns {Record<string, string>}
  */
 function getSafeChainProxyEnvironmentVariables() {
-  if (!state.port) {
+  if (!server || !server.getServerPort()) {
     return {};
   }
 
-  const proxyUrl = `http://localhost:${state.port}`;
-  const caCertPath = getCombinedCaBundlePath();
+  const proxyUrl = `http://localhost:${server.getServerPort()}`;
+  const caCertPath = server.getCombinedCaBundlePath();
 
   return {
     HTTPS_PROXY: proxyUrl,
@@ -68,7 +78,17 @@ export function mergeSafeChainProxyEnvironmentVariables(env) {
   return proxyEnv;
 }
 
-function createProxyServer() {
+/** @returns {SafeChainProxy} */
+function createBuiltInProxyServer() {
+  const SERVER_STOP_TIMEOUT_MS = 1000;
+  /**
+   * @type {{port: number | null, blockedRequests: {packageName: string, version: string, url: string}[]}}
+   */
+  const state = {
+    port: null,
+    blockedRequests: [],
+  };
+
   const server = http.createServer(
     // This handles direct HTTP requests (non-CONNECT requests)
     // This is normally http-only traffic, but we also handle
@@ -79,114 +99,121 @@ function createProxyServer() {
   // This handles HTTPS requests via the CONNECT method
   server.on("connect", handleConnect);
 
-  return server;
-}
+  return {
+    startServer: () => startServer(server),
+    stopServer: () => stopServer(server),
+    verifyNoMaliciousPackages,
+    hasSuppressedVersions: getHasSuppressedVersions,
+    getServerPort: () => state.port,
+    getCombinedCaBundlePath,
+  };
 
-/**
- * @param {import("http").Server} server
- *
- * @returns {Promise<void>}
- */
-function startServer(server) {
-  return new Promise((resolve, reject) => {
-    // Passing port 0 makes the OS assign an available port
-    server.listen(0, () => {
-      const address = server.address();
-      if (address && typeof address === "object") {
-        state.port = address.port;
-        resolve();
-      } else {
-        reject(new Error("Failed to start proxy server"));
-      }
-    });
-
-    server.on("error", (err) => {
-      reject(err);
-    });
-  });
-}
-
-/**
- * @param {import("http").Server} server
- *
- * @returns {Promise<void>}
- */
-function stopServer(server) {
-  return new Promise((resolve) => {
-    try {
-      server.close(() => {
-        resolve();
+  /**
+   * @param {import("http").Server} server
+   *
+   * @returns {Promise<void>}
+   */
+  function startServer(server) {
+    return new Promise((resolve, reject) => {
+      // Passing port 0 makes the OS assign an available port
+      server.listen(0, () => {
+        const address = server.address();
+        if (address && typeof address === "object") {
+          state.port = address.port;
+          resolve();
+        } else {
+          reject(new Error("Failed to start proxy server"));
+        }
       });
-    } catch {
-      resolve();
-    }
-    setTimeout(() => resolve(), SERVER_STOP_TIMEOUT_MS);
-  });
-}
 
-/**
- * @param {import("http").IncomingMessage} req
- * @param {import("http").ServerResponse} clientSocket
- * @param {Buffer} head
- *
- * @returns {void}
- */
-function handleConnect(req, clientSocket, head) {
-  // CONNECT method is used for HTTPS requests
-  // It establishes a tunnel to the server identified by the request URL
+      server.on("error", (err) => {
+        reject(err);
+      });
+    });
+  }
 
-  const interceptor = createInterceptorForUrl(req.url || "");
-
-  if (interceptor) {
-    // Subscribe to malware blocked events
-    interceptor.on(
-      "malwareBlocked",
-      (
-        /** @type {import("./interceptors/interceptorBuilder.js").MalwareBlockedEvent} */ event
-      ) => {
-        onMalwareBlocked(event.packageName, event.version, event.targetUrl);
+  /**
+   * @param {import("http").Server} server
+   *
+   * @returns {Promise<void>}
+   */
+  function stopServer(server) {
+    return new Promise((resolve) => {
+      try {
+        server.close(() => {
+          resolve();
+        });
+      } catch {
+        resolve();
       }
+      setTimeout(() => resolve(), SERVER_STOP_TIMEOUT_MS);
+    });
+  }
+
+  /**
+   * @param {import("http").IncomingMessage} req
+   * @param {import("http").ServerResponse} clientSocket
+   * @param {Buffer} head
+   *
+   * @returns {void}
+   */
+  function handleConnect(req, clientSocket, head) {
+    // CONNECT method is used for HTTPS requests
+    // It establishes a tunnel to the server identified by the request URL
+
+    const interceptor = createInterceptorForUrl(req.url || "");
+
+    if (interceptor) {
+      // Subscribe to malware blocked events
+      interceptor.on(
+        "malwareBlocked",
+        (
+          /** @type {import("./interceptors/interceptorBuilder.js").MalwareBlockedEvent} */ event
+        ) => {
+          onMalwareBlocked(event.packageName, event.version, event.targetUrl);
+        }
+      );
+
+      mitmConnect(req, clientSocket, interceptor);
+    } else {
+      // For other hosts, just tunnel the request to the destination tcp socket
+      ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
+      tunnelRequest(req, clientSocket, head);
+    }
+  }
+
+  /**
+   *
+   * @param {string} packageName
+   * @param {string} version
+   * @param {string} url
+   */
+  function onMalwareBlocked(packageName, version, url) {
+    state.blockedRequests.push({ packageName, version, url });
+  }
+
+  function verifyNoMaliciousPackages() {
+    if (state.blockedRequests.length === 0) {
+      // No malicious packages were blocked, so nothing to block
+      return true;
+    }
+
+    ui.emptyLine();
+
+    ui.writeInformation(
+      `Safe-chain: ${chalk.bold(
+        `blocked ${state.blockedRequests.length} malicious package downloads`
+      )}:`
     );
 
-    mitmConnect(req, clientSocket, interceptor);
-  } else {
-    // For other hosts, just tunnel the request to the destination tcp socket
-    ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
-    tunnelRequest(req, clientSocket, head);
+    for (const req of state.blockedRequests) {
+      ui.writeInformation(` - ${req.packageName}@${req.version} (${req.url})`);
+    }
+
+    ui.emptyLine();
+    ui.writeExitWithoutInstallingMaliciousPackages();
+    ui.emptyLine();
+
+    return false;
   }
-}
-
-/**
- *
- * @param {string} packageName
- * @param {string} version
- * @param {string} url
- */
-function onMalwareBlocked(packageName, version, url) {
-  state.blockedRequests.push({ packageName, version, url });
-}
-
-function verifyNoMaliciousPackages() {
-  if (state.blockedRequests.length === 0) {
-    // No malicious packages were blocked, so nothing to block
-    return true;
-  }
-
-  ui.emptyLine();
-
-  ui.writeInformation(
-    `Safe-chain: ${chalk.bold(
-      `blocked ${state.blockedRequests.length} malicious package downloads`
-    )}:`
-  );
-
-  for (const req of state.blockedRequests) {
-    ui.writeInformation(` - ${req.packageName}@${req.version} (${req.url})`);
-  }
-
-  ui.emptyLine();
-  ui.writeExitWithoutInstallingMaliciousPackages();
-  ui.emptyLine();
-
-  return false;
 }
