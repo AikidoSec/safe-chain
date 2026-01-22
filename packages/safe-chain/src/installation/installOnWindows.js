@@ -6,8 +6,8 @@ import { ui } from "../environment/userInteraction.js";
 import { printVerboseAndSafeSpawn, safeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
 
-const WINDOWS_SERVICE_NAME = "SafeChainAgent";
-const WINDOWS_APP_NAME = "SafeChain Agent";
+const WINDOWS_SERVICE_NAME = "SafeChainUltimate";
+const WINDOWS_APP_NAME = "SafeChain Ultimate";
 
 export async function installOnWindows() {
   if (!(await isRunningAsAdmin())) {
