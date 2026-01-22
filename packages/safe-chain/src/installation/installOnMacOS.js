@@ -2,7 +2,7 @@ import { tmpdir } from "os";
 import { unlinkSync } from "fs";
 import { join } from "path";
 import { ui } from "../environment/userInteraction.js";
-import { printVerboseAndSafeSpawn, safeSpawn } from "../utils/safeSpawn.js";
+import { printVerboseAndSafeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
 
 export async function installOnMacOS() {
