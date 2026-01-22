@@ -16,6 +16,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { knownAikidoTools } from "../src/shell-integration/helpers.js";
+import { installUltimate } from "../src/installation/installUltimate.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -62,6 +63,10 @@ if (tool) {
   process.exit(0);
 } else if (command === "setup") {
   setup();
+} else if (command === "--ultimate") {
+  (async () => {
+    await installUltimate();
+  })();
 } else if (command === "teardown") {
   teardownDirectories();
   teardown();
@@ -82,36 +87,41 @@ if (tool) {
 
 function writeHelp() {
   ui.writeInformation(
-    chalk.bold("Usage: ") + chalk.cyan("safe-chain <command>")
+    chalk.bold("Usage: ") + chalk.cyan("safe-chain <command>"),
   );
   ui.emptyLine();
   ui.writeInformation(
     `Available commands: ${chalk.cyan("setup")}, ${chalk.cyan(
-      "teardown"
+      "teardown",
     )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("help")}, ${chalk.cyan(
-      "--version"
-    )}`
+      "--version",
+    )}`,
   );
   ui.emptyLine();
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain setup"
-    )}: This will setup your shell to wrap safe-chain around npm, npx, yarn, pnpm, pnpx, bun, bunx, pip and pip3.`
+      "safe-chain setup",
+    )}: This will setup your shell to wrap safe-chain around npm, npx, yarn, pnpm, pnpx, bun, bunx, pip and pip3.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain teardown"
-    )}: This will remove safe-chain aliases from your shell configuration.`
+      "safe-chain --ultimate",
+    )}: This installs the ultimate version of safe-chain, enabling protection for more eco-systems (vscode).`,
   );
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain setup-ci"
-    )}: This will setup safe-chain for CI environments by creating shims and modifying the PATH.`
+      "safe-chain teardown",
+    )}: This will remove safe-chain aliases from your shell configuration.`,
+  );
+  ui.writeInformation(
+    `- ${chalk.cyan(
+      "safe-chain setup-ci",
+    )}: This will setup safe-chain for CI environments by creating shims and modifying the PATH.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan("safe-chain --version")} (or ${chalk.cyan(
-      "-v"
-    )}): Display the current version of safe-chain.`
+      "-v",
+    )}): Display the current version of safe-chain.`,
   );
   ui.emptyLine();
 }
