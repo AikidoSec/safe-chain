@@ -2,12 +2,17 @@ import { before, after, describe, it } from "node:test";
 import assert from "node:assert";
 import net from "net";
 import tls from "tls";
+import { gunzipSync } from "zlib";
 import {
   createSafeChainProxy,
   mergeSafeChainProxyEnvironmentVariables,
 } from "./registryProxy.js";
 import { getCaCertPath } from "./certUtils.js";
-import { setEcoSystem, ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
+import {
+  setEcoSystem,
+  ECOSYSTEM_JS,
+  ECOSYSTEM_PY,
+} from "../config/settings.js";
 import fs from "fs";
 
 describe("registryProxy.mitm", () => {
@@ -33,7 +38,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/lodash"
+      "/lodash",
     );
 
     assert.strictEqual(response.statusCode, 200);
@@ -45,7 +50,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/lodash/-/lodash-4.17.21.tgz"
+      "/lodash/-/lodash-4.17.21.tgz",
     );
 
     // Should get a response (200 or redirect, but not 403 blocked)
@@ -57,7 +62,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/this-package-definitely-does-not-exist-12345"
+      "/this-package-definitely-does-not-exist-12345",
     );
 
     assert.strictEqual(response.statusCode, 404);
@@ -68,7 +73,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/lodash?write=true"
+      "/lodash?write=true",
     );
 
     assert.strictEqual(response.statusCode, 200);
@@ -79,7 +84,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.yarnpkg.com",
-      "/lodash"
+      "/lodash",
     );
 
     assert.strictEqual(response.statusCode, 200);
@@ -90,7 +95,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/lodash"
+      "/lodash",
     );
 
     // Check certificate common name matches the target hostname
@@ -109,14 +114,14 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/lodash"
+      "/lodash",
     );
 
     const { cert: cert2 } = await makeRegistryRequestAndGetCert(
       proxyHost,
       proxyPort,
       "registry.yarnpkg.com",
-      "/lodash"
+      "/lodash",
     );
 
     // Different hostnames should have different certificates
@@ -130,14 +135,14 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/lodash"
+      "/lodash",
     );
 
     const { cert: cert2 } = await makeRegistryRequestAndGetCert(
       proxyHost,
       proxyPort,
       "registry.npmjs.org",
-      "/package/lodash"
+      "/package/lodash",
     );
 
     // Same hostname should get the same certificate (fingerprint)
@@ -159,7 +164,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "pypi.org",
-      "/packages/source/f/foo_bar/foo_bar-2.0.0.tar.gz"
+      "/packages/source/f/foo_bar/foo_bar-2.0.0.tar.gz",
     );
     assert.notStrictEqual(response.statusCode, 403);
     assert.ok(typeof response.body === "string");
@@ -172,7 +177,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "files.pythonhosted.org",
-      "/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl"
+      "/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl",
     );
     assert.notStrictEqual(response.statusCode, 403);
     assert.ok(typeof response.body === "string");
@@ -185,7 +190,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "pypi.org",
-      "/packages/source/f/foo_bar/foo_bar-2.0.0a1.tar.gz"
+      "/packages/source/f/foo_bar/foo_bar-2.0.0a1.tar.gz",
     );
     assert.notStrictEqual(response.statusCode, 403);
     assert.ok(typeof response.body === "string");
@@ -198,7 +203,7 @@ describe("registryProxy.mitm", () => {
       proxyHost,
       proxyPort,
       "pypi.org",
-      "/packages/source/f/foo_bar/foo_bar-latest.tar.gz"
+      "/packages/source/f/foo_bar/foo_bar-latest.tar.gz",
     );
     assert.notStrictEqual(response.statusCode, 403);
     assert.ok(typeof response.body === "string");
@@ -234,34 +239,73 @@ async function makeRegistryRequest(proxyHost, proxyPort, targetHost, path) {
   });
 
   // Step 4: Send HTTP request over TLS
-  const httpRequest = `GET ${path} HTTP/1.1\r\nHost: ${targetHost}\r\nConnection: close\r\n\r\n`;
+  const httpRequest = `GET ${path} HTTP/1.1\r\nHost: ${targetHost}\r\nConnection: close\r\nAccept-encoding: gzip\r\n\r\n`;
   tlsSocket.write(httpRequest);
 
-  // Step 5: Read response
+  // Step 5: Read response as binary chunks
   return new Promise((resolve, reject) => {
-    let data = "";
+    const chunks = [];
 
     tlsSocket.on("data", (chunk) => {
-      data += chunk.toString();
+      chunks.push(chunk);
     });
 
     tlsSocket.on("end", () => {
-      const lines = data.split("\r\n");
-      const statusLine = lines[0];
+      const buffer = Buffer.concat(chunks);
+
+      // Find the header/body separator (\r\n\r\n) in binary
+      const separator = Buffer.from("\r\n\r\n");
+      let separatorIndex = buffer.indexOf(separator);
+      if (separatorIndex === -1) {
+        return reject(
+          new Error("Invalid HTTP response: no header/body separator"),
+        );
+      }
+
+      // Extract headers as text
+      const headersText = buffer.subarray(0, separatorIndex).toString("utf8");
+      const headerLines = headersText.split("\r\n");
+      const statusLine = headerLines[0];
       const statusCode = parseInt(statusLine.split(" ")[1]);
 
-      // Find body after empty line
-      const emptyLineIndex = lines.findIndex(line => line === "");
-      const body = lines.slice(emptyLineIndex + 1).join("\r\n");
+      // Parse headers into object
+      const headers = {};
+      for (let i = 1; i < headerLines.length; i++) {
+        const colonIndex = headerLines[i].indexOf(":");
+        if (colonIndex > 0) {
+          const key = headerLines[i].substring(0, colonIndex).toLowerCase();
+          const value = headerLines[i].substring(colonIndex + 1).trim();
+          headers[key] = value;
+        }
+      }
 
-      resolve({ statusCode, body });
+      // Extract body as binary
+      let bodyBuffer = buffer.subarray(separatorIndex + separator.length);
+
+      // Decode chunked transfer encoding if present
+      if (headers["transfer-encoding"] === "chunked") {
+        bodyBuffer = decodeChunked(bodyBuffer);
+      }
+
+      // Decompress if gzip encoded
+      if (headers["content-encoding"] === "gzip" && bodyBuffer.length > 0) {
+        bodyBuffer = gunzipSync(bodyBuffer);
+      }
+
+      const body = bodyBuffer.toString("utf8");
+      resolve({ statusCode, body, headers });
     });
 
     tlsSocket.on("error", reject);
   });
 }
 
-async function makeRegistryRequestAndGetCert(proxyHost, proxyPort, targetHost, path) {
+async function makeRegistryRequestAndGetCert(
+  proxyHost,
+  proxyPort,
+  targetHost,
+  path,
+) {
   // Step 1: Connect to proxy
   const socket = await new Promise((resolve, reject) => {
     const sock = net.connect({ host: proxyHost, port: proxyPort }, () => {
@@ -311,7 +355,7 @@ async function makeRegistryRequestAndGetCert(proxyHost, proxyPort, targetHost, p
       const statusCode = parseInt(statusLine.split(" ")[1]);
 
       // Find body after empty line
-      const emptyLineIndex = lines.findIndex(line => line === "");
+      const emptyLineIndex = lines.findIndex((line) => line === "");
       const body = lines.slice(emptyLineIndex + 1).join("\r\n");
 
       resolve({ statusCode, body });
@@ -321,4 +365,38 @@ async function makeRegistryRequestAndGetCert(proxyHost, proxyPort, targetHost, p
   });
 
   return { cert: peerCert, response };
+}
+
+/**
+ * Decode HTTP chunked transfer encoding
+ * Format: <chunk-size-hex>\r\n<chunk-data>\r\n ... 0\r\n\r\n
+ * @param {Buffer} buffer
+ * @returns {Buffer}
+ */
+function decodeChunked(buffer) {
+  const chunks = [];
+  let offset = 0;
+
+  while (offset < buffer.length) {
+    // Find the end of the chunk size line
+    const lineEnd = buffer.indexOf(Buffer.from("\r\n"), offset);
+    if (lineEnd === -1) break;
+
+    // Parse chunk size (hex)
+    const sizeHex = buffer.subarray(offset, lineEnd).toString("utf8");
+    const chunkSize = parseInt(sizeHex, 16);
+
+    // End of chunks
+    if (chunkSize === 0) break;
+
+    // Extract chunk data
+    const dataStart = lineEnd + 2;
+    const dataEnd = dataStart + chunkSize;
+    chunks.push(buffer.subarray(dataStart, dataEnd));
+
+    // Move past chunk data and trailing \r\n
+    offset = dataEnd + 2;
+  }
+
+  return Buffer.concat(chunks);
 }
