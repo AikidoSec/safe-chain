@@ -4,6 +4,7 @@ import { join } from "path";
 import { ui } from "../environment/userInteraction.js";
 import { printVerboseAndSafeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
+import chalk from "chalk";
 
 export async function installOnMacOS() {
   if (!isRunningAsRoot()) {
@@ -32,6 +33,17 @@ export async function installOnMacOS() {
     ui.emptyLine();
     ui.writeInformation(
       "✅ SafeChain Ultimate installed and started successfully!",
+    );
+    ui.emptyLine();
+    ui.writeInformation(
+      chalk.cyan("🔐 ") +
+        chalk.bold("ACTION REQUIRED: ") +
+        "macOS will show a popup to install our certificate.",
+    );
+    ui.writeInformation(
+      "   " +
+        chalk.bold("Please accept the certificate") +
+        " to complete the installation.",
     );
     ui.emptyLine();
   } finally {
