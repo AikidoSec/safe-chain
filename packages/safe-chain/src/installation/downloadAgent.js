@@ -5,7 +5,7 @@ import fetch from "make-fetch-happen";
 
 const ULTIMATE_VERSION = "v0.2.2";
 
-const DOWNLOAD_URLS = {
+export const DOWNLOAD_URLS = {
   win32: {
     x64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-windows-amd64.msi`,
@@ -87,7 +87,7 @@ export function getDownloadInfoForCurrentPlatform() {
  * @param {string} expectedChecksum - Format: "algorithm:hash" (e.g., "sha256:abc123...")
  * @returns {Promise<boolean>}
  */
-async function verifyChecksum(filePath, expectedChecksum) {
+export async function verifyChecksum(filePath, expectedChecksum) {
   const [algorithm, expected] = expectedChecksum.split(":");
 
   const hash = createHash(algorithm);
