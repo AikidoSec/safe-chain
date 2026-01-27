@@ -26,7 +26,6 @@ export async function uninstallOnWindows() {
     return;
   }
 
-  ui.writeInformation("⏹️  Stopping running service...");
   await stopServiceIfRunning();
 
   ui.writeInformation("🗑️  Uninstalling SafeChain Ultimate...");
