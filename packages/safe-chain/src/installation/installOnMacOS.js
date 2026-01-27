@@ -13,7 +13,7 @@ export async function installOnMacOS() {
   if (!isRunningAsRoot()) {
     ui.writeError("Root privileges required.");
     ui.writeInformation("Please run this command with sudo:");
-    ui.writeInformation("  sudo safe-chain --ultimate");
+    ui.writeInformation("  sudo safe-chain ultimate");
     return;
   }
 
@@ -59,7 +59,7 @@ export async function uninstallOnMacOS() {
   if (!isRunningAsRoot()) {
     ui.writeError("Root privileges required.");
     ui.writeInformation("Please run this command with sudo:");
-    ui.writeInformation("  sudo safe-chain --uninstall-ultimate");
+    ui.writeInformation("  sudo safe-chain ultimate uninstall");
     return;
   }
 
