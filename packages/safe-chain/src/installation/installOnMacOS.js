@@ -1,10 +1,13 @@
 import { tmpdir } from "os";
-import { unlinkSync } from "fs";
+import { unlinkSync, rmSync } from "fs";
 import { join } from "path";
+import { execSync } from "child_process";
 import { ui } from "../environment/userInteraction.js";
 import { printVerboseAndSafeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
 import chalk from "chalk";
+
+const MACOS_PKG_IDENTIFIER = "com.aikidosecurity.safechainultimate";
 
 export async function installOnMacOS() {
   if (!isRunningAsRoot()) {
@@ -49,6 +52,87 @@ export async function installOnMacOS() {
   } finally {
     ui.writeVerbose(`Cleaning up temporary file: ${pkgPath}`);
     cleanup(pkgPath);
+  }
+}
+
+export async function uninstallOnMacOS() {
+  if (!isRunningAsRoot()) {
+    ui.writeError("Root privileges required.");
+    ui.writeInformation("Please run this command with sudo:");
+    ui.writeInformation("  sudo safe-chain --uninstall-ultimate");
+    return;
+  }
+
+  ui.emptyLine();
+
+  if (!isPackageInstalled()) {
+    ui.writeInformation("SafeChain Ultimate is not installed.");
+    return;
+  }
+
+  ui.writeInformation("⏹️  Stopping service...");
+  await stopService();
+
+  ui.writeInformation("🗑️  Removing installed files...");
+  removeKnownFiles();
+
+  ui.writeInformation("🧹 Forgetting package receipt...");
+  forgetPackage();
+
+  ui.emptyLine();
+  ui.writeInformation("✅ SafeChain Ultimate has been uninstalled.");
+  ui.emptyLine();
+}
+
+function isPackageInstalled() {
+  try {
+    const output = execSync(`pkgutil --pkg-info ${MACOS_PKG_IDENTIFIER}`, {
+      encoding: "utf8",
+      stdio: "pipe",
+    });
+    return output.includes(MACOS_PKG_IDENTIFIER);
+  } catch {
+    return false;
+  }
+}
+
+async function stopService() {
+  const result = await printVerboseAndSafeSpawn(
+    "launchctl",
+    ["bootout", `system/${MACOS_PKG_IDENTIFIER}`],
+    { stdio: "pipe" },
+  );
+
+  if (result.status !== 0) {
+    ui.writeVerbose("Service not running (will continue with uninstall).");
+  }
+}
+
+const MACOS_KNOWN_PATHS = [
+  "/Library/Application Support/AikidoSecurity/SafeChainUltimate",
+  "/Library/Logs/AikidoSecurity/SafeChainUltimate",
+  `/Library/LaunchDaemons/${MACOS_PKG_IDENTIFIER}.plist`,
+];
+
+function removeKnownFiles() {
+  for (const filePath of MACOS_KNOWN_PATHS) {
+    try {
+      rmSync(filePath, { recursive: true, force: true });
+      ui.writeVerbose(`Removed: ${filePath}`);
+    } catch {
+      ui.writeVerbose(`Failed to remove: ${filePath}`);
+    }
+  }
+}
+
+function forgetPackage() {
+  try {
+    execSync(`pkgutil --forget ${MACOS_PKG_IDENTIFIER}`, {
+      encoding: "utf8",
+      stdio: "pipe",
+    });
+  } catch {
+    ui.writeVerbose("Failed to forget package receipt.");
   }
 }
 
