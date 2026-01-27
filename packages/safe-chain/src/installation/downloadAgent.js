@@ -3,31 +3,31 @@ import { createHash } from "crypto";
 import { pipeline } from "stream/promises";
 import fetch from "make-fetch-happen";
 
-const ULTIMATE_VERSION = "v0.2.1";
+const ULTIMATE_VERSION = "v0.2.2";
 
 const DOWNLOAD_URLS = {
   win32: {
     x64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-windows-amd64.msi`,
       checksum:
-        "sha256:8d86a44d314746099ba50cfae0cc1eae6232522deb348b226da92aae12754eec",
+        "sha256:82d6939579c23c357d0f6d368001a5ac8dc66ce13d32ee1700467555ee97e10a",
     },
     arm64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-windows-arm64.msi`,
       checksum:
-        "sha256:ab5b8335cc257d53424f73d6681920875083cd9b3f53e52d944bf867a415e027",
+        "sha256:d626da40e3d0c4e02a36e6c7e309f18f0ffde64e97a4f2fefd4b25722842ac19",
     },
   },
   darwin: {
     x64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-darwin-amd64.pkg`,
       checksum:
-        "sha256:73f83d9352c4fd25f7693d9e53bbbb2b7ac70d16217d745495c9efb50dc4a3a6",
+        "sha256:d7c31914deff8b332bf3d0e18ed00660e47ace87f06f22606c7866f7e0809507",
     },
     arm64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-darwin-arm64.pkg`,
       checksum:
-        "sha256:bd419e9c82488539b629b04c97aa1d2dc90e54ff045bd7277a6b40d26f8ebc73",
+        "sha256:73b092689e00c98e3c376afa50fc3477cedfd01445a113d42b36c5fcd956a6f4",
     },
   },
 };
