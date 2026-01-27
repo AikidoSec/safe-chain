@@ -10,7 +10,14 @@ const state = {
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
-
+const SAFE_CHAIN_ENV_PREFIX = "SAFE_CHAIN_";
+const ENV_BOOL_TRUE_VALUES = ["1", "true", "yes"];
+/**
+ * 
+ * @param {unknown} value 
+ * @returns {boolean}
+ */
+const isEnvBoolTrue = (value) => !!value && ENV_BOOL_TRUE_VALUES.includes(String(value).toLowerCase());
 /**
  * @param {string[]} args
  * @returns {string[]}
@@ -60,13 +67,17 @@ function getLastArgEqualsValue(args, prefix) {
  * @returns {void}
  */
 function setLoggingLevel(args) {
-  const safeChainLoggingArg = SAFE_CHAIN_ARG_PREFIX + "logging=";
-
-  const level = getLastArgEqualsValue(args, safeChainLoggingArg);
-  if (!level) {
-    return;
+  // First, check environment variable
+  const envValue = process.env[SAFE_CHAIN_ENV_PREFIX + "LOGGING"];
+  if (envValue) {
+    state.loggingLevel = envValue.toLowerCase();
   }
-  state.loggingLevel = level.toLowerCase();
+
+  // CLI flag overrides environment variable
+  const cliValue = getLastArgEqualsValue(args, SAFE_CHAIN_ARG_PREFIX + "logging=");
+  if (cliValue) {
+    state.loggingLevel = cliValue.toLowerCase();
+  }
 }
 
 export function getLoggingLevel() {
@@ -78,9 +89,14 @@ export function getLoggingLevel() {
  * @returns {void}
  */
 function setSkipMinimumPackageAge(args) {
-  const flagName = SAFE_CHAIN_ARG_PREFIX + "skip-minimum-package-age";
+  // First, check environment variable
+  const envValue = process.env[SAFE_CHAIN_ENV_PREFIX + "SKIP_MINIMUM_PACKAGE_AGE"];
+  if (isEnvBoolTrue(envValue)) {
+    state.skipMinimumPackageAge = true;
+  }
 
-  if (hasFlagArg(args, flagName)) {
+  // CLI flag overrides (always sets to true when present)
+  if (hasFlagArg(args, SAFE_CHAIN_ARG_PREFIX + "skip-minimum-package-age")) {
     state.skipMinimumPackageAge = true;
   }
 }
