@@ -16,7 +16,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { knownAikidoTools } from "../src/shell-integration/helpers.js";
-import { installUltimate } from "../src/installation/installUltimate.js";
+import {
+  installUltimate,
+  uninstallUltimate,
+} from "../src/installation/installUltimate.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -67,6 +70,10 @@ if (tool) {
   (async () => {
     await installUltimate();
   })();
+} else if (command === "--uninstall-ultimate") {
+  (async () => {
+    await uninstallUltimate();
+  })();
 } else if (command === "teardown") {
   teardownDirectories();
   teardown();
@@ -107,6 +114,11 @@ function writeHelp() {
     `- ${chalk.cyan(
       "safe-chain --ultimate",
     )}: This installs the ultimate version of safe-chain, enabling protection for more eco-systems (vscode).`,
+  );
+  ui.writeInformation(
+    `- ${chalk.cyan(
+      "safe-chain --uninstall-ultimate",
+    )}: This uninstalls the ultimate version of safe-chain.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan(

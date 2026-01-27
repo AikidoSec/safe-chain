@@ -9,6 +9,34 @@ import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
 const WINDOWS_SERVICE_NAME = "SafeChainUltimate";
 const WINDOWS_APP_NAME = "SafeChain Ultimate";
 
+export async function uninstallOnWindows() {
+  if (!(await isRunningAsAdmin())) {
+    ui.writeError("Administrator privileges required.");
+    ui.writeInformation(
+      "Please run this command in an elevated terminal (Run as Administrator).",
+    );
+    return;
+  }
+
+  ui.emptyLine();
+
+  const productCode = getInstalledProductCode();
+  if (!productCode) {
+    ui.writeInformation("SafeChain Ultimate is not installed.");
+    return;
+  }
+
+  ui.writeInformation("⏹️  Stopping running service...");
+  await stopServiceIfRunning();
+
+  ui.writeInformation("🗑️  Uninstalling SafeChain Ultimate...");
+  await uninstallByProductCode(productCode);
+
+  ui.emptyLine();
+  ui.writeInformation("✅ SafeChain Ultimate has been uninstalled.");
+  ui.emptyLine();
+}
+
 export async function installOnWindows() {
   if (!(await isRunningAsAdmin())) {
     ui.writeError("Administrator privileges required.");
@@ -64,7 +92,11 @@ async function isRunningAsAdmin() {
   return result.status === 0 && result.stdout.trim() === "True";
 }
 
-async function uninstallIfInstalled() {
+/**
+ * Returns the MSI product code for SafeChain Ultimate, or null if not installed.
+ * @returns {string | null}
+ */
+function getInstalledProductCode() {
   // Query Win32_Product via WMI to find the installed SafeChain Agent.
   // If found, outputs the product GUID (e.g., "{12345678-1234-...}") needed for msiexec uninstall.
   ui.writeVerbose(`Finding product code with PowerShell`);
@@ -76,15 +108,15 @@ async function uninstallIfInstalled() {
       { encoding: "utf8" },
     ).trim();
   } catch {
-    ui.writeVerbose("No existing installation found (fresh install).");
-    return;
+    return null;
   }
-  if (!productCode) {
-    ui.writeVerbose("No existing installation found (fresh install).");
-    return;
-  }
+  return productCode || null;
+}
 
-  ui.writeInformation("🗑️  Removing previous installation...");
+/**
+ * @param {string} productCode
+ */
+async function uninstallByProductCode(productCode) {
   ui.writeVerbose(`Found product code: ${productCode}`);
 
   // Use msiexec to run the msi installer quitely (https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/msiexec)
@@ -101,6 +133,17 @@ async function uninstallIfInstalled() {
   if (uninstallResult.status !== 0) {
     throw new Error(`Uninstall failed (exit code: ${uninstallResult.status})`);
   }
+}
+
+async function uninstallIfInstalled() {
+  const productCode = getInstalledProductCode();
+  if (!productCode) {
+    ui.writeVerbose("No existing installation found (fresh install).");
+    return;
+  }
+
+  ui.writeInformation("🗑️  Removing previous installation...");
+  await uninstallByProductCode(productCode);
 }
 
 /**
