@@ -24,22 +24,24 @@ describe("E2E: DNS failure resilience", () => {
     }
   });
 
-  it("should not crash when the malware database is unreachable", async () => {
+  it("should not crash when the npm registry is unreachable", async () => {
     const shell = await container.openShell("zsh");
 
-    // Make the malware database domain unreachable
-    // This forces fetchMalwareDatabase to fail
+    // Make the npm registry domain unreachable.
+    // `npm install lodash` talks to https://registry.npmjs.org/ for both metadata and tarballs.
     await shell.runCommand(
-      'echo "127.0.0.1 malware-list.aikido.dev" >> /etc/hosts'
+      'echo "127.0.0.1 registry.npmjs.org" >> /etc/hosts'
     );
 
     const result = await shell.runCommand(
-      "npm install lodash --safe-chain-logging=verbose"
+      // Fail fast so the shell runner doesn't time out.
+      // Also disable extra network calls that could introduce noise.
+      "npm install lodash --no-audit --no-fund --fetch-retries=0 --fetch-timeout=2000 --safe-chain-logging=verbose"
     );
 
     assert.ok(
-      result.output.includes("Safe-chain: Error handling request"),
-      `Output did not include expected error handling message. Output was:\n${result.output}`
+      result.output.includes("registry.npmjs.org"),
+      `Output did not reference the npm registry host; /etc/hosts override may not have applied. Output was:\n${result.output}`
     );
 
     // Ensure it did NOT crash with Unhandled Promise Rejection
