@@ -99,7 +99,7 @@ export const knownAikidoTools = [
     aikidoCommand: "aikido-pipx",
     ecoSystem: ECOSYSTEM_PY,
     internalPackageManagerName: "pipx",
-  }
+  },
   // When adding a new tool here, also update the documentation for the new tool in the README.md
 ];
 
@@ -216,7 +216,13 @@ export function addLineToFile(filePath, line, eol) {
   eol = eol || os.EOL;
 
   const fileContent = fs.readFileSync(filePath, "utf-8");
-  const updatedContent = fileContent + eol + line + eol;
+  let updatedContent = fileContent;
+
+  if (!fileContent.endsWith(eol)) {
+    updatedContent += eol;
+  }
+
+  updatedContent += line + eol;
   fs.writeFileSync(filePath, updatedContent, "utf-8");
 }
 
