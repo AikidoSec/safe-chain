@@ -16,6 +16,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { knownAikidoTools } from "../src/shell-integration/helpers.js";
+import {
+  installUltimate,
+  uninstallUltimate,
+} from "../src/installation/installUltimate.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -62,6 +66,17 @@ if (tool) {
   process.exit(0);
 } else if (command === "setup") {
   setup();
+} else if (command === "ultimate") {
+  const subCommand = process.argv[3];
+  if (subCommand === "uninstall") {
+    (async () => {
+      await uninstallUltimate();
+    })();
+  } else {
+    (async () => {
+      await installUltimate();
+    })();
+  }
 } else if (command === "teardown") {
   teardownDirectories();
   teardown();
@@ -82,36 +97,49 @@ if (tool) {
 
 function writeHelp() {
   ui.writeInformation(
-    chalk.bold("Usage: ") + chalk.cyan("safe-chain <command>")
+    chalk.bold("Usage: ") + chalk.cyan("safe-chain <command>"),
   );
   ui.emptyLine();
   ui.writeInformation(
     `Available commands: ${chalk.cyan("setup")}, ${chalk.cyan(
-      "teardown"
-    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("help")}, ${chalk.cyan(
-      "--version"
-    )}`
+      "teardown",
+    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("ultimate")}, ${chalk.cyan("help")}, ${chalk.cyan(
+      "--version",
+    )}`,
   );
   ui.emptyLine();
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain setup"
-    )}: This will setup your shell to wrap safe-chain around npm, npx, yarn, pnpm, pnpx, bun, bunx, pip and pip3.`
+      "safe-chain setup",
+    )}: This will setup your shell to wrap safe-chain around npm, npx, yarn, pnpm, pnpx, bun, bunx, pip and pip3.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain teardown"
-    )}: This will remove safe-chain aliases from your shell configuration.`
+      "safe-chain teardown",
+    )}: This will remove safe-chain aliases from your shell configuration.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain setup-ci"
-    )}: This will setup safe-chain for CI environments by creating shims and modifying the PATH.`
+      "safe-chain setup-ci",
+    )}: This will setup safe-chain for CI environments by creating shims and modifying the PATH.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan("safe-chain --version")} (or ${chalk.cyan(
-      "-v"
-    )}): Display the current version of safe-chain.`
+      "-v",
+    )}): Display the current version of safe-chain.`,
+  );
+  ui.emptyLine();
+  ui.writeInformation(chalk.bold("Ultimate commands:"));
+  ui.emptyLine();
+  ui.writeInformation(
+    `- ${chalk.cyan(
+      "safe-chain ultimate",
+    )}: Install the ultimate version of safe-chain, enabling protection for more eco-systems.`,
+  );
+  ui.writeInformation(
+    `- ${chalk.cyan(
+      "safe-chain ultimate uninstall",
+    )}: Uninstall the ultimate version of safe-chain.`,
   );
   ui.emptyLine();
 }
