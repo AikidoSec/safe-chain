@@ -88,7 +88,7 @@ export async function uninstallOnMacOS() {
   ui.writeInformation("⏹️  Stopping service...");
   await stopService();
 
-  ui.writeInformation("🗑️  Removing installed files...");
+  ui.writeInformation("🗑️  Removing files...");
   removeKnownFiles();
 
   ui.writeInformation("🧹 Forgetting package receipt...");
