@@ -74,7 +74,7 @@ export async function installOnMacOS() {
 }
 
 const MACOS_UNINSTALL_SCRIPT =
-  "/Library/Application Support/AikidoSecurity/SafeChainUltimate/scripts/uninstall";
+  "/Library/Application\\ Support/AikidoSecurity/SafeChainUltimate/scripts/uninstall";
 
 export async function uninstallOnMacOS() {
   if (!requireRootPrivileges("sudo safe-chain ultimate uninstall")) {
