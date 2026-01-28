@@ -3,31 +3,31 @@ import { createHash } from "crypto";
 import { pipeline } from "stream/promises";
 import fetch from "make-fetch-happen";
 
-const ULTIMATE_VERSION = "v0.2.1";
+const ULTIMATE_VERSION = "v0.2.3";
 
-const DOWNLOAD_URLS = {
+export const DOWNLOAD_URLS = {
   win32: {
     x64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-windows-amd64.msi`,
       checksum:
-        "sha256:8d86a44d314746099ba50cfae0cc1eae6232522deb348b226da92aae12754eec",
+        "sha256:bd196ae05b876588f828a57c4d19b3e7ad96ba40007cf2b36693dc6e792d28cc",
     },
     arm64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-windows-arm64.msi`,
       checksum:
-        "sha256:ab5b8335cc257d53424f73d6681920875083cd9b3f53e52d944bf867a415e027",
+        "sha256:79e046f24405e869494291e77c6d8640c8dc58d2ac1db87d3038e9eb8afbdc8b",
     },
   },
   darwin: {
     x64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-darwin-amd64.pkg`,
       checksum:
-        "sha256:73f83d9352c4fd25f7693d9e53bbbb2b7ac70d16217d745495c9efb50dc4a3a6",
+        "sha256:99868cb663eef44d063d995d2dcc063f55b10eb719ee945d05fe8cf5fef5e2a5",
     },
     arm64: {
       url: `https://github.com/AikidoSec/safechain-internals/releases/download/${ULTIMATE_VERSION}/SafeChainUltimate-darwin-arm64.pkg`,
       checksum:
-        "sha256:bd419e9c82488539b629b04c97aa1d2dc90e54ff045bd7277a6b40d26f8ebc73",
+        "sha256:000b334c2eb85d8692be5d23af73f8b9fb686c9db726992223187b341ea79306",
     },
   },
 };
@@ -87,7 +87,7 @@ export function getDownloadInfoForCurrentPlatform() {
  * @param {string} expectedChecksum - Format: "algorithm:hash" (e.g., "sha256:abc123...")
  * @returns {Promise<boolean>}
  */
-async function verifyChecksum(filePath, expectedChecksum) {
+export async function verifyChecksum(filePath, expectedChecksum) {
   const [algorithm, expected] = expectedChecksum.split(":");
 
   const hash = createHash(algorithm);
