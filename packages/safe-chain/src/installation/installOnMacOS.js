@@ -1,7 +1,7 @@
 import { tmpdir } from "os";
-import { unlinkSync, rmSync } from "fs";
+import { unlinkSync } from "fs";
 import { join } from "path";
-import { execSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
 import { ui } from "../environment/userInteraction.js";
 import { printVerboseAndSafeSpawn } from "../utils/safeSpawn.js";
 import { downloadAgentToFile, getAgentVersion } from "./downloadAgent.js";
@@ -73,6 +73,9 @@ export async function installOnMacOS() {
   }
 }
 
+const MACOS_UNINSTALL_SCRIPT =
+  "/Library/Application Support/AikidoSecurity/SafeChainUltimate/scripts/uninstall";
+
 export async function uninstallOnMacOS() {
   if (!requireRootPrivileges("sudo safe-chain ultimate uninstall")) {
     return;
@@ -85,14 +88,20 @@ export async function uninstallOnMacOS() {
     return;
   }
 
-  ui.writeInformation("⏹️  Stopping service...");
-  await stopService();
+  ui.writeInformation("🗑️  Uninstalling SafeChain Ultimate...");
+  ui.writeVerbose(`Running: ${MACOS_UNINSTALL_SCRIPT}`);
 
-  ui.writeInformation("🗑️  Removing files...");
-  removeKnownFiles();
+  const result = spawnSync(MACOS_UNINSTALL_SCRIPT, {
+    stdio: "inherit",
+    shell: true,
+  });
 
-  ui.writeInformation("🧹 Forgetting package receipt...");
-  forgetPackage();
+  if (result.status !== 0) {
+    ui.writeError(
+      `Uninstall script failed (exit code: ${result.status}). Please try again or remove manually.`,
+    );
+    return;
+  }
 
   ui.emptyLine();
   ui.writeInformation("✅ SafeChain Ultimate has been uninstalled.");
@@ -108,46 +117,6 @@ function isPackageInstalled() {
     return output.includes(MACOS_PKG_IDENTIFIER);
   } catch {
     return false;
-  }
-}
-
-async function stopService() {
-  const result = await printVerboseAndSafeSpawn(
-    "launchctl",
-    ["bootout", `system/${MACOS_PKG_IDENTIFIER}`],
-    { stdio: "pipe" },
-  );
-
-  if (result.status !== 0) {
-    ui.writeVerbose("Service not running (will continue with uninstall).");
-  }
-}
-
-const MACOS_KNOWN_PATHS = [
-  "/Library/Application Support/AikidoSecurity/SafeChainUltimate",
-  "/Library/Logs/AikidoSecurity/SafeChainUltimate",
-  `/Library/LaunchDaemons/${MACOS_PKG_IDENTIFIER}.plist`,
-];
-
-function removeKnownFiles() {
-  for (const filePath of MACOS_KNOWN_PATHS) {
-    try {
-      rmSync(filePath, { recursive: true, force: true });
-      ui.writeVerbose(`Removed: ${filePath}`);
-    } catch {
-      ui.writeVerbose(`Failed to remove: ${filePath}`);
-    }
-  }
-}
-
-function forgetPackage() {
-  try {
-    execSync(`pkgutil --forget ${MACOS_PKG_IDENTIFIER}`, {
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-  } catch {
-    ui.writeVerbose("Failed to forget package receipt.");
   }
 }
 
