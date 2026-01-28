@@ -10,11 +10,7 @@ const WINDOWS_SERVICE_NAME = "SafeChainUltimate";
 const WINDOWS_APP_NAME = "SafeChain Ultimate";
 
 export async function uninstallOnWindows() {
-  if (!(await isRunningAsAdmin())) {
-    ui.writeError("Administrator privileges required.");
-    ui.writeInformation(
-      "Please run this command in an elevated terminal (Run as Administrator).",
-    );
+  if (!(await requireAdminPrivileges())) {
     return;
   }
 
@@ -37,11 +33,7 @@ export async function uninstallOnWindows() {
 }
 
 export async function installOnWindows() {
-  if (!(await isRunningAsAdmin())) {
-    ui.writeError("Administrator privileges required.");
-    ui.writeInformation(
-      "Please run this command in an elevated terminal (Run as Administrator).",
-    );
+  if (!(await requireAdminPrivileges())) {
     return;
   }
 
@@ -74,6 +66,22 @@ export async function installOnWindows() {
     ui.writeVerbose(`Cleaning up temporary file: ${msiPath}`);
     cleanup(msiPath);
   }
+}
+
+/**
+ * Checks if admin privileges are available and displays error message if not.
+ * @returns {Promise<boolean>} True if running as admin, false otherwise.
+ */
+async function requireAdminPrivileges() {
+  if (await isRunningAsAdmin()) {
+    return true;
+  }
+
+  ui.writeError("Administrator privileges required.");
+  ui.writeInformation(
+    "Please run this command in an elevated terminal (Run as Administrator).",
+  );
+  return false;
 }
 
 async function isRunningAsAdmin() {
