@@ -9,11 +9,29 @@ import chalk from "chalk";
 
 const MACOS_PKG_IDENTIFIER = "com.aikidosecurity.safechainultimate";
 
+/**
+ * Checks if root privileges are available and displays error message if not.
+ * @param {string} command - The sudo command to show in the error message
+ * @returns {boolean} True if running as root, false otherwise.
+ */
+function requireRootPrivileges(command) {
+  if (isRunningAsRoot()) {
+    return true;
+  }
+
+  ui.writeError("Root privileges required.");
+  ui.writeInformation("Please run this command with sudo:");
+  ui.writeInformation(`  ${command}`);
+  return false;
+}
+
+function isRunningAsRoot() {
+  const rootUserUid = 0;
+  return process.getuid?.() === rootUserUid;
+}
+
 export async function installOnMacOS() {
-  if (!isRunningAsRoot()) {
-    ui.writeError("Root privileges required.");
-    ui.writeInformation("Please run this command with sudo:");
-    ui.writeInformation("  sudo safe-chain ultimate");
+  if (!requireRootPrivileges("sudo safe-chain ultimate")) {
     return;
   }
 
@@ -56,10 +74,7 @@ export async function installOnMacOS() {
 }
 
 export async function uninstallOnMacOS() {
-  if (!isRunningAsRoot()) {
-    ui.writeError("Root privileges required.");
-    ui.writeInformation("Please run this command with sudo:");
-    ui.writeInformation("  sudo safe-chain ultimate uninstall");
+  if (!requireRootPrivileges("sudo safe-chain ultimate uninstall")) {
     return;
   }
 
@@ -134,11 +149,6 @@ function forgetPackage() {
   } catch {
     ui.writeVerbose("Failed to forget package receipt.");
   }
-}
-
-function isRunningAsRoot() {
-  const rootUserUid = 0;
-  return process.getuid?.() === rootUserUid;
 }
 
 /**
