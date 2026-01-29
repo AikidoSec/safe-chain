@@ -67,21 +67,29 @@ function createHttpsServer(hostname, port, interceptor) {
       return;
     }
 
-    const pathAndQuery = getRequestPathAndQuery(req.url);
-    const targetUrl = `https://${hostname}${pathAndQuery}`;
+    try {
+      const pathAndQuery = getRequestPathAndQuery(req.url);
+      const targetUrl = `https://${hostname}${pathAndQuery}`;
 
-    const requestInterceptor = await interceptor.handleRequest(targetUrl);
-    const blockResponse = requestInterceptor.blockResponse;
+      const requestInterceptor = await interceptor.handleRequest(targetUrl);
+      const blockResponse = requestInterceptor.blockResponse;
 
-    if (blockResponse) {
-      ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);
-      res.writeHead(blockResponse.statusCode, blockResponse.message);
-      res.end(blockResponse.message);
-      return;
+      if (blockResponse) {
+        ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);
+        res.writeHead(blockResponse.statusCode, blockResponse.message);
+        res.end(blockResponse.message);
+        return;
+      }
+
+      // Collect request body
+      forwardRequest(req, hostname, port, res, requestInterceptor);
+    } catch (/** @type {any} */ error) {
+      ui.writeError(
+        `Safe-chain: Error handling request for ${req.url}: ${error.message}`
+      );
+      res.writeHead(502, "Bad Gateway");
+      res.end("Bad Gateway: Error handling request");
     }
-
-    // Collect request body
-    forwardRequest(req, hostname, port, res, requestInterceptor);
   }
 
   const server = https.createServer(
