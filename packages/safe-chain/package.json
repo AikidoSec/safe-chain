@@ -38,6 +38,7 @@
   "license": "AGPL-3.0-or-later",
   "description": "The Aikido Safe Chain wraps around the [npm cli](https://github.com/npm/cli), [npx](https://github.com/npm/cli/blob/latest/docs/content/commands/npx.md), [yarn](https://yarnpkg.com/), [pnpm](https://pnpm.io/), [pnpx](https://pnpm.io/cli/dlx), [bun](https://bun.sh/), [bunx](https://bun.sh/docs/cli/bunx), [uv](https://docs.astral.sh/uv/) (Python), and [pip](https://pip.pypa.io/) to provide extra checks before installing new packages. This tool will detect when a package contains malware and prompt you to exit, preventing npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, or pip/pip3 from downloading or running the malware.",
   "dependencies": {
+    "archiver": "^7.0.1",
     "certifi": "14.5.15",
     "chalk": "5.4.1",
     "https-proxy-agent": "7.0.6",
@@ -48,6 +49,7 @@
     "semver": "7.7.2"
   },
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/ini": "^4.1.1",
     "@types/make-fetch-happen": "^10.0.4",
     "@types/node": "^18.19.130",
