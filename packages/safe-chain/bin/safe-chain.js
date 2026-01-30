@@ -153,7 +153,7 @@ function writeHelp() {
   ui.writeInformation(
     `- ${chalk.cyan(
       "safe-chain ultimate troubleshooting-export",
-    )}: Creates a zip archive of safe-chain ultimate logs that can be shared with support.`,
+    )}: Creates a zip archive of useful data for troubleshooting safe-chain ultimate, that can be shared with our support team.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan(
