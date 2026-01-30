@@ -1,7 +1,9 @@
-// @ts-nocheck
 import { platform } from 'os';
 import { ui } from "../environment/userInteraction.js";
 import { readFileSync, existsSync } from "node:fs";
+import {randomUUID} from "node:crypto";
+import {createWriteStream} from "fs";
+import archiver from 'archiver';
 
 export async function printUltimateLogs() {
   const { proxyLogPath, ultimateLogPath, proxyErrLogPath, ultimateErrLogPath } = getPathsPerPlatform();
@@ -19,11 +21,44 @@ export async function printUltimateLogs() {
   );
 }
 
+export async function collectLogs() {
+  const { logDir } = getPathsPerPlatform();
+  return new Promise((resolve, reject) => {
+    if (!existsSync(logDir)) {
+      ui.writeError(`Log directory not found: ${logDir}`);
+      reject(new Error(`Log directory not found: ${logDir}`));
+      return;
+    }
+
+    const date = new Date().toISOString().split('T')[0];
+    const uuid = randomUUID();
+    const zipFileName = `safechain-ultimate-${date}-${uuid}.zip`;
+    const output = createWriteStream(zipFileName);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => {
+      ui.writeInformation(`Logs collected and zipped as: ${zipFileName}`);
+      resolve(zipFileName);
+    });
+
+    archive.on('error', (err) => {
+      ui.writeError(`Failed to zip logs: ${err.message}`);
+      reject(err);
+    });
+
+    archive.pipe(output);
+    archive.directory(logDir, false);
+    archive.finalize();
+  });
+}
+
+
 function getPathsPerPlatform() {
   const os = platform();
   if (os === 'win32') {
     const logDir = `C:\\ProgramData\\AikidoSecurity\\SafeChainUltimate\\logs`;
     return {
+      logDir,
       proxyLogPath: `${logDir}\\SafeChainProxy.log`,
       ultimateLogPath: `${logDir}\\SafeChainUltimate.log`,
       proxyErrLogPath: `${logDir}\\SafeChainProxy.err`,
@@ -32,6 +67,7 @@ function getPathsPerPlatform() {
   } else if (os === 'darwin') {
     const logDir = `/Library/Logs/AikidoSecurity/SafeChainUltimate`;
     return {
+      logDir,
       proxyLogPath: `${logDir}/safechain-proxy.log`,
       ultimateLogPath: `${logDir}/safechain-ultimate.log`,
       proxyErrLogPath: `${logDir}/safechain-proxy.error.log`,
