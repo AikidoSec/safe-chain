@@ -149,6 +149,37 @@ Should include `~/.safe-chain/bin`
 
 **If persists:** Re-run the installation script
 
+### PowerShell Execution Policy Blocks Scripts (Windows)
+
+**Symptom:** When opening PowerShell, you see an error like:
+
+```
+. : File C:\Users\<username>\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1 cannot be loaded because
+running scripts is disabled on this system.
+CategoryInfo          : SecurityError: (:) [], PSSecurityException
+FullyQualifiedErrorId : UnauthorizedAccess
+```
+
+**Cause:** Windows PowerShell's default execution policy (`Restricted`) blocks all script execution, including safe-chain's initialization script that's sourced from your PowerShell profile.
+
+**Resolution:**
+
+1. **Set the execution policy to allow local scripts:**
+
+   Open PowerShell as Administrator and run:
+
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+   ```
+
+   This allows:
+   - Local scripts (like safe-chain's) to run without signing
+   - Downloaded scripts to run only if signed by a trusted publisher
+
+2. **Restart PowerShell** and verify the error is resolved.
+
+> **Note:** `RemoteSigned` is Microsoft's recommended execution policy for client computers. It provides a good balance between security and usability.
+
 ### Shell Aliases Persist After Uninstallation
 
 **Symptom:** safe-chain commands still active after running uninstall script
