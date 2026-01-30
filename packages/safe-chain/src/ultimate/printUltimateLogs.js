@@ -4,6 +4,7 @@ import { readFileSync, existsSync } from "node:fs";
 import {randomUUID} from "node:crypto";
 import {createWriteStream} from "fs";
 import archiver from 'archiver';
+import path from "node:path";
 
 export async function printUltimateLogs() {
   const { proxyLogPath, ultimateLogPath, proxyErrLogPath, ultimateErrLogPath } = getPathsPerPlatform();
@@ -37,7 +38,7 @@ export async function collectLogs() {
     const archive = archiver('zip', { zlib: { level: 9 } });
 
     output.on('close', () => {
-      ui.writeInformation(`Logs collected and zipped as: ${zipFileName}`);
+      ui.writeInformation(`Logs collected and zipped as: ${path.resolve(zipFileName)}`);
       resolve(zipFileName);
     });
 
