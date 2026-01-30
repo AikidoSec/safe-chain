@@ -22,7 +22,7 @@ export async function printUltimateLogs() {
   );
 }
 
-export async function collectLogs() {
+export async function troubleshootingExport() {
   const { logDir } = getPathsPerPlatform();
   return new Promise((resolve, reject) => {
     if (!existsSync(logDir)) {

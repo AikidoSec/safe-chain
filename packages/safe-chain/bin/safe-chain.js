@@ -20,10 +20,7 @@ import {
   installUltimate,
   uninstallUltimate,
 } from "../src/installation/installUltimate.js";
-import {
-  collectLogs,
-  printUltimateLogs
-} from "../src/ultimate/printUltimateLogs.js";
+import {printUltimateLogs, troubleshootingExport } from "../src/ultimate/ultimateTroubleshooting.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -76,13 +73,13 @@ if (tool) {
     (async () => {
       await uninstallUltimate();
     })();
-  } else if (subCommand === "logs") {
+  } else if (subCommand === "troubleshooting-logs") {
     (async () => {
       await printUltimateLogs();
     })();
-  } else if (subCommand === "collect-logs") {
+  } else if (subCommand === "troubleshooting-export") {
     (async () => {
-      await collectLogs();
+      await troubleshootingExport();
     })();
   } else {
     (async () => {
@@ -150,12 +147,12 @@ function writeHelp() {
   );
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain ultimate logs",
+      "safe-chain ultimate troubleshooting-logs",
     )}: Prints standard and error logs for safe-chain ultimate and it's proxy.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan(
-      "safe-chain ultimate collect-logs",
+      "safe-chain ultimate troubleshooting-export",
     )}: Creates a zip archive of safe-chain ultimate logs that can be shared with support.`,
   );
   ui.writeInformation(
