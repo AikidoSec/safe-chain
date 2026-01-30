@@ -79,6 +79,11 @@ function getPathsPerPlatform() {
   }
 }
 
+/**
+ * @param {string} appName
+ * @param {string} logPath
+ * @param {string} errLogPath
+ */
 async function printLogs(appName, logPath, errLogPath) {
   ui.writeInformation(`=== ${appName} Logs ===`);
   try {
@@ -89,7 +94,7 @@ async function printLogs(appName, logPath, errLogPath) {
       ui.writeWarning(`${appName} log file not found: ${logPath}`);
     }
   } catch (error) {
-    ui.writeError(`Failed to read ${appName} logs: ${error.message}`);
+    ui.writeError(`Failed to read ${appName} logs: ${error}`);
   }
 
   ui.writeInformation(`=== ${appName} Error Logs ===`);
@@ -101,6 +106,6 @@ async function printLogs(appName, logPath, errLogPath) {
       ui.writeInformation(`No error log file found for ${appName}.`);
     }
   } catch (error) {
-    ui.writeError(`Failed to read ${appName} error logs: ${error.message}`);
+    ui.writeError(`Failed to read ${appName} error logs: ${error}`);
   }
 }
