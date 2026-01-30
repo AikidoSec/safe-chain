@@ -19,7 +19,6 @@
   "author": "Aikido Security",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "@types/archiver": "^7.0.0",
     "@yao-pkg/pkg": "6.10.1",
     "esbuild": "^0.27.0",
     "oxlint": "^1.22.0"
