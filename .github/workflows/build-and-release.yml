@@ -78,6 +78,11 @@ jobs:
           cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
           cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
 
+      - name: Generate SHA256SUMS
+        run: |
+          cd release-artifacts
+          sha256sum * > SHA256SUMS
+
       - name: Upload binaries to existing GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -94,7 +99,8 @@ jobs:
             release-artifacts/install-safe-chain.sh \
             release-artifacts/install-safe-chain.ps1 \
             release-artifacts/uninstall-safe-chain.sh \
-            release-artifacts/uninstall-safe-chain.ps1
+            release-artifacts/uninstall-safe-chain.ps1 \
+            release-artifacts/SHA256SUMS
 
   publish-npm:
     name: Publish to npm
