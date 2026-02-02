@@ -1,0 +1,40 @@
+name: Smoke test - Generate SHA256SUMS
+
+on:
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+
+jobs:
+  generate-checksums:
+    name: Generate + verify SHA256SUMS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create minimal release-artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp install-scripts/install-safe-chain.sh release-artifacts/install-safe-chain.sh
+          cp install-scripts/install-safe-chain.ps1 release-artifacts/install-safe-chain.ps1
+          echo "dummy" > release-artifacts/safe-chain-dummy
+
+      - name: Generate SHA256SUMS
+        run: |
+          cd release-artifacts
+          sha256sum * > SHA256SUMS
+
+      - name: Verify SHA256SUMS
+        run: |
+          cd release-artifacts
+          sha256sum -c SHA256SUMS
+
+      - name: Upload release-artifacts (dry run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-checksums-smoke
+          path: release-artifacts/
