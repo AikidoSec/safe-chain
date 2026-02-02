@@ -3,6 +3,10 @@ name: Smoke test - Generate SHA256SUMS
 on:
   workflow_dispatch:
 
+  pull_request:
+    paths:
+      - ".github/workflows/checksums-dry-run.yml"
+
 
 permissions:
   contents: read
