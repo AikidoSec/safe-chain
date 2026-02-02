@@ -20,7 +20,10 @@ import {
   installUltimate,
   uninstallUltimate,
 } from "../src/installation/installUltimate.js";
-import {printUltimateLogs, troubleshootingExport } from "../src/ultimate/ultimateTroubleshooting.js";
+import {
+  printUltimateLogs,
+  troubleshootingExport,
+} from "../src/ultimate/ultimateTroubleshooting.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -68,20 +71,34 @@ if (tool) {
 } else if (command === "setup") {
   setup();
 } else if (command === "ultimate") {
-  const subCommand = process.argv[3];
+  const cliArgs = initializeCliArguments(process.argv.slice(2));
+  const subCommand = cliArgs[1];
   if (subCommand === "uninstall") {
+    guardCliArgsMaxLenght(2, cliArgs, "safe-chain ultimate uninstall");
     (async () => {
       await uninstallUltimate();
     })();
   } else if (subCommand === "troubleshooting-logs") {
+    guardCliArgsMaxLenght(
+      2,
+      cliArgs,
+      "safe-chain ultimate troubleshooting-logs",
+    );
     (async () => {
       await printUltimateLogs();
     })();
   } else if (subCommand === "troubleshooting-export") {
+    guardCliArgsMaxLenght(
+      2,
+      cliArgs,
+      "safe-chain ultimate troubleshooting-export",
+    );
     (async () => {
       await troubleshootingExport();
     })();
   } else {
+    guardCliArgsMaxLenght(1, cliArgs, "safe-chain ultimate");
+    // Install command = when no subcommand is provided (safe-chain ultimate)
     (async () => {
       await installUltimate();
     })();
@@ -102,6 +119,22 @@ if (tool) {
   writeHelp();
 
   process.exit(1);
+}
+
+/**
+ * @param {Number} maxLength
+ * @param {String[]} args
+ * @param {String} command
+ */
+function guardCliArgsMaxLenght(maxLength, args, command) {
+  if (args.length > maxLength) {
+    ui.writeError(`Unexpected number of arguments for command ${command}.`);
+    ui.emptyLine();
+
+    writeHelp();
+
+    process.exit(1);
+  }
 }
 
 function writeHelp() {

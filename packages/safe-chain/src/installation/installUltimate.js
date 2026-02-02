@@ -21,8 +21,6 @@ export async function uninstallUltimate() {
 }
 
 export async function installUltimate() {
-  initializeCliArguments(process.argv);
-
   const operatingSystem = platform();
 
   if (operatingSystem === "win32") {
