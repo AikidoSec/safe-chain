@@ -9,7 +9,7 @@ import { ui } from "../environment/userInteraction.js";
  * @typedef {Object} Shell
  * @property {string} name
  * @property {() => boolean} isInstalled
- * @property {(tools: import("./helpers.js").AikidoTool[]) => boolean} setup
+ * @property {(tools: import("./helpers.js").AikidoTool[]) => boolean|Promise<boolean>} setup
  * @property {(tools: import("./helpers.js").AikidoTool[]) => boolean} teardown
  */
 
@@ -28,7 +28,7 @@ export function detectShells() {
     }
   } catch (/** @type {any} */ error) {
     ui.writeError(
-      `We were not able to detect which shells are installed on your system. Please check your shell configuration. Error: ${error.message}`
+      `We were not able to detect which shells are installed on your system. Please check your shell configuration. Error: ${error.message}`,
     );
     return [];
   }

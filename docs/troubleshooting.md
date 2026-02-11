@@ -308,22 +308,6 @@ Look for and remove:
 rm -rf ~/.safe-chain
 ```
 
-## Getting More Information
-
-### Enable Verbose Logging
-
-Get detailed diagnostic output using a CLI flag or environment variable:
-
-```bash
-# Using CLI flag
-npm install express --safe-chain-logging=verbose
-pip install requests --safe-chain-logging=verbose
-
-# Using environment variable (applies to all commands)
-export SAFE_CHAIN_LOGGING=verbose
-npm install express
-```
-
 ### Report Issues
 
 If you encounter problems:

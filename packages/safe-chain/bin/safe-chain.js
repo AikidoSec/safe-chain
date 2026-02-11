@@ -104,8 +104,8 @@ if (tool) {
     })();
   }
 } else if (command === "teardown") {
-  teardownDirectories();
   teardown();
+  teardownDirectories();
 } else if (command === "setup-ci") {
   setupCi();
 } else if (command === "--version" || command === "-v" || command === "-v") {

@@ -2,6 +2,7 @@ import {
   addLineToFile,
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
+  validatePowerShellExecutionPolicy,
 } from "../helpers.js";
 import { execSync } from "child_process";
 
@@ -25,25 +26,33 @@ function teardown(tools) {
     // Remove any existing alias for the tool
     removeLinesMatchingPattern(
       startupFile,
-      new RegExp(`^Set-Alias\\s+${tool}\\s+`)
+      new RegExp(`^Set-Alias\\s+${tool}\\s+`),
     );
   }
 
   // Remove the line that sources the safe-chain PowerShell initialization script
   removeLinesMatchingPattern(
     startupFile,
-    /^\.\s+["']?\$HOME[/\\].safe-chain[/\\]scripts[/\\]init-pwsh\.ps1["']?/
+    /^\.\s+["']?\$HOME[/\\].safe-chain[/\\]scripts[/\\]init-pwsh\.ps1["']?/,
   );
 
   return true;
 }
 
-function setup() {
+async function setup() {
+  const { isValid, policy } =
+    await validatePowerShellExecutionPolicy(executableName);
+  if (!isValid) {
+    throw new Error(
+      `PowerShell execution policy is set to '${policy}', which prevents safe-chain from running.\n  -> To fix this, open PowerShell as Administrator and run: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned.\n     For more information, see: https://help.aikido.dev/code-scanning/aikido-malware-scanning/safe-chain-troubleshooting#powershell-execution-policy-blocks-scripts-windows`,
+    );
+  }
+
   const startupFile = getStartupFile();
 
   addLineToFile(
     startupFile,
-    `. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script`
+    `. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script`,
   );
 
   return true;
@@ -57,7 +66,7 @@ function getStartupFile() {
     }).trim();
   } catch (/** @type {any} */ error) {
     throw new Error(
-      `Command failed: ${startupFileCommand}. Error: ${error.message}`
+      `Command failed: ${startupFileCommand}. Error: ${error.message}`,
     );
   }
 }

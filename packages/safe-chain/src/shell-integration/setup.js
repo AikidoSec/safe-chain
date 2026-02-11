@@ -1,7 +1,11 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools, getPackageManagerList, getScriptsDir } from "./helpers.js";
+import {
+  knownAikidoTools,
+  getPackageManagerList,
+  getScriptsDir,
+} from "./helpers.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -26,7 +30,7 @@ if (import.meta.url) {
 export async function setup() {
   ui.writeInformation(
     chalk.bold("Setting up shell aliases.") +
-      ` This will wrap safe-chain around ${getPackageManagerList()}.`
+      ` This will wrap safe-chain around ${getPackageManagerList()}.`,
   );
   ui.emptyLine();
 
@@ -42,12 +46,12 @@ export async function setup() {
     ui.writeInformation(
       `Detected ${shells.length} supported shell(s): ${shells
         .map((shell) => chalk.bold(shell.name))
-        .join(", ")}.`
+        .join(", ")}.`,
     );
 
     let updatedCount = 0;
     for (const shell of shells) {
-      if (setupShell(shell)) {
+      if (await setupShell(shell)) {
         updatedCount++;
       }
     }
@@ -58,7 +62,7 @@ export async function setup() {
     }
   } catch (/** @type {any} */ error) {
     ui.writeError(
-      `Failed to set up shell aliases: ${error.message}. Please check your shell configuration.`
+      `Failed to set up shell aliases: ${error.message}. Please check your shell configuration.`,
     );
     return;
   }
@@ -68,12 +72,12 @@ export async function setup() {
  * Calls the setup function for the given shell and reports the result.
  * @param {import("./shellDetection.js").Shell} shell
  */
-function setupShell(shell) {
+async function setupShell(shell) {
   let success = false;
   let error;
   try {
     shell.teardown(knownAikidoTools); // First, tear down to prevent duplicate aliases
-    success = shell.setup(knownAikidoTools);
+    success = await shell.setup(knownAikidoTools);
   } catch (/** @type {any} */ err) {
     success = false;
     error = err;
@@ -82,14 +86,14 @@ function setupShell(shell) {
   if (success) {
     ui.writeInformation(
       `${chalk.bold("- " + shell.name + ":")} ${chalk.green(
-        "Setup successful"
-      )}`
+        "Setup successful",
+      )}`,
     );
   } else {
     ui.writeError(
       `${chalk.bold("- " + shell.name + ":")} ${chalk.red(
-        "Setup failed"
-      )}. Please check your ${shell.name} configuration.`
+        "Setup failed",
+      )}. Please check your ${shell.name} configuration.`,
     );
     if (error) {
       let message = `  Error: ${error.message}`;
@@ -115,11 +119,7 @@ function copyStartupFiles() {
     }
 
     // Use absolute path for source
-    const sourcePath = path.join(
-      dirname,
-      "startup-scripts",
-      file
-    );
+    const sourcePath = path.join(dirname, "startup-scripts", file);
     fs.copyFileSync(sourcePath, targetPath);
   }
 }

@@ -66,7 +66,6 @@ You can find all available versions on the [releases page](https://github.com/Ai
 ### Verify the installation
 
 1. **❗Restart your terminal** to start using the Aikido Safe Chain.
-
    - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
 2. **Verify the installation** by running the verification command:
@@ -159,7 +158,6 @@ You can control the output from Aikido Safe Chain using the `--safe-chain-loggin
 You can set the logging level through multiple sources (in order of priority):
 
 1. **CLI Argument** (highest priority):
-
    - `--safe-chain-logging=silent` - Suppresses all Aikido Safe Chain output except when malware is blocked. The package manager output is written to stdout as normal, and Safe Chain only writes a short message if it has blocked malware and causes the process to exit.
 
      ```shell
@@ -211,6 +209,22 @@ You can set the minimum package age through multiple sources (in order of priori
      "minimumPackageAgeHours": 48
    }
    ```
+
+### Excluding Packages
+
+Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged). Use `@scope/*` to trust all packages from an organization:
+
+```shell
+export SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
+```
+
+```json
+{
+  "npm": {
+    "minimumPackageAgeExclusions": ["@aikidosec/*"]
+  }
+}
+```
 
 ### Excluding Packages
 
@@ -288,6 +302,7 @@ iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download
 - ✅ **CircleCI**
 - ✅ **Jenkins**
 - ✅ **Bitbucket Pipelines**
+- ✅ **GitLab Pipelines**
 
 ## GitHub Actions Example
 
@@ -394,6 +409,69 @@ steps:
 
 After setup, all subsequent package manager commands in your CI pipeline will automatically be protected by Aikido Safe Chain's malware detection.
 
+## GitLab Pipelines Example
+
+To add safe-chain in GitLab pipelines, you need to install it in the image running the pipeline. This can be done by:
+
+1. Define a dockerfile to run your build
+
+   ```dockerfile
+   FROM node:lts
+
+   # Install safe-chain
+   RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+
+   # Add safe-chain to PATH
+   ENV PATH="/root/.safe-chain/shims:/root/.safe-chain/bin:${PATH}"
+   ```
+
+2. Build the Docker image in your CI pipeline
+
+   ```yaml
+   build-image:
+     stage: build-image
+     image: docker:latest
+     services:
+       - docker:dind
+     script:
+       - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+       - docker build -t $CI_REGISTRY_IMAGE:latest .
+       - docker push $CI_REGISTRY_IMAGE:latest
+   ```
+
+3. Use the image in your pipeline:
+   ```yaml
+   npm-ci:
+     stage: install
+     image: $CI_REGISTRY_IMAGE:latest
+     script:
+       - npm ci
+   ```
+
+The full pipeline for this example looks like this:
+
+```yaml
+stages:
+  - build-image
+  - install
+
+build-image:
+  stage: build-image
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:latest
+
+npm-ci:
+  stage: install
+  image: $CI_REGISTRY_IMAGE:latest
+  script:
+    - npm ci
+```
+
 # Troubleshooting
 
-Having issues? See the [Troubleshooting Guide](https://github.com/AikidoSec/safe-chain/blob/main/docs/troubleshooting.md) for help with common problems.
+Having issues? See the [Troubleshooting Guide](https://help.aikido.dev/code-scanning/aikido-malware-scanning/safe-chain-troubleshooting) for help with common problems.

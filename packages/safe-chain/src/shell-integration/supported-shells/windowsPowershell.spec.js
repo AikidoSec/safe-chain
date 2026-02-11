@@ -8,13 +8,19 @@ import { knownAikidoTools } from "../helpers.js";
 describe("Windows PowerShell shell integration", () => {
   let mockStartupFile;
   let windowsPowershell;
+  let executionPolicyResult;
 
   beforeEach(async () => {
     // Create temporary startup file for testing
     mockStartupFile = path.join(
       tmpdir(),
-      `test-windows-powershell-profile-${Date.now()}.ps1`
+      `test-windows-powershell-profile-${Date.now()}.ps1`,
     );
+
+    executionPolicyResult = {
+      isValid: true,
+      policy: "RemoteSigned",
+    };
 
     // Mock the helpers module
     mock.module("../helpers.js", {
@@ -33,6 +39,7 @@ describe("Windows PowerShell shell integration", () => {
           const filteredLines = lines.filter((line) => !pattern.test(line));
           fs.writeFileSync(filePath, filteredLines.join("\n"), "utf-8");
         },
+        validatePowerShellExecutionPolicy: () => executionPolicyResult,
       },
     });
 
@@ -69,15 +76,15 @@ describe("Windows PowerShell shell integration", () => {
   });
 
   describe("setup", () => {
-    it("should add init-pwsh.ps1 source line", () => {
-      const result = windowsPowershell.setup();
+    it("should add init-pwsh.ps1 source line", async () => {
+      const result = await windowsPowershell.setup();
       assert.strictEqual(result, true);
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
         content.includes(
-          '. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script'
-        )
+          '. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script',
+        ),
       );
     });
   });
@@ -98,7 +105,7 @@ describe("Windows PowerShell shell integration", () => {
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"')
+        !content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"'),
       );
       assert.ok(content.includes("Set-Alias ls "));
       assert.ok(content.includes("Set-Alias grep "));
@@ -168,26 +175,26 @@ describe("Windows PowerShell shell integration", () => {
   });
 
   describe("integration tests", () => {
-    it("should handle complete setup and teardown cycle", () => {
+    it("should handle complete setup and teardown cycle", async () => {
       // Setup
-      windowsPowershell.setup();
+      await windowsPowershell.setup();
       let content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"')
+        content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"'),
       );
 
       // Teardown
       windowsPowershell.teardown(knownAikidoTools);
       content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"')
+        !content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"'),
       );
     });
 
-    it("should handle multiple setup calls", () => {
-      windowsPowershell.setup();
+    it("should handle multiple setup calls", async () => {
+      await windowsPowershell.setup();
       windowsPowershell.teardown(knownAikidoTools);
-      windowsPowershell.setup();
+      await windowsPowershell.setup();
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       const sourceMatches = (
@@ -195,6 +202,23 @@ describe("Windows PowerShell shell integration", () => {
         []
       ).length;
       assert.strictEqual(sourceMatches, 1, "Should not duplicate source lines");
+    });
+  });
+
+  describe("execution policy", () => {
+    it(`should throw for restricted policies`, async () => {
+      executionPolicyResult = {
+        isValid: false,
+        policy: "Restricted",
+      };
+
+      await assert.rejects(
+        () => windowsPowershell.setup(),
+        (err) =>
+          err.message.startsWith(
+            "PowerShell execution policy is set to 'Restricted'",
+          ),
+      );
     });
   });
 });

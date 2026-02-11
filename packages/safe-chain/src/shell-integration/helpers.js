@@ -3,6 +3,8 @@ import * as os from "os";
 import fs from "fs";
 import path from "path";
 import { ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
+import { safeSpawn } from "../utils/safeSpawn.js";
+import { ui } from "../environment/userInteraction.js";
 
 /**
  * @typedef {Object} AikidoTool
@@ -242,4 +244,61 @@ function createFileIfNotExists(filePath) {
   }
 
   fs.writeFileSync(filePath, "", "utf-8");
+}
+
+/**
+ * Checks if PowerShell execution policy allows script execution
+ * @param {string} shellExecutableName - The name of the PowerShell executable ("pwsh" or "powershell")
+ * @returns {Promise<{isValid: boolean, policy: string}>} validation result
+ */
+export async function validatePowerShellExecutionPolicy(shellExecutableName) {
+  // Security: Only allow known shell executables
+  const validShells = ["pwsh", "powershell"];
+  if (!validShells.includes(shellExecutableName)) {
+    return { isValid: false, policy: "Unknown" };
+  }
+
+  try {
+    // For Windows PowerShell (5.1), clean PSModulePath to avoid conflicts with PowerShell 7 modules
+    // When safe-chain is invoked from PowerShell 7, it sets its module paths to PSModulePath, causing
+    // Windows PowerShell to try loading incompatible PowerShell 7 modules.
+    // Setting the environment to Windows PowerShell's modules fixes this.
+    let spawnOptions;
+    if (shellExecutableName === "powershell") {
+      const userProfile = process.env.USERPROFILE || "";
+      const cleanPSModulePath = [
+        path.join(userProfile, "Documents", "WindowsPowerShell", "Modules"),
+        "C:\\Program Files\\WindowsPowerShell\\Modules",
+        "C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\Modules",
+      ].join(";");
+
+      spawnOptions = {
+        env: {
+          ...process.env,
+          PSModulePath: cleanPSModulePath,
+        },
+      };
+    } else {
+      spawnOptions = {};
+    }
+
+    const commandResult = await safeSpawn(
+      shellExecutableName,
+      ["-Command", "Get-ExecutionPolicy"],
+      spawnOptions,
+    );
+
+    const policy = commandResult.stdout.trim();
+
+    const acceptablePolicies = ["RemoteSigned", "Unrestricted", "Bypass"];
+    return {
+      isValid: acceptablePolicies.includes(policy),
+      policy: policy,
+    };
+  } catch (err) {
+    ui.writeWarning(
+      `An error happened while trying to find the current executionpolicy in powershell: ${err}`,
+    );
+    return { isValid: false, policy: "Unknown" };
+  }
 }
