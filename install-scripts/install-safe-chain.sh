@@ -237,6 +237,9 @@ parse_arguments() {
             --include-python)
                 warn "--include-python is deprecated and ignored. Python ecosystem is now included by default."
                 ;;
+            --experimental-rama-proxy)
+                USE_RAMA_PROXY=true
+                ;;
             *)
                 error "Unknown argument: $arg"
                 ;;
@@ -248,6 +251,7 @@ parse_arguments() {
 main() {
     # Initialize argument flags
     USE_CI_SETUP=false
+    USE_RAMA_PROXY=false
 
     # Parse command-line arguments
     parse_arguments "$@"
@@ -329,7 +333,7 @@ main() {
     info "Binary installed to: $FINAL_FILE"
 
     # Download safechain-proxy
-    if [ "$OS" = "macos" ] || [ "$OS" = "linux" ] || [ "$OS" = "linuxstatic" ]; then
+    if [ "$USE_RAMA_PROXY" = "true" ] && { [ "$OS" = "macos" ] || [ "$OS" = "linux" ] || [ "$OS" = "linuxstatic" ]; }; then
         info "Downloading safechain-proxy..."
 
         if [ "$OS" = "macos" ]; then
