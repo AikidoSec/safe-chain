@@ -6,13 +6,13 @@ describe("pipInterceptor custom registries", async () => {
   let malwareResponse = false;
   let customRegistries = [];
 
-  mock.module("../../config/settings.js", {
+  mock.module("../../../config/settings.js", {
     namedExports: {
       getPipCustomRegistries: () => customRegistries,
     },
   });
 
-  mock.module("../../scanning/audit/index.js", {
+  mock.module("../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
         lastPackage = { packageName, version };
@@ -30,10 +30,7 @@ describe("pipInterceptor custom registries", async () => {
 
     const interceptor = pipInterceptorForUrl(url);
 
-    assert.ok(
-      interceptor,
-      "Interceptor should be created for custom registry"
-    );
+    assert.ok(interceptor, "Interceptor should be created for custom registry");
   });
 
   it("should parse package from custom registry URL", async () => {
@@ -69,10 +66,7 @@ describe("pipInterceptor custom registries", async () => {
   });
 
   it("should handle multiple custom registries", async () => {
-    customRegistries = [
-      "registry-one.example.com",
-      "registry-two.example.com",
-    ];
+    customRegistries = ["registry-one.example.com", "registry-two.example.com"];
 
     const url1 =
       "https://registry-one.example.com/packages/package1-1.0.0.tar.gz";
@@ -85,7 +79,7 @@ describe("pipInterceptor custom registries", async () => {
     assert.ok(interceptor1, "Interceptor should be created for first registry");
     assert.ok(
       interceptor2,
-      "Interceptor should be created for second registry"
+      "Interceptor should be created for second registry",
     );
   });
 
@@ -105,12 +99,12 @@ describe("pipInterceptor custom registries", async () => {
     assert.equal(
       result.blockResponse.statusCode,
       403,
-      "Block response should have status code 403"
+      "Block response should have status code 403",
     );
     assert.equal(
       result.blockResponse.message,
       "Forbidden - blocked by safe-chain",
-      "Block response should have correct status message"
+      "Block response should have correct status message",
     );
 
     malwareResponse = false;
@@ -126,7 +120,7 @@ describe("pipInterceptor custom registries", async () => {
 
     assert.ok(
       interceptor,
-      "Interceptor should be created for known registry even with custom registries set"
+      "Interceptor should be created for known registry even with custom registries set",
     );
 
     await interceptor.handleRequest(url);
@@ -139,14 +133,15 @@ describe("pipInterceptor custom registries", async () => {
 
   it("should not create interceptor for unknown registry when custom registries are set", () => {
     customRegistries = ["my-custom-registry.example.com"];
-    const url = "https://unknown-registry.example.com/packages/foobar-1.0.0.tar.gz";
+    const url =
+      "https://unknown-registry.example.com/packages/foobar-1.0.0.tar.gz";
 
     const interceptor = pipInterceptorForUrl(url);
 
     assert.equal(
       interceptor,
       undefined,
-      "Interceptor should be undefined for unknown registry"
+      "Interceptor should be undefined for unknown registry",
     );
   });
 
@@ -160,7 +155,7 @@ describe("pipInterceptor custom registries", async () => {
     assert.equal(
       interceptor,
       undefined,
-      "Interceptor should be undefined when no custom registries are configured"
+      "Interceptor should be undefined when no custom registries are configured",
     );
   });
 
@@ -196,4 +191,3 @@ describe("pipInterceptor custom registries", async () => {
     });
   });
 });
-

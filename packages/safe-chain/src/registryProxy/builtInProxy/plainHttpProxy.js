@@ -1,6 +1,6 @@
 import * as http from "http";
 import * as https from "https";
-import { ui } from "../environment/userInteraction.js";
+import { ui } from "../../environment/userInteraction.js";
 
 /**
  * @param {import("http").IncomingMessage} req
@@ -61,7 +61,7 @@ export function handleHttpProxyRequest(req, res) {
             res.end();
           }
         });
-      }
+      },
     )
     .on("error", (err) => {
       if (!res.headersSent) {

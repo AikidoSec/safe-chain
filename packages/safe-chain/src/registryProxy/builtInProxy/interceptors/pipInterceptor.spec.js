@@ -5,7 +5,7 @@ describe("pipInterceptor", async () => {
   let lastPackage;
   let malwareResponse = false;
 
-  mock.module("../../scanning/audit/index.js", {
+  mock.module("../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
         lastPackage = { packageName, version };
@@ -100,7 +100,7 @@ describe("pipInterceptor", async () => {
       const interceptor = pipInterceptorForUrl(url);
       assert.ok(
         interceptor,
-        "Interceptor should be created for known npm registry"
+        "Interceptor should be created for known npm registry",
       );
 
       await interceptor.handleRequest(url);
@@ -117,7 +117,7 @@ describe("pipInterceptor", async () => {
     assert.equal(
       interceptor,
       undefined,
-      "Interceptor should be undefined for unknown registry"
+      "Interceptor should be undefined for unknown registry",
     );
   });
 
@@ -134,12 +134,12 @@ describe("pipInterceptor", async () => {
     assert.equal(
       result.blockResponse.statusCode,
       403,
-      "Block response should have status code 403"
+      "Block response should have status code 403",
     );
     assert.equal(
       result.blockResponse.message,
       "Forbidden - blocked by safe-chain",
-      "Block response should have correct status message"
+      "Block response should have correct status message",
     );
   });
 });

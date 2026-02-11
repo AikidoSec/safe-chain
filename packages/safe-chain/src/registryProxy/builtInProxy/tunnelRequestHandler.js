@@ -1,5 +1,5 @@
 import * as net from "net";
-import { ui } from "../environment/userInteraction.js";
+import { ui } from "../../environment/userInteraction.js";
 import { isImdsEndpoint } from "./isImdsEndpoint.js";
 import { getConnectTimeout } from "./getConnectTimeout.js";
 
@@ -49,11 +49,11 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
     if (isImds) {
       ui.writeVerbose(
-        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`
+        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`,
       );
     } else {
       ui.writeError(
-        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`
+        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`,
       );
     }
     return;
@@ -67,11 +67,11 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     if (isImds) {
       timedoutImdsEndpoints.push(hostname);
       ui.writeVerbose(
-        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`
+        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`,
       );
     } else {
       ui.writeError(
-        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`
+        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`,
       );
     }
     serverSocket.destroy();
@@ -111,11 +111,11 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     clearTimeout(connectTimer);
     if (isImds) {
       ui.writeVerbose(
-        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`
+        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`,
       );
     } else {
       ui.writeError(
-        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`
+        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`,
       );
     }
     if (clientSocket.writable) {
@@ -173,7 +173,7 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
       clientSocket.pipe(proxySocket);
     } else {
       ui.writeError(
-        `Safe-chain: proxy CONNECT failed: ${response.split("\r\n")[0]}`
+        `Safe-chain: proxy CONNECT failed: ${response.split("\r\n")[0]}`,
       );
       if (clientSocket.writable) {
         clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
@@ -189,14 +189,14 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
       ui.writeError(
         `Safe-chain: error connecting to proxy ${proxy.hostname}:${
           proxy.port || 8080
-        } - ${err.message}`
+        } - ${err.message}`,
       );
       if (clientSocket.writable) {
         clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
       }
     } else {
       ui.writeError(
-        `Safe-chain: proxy socket error after connection - ${err.message}`
+        `Safe-chain: proxy socket error after connection - ${err.message}`,
       );
       if (clientSocket.writable) {
         clientSocket.end();
@@ -210,4 +210,3 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
     }
   });
 }
-

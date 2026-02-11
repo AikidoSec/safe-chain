@@ -24,7 +24,10 @@ describe("runPipCommand environment variable handling", () => {
           // Capture the config file content before the function cleans it up
           if (options.env.PIP_CONFIG_FILE) {
             try {
-              capturedConfigContent = await fs.readFile(options.env.PIP_CONFIG_FILE, "utf-8");
+              capturedConfigContent = await fs.readFile(
+                options.env.PIP_CONFIG_FILE,
+                "utf-8",
+              );
             } catch {
               // Ignore if file doesn't exist or can't be read
             }
@@ -49,7 +52,7 @@ describe("runPipCommand environment variable handling", () => {
     });
 
     // Mock certBundle to return a test combined bundle path
-    mock.module("../../registryProxy/certBundle.js", {
+    mock.module("../../registryProxy/builtInProxy/certBundle.js", {
       namedExports: {
         getCombinedCaBundlePath: () => "/tmp/test-combined-ca.pem",
       },
@@ -65,7 +68,12 @@ describe("runPipCommand environment variable handling", () => {
   });
 
   it("should NOT set PIP_CONFIG_FILE for 'pip config' commands to allow persistent config access", async () => {
-    const res = await runPip("pip3", ["config", "set", "global.index-url", "https://test.pypi.org/simple"]);
+    const res = await runPip("pip3", [
+      "config",
+      "set",
+      "global.index-url",
+      "https://test.pypi.org/simple",
+    ]);
     assert.strictEqual(res.status, 0);
     assert.ok(capturedArgs, "safeSpawn should have been called");
 
@@ -73,24 +81,24 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
-      "PIP_CONFIG_FILE should NOT be set for pip config commands"
+      "PIP_CONFIG_FILE should NOT be set for pip config commands",
     );
 
     // But CA environment variables should still be set
     assert.strictEqual(
       capturedArgs.options.env.REQUESTS_CA_BUNDLE,
       "/tmp/test-combined-ca.pem",
-      "REQUESTS_CA_BUNDLE should still be set"
+      "REQUESTS_CA_BUNDLE should still be set",
     );
     assert.strictEqual(
       capturedArgs.options.env.SSL_CERT_FILE,
       "/tmp/test-combined-ca.pem",
-      "SSL_CERT_FILE should still be set"
+      "SSL_CERT_FILE should still be set",
     );
     assert.strictEqual(
       capturedArgs.options.env.PIP_CERT,
       "/tmp/test-combined-ca.pem",
-      "PIP_CERT should still be set"
+      "PIP_CERT should still be set",
     );
   });
 
@@ -102,7 +110,7 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
-      "PIP_CONFIG_FILE should NOT be set for pip config get"
+      "PIP_CONFIG_FILE should NOT be set for pip config get",
     );
   });
 
@@ -114,7 +122,7 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
-      "PIP_CONFIG_FILE should NOT be set for pip config list"
+      "PIP_CONFIG_FILE should NOT be set for pip config list",
     );
   });
 
@@ -126,14 +134,14 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
-      "PIP_CONFIG_FILE should NOT be set for pip cache commands"
+      "PIP_CONFIG_FILE should NOT be set for pip cache commands",
     );
 
     // CA env vars should still be set
     assert.strictEqual(
       capturedArgs.options.env.SSL_CERT_FILE,
       "/tmp/test-combined-ca.pem",
-      "SSL_CERT_FILE should still be set"
+      "SSL_CERT_FILE should still be set",
     );
   });
 
@@ -145,7 +153,7 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
-      "PIP_CONFIG_FILE should NOT be set for pip debug"
+      "PIP_CONFIG_FILE should NOT be set for pip debug",
     );
   });
 
@@ -157,7 +165,7 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.PIP_CONFIG_FILE,
       undefined,
-      "PIP_CONFIG_FILE should NOT be set for pip completion"
+      "PIP_CONFIG_FILE should NOT be set for pip completion",
     );
   });
 
@@ -169,13 +177,20 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.PIP_CERT,
       "/tmp/test-combined-ca.pem",
-      "PIP_CERT should be set to combined bundle path"
+      "PIP_CERT should be set to combined bundle path",
     );
     // Check PIP_CONFIG_FILE env var exists and is a non-empty string
     const configPath = capturedArgs.options.env.PIP_CONFIG_FILE;
     assert.ok(configPath, "PIP_CONFIG_FILE should be set");
-    assert.strictEqual(typeof configPath, "string", "PIP_CONFIG_FILE should be a string");
-    assert.ok(configPath.length > 0, "PIP_CONFIG_FILE should be a non-empty path");
+    assert.strictEqual(
+      typeof configPath,
+      "string",
+      "PIP_CONFIG_FILE should be a string",
+    );
+    assert.ok(
+      configPath.length > 0,
+      "PIP_CONFIG_FILE should be a non-empty path",
+    );
   });
 
   it("should set REQUESTS_CA_BUNDLE and SSL_CERT_FILE for default PyPI (no explicit index)", async () => {
@@ -188,12 +203,12 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.REQUESTS_CA_BUNDLE,
       "/tmp/test-combined-ca.pem",
-      "REQUESTS_CA_BUNDLE should be set to combined bundle path"
+      "REQUESTS_CA_BUNDLE should be set to combined bundle path",
     );
     assert.strictEqual(
       capturedArgs.options.env.SSL_CERT_FILE,
       "/tmp/test-combined-ca.pem",
-      "SSL_CERT_FILE should be set to combined bundle path"
+      "SSL_CERT_FILE should be set to combined bundle path",
     );
   });
 
@@ -208,11 +223,11 @@ describe("runPipCommand environment variable handling", () => {
     // Env vars should be set unconditionally
     assert.strictEqual(
       capturedArgs.options.env.REQUESTS_CA_BUNDLE,
-      "/tmp/test-combined-ca.pem"
+      "/tmp/test-combined-ca.pem",
     );
     assert.strictEqual(
       capturedArgs.options.env.SSL_CERT_FILE,
-      "/tmp/test-combined-ca.pem"
+      "/tmp/test-combined-ca.pem",
     );
   });
 
@@ -224,11 +239,11 @@ describe("runPipCommand environment variable handling", () => {
     // Environment variables still set (pip CLI --cert takes precedence)
     assert.strictEqual(
       capturedArgs.options.env.REQUESTS_CA_BUNDLE,
-      "/tmp/test-combined-ca.pem"
+      "/tmp/test-combined-ca.pem",
     );
     assert.strictEqual(
       capturedArgs.options.env.SSL_CERT_FILE,
-      "/tmp/test-combined-ca.pem"
+      "/tmp/test-combined-ca.pem",
     );
   });
 
@@ -239,13 +254,16 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(
       capturedArgs.options.env.HTTPS_PROXY,
       "http://localhost:8080",
-      "HTTPS_PROXY should be set by proxy merge"
+      "HTTPS_PROXY should be set by proxy merge",
     );
   });
 
   it("should create a new temp config when existing config exists (original file untouched)", async () => {
     const tmpDir = os.tmpdir();
-    const userCfgPath = path.join(tmpDir, `safe-chain-test-pip-${Date.now()}.ini`);
+    const userCfgPath = path.join(
+      tmpDir,
+      `safe-chain-test-pip-${Date.now()}.ini`,
+    );
     const initial = "[global]\nindex-url = https://example.com/simple\n";
     await fs.writeFile(userCfgPath, initial, "utf-8");
 
@@ -253,19 +271,42 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
     const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
-    assert.notStrictEqual(newCfgPath, userCfgPath, "should point to a new temp config file");
+    assert.notStrictEqual(
+      newCfgPath,
+      userCfgPath,
+      "should point to a new temp config file",
+    );
 
     // Original file unchanged
     const originalContent = await fs.readFile(userCfgPath, "utf-8");
     const originalParsed = ini.parse(originalContent);
-    assert.strictEqual(originalParsed.global.cert, undefined, "original file should not gain cert");
+    assert.strictEqual(
+      originalParsed.global.cert,
+      undefined,
+      "original file should not gain cert",
+    );
 
     // New file has merged settings (read from captured content before cleanup)
-    assert.ok(capturedConfigContent, "config content should have been captured");
+    assert.ok(
+      capturedConfigContent,
+      "config content should have been captured",
+    );
     const newParsed = ini.parse(capturedConfigContent);
-    assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "new config should include cert");
-    assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "new config should include proxy from env");
-    assert.strictEqual(newParsed.global["index-url"], "https://example.com/simple", "index-url should be preserved");
+    assert.strictEqual(
+      newParsed.global.cert,
+      "/tmp/test-combined-ca.pem",
+      "new config should include cert",
+    );
+    assert.strictEqual(
+      newParsed.global.proxy,
+      "http://localhost:8080",
+      "new config should include proxy from env",
+    );
+    assert.strictEqual(
+      newParsed.global["index-url"],
+      "https://example.com/simple",
+      "index-url should be preserved",
+    );
     customEnv = null;
   });
 
@@ -274,24 +315,30 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
 
-    assert.ok(capturedConfigContent, "config content should have been captured");
+    assert.ok(
+      capturedConfigContent,
+      "config content should have been captured",
+    );
     const parsed = ini.parse(capturedConfigContent);
     assert.ok(parsed.global, "[global] should exist after creation");
     assert.strictEqual(
       parsed.global.proxy,
       "http://localhost:8080",
-      "proxy should be set from merged env"
+      "proxy should be set from merged env",
     );
     assert.strictEqual(
       parsed.global.cert,
       "/tmp/test-combined-ca.pem",
-      "cert should be set during creation"
+      "cert should be set during creation",
     );
   });
 
   it("should create new temp config adding cert but preserving existing proxy (original file unchanged)", async () => {
     const tmpDir = os.tmpdir();
-    const userCfgPath = path.join(tmpDir, `safe-chain-test-pip-${Date.now()}.ini`);
+    const userCfgPath = path.join(
+      tmpDir,
+      `safe-chain-test-pip-${Date.now()}.ini`,
+    );
     const initial = "[global]\nproxy = http://original:9999\n";
     await fs.writeFile(userCfgPath, initial, "utf-8");
 
@@ -299,18 +346,41 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
     const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
-    assert.notStrictEqual(newCfgPath, userCfgPath, "should use a new temp config file");
+    assert.notStrictEqual(
+      newCfgPath,
+      userCfgPath,
+      "should use a new temp config file",
+    );
 
     // Original file unchanged
     const originalParsed = ini.parse(await fs.readFile(userCfgPath, "utf-8"));
-    assert.strictEqual(originalParsed.global.cert, undefined, "original file should not gain cert");
-    assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy remains");
+    assert.strictEqual(
+      originalParsed.global.cert,
+      undefined,
+      "original file should not gain cert",
+    );
+    assert.strictEqual(
+      originalParsed.global.proxy,
+      "http://original:9999",
+      "original proxy remains",
+    );
 
     // New file: cert and proxy always overwritten (read from captured content)
-    assert.ok(capturedConfigContent, "config content should have been captured");
+    assert.ok(
+      capturedConfigContent,
+      "config content should have been captured",
+    );
     const newParsed = ini.parse(capturedConfigContent);
-    assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
-    assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
+    assert.strictEqual(
+      newParsed.global.cert,
+      "/tmp/test-combined-ca.pem",
+      "cert always overwritten in temp config",
+    );
+    assert.strictEqual(
+      newParsed.global.proxy,
+      "http://localhost:8080",
+      "proxy always overwritten in temp config",
+    );
     customEnv = null;
   });
 
@@ -321,7 +391,7 @@ describe("runPipCommand environment variable handling", () => {
       "[global]",
       "cert = /path/to/existing.pem",
       "proxy = http://original:9999",
-      ""
+      "",
     ].join("\n");
     await fs.writeFile(cfgPath, initialIni, "utf-8");
 
@@ -329,25 +399,51 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0, "execution should succeed");
     const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
-    assert.notStrictEqual(newCfgPath, cfgPath, "should use a newly generated temp config file");
+    assert.notStrictEqual(
+      newCfgPath,
+      cfgPath,
+      "should use a newly generated temp config file",
+    );
 
     // Original file stays untouched
     const originalContent = await fs.readFile(cfgPath, "utf-8");
     const originalParsed = ini.parse(originalContent);
-    assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert preserved");
-    assert.strictEqual(originalParsed.global.proxy, "http://original:9999", "original proxy preserved");
+    assert.strictEqual(
+      originalParsed.global.cert,
+      "/path/to/existing.pem",
+      "original cert preserved",
+    );
+    assert.strictEqual(
+      originalParsed.global.proxy,
+      "http://original:9999",
+      "original proxy preserved",
+    );
 
-  // New temp config: cert and proxy always overwritten (read from captured content)
-  assert.ok(capturedConfigContent, "config content should have been captured");
-  const newParsed = ini.parse(capturedConfigContent);
-  assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
-  assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
+    // New temp config: cert and proxy always overwritten (read from captured content)
+    assert.ok(
+      capturedConfigContent,
+      "config content should have been captured",
+    );
+    const newParsed = ini.parse(capturedConfigContent);
+    assert.strictEqual(
+      newParsed.global.cert,
+      "/tmp/test-combined-ca.pem",
+      "cert always overwritten in temp config",
+    );
+    assert.strictEqual(
+      newParsed.global.proxy,
+      "http://localhost:8080",
+      "proxy always overwritten in temp config",
+    );
     customEnv = null;
   });
 
   it("should create new temp config preserving existing cert and adding missing proxy", async () => {
     const tmpDir = os.tmpdir();
-    const userCfgPath = path.join(tmpDir, `safe-chain-test-pip-${Date.now()}.ini`);
+    const userCfgPath = path.join(
+      tmpDir,
+      `safe-chain-test-pip-${Date.now()}.ini`,
+    );
     const initial = "[global]\ncert = /path/to/existing.pem\n";
     await fs.writeFile(userCfgPath, initial, "utf-8");
 
@@ -355,29 +451,55 @@ describe("runPipCommand environment variable handling", () => {
     const res = await runPip("pip3", ["install", "requests"]);
     assert.strictEqual(res.status, 0);
     const newCfgPath = capturedArgs.options.env.PIP_CONFIG_FILE;
-    assert.notStrictEqual(newCfgPath, userCfgPath, "should produce a new temp config file");
+    assert.notStrictEqual(
+      newCfgPath,
+      userCfgPath,
+      "should produce a new temp config file",
+    );
 
     // Original remains unchanged
     const originalParsed = ini.parse(await fs.readFile(userCfgPath, "utf-8"));
-    assert.strictEqual(originalParsed.global.cert, "/path/to/existing.pem", "original cert unchanged");
-    assert.strictEqual(originalParsed.global.proxy, undefined, "original proxy still missing");
+    assert.strictEqual(
+      originalParsed.global.cert,
+      "/path/to/existing.pem",
+      "original cert unchanged",
+    );
+    assert.strictEqual(
+      originalParsed.global.proxy,
+      undefined,
+      "original proxy still missing",
+    );
 
-  // New file: cert and proxy always overwritten (read from captured content)
-  assert.ok(capturedConfigContent, "config content should have been captured");
-  const newParsed = ini.parse(capturedConfigContent);
-  assert.strictEqual(newParsed.global.cert, "/tmp/test-combined-ca.pem", "cert always overwritten in temp config");
-  assert.strictEqual(newParsed.global.proxy, "http://localhost:8080", "proxy always overwritten in temp config");
+    // New file: cert and proxy always overwritten (read from captured content)
+    assert.ok(
+      capturedConfigContent,
+      "config content should have been captured",
+    );
+    const newParsed = ini.parse(capturedConfigContent);
+    assert.strictEqual(
+      newParsed.global.cert,
+      "/tmp/test-combined-ca.pem",
+      "cert always overwritten in temp config",
+    );
+    assert.strictEqual(
+      newParsed.global.proxy,
+      "http://localhost:8080",
+      "proxy always overwritten in temp config",
+    );
     customEnv = null;
   });
 
   it("should log warnings when cert and proxy are already set in user config file", async () => {
     const tmpDir = os.tmpdir();
-    const cfgPath = path.join(tmpDir, `safe-chain-test-pip-warn-${Date.now()}.ini`);
+    const cfgPath = path.join(
+      tmpDir,
+      `safe-chain-test-pip-warn-${Date.now()}.ini`,
+    );
     const initialIni = [
       "[global]",
       "cert = /user/cert.pem",
       "proxy = http://user-proxy:9999",
-      ""
+      "",
     ].join("\n");
     await fs.writeFile(cfgPath, initialIni, "utf-8");
 
@@ -387,16 +509,28 @@ describe("runPipCommand environment variable handling", () => {
     let output = "";
     const originalWrite = process.stdout.write;
     const originalError = process.stderr.write;
-    process.stdout.write = (chunk, ...args) => { output += chunk; return originalWrite.apply(process.stdout, [chunk, ...args]); };
-    process.stderr.write = (chunk, ...args) => { output += chunk; return originalError.apply(process.stderr, [chunk, ...args]); };
+    process.stdout.write = (chunk, ...args) => {
+      output += chunk;
+      return originalWrite.apply(process.stdout, [chunk, ...args]);
+    };
+    process.stderr.write = (chunk, ...args) => {
+      output += chunk;
+      return originalError.apply(process.stderr, [chunk, ...args]);
+    };
 
     await runPip("pip3", ["install", "requests"]);
 
     process.stdout.write = originalWrite;
     process.stderr.write = originalError;
 
-    assert.ok(output.includes("cert found in PIP_CONFIG_FILE"), "Should warn about cert overwrite in output");
-    assert.ok(output.includes("proxy found in PIP_CONFIG_FILE"), "Should warn about proxy overwrite in output");
+    assert.ok(
+      output.includes("cert found in PIP_CONFIG_FILE"),
+      "Should warn about cert overwrite in output",
+    );
+    assert.ok(
+      output.includes("proxy found in PIP_CONFIG_FILE"),
+      "Should warn about proxy overwrite in output",
+    );
     customEnv = null;
   });
 
@@ -407,13 +541,18 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(shouldBypassSafeChain("python", ["--version"]), true);
     assert.strictEqual(shouldBypassSafeChain("python3", ["--version"]), true);
 
-    assert.strictEqual(shouldBypassSafeChain("python", ["-m", "http.server"]), true);
-    assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "http.server"]), true);
+    assert.strictEqual(
+      shouldBypassSafeChain("python", ["-m", "http.server"]),
+      true,
+    );
+    assert.strictEqual(
+      shouldBypassSafeChain("python3", ["-m", "http.server"]),
+      true,
+    );
 
     assert.strictEqual(shouldBypassSafeChain("python", ["-m", "pip"]), false);
     assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "pip"]), false);
     assert.strictEqual(shouldBypassSafeChain("python", ["-m", "pip3"]), false);
     assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "pip3"]), false);
   });
-
 });

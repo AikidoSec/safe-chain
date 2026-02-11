@@ -5,7 +5,7 @@ let lastPackage;
 let malwareResponse = false;
 let customRegistries = [];
 
-mock.module("../../../scanning/audit/index.js", {
+mock.module("../../../../scanning/audit/index.js", {
   namedExports: {
     isMalwarePackage: async (packageName, version) => {
       lastPackage = { packageName, version };
@@ -14,7 +14,7 @@ mock.module("../../../scanning/audit/index.js", {
   },
 });
 
-mock.module("../../../config/settings.js", {
+mock.module("../../../../config/settings.js", {
   namedExports: {
     LOGGING_SILENT: "silent",
     LOGGING_NORMAL: "normal",
@@ -136,7 +136,7 @@ describe("npmInterceptor", async () => {
       const interceptor = npmInterceptorForUrl(url);
       assert.ok(
         interceptor,
-        "Interceptor should be created for known npm registry"
+        "Interceptor should be created for known npm registry",
       );
 
       await interceptor.handleRequest(url);
@@ -153,7 +153,7 @@ describe("npmInterceptor", async () => {
     assert.equal(
       interceptor,
       undefined,
-      "Interceptor should be undefined for unknown registry"
+      "Interceptor should be undefined for unknown registry",
     );
   });
 
@@ -170,12 +170,12 @@ describe("npmInterceptor", async () => {
     assert.equal(
       result.blockResponse.statusCode,
       403,
-      "Block response should have status code 403"
+      "Block response should have status code 403",
     );
     assert.equal(
       result.blockResponse.message,
       "Forbidden - blocked by safe-chain",
-      "Block response should have correct status message"
+      "Block response should have correct status message",
     );
   });
 });
@@ -212,7 +212,7 @@ describe("npmInterceptor with custom registries", async () => {
 
     assert.ok(
       interceptor,
-      "Interceptor should be created for custom registry with scoped package"
+      "Interceptor should be created for custom registry with scoped package",
     );
 
     await interceptor.handleRequest(url);
@@ -262,7 +262,7 @@ describe("npmInterceptor with custom registries", async () => {
     assert.equal(
       interceptor,
       undefined,
-      "Should not create interceptor for unknown registry"
+      "Should not create interceptor for unknown registry",
     );
   });
 });

@@ -1,18 +1,18 @@
-import { ChildProcess, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdtempSync, readFile, writeFile } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
-import { ui } from "../environment/userInteraction.js";
-import { getLoggingLevel, LOGGING_VERBOSE } from "../config/settings.js";
+import { ui } from "../../environment/userInteraction.js";
+import { getLoggingLevel, LOGGING_VERBOSE } from "../../config/settings.js";
 
 const readFilePromise = promisify(readFile);
 const writeFilePromise = promisify(writeFile);
 
 /**
  * @typedef {Object} RamaProxyInstance
- * @property {ChildProcess} process
+ * @property {import("node:child_process").ChildProcess} process
  * @property {string} proxyAddress
  * @property {string} metaAddress
  * @property {string} certPath
@@ -35,7 +35,7 @@ export function getRamaPath() {
 /**
  * @param {string} ramaPath
  *
- * @returns {import("./registryProxy.js").SafeChainProxy} */
+ * @returns {import("../registryProxy.js").SafeChainProxy} */
 export function createRamaProxy(ramaPath) {
   const tempDir = mkdtempSync(join(tmpdir(), "safe-chain-proxy-"));
   /** @type {RamaProxyInstance | null} */
@@ -45,7 +45,7 @@ export function createRamaProxy(ramaPath) {
     startServer: async () => {
       ramaInstance = await startRama(ramaPath, tempDir);
       ui.writeVerbose(
-        `Proxy started at address "${ramaInstance.proxyAddress}"`
+        `Proxy started at address "${ramaInstance.proxyAddress}"`,
       );
     },
     stopServer: async () => {
@@ -98,7 +98,7 @@ async function startRama(ramaPath, dataFolder) {
   const proxyAddress = await readFilePromise(proxyAddrPath, "utf-8");
   const metaAddress = await readFilePromise(
     join(dataFolder, "meta.addr.txt"),
-    "utf-8"
+    "utf-8",
   );
 
   const certResponse = await fetch(`http://${metaAddress}/ca`);

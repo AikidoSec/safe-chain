@@ -41,7 +41,7 @@ describe("runPipXCommand", () => {
       },
     });
 
-    mock.module("../../registryProxy/certBundle.js", {
+    mock.module("../../registryProxy/builtInProxy/certBundle.js", {
       namedExports: {
         getCombinedCaBundlePath: () => "/tmp/test-combined-ca.pem",
       },
@@ -65,7 +65,11 @@ describe("runPipXCommand", () => {
     const res = await runPipX("pipx", ["install", "ruff"]);
 
     assert.strictEqual(res.status, 0);
-    assert.strictEqual(safeSpawnMock.mock.calls.length, 1, "safeSpawn should be called once");
+    assert.strictEqual(
+      safeSpawnMock.mock.calls.length,
+      1,
+      "safeSpawn should be called once",
+    );
 
     const [, , options] = safeSpawnMock.mock.calls[0].arguments;
     const env = options.env;

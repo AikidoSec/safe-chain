@@ -6,23 +6,24 @@ describe("npmInterceptor minimum package age", async () => {
   let skipMinimumPackageAgeSetting = false;
   let minimumPackageAgeExclusionsSetting = [];
 
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
       getMinimumPackageAgeHours: () => minimumPackageAgeSettings,
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
       getNpmCustomRegistries: () => [],
-      getNpmMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
+      getNpmMinimumPackageAgeExclusions: () =>
+        minimumPackageAgeExclusionsSetting,
     },
   });
 
-  mock.module("../../../scanning/audit/index.js", {
+  mock.module("../../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async () => {
         return false;
       },
     },
   });
-  mock.module("../../../environment/userInteraction.js", {
+  mock.module("../../../../environment/userInteraction.js", {
     namedExports: {
       ui: {
         startProcess: () => {},
@@ -64,9 +65,8 @@ describe("npmInterceptor minimum package age", async () => {
   ]) {
     it(`modifyResponse should be true for package info requests: ${packageInfoUrl}`, async () => {
       const interceptor = npmInterceptorForUrl(packageInfoUrl);
-      const requestInterceptor = await interceptor.handleRequest(
-        packageInfoUrl
-      );
+      const requestInterceptor =
+        await interceptor.handleRequest(packageInfoUrl);
 
       assert.equal(requestInterceptor.modifiesResponse(), true);
     });
@@ -120,9 +120,8 @@ describe("npmInterceptor minimum package age", async () => {
   ]) {
     it(`modifyResponse should be false for special endpoints: ${specialEndpoint}`, async () => {
       const interceptor = npmInterceptorForUrl(specialEndpoint);
-      const requestInterceptor = await interceptor.handleRequest(
-        specialEndpoint
-      );
+      const requestInterceptor =
+        await interceptor.handleRequest(specialEndpoint);
 
       assert.equal(requestInterceptor.modifiesResponse(), false);
     });
@@ -152,7 +151,7 @@ describe("npmInterceptor minimum package age", async () => {
           ["2.0.0"]: getDate(-4),
           ["3.0.0"]: getDate(-3),
         },
-      })
+      }),
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
@@ -193,7 +192,7 @@ describe("npmInterceptor minimum package age", async () => {
           ["2.0.0"]: getDate(-4),
           ["3.0.0"]: getDate(-3),
         },
-      })
+      }),
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
@@ -225,7 +224,7 @@ describe("npmInterceptor minimum package age", async () => {
           // cutoff-date here
           ["2.0.0-alpha"]: getDate(-4),
         },
-      })
+      }),
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
@@ -261,7 +260,7 @@ describe("npmInterceptor minimum package age", async () => {
 
     const modifiedBody = await runModifyNpmInfoRequest(
       packageUrl,
-      originalBody
+      originalBody,
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
@@ -303,7 +302,7 @@ describe("npmInterceptor minimum package age", async () => {
           ["3.0.0"]: getDate(-40), // ~1.7 days old - should be removed
           ["4.0.0"]: getDate(-24), // 1 day old - should be removed
         },
-      })
+      }),
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
@@ -347,7 +346,7 @@ describe("npmInterceptor minimum package age", async () => {
           // 1-hour cutoff here
           ["3.0.0"]: getDate(0), // just published - should be removed
         },
-      })
+      }),
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
@@ -386,7 +385,10 @@ describe("npmInterceptor minimum package age", async () => {
       },
     });
 
-    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      originalBody,
+    );
     const modifiedJson = JSON.parse(modifiedBody);
 
     // All versions should remain unchanged since lodash is excluded
@@ -416,7 +418,7 @@ describe("npmInterceptor minimum package age", async () => {
           ["1.0.0"]: getDate(-7),
           ["3.0.0"]: getDate(-3),
         },
-      })
+      }),
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
@@ -446,7 +448,10 @@ describe("npmInterceptor minimum package age", async () => {
       },
     });
 
-    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      originalBody,
+    );
     const modifiedJson = JSON.parse(modifiedBody);
 
     // All versions should remain for excluded scoped package
@@ -474,7 +479,10 @@ describe("npmInterceptor minimum package age", async () => {
       },
     });
 
-    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      originalBody,
+    );
     const modifiedJson = JSON.parse(modifiedBody);
 
     // All versions should remain since lodash is in the exclusion list
@@ -500,7 +508,10 @@ describe("npmInterceptor minimum package age", async () => {
       },
     });
 
-    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      originalBody,
+    );
     const modifiedJson = JSON.parse(modifiedBody);
 
     // All versions should remain since @aikidosec/* matches @aikidosec/safe-chain
@@ -528,7 +539,10 @@ describe("npmInterceptor minimum package age", async () => {
       },
     });
 
-    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      originalBody,
+    );
     const modifiedJson = JSON.parse(modifiedBody);
 
     // Version 2.0.0 should be filtered since @other/package doesn't match @aikidosec/*
@@ -555,7 +569,7 @@ describe("npmInterceptor minimum package age", async () => {
           ["1.0.0"]: getDate(-100),
           ["2.0.0"]: getDate(-1),
         },
-      })
+      }),
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
