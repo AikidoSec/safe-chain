@@ -5,8 +5,7 @@ import path from "node:path";
 import certifi from "certifi";
 import tls from "node:tls";
 import { X509Certificate } from "node:crypto";
-import { getCaCertPath } from "./certUtils.js";
-import { ui } from "../../environment/userInteraction.js";
+import { ui } from "../environment/userInteraction.js";
 
 /**
  * Check if a PEM string contains only parsable cert blocks.
@@ -50,20 +49,14 @@ function isParsable(pem) {
  * - Mozilla roots via certifi (for public HTTPS)
  * - Node's built-in root certificates (fallback)
  * - User's custom certificates (if NODE_EXTRA_CA_CERTS environment variable is set)
+ *  @param {string | null} proxyCaCert
  *
  * @returns {string} Path to the combined CA bundle PEM file
  */
-export function getCombinedCaBundlePath() {
-  const parts = [];
-
+export function getCombinedCaBundlePath(proxyCaCert) {
   // 1) Safe Chain CA (for MITM'd registries)
-  const safeChainPath = getCaCertPath();
-  try {
-    const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
-    if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
-  } catch {
-    // Ignore if Safe Chain CA is not available
-  }
+  const parts = [];
+  if (proxyCaCert && isParsable(proxyCaCert)) parts.push(proxyCaCert.trim());
 
   // 2) certifi (Mozilla CA bundle for all public HTTPS)
   try {

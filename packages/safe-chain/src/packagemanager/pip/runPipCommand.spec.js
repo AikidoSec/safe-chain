@@ -48,11 +48,17 @@ describe("runPipCommand environment variable handling", () => {
           HTTPS_PROXY: "http://localhost:8080",
           HTTP_PROXY: "",
         }),
+        getProxySettings: () => {
+          return {
+            proxyUrl: "http://localhost:8080",
+            caCertBundlePath: "/tmp/test-combined-ca.pem",
+          };
+        },
       },
     });
 
     // Mock certBundle to return a test combined bundle path
-    mock.module("../../registryProxy/builtInProxy/certBundle.js", {
+    mock.module("../../registryProxy/certBundle.js", {
       namedExports: {
         getCombinedCaBundlePath: () => "/tmp/test-combined-ca.pem",
       },

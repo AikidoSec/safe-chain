@@ -1,7 +1,9 @@
 import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
-import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
-import { getCombinedCaBundlePath } from "../../registryProxy/builtInProxy/certBundle.js";
+import {
+  getProxySettings,
+  mergeSafeChainProxyEnvironmentVariables,
+} from "../../registryProxy/registryProxy.js";
 
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
@@ -62,7 +64,7 @@ async function runPoetryCommand(args) {
   try {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
 
-    const combinedCaPath = getCombinedCaBundlePath();
+    const combinedCaPath = getProxySettings().caCertBundlePath;
     setPoetryCaBundleEnvironmentVariables(env, combinedCaPath);
 
     const result = await safeSpawn("poetry", args, {

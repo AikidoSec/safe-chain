@@ -2,11 +2,12 @@ import * as http from "http";
 import { tunnelRequest } from "./tunnelRequestHandler.js";
 import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
-import { getCombinedCaBundlePath } from "./certBundle.js";
 import { ui } from "../../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
+import { getCaCertPath } from "./certUtils.js";
+import { readFileSync } from "fs";
 
 /** *
  * @returns {import("../registryProxy.js").SafeChainProxy} */
@@ -36,7 +37,7 @@ export function createBuiltInProxyServer() {
     verifyNoMaliciousPackages,
     hasSuppressedVersions: getHasSuppressedVersions,
     getServerPort: () => state.port,
-    getCombinedCaBundlePath,
+    getCaCert,
   };
 
   /**
@@ -146,5 +147,14 @@ export function createBuiltInProxyServer() {
     ui.emptyLine();
 
     return false;
+  }
+
+  function getCaCert() {
+    try {
+      const safeChainPath = getCaCertPath();
+      return readFileSync(safeChainPath, "utf8");
+    } catch {
+      return null;
+    }
   }
 }

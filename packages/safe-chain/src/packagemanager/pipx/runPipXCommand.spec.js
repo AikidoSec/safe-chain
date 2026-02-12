@@ -38,10 +38,16 @@ describe("runPipXCommand", () => {
           mergeCalls.push(env);
           return { ...env, ...mergedEnvReturn };
         },
+        getProxySettings: () => {
+          return {
+            proxyUrl: "",
+            caCertBundlePath: "/tmp/test-combined-ca.pem",
+          };
+        },
       },
     });
 
-    mock.module("../../registryProxy/builtInProxy/certBundle.js", {
+    mock.module("../../registryProxy/certBundle.js", {
       namedExports: {
         getCombinedCaBundlePath: () => "/tmp/test-combined-ca.pem",
       },

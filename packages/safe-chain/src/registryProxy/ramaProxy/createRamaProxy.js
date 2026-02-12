@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtempSync, readFile, writeFile } from "node:fs";
+import { mkdtempSync, readFile } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
@@ -8,14 +8,13 @@ import { ui } from "../../environment/userInteraction.js";
 import { getLoggingLevel, LOGGING_VERBOSE } from "../../config/settings.js";
 
 const readFilePromise = promisify(readFile);
-const writeFilePromise = promisify(writeFile);
 
 /**
  * @typedef {Object} RamaProxyInstance
  * @property {import("node:child_process").ChildProcess} process
  * @property {string} proxyAddress
  * @property {string} metaAddress
- * @property {string} certPath
+ * @property {string} caCert
  */
 
 /**
@@ -61,7 +60,7 @@ export function createRamaProxy(ramaPath) {
       const url = new URL(`http://${ramaInstance.proxyAddress}`);
       return url.port ? parseInt(url.port, 10) : null;
     },
-    getCombinedCaBundlePath: () => ramaInstance?.certPath ?? "",
+    getCaCert: () => ramaInstance?.caCert ?? null,
   };
 }
 
@@ -102,14 +101,12 @@ async function startRama(ramaPath, dataFolder) {
   );
 
   const certResponse = await fetch(`http://${metaAddress}/ca`);
-  const cert = await certResponse.text();
-  const certPath = join(dataFolder, "cert.ca");
-  await writeFilePromise(certPath, cert);
+  const caCert = await certResponse.text();
 
   return {
     process,
     proxyAddress,
     metaAddress,
-    certPath,
+    caCert,
   };
 }

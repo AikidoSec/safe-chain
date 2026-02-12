@@ -1,7 +1,9 @@
 import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
-import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
-import { getCombinedCaBundlePath } from "../../registryProxy/builtInProxy/certBundle.js";
+import {
+  getProxySettings,
+  mergeSafeChainProxyEnvironmentVariables,
+} from "../../registryProxy/registryProxy.js";
 
 /**
  * Sets CA bundle environment variables used by Python libraries and uv.
@@ -53,7 +55,7 @@ export async function runUv(command, args) {
   try {
     const env = mergeSafeChainProxyEnvironmentVariables(process.env);
 
-    const combinedCaPath = getCombinedCaBundlePath();
+    const combinedCaPath = getProxySettings().caCertBundlePath;
     setUvCaBundleEnvironmentVariables(env, combinedCaPath);
 
     // Note: uv uses HTTPS_PROXY and HTTP_PROXY environment variables for proxy configuration

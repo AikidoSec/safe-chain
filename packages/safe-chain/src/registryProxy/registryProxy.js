@@ -1,6 +1,7 @@
 import { ui } from "../environment/userInteraction.js";
 import { createRamaProxy, getRamaPath } from "./ramaProxy/createRamaProxy.js";
 import { createBuiltInProxyServer } from "./builtInProxy/createBuiltInProxyServer.js";
+import { getCombinedCaBundlePath } from "./certBundle.js";
 
 /**
  * @typedef {Object} SafeChainProxy
@@ -9,7 +10,11 @@ import { createBuiltInProxyServer } from "./builtInProxy/createBuiltInProxyServe
  * @prop {() => boolean} verifyNoMaliciousPackages
  * @prop {() => boolean} hasSuppressedVersions
  * @prop {() => Number | null} getServerPort
- * @prop {() => string} getCombinedCaBundlePath
+ * @prop {() => string | null} getCaCert
+ *
+ * @typedef {Object} ProxySettings
+ * @prop {string | null} proxyUrl
+ * @prop {string} caCertBundlePath
  */
 
 /** @type {SafeChainProxy} */
@@ -32,6 +37,27 @@ export function createSafeChainProxy() {
 }
 
 /**
+ * @returns {ProxySettings}
+ */
+export function getProxySettings() {
+  if (!server || !server.getServerPort()) {
+    return {
+      proxyUrl: null,
+      caCertBundlePath: getCombinedCaBundlePath(null),
+    };
+  }
+
+  const proxyUrl = `http://localhost:${server.getServerPort()}`;
+  const caCert = server.getCaCert();
+  const caCertBundlePath = getCombinedCaBundlePath(caCert);
+
+  return {
+    proxyUrl,
+    caCertBundlePath,
+  };
+}
+
+/**
  * @returns {Record<string, string>}
  */
 function getSafeChainProxyEnvironmentVariables() {
@@ -39,13 +65,12 @@ function getSafeChainProxyEnvironmentVariables() {
     return {};
   }
 
-  const proxyUrl = `http://localhost:${server.getServerPort()}`;
-  const caCertPath = server.getCombinedCaBundlePath();
+  const proxySettings = getProxySettings();
 
   return {
-    HTTPS_PROXY: proxyUrl,
-    GLOBAL_AGENT_HTTP_PROXY: proxyUrl,
-    NODE_EXTRA_CA_CERTS: caCertPath,
+    HTTPS_PROXY: proxySettings.proxyUrl ?? "",
+    GLOBAL_AGENT_HTTP_PROXY: proxySettings.proxyUrl ?? "",
+    NODE_EXTRA_CA_CERTS: proxySettings.caCertBundlePath,
   };
 }
 

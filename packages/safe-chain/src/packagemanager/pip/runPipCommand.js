@@ -1,7 +1,9 @@
 import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
-import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
-import { getCombinedCaBundlePath } from "../../registryProxy/builtInProxy/certBundle.js";
+import {
+  getProxySettings,
+  mergeSafeChainProxyEnvironmentVariables,
+} from "../../registryProxy/registryProxy.js";
 import {
   PIP_COMMAND,
   PIP3_COMMAND,
@@ -118,7 +120,7 @@ export async function runPip(command, args) {
     // Always provide Python with a complete CA bundle (Safe Chain CA + Mozilla + Node built-in roots + user certs)
     // so that any network request made by pip, including those outside explicit CLI args,
     // validates correctly under both MITM'd and tunneled HTTPS.
-    const combinedCaPath = getCombinedCaBundlePath();
+    const combinedCaPath = getProxySettings().caCertBundlePath;
 
     // Commands that need access to persistent config/cache/state files
     // These should not have PIP_CONFIG_FILE overridden as it would prevent them from
