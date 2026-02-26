@@ -1,4 +1,3 @@
-import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
