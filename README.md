@@ -226,22 +226,6 @@ export SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
 }
 ```
 
-### Excluding Packages
-
-Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged). Use `@scope/*` to trust all packages from an organization:
-
-```shell
-export SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
-```
-
-```json
-{
-  "npm": {
-    "minimumPackageAgeExclusions": ["@aikidosec/*"]
-  }
-}
-```
-
 ## Custom Registries
 
 Configure Safe Chain to scan packages from custom or private registries.
