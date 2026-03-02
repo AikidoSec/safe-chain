@@ -61,7 +61,7 @@ export function handleHttpProxyRequest(req, res) {
             res.end();
           }
         });
-      },
+      }
     )
     .on("error", (err) => {
       if (!res.headersSent) {

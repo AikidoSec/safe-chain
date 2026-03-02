@@ -33,18 +33,16 @@ function buildPipInterceptor(registry) {
   return interceptRequests(async (reqContext) => {
     const { packageName, version } = parsePipPackageFromUrl(
       reqContext.targetUrl,
-      registry,
+      registry
     );
 
     // Normalize underscores to hyphens for DB matching, as PyPI allows underscores in distribution names.
     // Per python, packages that differ only by hyphen vs underscore are considered the same.
-    const hyphenName = packageName?.includes("_")
-      ? packageName.replace(/_/g, "-")
-      : packageName;
+    const hyphenName = packageName?.includes("_") ? packageName.replace(/_/g, "-") : packageName;
 
     const isMalicious =
-      (await isMalwarePackage(packageName, version)) ||
-      (await isMalwarePackage(hyphenName, version));
+       await isMalwarePackage(packageName, version)
+    || await isMalwarePackage(hyphenName, version);
 
     if (isMalicious) {
       reqContext.blockMalware(packageName, version);
@@ -112,8 +110,7 @@ function parsePipPackageFromUrl(url, registry) {
   }
 
   // Source dist (sdist) and potential metadata sidecars (e.g., .tar.gz.metadata)
-  const sdistExtWithMetadataRe =
-    /\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i;
+  const sdistExtWithMetadataRe = /\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i;
   const sdistExtMatch = filename.match(sdistExtWithMetadataRe);
   if (sdistExtMatch) {
     const base = filename.replace(sdistExtWithMetadataRe, "");

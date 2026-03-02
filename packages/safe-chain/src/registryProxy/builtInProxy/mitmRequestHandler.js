@@ -19,7 +19,7 @@ export function mitmConnect(req, clientSocket, interceptor) {
 
   clientSocket.on("error", (err) => {
     ui.writeVerbose(
-      `Safe-chain: Client socket error for ${req.url}: ${err.message}`,
+      `Safe-chain: Client socket error for ${req.url}: ${err.message}`
     );
     // NO-OP
     // This can happen if the client TCP socket sends RST instead of FIN.
@@ -89,7 +89,7 @@ function createHttpsServer(hostname, port, interceptor) {
       key: cert.privateKey,
       cert: cert.certificate,
     },
-    handleRequest,
+    handleRequest
   );
 
   return server;
@@ -119,7 +119,7 @@ function forwardRequest(req, hostname, port, res, requestHandler) {
 
   proxyReq.on("error", (err) => {
     ui.writeVerbose(
-      `Safe-chain: Error occurred while proxying request to ${req.url} for ${hostname}: ${err.message}`,
+      `Safe-chain: Error occurred while proxying request to ${req.url} for ${hostname}: ${err.message}`
     );
     res.writeHead(502);
     res.end("Bad Gateway");
@@ -127,7 +127,7 @@ function forwardRequest(req, hostname, port, res, requestHandler) {
 
   req.on("error", (err) => {
     ui.writeError(
-      `Safe-chain: Error reading client request to ${req.url} for ${hostname}: ${err.message}`,
+      `Safe-chain: Error reading client request to ${req.url} for ${hostname}: ${err.message}`
     );
     proxyReq.destroy();
   });
@@ -138,7 +138,7 @@ function forwardRequest(req, hostname, port, res, requestHandler) {
 
   req.on("end", () => {
     ui.writeVerbose(
-      `Safe-chain: Finished proxying request to ${req.url} for ${hostname}`,
+      `Safe-chain: Finished proxying request to ${req.url} for ${hostname}`
     );
     proxyReq.end();
   });
@@ -180,7 +180,7 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
   const proxyReq = https.request(options, (proxyRes) => {
     proxyRes.on("error", (err) => {
       ui.writeError(
-        `Safe-chain: Error reading upstream response to ${req.url} for ${hostname}: ${err.message}`,
+        `Safe-chain: Error reading upstream response to ${req.url} for ${hostname}: ${err.message}`
       );
       if (!res.headersSent) {
         res.writeHead(502);
@@ -190,7 +190,7 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
 
     if (!proxyRes.statusCode) {
       ui.writeError(
-        `Safe-chain: Proxy response missing status code to ${req.url} for ${hostname}`,
+        `Safe-chain: Proxy response missing status code to ${req.url} for ${hostname}`
       );
       res.writeHead(500);
       res.end("Internal Server Error");

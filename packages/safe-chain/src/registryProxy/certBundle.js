@@ -85,21 +85,14 @@ export function getCombinedCaBundlePath(proxyCaCert) {
     const userPem = readUserCertificateFile(userCertPath);
     if (userPem) {
       parts.push(userPem.trim());
-      ui.writeVerbose(
-        `Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`,
-      );
+      ui.writeVerbose(`Safe-chain: Merging user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
     } else {
-      ui.writeWarning(
-        `Safe-chain: Could not read or parse user's NODE_EXTRA_CA_CERTS from ${userCertPath}`,
-      );
+      ui.writeWarning(`Safe-chain: Could not read or parse user's NODE_EXTRA_CA_CERTS from ${userCertPath}`);
     }
   }
 
   const combined = parts.filter(Boolean).join("\n");
-  const target = path.join(
-    os.tmpdir(),
-    `safe-chain-ca-bundle-${Date.now()}.pem`,
-  );
+  const target = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
   fs.writeFileSync(target, combined, { encoding: "utf8" });
   return target;
 }
@@ -177,3 +170,4 @@ function readUserCertificateFile(certPath) {
     return null;
   }
 }
+

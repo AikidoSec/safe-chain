@@ -23,7 +23,7 @@ const knownJsRegistries = [
  */
 export function npmInterceptorForUrl(url) {
   const registry = [...knownJsRegistries, ...getNpmCustomRegistries()].find(
-    (reg) => url.includes(reg),
+    (reg) => url.includes(reg)
   );
 
   if (registry) {
@@ -41,7 +41,7 @@ function buildNpmInterceptor(registry) {
   return interceptRequests(async (reqContext) => {
     const { packageName, version } = parseNpmPackageUrl(
       reqContext.targetUrl,
-      registry,
+      registry
     );
 
     if (await isMalwarePackage(packageName, version)) {

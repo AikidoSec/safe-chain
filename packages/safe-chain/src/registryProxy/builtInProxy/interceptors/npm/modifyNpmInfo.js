@@ -71,20 +71,15 @@ export function modifyNpmInfoResponse(body, headers) {
     // Check if this package is excluded from minimum age filtering
     const packageName = bodyJson.name;
     const exclusions = getNpmMinimumPackageAgeExclusions();
-    if (
-      packageName &&
-      exclusions.some((pattern) =>
-        matchesExclusionPattern(packageName, pattern),
-      )
-    ) {
+    if (packageName && exclusions.some((pattern) => matchesExclusionPattern(packageName, pattern))) {
       ui.writeVerbose(
-        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`,
+        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`
       );
       return body;
     }
 
     const cutOff = new Date(
-      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000,
+      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
     );
 
     const hasLatestTag = !!bodyJson["dist-tags"]["latest"];
@@ -121,7 +116,7 @@ export function modifyNpmInfoResponse(body, headers) {
     return Buffer.from(JSON.stringify(bodyJson));
   } catch (/** @type {any} */ err) {
     ui.writeVerbose(
-      `Safe-chain: Package metadata not in expected format - bypassing modification. Error: ${err.message}`,
+      `Safe-chain: Package metadata not in expected format - bypassing modification. Error: ${err.message}`
     );
     return body;
   }
@@ -137,7 +132,7 @@ function deleteVersionFromJson(json, version) {
   const packageName = typeof json?.name === "string" ? json.name : "(unknown)";
 
   ui.writeVerbose(
-    `Safe-chain: ${packageName}@${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`,
+    `Safe-chain: ${packageName}@${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`
   );
 
   delete json.time[version];
@@ -156,20 +151,18 @@ function deleteVersionFromJson(json, version) {
  */
 function calculateLatestTag(tagList) {
   const entries = Object.entries(tagList).filter(
-    ([version, _]) => version !== "created" && version !== "modified",
+    ([version, _]) => version !== "created" && version !== "modified"
   );
 
   const latestFullRelease = getMostRecentTag(
-    Object.fromEntries(
-      entries.filter(([version, _]) => !version.includes("-")),
-    ),
+    Object.fromEntries(entries.filter(([version, _]) => !version.includes("-")))
   );
   if (latestFullRelease) {
     return latestFullRelease;
   }
 
   const latestPrerelease = getMostRecentTag(
-    Object.fromEntries(entries.filter(([version, _]) => version.includes("-"))),
+    Object.fromEntries(entries.filter(([version, _]) => version.includes("-")))
   );
   return latestPrerelease;
 }

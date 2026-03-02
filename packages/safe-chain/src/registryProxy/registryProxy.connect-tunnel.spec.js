@@ -56,7 +56,7 @@ describe("registryProxy.connectTunnel", () => {
     const tunnelResponse = await establishHttpsTunnel(
       socket,
       "postman-echo.com",
-      443,
+      443
     );
 
     assert.ok(tunnelResponse.includes("HTTP/1.1 200 Connection Established"));
@@ -69,7 +69,7 @@ describe("registryProxy.connectTunnel", () => {
     const httpsResponse = await sendHttpsRequestThroughTunnel(
       socket,
       "GET",
-      new URL("https://postman-echo.com/status/200"),
+      new URL("https://postman-echo.com/status/200")
     );
 
     assert.ok(httpsResponse.includes("HTTP/1.1 200 OK"));
@@ -85,25 +85,25 @@ describe("registryProxy.connectTunnel", () => {
     // without interception by the safe-chain MITM proxy.
     const certInfo = await getTlsCertificateInfo(
       socket,
-      new URL("https://postman-echo.com"),
+      new URL("https://postman-echo.com")
     );
 
     // Verify the certificate is NOT issued by our safe-chain CA
     // Our self-signed CA would have issuer: "Safe-Chain Proxy CA"
     assert.ok(
       certInfo.issuer !== undefined,
-      "Certificate should have an issuer",
+      "Certificate should have an issuer"
     );
     assert.ok(
       !certInfo.issuer.includes("Safe-Chain"),
-      `Tunnel should use destination's real certificate, not safe-chain CA. Issuer: ${certInfo.issuer}`,
+      `Tunnel should use destination's real certificate, not safe-chain CA. Issuer: ${certInfo.issuer}`
     );
 
     // Verify it's a real certificate with proper hostname
     assert.strictEqual(
       certInfo.subject.includes("postman-echo.com"),
       true,
-      `Certificate subject should include postman-echo.com, got: ${certInfo.subject}`,
+      `Certificate subject should include postman-echo.com, got: ${certInfo.subject}`
     );
 
     socket.destroy();
@@ -232,13 +232,13 @@ describe("registryProxy.connectTunnel", () => {
       // Should return 502 immediately (cached timeout)
       assert.ok(
         responseData.includes("HTTP/1.1 502 Bad Gateway"),
-        "Should return 502 for cached timeout",
+        "Should return 502 for cached timeout"
       );
 
       // Should be nearly instant (< 50ms) since it's cached
       assert.ok(
         duration < 50,
-        `Cached IMDS timeout should be instant, got ${duration}ms`,
+        `Cached IMDS timeout should be instant, got ${duration}ms`
       );
 
       socket2.destroy();
@@ -283,14 +283,14 @@ describe("registryProxy.connectTunnel", () => {
       // Should return 504 Gateway Timeout (not 502 - 504 is for actual timeouts)
       assert.ok(
         responseData.includes("HTTP/1.1 504 Gateway Timeout"),
-        "Should return 504 for timeout",
+        "Should return 504 for timeout"
       );
 
       // Should NOT be instant - it should retry the connection (taking ~500ms due to mock timeout)
       // If it was cached, it would return in < 50ms
       assert.ok(
         duration >= 400,
-        `Non-IMDS timeout should NOT be cached, but got instant response in ${duration}ms`,
+        `Non-IMDS timeout should NOT be cached, but got instant response in ${duration}ms`
       );
 
       socket2.destroy();
@@ -343,7 +343,7 @@ function sendHttpsRequestThroughTunnel(
   socket,
   verb,
   url,
-  rejectUnauthorized = false,
+  rejectUnauthorized = false
 ) {
   return new Promise((resolve, reject) => {
     const tlsSocket = tls.connect(
@@ -356,9 +356,9 @@ function sendHttpsRequestThroughTunnel(
       },
       () => {
         tlsSocket.write(
-          `${verb} ${url.pathname} HTTP/1.1\r\nHost: ${url.hostname}\r\nConnection: close\r\n\r\n`,
+          `${verb} ${url.pathname} HTTP/1.1\r\nHost: ${url.hostname}\r\nConnection: close\r\n\r\n`
         );
-      },
+      }
     );
 
     let tlsData = "";
@@ -404,7 +404,7 @@ function getTlsCertificateInfo(socket, url) {
 
         tlsSocket.end();
         resolve({ issuer, subject });
-      },
+      }
     );
 
     tlsSocket.on("error", (err) => {
