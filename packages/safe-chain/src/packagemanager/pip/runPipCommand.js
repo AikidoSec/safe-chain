@@ -121,13 +121,13 @@ export async function runPip(command, args) {
     let cleanupConfigPath = null; // Track temp file for cleanup
 
     if (isConfigRelatedCommand) {
-      ui.writeVerbose( `Safe-chain: Skipping PIP_CONFIG_FILE override for 'pip ${args[0]}' command to allow persistent config/cache access.`);
-
-      // Still set the fallback CA bundle environment variables to avoid edge cases where a
+      ui.writeVerbose(`Safe-chain: Skipping PIP_CONFIG_FILE override for 'pip ${args[0]}' command to allow persistent config/cache access.`);
+      
+      // Still set the fallback CA bundle environment variables to avoid edge cases where a 
       // plugin or extension triggers a network call during config introspection
       // This can do no harm
       setFallbackCaBundleEnvironmentVariables(env, combinedCaPath);
-
+      
       const result = await safeSpawn(command, args, {
         stdio: "inherit",
         env,
@@ -147,6 +147,7 @@ export async function runPip(command, args) {
       await fs.writeFile(pipConfigPath, pipConfig);
       env.PIP_CONFIG_FILE = pipConfigPath;
       cleanupConfigPath = pipConfigPath;
+
     } else if (fsSync.existsSync(env.PIP_CONFIG_FILE)) {
       ui.writeVerbose("Safe-chain: Merging user provided PIP_CONFIG_FILE with safe-chain certificate and proxy settings.");
       const userConfig = env.PIP_CONFIG_FILE;
@@ -166,21 +167,19 @@ export async function runPip(command, args) {
 
       // Proxy
       if (typeof parsed.global.proxy !== "undefined") {
-        ui.writeWarning(
-          "Safe-chain: User defined proxy found in PIP_CONFIG_FILE. It will be overwritten in the temporary config.",
-        );
+        ui.writeWarning("Safe-chain: User defined proxy found in PIP_CONFIG_FILE. It will be overwritten in the temporary config.");
       }
       if (proxy) {
         parsed.global.proxy = proxy;
       }
-
+ 
       const updated = ini.stringify(parsed);
 
       // Save to a new temp file to avoid overwriting user's original config
       await fs.writeFile(pipConfigPath, updated, "utf-8");
       env.PIP_CONFIG_FILE = pipConfigPath;
       cleanupConfigPath = pipConfigPath;
-      
+
     } else {
       // The user provided PIP_CONFIG_FILE does not exist on disk
       // PIP will handle this as an error and inform the user

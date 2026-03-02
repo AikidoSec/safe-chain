@@ -386,10 +386,7 @@ describe("npmInterceptor minimum package age", async () => {
       },
     });
 
-    const modifiedBody = await runModifyNpmInfoRequest(
-      packageUrl,
-      originalBody,
-    );
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
     const modifiedJson = JSON.parse(modifiedBody);
 
     // All versions should remain unchanged since lodash is excluded
@@ -449,10 +446,7 @@ describe("npmInterceptor minimum package age", async () => {
       },
     });
 
-    const modifiedBody = await runModifyNpmInfoRequest(
-      packageUrl,
-      originalBody,
-    );
+    const modifiedBody = await runModifyNpmInfoRequest(packageUrl, originalBody);
     const modifiedJson = JSON.parse(modifiedBody);
 
     // All versions should remain for excluded scoped package

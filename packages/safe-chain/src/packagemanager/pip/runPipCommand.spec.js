@@ -24,10 +24,7 @@ describe("runPipCommand environment variable handling", () => {
           // Capture the config file content before the function cleans it up
           if (options.env.PIP_CONFIG_FILE) {
             try {
-              capturedConfigContent = await fs.readFile(
-                options.env.PIP_CONFIG_FILE,
-                "utf-8",
-              );
+              capturedConfigContent = await fs.readFile(options.env.PIP_CONFIG_FILE, "utf-8");
             } catch {
               // Ignore if file doesn't exist or can't be read
             }
@@ -211,7 +208,7 @@ describe("runPipCommand environment variable handling", () => {
       "install",
       "certifi",
       "--index-url",
-      "https://test.pypi.org/simple"
+      "https://test.pypi.org/simple",
     ]);
     assert.strictEqual(res.status, 0);
     // Env vars should be set unconditionally
@@ -424,5 +421,5 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(shouldBypassSafeChain("python", ["-m", "pip3"]), false);
     assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "pip3"]), false);
   });
-  
+
 });
