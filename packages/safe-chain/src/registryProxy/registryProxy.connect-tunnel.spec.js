@@ -14,14 +14,14 @@ const mockIsImdsEndpoint = (host) => {
   ].includes(host);
 };
 
-mock.module("./isImdsEndpoint.js", {
+mock.module("./builtInProxy/isImdsEndpoint.js", {
   namedExports: {
     isImdsEndpoint: mockIsImdsEndpoint,
   },
 });
 
 // Mock getConnectTimeout to speed up tests
-mock.module("./getConnectTimeout.js", {
+mock.module("./builtInProxy/getConnectTimeout.js", {
   namedExports: {
     getConnectTimeout: (host) => {
       // IMDS endpoints: 100ms (real: 3s)
@@ -185,13 +185,13 @@ describe("registryProxy.connectTunnel", () => {
       // Should return 504 Gateway Timeout (not 502 - 504 is for actual timeouts)
       assert.ok(
         responseData.includes("HTTP/1.1 504 Gateway Timeout"),
-        "Should return 504 for timeout"
+        "Should return 504 for timeout",
       );
 
       // Should timeout around 100ms for IMDS endpoints (allow some margin)
       assert.ok(
         duration >= 80 && duration < 200,
-        `IMDS timeout should be ~80-200ms, got ${duration}ms`
+        `IMDS timeout should be ~80-200ms, got ${duration}ms`,
       );
 
       socket.destroy();

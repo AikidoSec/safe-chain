@@ -6,7 +6,7 @@ describe("npmInterceptor minimum package age", async () => {
   let skipMinimumPackageAgeSetting = false;
   let minimumPackageAgeExclusionsSetting = [];
 
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
       getMinimumPackageAgeHours: () => minimumPackageAgeSettings,
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
@@ -15,14 +15,14 @@ describe("npmInterceptor minimum package age", async () => {
     },
   });
 
-  mock.module("../../../scanning/audit/index.js", {
+  mock.module("../../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async () => {
         return false;
       },
     },
   });
-  mock.module("../../../environment/userInteraction.js", {
+  mock.module("../../../../environment/userInteraction.js", {
     namedExports: {
       ui: {
         startProcess: () => {},

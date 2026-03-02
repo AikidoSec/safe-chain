@@ -5,7 +5,7 @@ let lastPackage;
 let malwareResponse = false;
 let customRegistries = [];
 
-mock.module("../../../scanning/audit/index.js", {
+mock.module("../../../../scanning/audit/index.js", {
   namedExports: {
     isMalwarePackage: async (packageName, version) => {
       lastPackage = { packageName, version };
@@ -14,7 +14,7 @@ mock.module("../../../scanning/audit/index.js", {
   },
 });
 
-mock.module("../../../config/settings.js", {
+mock.module("../../../../config/settings.js", {
   namedExports: {
     LOGGING_SILENT: "silent",
     LOGGING_NORMAL: "normal",

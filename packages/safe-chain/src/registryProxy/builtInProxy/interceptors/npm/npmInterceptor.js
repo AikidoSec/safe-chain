@@ -1,8 +1,8 @@
 import {
   getNpmCustomRegistries,
   skipMinimumPackageAge,
-} from "../../../config/settings.js";
-import { isMalwarePackage } from "../../../scanning/audit/index.js";
+} from "../../../../config/settings.js";
+import { isMalwarePackage } from "../../../../scanning/audit/index.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import {
   isPackageInfoUrl,
