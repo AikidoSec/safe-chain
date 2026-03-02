@@ -2,6 +2,7 @@ import { ui } from "../../environment/userInteraction.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { getCombinedCaBundlePath } from "../../registryProxy/certBundle.js";
+import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
 /**
  * Sets CA bundle environment variables used by Python libraries and pipx.
@@ -54,12 +55,6 @@ export async function runPipX(command, args) {
 
     return { status: result.status };
   } catch (/** @type any */ error) {
-    if (error.status) {
-      return { status: error.status };
-    } else {
-      ui.writeError(`Error executing command: ${error.message}`);
-      ui.writeError(`Is '${command}' installed and available on your system?`);
-      return { status: 1 };
-    }
+    return reportCommandExecutionFailure(error, command);
   }
 }

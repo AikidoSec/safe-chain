@@ -9,6 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import ini from "ini";
 import { spawn } from "child_process";
+import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
 /**
  * Checks if this pip invocation should bypass safe-chain and spawn directly.
@@ -203,12 +204,6 @@ export async function runPip(command, args) {
 
     return { status: result.status };
   } catch (/** @type any */ error) {
-    if (error.status) {
-      return { status: error.status };
-    } else {
-      ui.writeError(`Error executing command: ${error.message}`);
-      ui.writeError(`Is '${command}' installed and available on your system?`);
-      return { status: 1 };
-    }
+    return reportCommandExecutionFailure(error, command);
   }
 }
