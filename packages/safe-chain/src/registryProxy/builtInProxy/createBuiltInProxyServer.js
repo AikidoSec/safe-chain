@@ -3,23 +3,24 @@ import { tunnelRequest } from "./tunnelRequestHandler.js";
 import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
 import { ui } from "../../environment/userInteraction.js";
-import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
 import { getCaCertPath } from "./certUtils.js";
 import { readFileSync } from "fs";
+import EventEmitter from "events";
 
 /** *
  * @returns {import("../registryProxy.js").SafeChainProxy} */
 export function createBuiltInProxyServer() {
   const SERVER_STOP_TIMEOUT_MS = 1000;
   /**
-   * @type {{port: number | null, blockedRequests: {packageName: string, version: string, url: string}[]}}
+   * @type {{port: number | null}}
    */
   const state = {
     port: null,
-    blockedRequests: [],
   };
+  /** @type {EventEmitter<import("../registryProxy.js").ProxyServerEvents>} */
+  const emitter = new EventEmitter();
 
   const server = http.createServer(
     // This handles direct HTTP requests (non-CONNECT requests)
@@ -31,14 +32,13 @@ export function createBuiltInProxyServer() {
   // This handles HTTPS requests via the CONNECT method
   server.on("connect", handleConnect);
 
-  return {
+  return Object.assign(emitter, {
     startServer: () => startServer(server),
     stopServer: () => stopServer(server),
-    verifyNoMaliciousPackages,
     hasSuppressedVersions: getHasSuppressedVersions,
     getServerPort: () => state.port,
     getCaCert,
-  };
+  });
 
   /**
    * @param {import("http").Server} server
@@ -102,7 +102,10 @@ export function createBuiltInProxyServer() {
         (
           /** @type {import("./interceptors/interceptorBuilder.js").MalwareBlockedEvent} */ event,
         ) => {
-          onMalwareBlocked(event.packageName, event.version, event.targetUrl);
+          emitter.emit("malwareBlocked", {
+            packageName: event.packageName,
+            packageVersion: event.version
+          });
         },
       );
 
@@ -112,41 +115,6 @@ export function createBuiltInProxyServer() {
       ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
       tunnelRequest(req, clientSocket, head);
     }
-  }
-
-  /**
-   *
-   * @param {string} packageName
-   * @param {string} version
-   * @param {string} url
-   */
-  function onMalwareBlocked(packageName, version, url) {
-    state.blockedRequests.push({ packageName, version, url });
-  }
-
-  function verifyNoMaliciousPackages() {
-    if (state.blockedRequests.length === 0) {
-      // No malicious packages were blocked, so nothing to block
-      return true;
-    }
-
-    ui.emptyLine();
-
-    ui.writeInformation(
-      `Safe-chain: ${chalk.bold(
-        `blocked ${state.blockedRequests.length} malicious package downloads`,
-      )}:`,
-    );
-
-    for (const req of state.blockedRequests) {
-      ui.writeInformation(` - ${req.packageName}@${req.version} (${req.url})`);
-    }
-
-    ui.emptyLine();
-    ui.writeExitWithoutInstallingMaliciousPackages();
-    ui.emptyLine();
-
-    return false;
   }
 
   function getCaCert() {

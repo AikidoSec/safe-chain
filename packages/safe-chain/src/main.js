@@ -20,8 +20,12 @@ export async function main(args) {
   process.on("SIGINT", handleProcessTermination);
   process.on("SIGTERM", handleProcessTermination);
 
+  /** @type {import("./registryProxy/registryProxy.js").MalwareBlockedEvent[]} */
+  let malwareBlockedEvents = [];
+
   const proxy = createSafeChainProxy();
   await proxy.startServer();
+  proxy.addListener("malwareBlocked", (ev) => malwareBlockedEvents.push(ev));
 
   // Global error handlers to log unhandled errors
   process.on("uncaughtException", (error) => {
@@ -64,7 +68,8 @@ export async function main(args) {
     // Write all buffered logs
     ui.writeBufferedLogsAndStopBuffering();
 
-    if (!proxy.verifyNoMaliciousPackages()) {
+    if (malwareBlockedEvents.length > 0) {
+      printBlockedMalware(malwareBlockedEvents);
       return 1;
     }
 
@@ -116,4 +121,26 @@ function isSafeChainVerify(args) {
     ui.writeInformation("OK: Safe-chain works!");
     return true;
   }
+}
+
+/**
+ * 
+ * @param {import("./registryProxy/registryProxy.js").MalwareBlockedEvent[]} malwareBlockedEvents 
+ */
+function printBlockedMalware(malwareBlockedEvents) {
+  ui.emptyLine();
+
+  ui.writeInformation(
+    `Safe-chain: ${chalk.bold(
+      `blocked ${malwareBlockedEvents.length} malicious package downloads`,
+    )}:`,
+  );
+
+  for (const ev of malwareBlockedEvents) {
+    ui.writeInformation(` - ${ev.packageName}@${ev.packageVersion}`);
+  }
+
+  ui.emptyLine();
+  ui.writeExitWithoutInstallingMaliciousPackages();
+  ui.emptyLine();
 }
