@@ -43,11 +43,15 @@ export function getReportingServer() {
   }
 
   async function start() {
-    state = await startServer(handleRequest);
+    state = await startReportingServer(handleRequest);
   }
 
+  /**
+   * 
+   * @returns {Promise<void>}
+   */
   function stop() {
-    return /** @type {Promise<void>} */ (new Promise((resolve) => {
+    return new Promise((resolve) => {
       if (!state.server) {
         resolve();
         return;
@@ -57,7 +61,7 @@ export function getReportingServer() {
         clearTimeout(timeout);
         resolve();
       });
-    }));
+    });
   }
 
   function getAddress() {
@@ -85,7 +89,7 @@ function parseBlockEventFromRequest(req) {
  * @param {http.RequestListener} requestListener
  * @returns {Promise<{server: http.Server, address: string}>}
  */
-function startServer(requestListener) {
+function startReportingServer(requestListener) {
   const server = http.createServer(requestListener);
 
   return new Promise((resolve, reject) => {
