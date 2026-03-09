@@ -32,9 +32,9 @@ export function getReportingServer() {
   let state = {server: null, address: ""};
 
   /** @param {http.IncomingMessage} req @param {http.ServerResponse} res */
-  function handleRequest(req, res) {
+  async function handleRequest(req, res) {
     if (req.method === "POST" && req.url?.startsWith("/events/block")) {
-      parseBlockEventFromRequest(req).then((blockEvent) => {
+      await parseBlockEventFromRequest(req).then((blockEvent) => {
         emitter.emit("blockReceived", blockEvent);
       });
     }
