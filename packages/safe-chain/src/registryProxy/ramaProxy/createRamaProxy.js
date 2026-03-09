@@ -90,7 +90,7 @@ export function createRamaProxy(ramaPath) {
  * @returns {Promise<RamaProxyInstance>}
  */
 async function startRama(ramaPath, dataFolder, reportingUrl) {
-  const startTime = Date.now();
+  const startTime = Date.now();  
   const args = [
     "--secrets",
     "memory",
@@ -99,12 +99,8 @@ async function startRama(ramaPath, dataFolder, reportingUrl) {
     "--reporting-endpoint",
     reportingUrl,
   ];
-  const process =
-    getLoggingLevel() === LOGGING_VERBOSE
-      ? spawn(ramaPath, args, {
-          stdio: "inherit",
-        })
-      : spawn(ramaPath, args);
+  const stdio = getLoggingLevel() === LOGGING_VERBOSE ? "inherit" : "pipe";
+  const process = spawn(ramaPath, args, { stdio: stdio });
 
   // wait for the proxy process to start (poll for proxy.addr.txt file)
   const proxyAddrPath = join(dataFolder, "proxy.addr.txt");
