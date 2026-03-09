@@ -1,5 +1,5 @@
-import { getPipCustomRegistries } from "../../config/settings.js";
-import { isMalwarePackage } from "../../scanning/audit/index.js";
+import { getPipCustomRegistries } from "../../../config/settings.js";
+import { isMalwarePackage } from "../../../scanning/audit/index.js";
 import { interceptRequests } from "./interceptorBuilder.js";
 
 const knownPipRegistries = [

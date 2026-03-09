@@ -1,5 +1,8 @@
-import { getMinimumPackageAgeHours, getNpmMinimumPackageAgeExclusions } from "../../../config/settings.js";
-import { ui } from "../../../environment/userInteraction.js";
+import {
+  getMinimumPackageAgeHours,
+  getNpmMinimumPackageAgeExclusions,
+} from "../../../../config/settings.js";
+import { ui } from "../../../../environment/userInteraction.js";
 import { getHeaderValueAsString } from "../../http-utils.js";
 
 const state = {
