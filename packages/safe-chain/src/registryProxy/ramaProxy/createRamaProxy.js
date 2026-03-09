@@ -6,6 +6,8 @@ import { dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { ui } from "../../environment/userInteraction.js";
 import { getLoggingLevel, LOGGING_VERBOSE } from "../../config/settings.js";
+import { getReportingServer } from "./reportingServer.js";
+import EventEmitter from "node:events";
 
 const readFilePromise = promisify(readFile);
 
@@ -37,23 +39,40 @@ export function getRamaPath() {
  * @returns {import("../registryProxy.js").SafeChainProxy} */
 export function createRamaProxy(ramaPath) {
   const tempDir = mkdtempSync(join(tmpdir(), "safe-chain-proxy-"));
+  const reportingServer = getReportingServer();
+  /** @type {EventEmitter<import("../registryProxy.js").ProxyServerEvents>} */
+  const emitter = new EventEmitter();
   /** @type {RamaProxyInstance | null} */
   let ramaInstance = null;
 
-  return {
+  return Object.assign(emitter, {
     startServer: async () => {
-      ramaInstance = await startRama(ramaPath, tempDir);
+      await reportingServer.start();
+      reportingServer.addListener("blockReceived", (ev) =>
+        emitter.emit("malwareBlocked", {
+          packageName: ev.artifact.identifier,
+          packageVersion: ev.artifact.version,
+        }),
+      );
+      ui.writeVerbose(
+        `Started reporting server at ${reportingServer.getAddress()}`,
+      );
+      ramaInstance = await startRama(
+        ramaPath,
+        tempDir,
+        reportingServer.getAddress(),
+      );
       ui.writeVerbose(
         `Proxy started at address "${ramaInstance.proxyAddress}"`,
       );
     },
     stopServer: async () => {
+      await reportingServer.stop();
       if (ramaInstance) {
         ramaInstance.process.kill();
       }
       return Promise.resolve();
     },
-    verifyNoMaliciousPackages: () => true,
     hasSuppressedVersions: () => false,
     getServerPort: () => {
       if (!ramaInstance) return null;
@@ -61,17 +80,25 @@ export function createRamaProxy(ramaPath) {
       return url.port ? parseInt(url.port, 10) : null;
     },
     getCaCert: () => ramaInstance?.caCert ?? null,
-  };
+  });
 }
 
 /**
  * @param {string} ramaPath
  * @param {string} dataFolder
+ * @param {string} reportingUrl
  * @returns {Promise<RamaProxyInstance>}
  */
-async function startRama(ramaPath, dataFolder) {
-  const startTime = Date.now();
-  const args = ["--secrets", "memory", "--data", dataFolder];
+async function startRama(ramaPath, dataFolder, reportingUrl) {
+  const startTime = Date.now();  
+  const args = [
+    "--secrets",
+    "memory",
+    "--data",
+    dataFolder,
+    "--reporting-endpoint",
+    reportingUrl,
+  ];
   const stdio = getLoggingLevel() === LOGGING_VERBOSE ? "inherit" : "pipe";
   const process = spawn(ramaPath, args, { stdio: stdio });
 
