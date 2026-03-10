@@ -4,10 +4,10 @@ import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
 import { ui } from "../../environment/userInteraction.js";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
-import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
 import { getCaCertPath } from "./certUtils.js";
 import { readFileSync } from "fs";
 import EventEmitter from "events";
+import { modifyResponseEventEmitter } from "./interceptors/npm/modifyNpmInfo.js";
 
 /** *
  * @returns {import("../registryProxy.js").SafeChainProxy} */
@@ -22,6 +22,10 @@ export function createBuiltInProxyServer() {
   /** @type {EventEmitter<import("../registryProxy.js").ProxyServerEvents>} */
   const emitter = new EventEmitter();
 
+  modifyResponseEventEmitter.addListener("versionsRemoved", (ev) => {
+    emitter.emit("minPackageAgeVersionsSuppressed", ev);
+  });
+
   const server = http.createServer(
     // This handles direct HTTP requests (non-CONNECT requests)
     // This is normally http-only traffic, but we also handle
@@ -35,7 +39,6 @@ export function createBuiltInProxyServer() {
   return Object.assign(emitter, {
     startServer: () => startServer(server),
     stopServer: () => stopServer(server),
-    hasSuppressedVersions: getHasSuppressedVersions,
     getServerPort: () => state.port,
     getCaCert,
   });
@@ -104,7 +107,7 @@ export function createBuiltInProxyServer() {
         ) => {
           emitter.emit("malwareBlocked", {
             packageName: event.packageName,
-            packageVersion: event.version
+            packageVersion: event.version,
           });
         },
       );
