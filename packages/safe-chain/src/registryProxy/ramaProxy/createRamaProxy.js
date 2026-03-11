@@ -57,7 +57,7 @@ export function createRamaProxy(ramaPath) {
       reportingServer.addListener("minPackageAgeSuppressionReceived", (ev) =>
         emitter.emit("minPackageAgeVersionsSuppressed", {
           packageName: ev.artifact.identifier,
-          packageVersions: ev.artifact.suppressed_versions,
+          packageVersions: ev.suppressed_versions,
         })
       )
       ui.writeVerbose(

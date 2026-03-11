@@ -12,7 +12,8 @@ const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
  * @typedef {Object} MinPackageAgeEvent
  * @property {number} ts_ms
- * @property {{ product: string, identifier: string, suppressed_versions: string[] }} artifact
+ * @property {{ product: string, identifier: string }} artifact
+ * @property {string[]} suppressed_versions
  */
 
 /**
