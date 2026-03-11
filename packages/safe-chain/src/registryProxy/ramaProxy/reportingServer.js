@@ -10,7 +10,14 @@ const SERVER_STOP_TIMEOUT_MS = 1000;
  */
 
 /**
- * @typedef {{ blockReceived: [BlockEvent] }} ReportingServerEvents
+ * @typedef {Object} MinPackageAgeEvent
+ * @property {number} ts_ms
+ * @property {{ product: string, identifier: string }} artifact
+ * @property {string[]} suppressed_versions
+ */
+
+/**
+ * @typedef {{ blockReceived: [BlockEvent], minPackageAgeSuppressionReceived: [MinPackageAgeEvent] }} ReportingServerEvents
  */
 
 /**
@@ -38,16 +45,25 @@ export function getReportingServer() {
         emitter.emit("blockReceived", blockEvent);
       });
     }
+    else if (req.method === "POST" && req.url?.startsWith("/events/min-package-age")) {
+      await parseMinPackageAgeEventFromRequest(req).then((minPackageAgeEvent) => {
+        emitter.emit("minPackageAgeSuppressionReceived", minPackageAgeEvent);
+      });
+    }
     res.writeHead(200);
     res.end();
   }
 
   async function start() {
-    state = await startServer(handleRequest);
+    state = await startReportingServer(handleRequest);
   }
 
+  /**
+   * 
+   * @returns {Promise<void>}
+   */
   function stop() {
-    return /** @type {Promise<void>} */ (new Promise((resolve) => {
+    return new Promise((resolve) => {
       if (!state.server) {
         resolve();
         return;
@@ -57,7 +73,7 @@ export function getReportingServer() {
         clearTimeout(timeout);
         resolve();
       });
-    }));
+    });
   }
 
   function getAddress() {
@@ -71,12 +87,30 @@ export function getReportingServer() {
  * @param {http.IncomingMessage} req
  * @returns {Promise<BlockEvent>}
  */
-function parseBlockEventFromRequest(req) {
+async function parseBlockEventFromRequest(req) {
+  const requestData = await getRequestDataAsString(req);
+  return JSON.parse(requestData);
+}
+
+/**
+ * @param {http.IncomingMessage} req
+ * @returns {Promise<MinPackageAgeEvent>}
+ */
+async function parseMinPackageAgeEventFromRequest(req) {
+  const requestData = await getRequestDataAsString(req);
+  return JSON.parse(requestData);
+}
+
+/**
+ * @param {http.IncomingMessage} req 
+ * @returns {Promise<string>}
+ */
+function getRequestDataAsString(req) {
   return new Promise((resolve, reject) => {
     /** @type {Buffer[]} */
     const chunks = [];
     req.on("data", (chunk) => chunks.push(chunk));
-    req.on("end", () => resolve(JSON.parse(Buffer.concat(chunks).toString())));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString()));
     req.on("error", reject);
   });
 }
@@ -85,7 +119,7 @@ function parseBlockEventFromRequest(req) {
  * @param {http.RequestListener} requestListener
  * @returns {Promise<{server: http.Server, address: string}>}
  */
-function startServer(requestListener) {
+function startReportingServer(requestListener) {
   const server = http.createServer(requestListener);
 
   return new Promise((resolve, reject) => {

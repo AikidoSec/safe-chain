@@ -23,9 +23,15 @@ export async function main(args) {
   /** @type {import("./registryProxy/registryProxy.js").MalwareBlockedEvent[]} */
   let malwareBlockedEvents = [];
 
+  /** @type {import("./registryProxy/registryProxy.js").MinPackageAgeSuppressionEvent[]} */
+  let suppressedVersionEvents = [];
+
   const proxy = createSafeChainProxy();
   await proxy.startServer();
   proxy.addListener("malwareBlocked", (ev) => malwareBlockedEvents.push(ev));
+  proxy.addListener("minPackageAgeVersionsSuppressed", (ev) =>
+    suppressedVersionEvents.push(ev),
+  );
 
   // Global error handlers to log unhandled errors
   process.on("uncaughtException", (error) => {
@@ -82,17 +88,8 @@ export async function main(args) {
       );
     }
 
-    if (proxy.hasSuppressedVersions()) {
-      ui.writeInformation(
-        `${chalk.yellow(
-          "ℹ",
-        )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`,
-      );
-      ui.writeInformation(
-        `  To disable this check, use: ${chalk.cyan(
-          "--safe-chain-skip-minimum-package-age",
-        )}`,
-      );
+    if (suppressedVersionEvents.length > 0) {
+      printSuppressedVersions(suppressedVersionEvents);
     }
 
     // Returning the exit code back to the caller allows the promise
@@ -124,8 +121,8 @@ function isSafeChainVerify(args) {
 }
 
 /**
- * 
- * @param {import("./registryProxy/registryProxy.js").MalwareBlockedEvent[]} malwareBlockedEvents 
+ *
+ * @param {import("./registryProxy/registryProxy.js").MalwareBlockedEvent[]} malwareBlockedEvents
  */
 function printBlockedMalware(malwareBlockedEvents) {
   ui.emptyLine();
@@ -143,4 +140,26 @@ function printBlockedMalware(malwareBlockedEvents) {
   ui.emptyLine();
   ui.writeExitWithoutInstallingMaliciousPackages();
   ui.emptyLine();
+}
+
+/**
+ *
+ * @param {import("./registryProxy/registryProxy.js").MinPackageAgeSuppressionEvent[]} minPackageAgeSuppressionEvents
+ */
+function printSuppressedVersions(minPackageAgeSuppressionEvents) {
+  ui.writeVerbose(
+    `${chalk.yellow(
+      "ℹ",
+    )} Safe-chain: Suppressed package versions due to minimum age requirement:`,
+  );
+
+  for (const ev of minPackageAgeSuppressionEvents) {
+    ui.writeVerbose(`   - ${ev.packageName} (${ev.packageVersions.join(", ")})`);
+  }
+
+  ui.writeVerbose(
+    `  To disable this check, use: ${chalk.cyan(
+      "--safe-chain-skip-minimum-package-age",
+    )}`,
+  );
 }
