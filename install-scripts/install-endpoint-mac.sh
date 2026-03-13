@@ -95,16 +95,12 @@ main() {
 
     # Check if we're running as root
     if [ "$(id -u)" -ne 0 ]; then
-        error "Root privileges required. Please run with sudo: sudo sh $0 --token <TOKEN>"
+        error "Root privileges required. Please re-run with sudo, e.g.: curl -fsSL <url> | sudo sh -s -- --token <TOKEN>"
     fi
 
-    # Prompt for token if not provided via CLI
+    # Check if token is provided via command argument
     if [ -z "$TOKEN" ]; then
-        printf "Enter your Aikido endpoint token: "
-        read -r TOKEN
-        if [ -z "$TOKEN" ]; then
-            error "Token is required. Pass it with --token <TOKEN> or enter it when prompted."
-        fi
+        error "Token is required. Pass it with --token <TOKEN> or enter it when prompted."
     fi
 
     # 2. Download and verify checksum
