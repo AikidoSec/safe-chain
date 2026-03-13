@@ -103,6 +103,13 @@ main() {
         error "Token is required. Pass it with --token <TOKEN> or enter it when prompted."
     fi
 
+    # Validate token to prevent injection
+    case "$TOKEN" in
+        *[\"\'\;\`\$\ ]*)
+            error "Invalid token format. Token must not contain quotes, semicolons, backticks, dollar signs, or whitespace."
+            ;;
+    esac
+
     # 2. Download and verify checksum
     PKG_FILE=$(mktemp /tmp/SafeChainUltimate.XXXXXX.pkg)
     trap cleanup EXIT

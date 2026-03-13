@@ -47,6 +47,11 @@ function Install-Endpoint {
         }
     }
 
+    # Validate token to prevent command/property injection via msiexec
+    if ($token -match '[";`$\s]') {
+        Write-Error-Custom "Invalid token format. Token must not contain quotes, semicolons, backticks, dollar signs, or whitespace."
+    }
+
     # 2. Download the .msi
     $msiFile = Join-Path $env:TEMP "SafeChainUltimate-$([System.Guid]::NewGuid().ToString('N')).msi"
 
