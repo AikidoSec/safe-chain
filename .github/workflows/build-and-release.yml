@@ -77,6 +77,10 @@ jobs:
           sed "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
           cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
           cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
+          cp install-scripts/install-endpoint-mac.sh release-artifacts/install-endpoint-mac.sh
+          cp install-scripts/install-endpoint-windows.ps1 release-artifacts/install-endpoint-windows.ps1
+          cp install-scripts/uninstall-endpoint-mac.sh release-artifacts/uninstall-endpoint-mac.sh
+          cp install-scripts/uninstall-endpoint-windows.ps1 release-artifacts/uninstall-endpoint-windows.ps1
 
       - name: Upload binaries to existing GitHub Release
         env:
@@ -94,7 +98,11 @@ jobs:
             release-artifacts/install-safe-chain.sh \
             release-artifacts/install-safe-chain.ps1 \
             release-artifacts/uninstall-safe-chain.sh \
-            release-artifacts/uninstall-safe-chain.ps1
+            release-artifacts/uninstall-safe-chain.ps1 \
+            release-artifacts/install-endpoint-mac.sh \
+            release-artifacts/install-endpoint-windows.ps1 \
+            release-artifacts/uninstall-endpoint-mac.sh \
+            release-artifacts/uninstall-endpoint-windows.ps1
 
   publish-npm:
     name: Publish to npm
