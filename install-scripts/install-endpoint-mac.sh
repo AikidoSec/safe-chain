@@ -7,8 +7,8 @@
 set -e  # Exit on error
 
 # Configuration
-INSTALL_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.2.2/SafeChainUltimate-darwin-arm64.pkg"
-DOWNLOAD_SHA256="779edc4d2fa367582bf9af6be30a0533fcd2a3490d921f834129719eb4f02f42"
+INSTALL_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.2.5/SafeChainUltimate.pkg"
+DOWNLOAD_SHA256="abc2b0e6c6a4ca33cd893eeb16744f9f2da90013fb1abac301f5c00c2ad8bc30"
 TOKEN_FILE="/tmp/aikido_endpoint_token.txt"
 
 # Colors for output
