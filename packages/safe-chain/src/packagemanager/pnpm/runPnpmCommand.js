@@ -1,6 +1,6 @@
-import { ui } from "../../environment/userInteraction.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { safeSpawn } from "../../utils/safeSpawn.js";
+import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
 /**
  * @param {string[]} args
@@ -26,11 +26,7 @@ export async function runPnpmCommand(args, toolName = "pnpm") {
 
     return { status: result.status };
   } catch (/** @type any */ error) {
-    if (error.status) {
-      return { status: error.status };
-    } else {
-      ui.writeError("Error executing command:", error.message);
-      return { status: 1 };
-    }
+    const target = toolName === "pnpm" ? "pnpm" : "pnpx";
+    return reportCommandExecutionFailure(error, target);
   }
 }
