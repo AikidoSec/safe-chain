@@ -67,6 +67,12 @@ export const knownAikidoTools = [
     internalPackageManagerName: "uv",
   },
   {
+    tool: "uvx",
+    aikidoCommand: "aikido-uvx",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "uvx",
+  },
+  {
     tool: "pip",
     aikidoCommand: "aikido-pip",
     ecoSystem: ECOSYSTEM_PY,

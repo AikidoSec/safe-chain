@@ -52,6 +52,10 @@ function uv {
     Invoke-WrappedCommand "uv" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
+function uvx {
+    Invoke-WrappedCommand "uvx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
+}
+
 function poetry {
     Invoke-WrappedCommand "poetry" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
