@@ -70,7 +70,7 @@ export function getCombinedCaBundlePath() {
     const safeChainPem = fs.readFileSync(safeChainPath, "utf8");
     if (isParsable(safeChainPem)) parts.push(safeChainPem.trim());
   } catch {
-    // Ignore if Safe Chain CA.  is not available
+    // Ignore if Safe Chain CA is not available
   }
 
   // 2) certifi (Mozilla CA bundle for all public HTTPS)
