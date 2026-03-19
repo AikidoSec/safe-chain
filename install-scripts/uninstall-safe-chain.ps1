@@ -5,7 +5,6 @@
 # Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
 $HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
 $DotSafeChain = Join-Path $HomeDir ".safe-chain"
-$DotAikido = Join-Path $HomeDir ".aikido"
 $InstallDir = Join-Path $DotSafeChain "bin"
 
 # Helper functions
@@ -138,21 +137,6 @@ function Uninstall-SafeChain {
     }
     else {
         Write-Info "Installation directory $DotSafeChain does not exist. Nothing to remove."
-    }
-
-    # Remove .aikido directory
-    if (Test-Path $DotAikido) {
-        Write-Info "Removing installation directory: $DotAikido"
-        try {
-            Remove-Item -Path $DotAikido -Recurse -Force
-            Write-Info "Successfully removed installation directory"
-        }
-        catch {
-            Write-Error-Custom "Failed to remove $DotAikido : $_"
-        }
-    }
-    else {
-        Write-Info "Installation directory $DotAikido does not exist. Nothing to remove."
     }
 
     Write-Info "safe-chain has been uninstalled successfully!"

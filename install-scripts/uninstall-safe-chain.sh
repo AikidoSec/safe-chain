@@ -8,7 +8,6 @@ set -e  # Exit on error
 
 # Configuration
 DOT_SAFE_CHAIN="${HOME}/.safe-chain"
-DOT_AIKIDO="${HOME}/.aikido"
 
 # Colors for output
 RED='\033[0;31m'
@@ -163,14 +162,6 @@ main() {
         rm -rf "$DOT_SAFE_CHAIN" || error "Failed to remove $DOT_SAFE_CHAIN"
     else
         info "Installation directory $DOT_SAFE_CHAIN does not exist. Nothing to remove."
-    fi
-    
-    # Remove install dir recursively if it exists
-    if [ -d "$DOT_AIKIDO" ]; then
-        info "Removing installation directory $DOT_AIKIDO"
-        rm -rf "$DOT_AIKIDO" || error "Failed to remove $DOT_AIKIDO"
-    else
-        info "Installation directory $DOT_AIKIDO does not exist. Nothing to remove."
     fi
 }
 
