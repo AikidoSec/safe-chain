@@ -202,7 +202,7 @@ You can set the minimum package age through multiple sources (in order of priori
    npm install express
    ```
 
-3. **Config File** (`~/.aikido/config.json`):
+3. **Config File** (`~/.safe-chain/config.json`):
 
    ```json
    {
@@ -246,7 +246,7 @@ You can set custom registries through environment variable or config file. Both 
    export SAFE_CHAIN_PIP_CUSTOM_REGISTRIES="pip.company.com,registry.internal.net"
    ```
 
-2. **Config File** (`~/.aikido/config.json`):
+2. **Config File** (`~/.safe-chain/config.json`):
 
    ```json
    {

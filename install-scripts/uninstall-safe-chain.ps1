@@ -4,7 +4,8 @@
 
 # Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
 $HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
-$InstallDir = Join-Path $HomeDir ".safe-chain/bin"
+$DotSafeChain = Join-Path $HomeDir ".safe-chain"
+$InstallDir = Join-Path $DotSafeChain "bin"
 
 # Helper functions
 function Write-Info {
@@ -123,34 +124,19 @@ function Uninstall-SafeChain {
     Remove-NpmInstallation
     Remove-VoltaInstallation
 
-    # Remove installation directory
-    if (Test-Path $InstallDir) {
-        Write-Info "Removing installation directory: $InstallDir"
+    # Remove .safe-chain directory
+    if (Test-Path $DotSafeChain) {
+        Write-Info "Removing installation directory: $DotSafeChain"
         try {
-            Remove-Item -Path $InstallDir -Recurse -Force
+            Remove-Item -Path $DotSafeChain -Recurse -Force
             Write-Info "Successfully removed installation directory"
         }
         catch {
-            Write-Error-Custom "Failed to remove $InstallDir : $_"
+            Write-Error-Custom "Failed to remove $DotSafeChain : $_"
         }
     }
     else {
-        Write-Info "Installation directory $InstallDir does not exist. Nothing to remove."
-    }
-
-    # Also try to remove the parent .safe-chain directory if it's empty
-    $parentDir = Split-Path $InstallDir -Parent
-    if (Test-Path $parentDir) {
-        $items = Get-ChildItem -Path $parentDir -Force
-        if ($items.Count -eq 0) {
-            Write-Info "Removing empty parent directory: $parentDir"
-            try {
-                Remove-Item -Path $parentDir -Force
-            }
-            catch {
-                Write-Warn "Could not remove empty parent directory: $_"
-            }
-        }
+        Write-Info "Installation directory $DotSafeChain does not exist. Nothing to remove."
     }
 
     Write-Info "safe-chain has been uninstalled successfully!"
