@@ -2,7 +2,7 @@ import * as http from "http";
 import { tunnelRequest } from "./tunnelRequestHandler.js";
 import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
-import { getCombinedCaBundlePath } from "./certBundle.js";
+import { getCombinedCaBundlePath, cleanupCertBundle } from "./certBundle.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
@@ -115,12 +115,16 @@ function stopServer(server) {
   return new Promise((resolve) => {
     try {
       server.close(() => {
+        cleanupCertBundle();
         resolve();
       });
     } catch {
       resolve();
     }
-    setTimeout(() => resolve(), SERVER_STOP_TIMEOUT_MS);
+    setTimeout(() => {
+      cleanupCertBundle();
+      resolve();
+    }, SERVER_STOP_TIMEOUT_MS);
   });
 }
 
