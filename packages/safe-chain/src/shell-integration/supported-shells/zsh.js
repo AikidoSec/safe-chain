@@ -31,7 +31,7 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain zsh initialization script (~/.aikido/scripts/init-posix.sh)
+  // Removes the line that sources the safe-chain zsh initialization script (~/.safe-chain/scripts/init-posix.sh)
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+~\/\.safe-chain\/scripts\/init-posix\.sh/,

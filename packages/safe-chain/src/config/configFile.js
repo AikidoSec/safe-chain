@@ -252,7 +252,30 @@ function getDatabaseVersionPath() {
  * @returns {string}
  */
 function getConfigFilePath() {
-  return path.join(getAikidoDirectory(), "config.json");
+  const primaryPath = path.join(getSafeChainDirectory(), "config.json");
+  if (fs.existsSync(primaryPath)) {
+    return primaryPath;
+  }
+
+  const legacyPath = path.join(getAikidoDirectory(), "config.json");
+  if (fs.existsSync(legacyPath)) {
+    return legacyPath;
+  }
+
+  return primaryPath;
+}
+
+/**
+ * @returns {string}
+ */
+function getSafeChainDirectory() {
+  const homeDir = os.homedir();
+  const safeChainDir = path.join(homeDir, ".safe-chain");
+
+  if (!fs.existsSync(safeChainDir)) {
+    fs.mkdirSync(safeChainDir, { recursive: true });
+  }
+  return safeChainDir;
 }
 
 /**
