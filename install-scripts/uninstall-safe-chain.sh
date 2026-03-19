@@ -7,7 +7,8 @@
 set -e  # Exit on error
 
 # Configuration
-INSTALL_DIR="${HOME}/.safe-chain/bin"
+DOT_SAFE_CHAIN="${HOME}/.safe-chain"
+DOT_AIKIDO="${HOME}/.aikido"
 
 # Colors for output
 RED='\033[0;31m'
@@ -139,7 +140,7 @@ remove_nvm_installation() {
 
 # Main uninstallation
 main() {
-    SAFE_CHAIN_LOCATION="$INSTALL_DIR/safe-chain"
+    SAFE_CHAIN_LOCATION="$DOT_SAFE_CHAIN/bin/safe-chain"
 
     if [ -x "$SAFE_CHAIN_LOCATION" ]; then
         info "Running safe-chain teardown..."
@@ -157,11 +158,19 @@ main() {
     remove_nvm_installation
 
     # Remove install dir recursively if it exists
-    if [ -d "$INSTALL_DIR" ]; then
-        info "Removing installation directory $INSTALL_DIR"
-        rm -rf "$INSTALL_DIR" || error "Failed to remove $INSTALL_DIR"
+    if [ -d "$DOT_SAFE_CHAIN" ]; then
+        info "Removing installation directory $DOT_SAFE_CHAIN"
+        rm -rf "$DOT_SAFE_CHAIN" || error "Failed to remove $DOT_SAFE_CHAIN"
     else
-        info "Installation directory $INSTALL_DIR does not exist. Nothing to remove."
+        info "Installation directory $DOT_SAFE_CHAIN does not exist. Nothing to remove."
+    fi
+    
+    # Remove install dir recursively if it exists
+    if [ -d "$DOT_AIKIDO" ]; then
+        info "Removing installation directory $DOT_AIKIDO"
+        rm -rf "$DOT_AIKIDO" || error "Failed to remove $DOT_AIKIDO"
+    else
+        info "Installation directory $DOT_AIKIDO does not exist. Nothing to remove."
     fi
 }
 
