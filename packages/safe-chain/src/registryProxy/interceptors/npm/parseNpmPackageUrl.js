@@ -5,12 +5,16 @@
  */
 export function parseNpmPackageUrl(url, registry) {
   let packageName, version;
-  if (!registry || !url.endsWith(".tgz")) {
+  const urlWithoutParams = url.split("?")[0].split("#")[0];
+
+  if (!registry || !urlWithoutParams.endsWith(".tgz")) {
     return { packageName, version };
   }
 
-  const registryIndex = url.indexOf(registry);
-  const afterRegistry = url.substring(registryIndex + registry.length + 1); // +1 to skip the slash
+  const registryIndex = urlWithoutParams.indexOf(registry);
+  const afterRegistry = urlWithoutParams.substring(
+    registryIndex + registry.length + 1
+  ); // +1 to skip the slash
 
   const separatorIndex = afterRegistry.indexOf("/-/");
   if (separatorIndex === -1) {

@@ -85,6 +85,10 @@ describe("newPackagesDatabase", async () => {
     return module.openNewPackagesDatabase();
   }
 
+  async function loadNewPackagesDatabaseModule() {
+    return import(`./newPackagesDatabase.js?test_case=${importCounter++}`);
+  }
+
   function hoursAgo(hours) {
     return Math.floor((Date.now() - hours * 3600 * 1000) / 1000);
   }
@@ -225,6 +229,23 @@ describe("newPackagesDatabase", async () => {
       assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), true);
       assert.strictEqual(writeWarningCalls.length, 1);
       assert.ok(writeWarningCalls[0].includes("could not be cached"));
+    });
+
+    it("fails open and only warns once when the new packages list cannot be loaded", async () => {
+      fetchListError = new Error("feed unavailable");
+
+      const module = await loadNewPackagesDatabaseModule();
+      const db1 = await module.openNewPackagesDatabase();
+      const db2 = await module.openNewPackagesDatabase();
+
+      assert.strictEqual(db1.isNewlyReleasedPackage("foo", "1.0.0"), false);
+      assert.strictEqual(db2.isNewlyReleasedPackage("foo", "1.0.0"), false);
+      assert.strictEqual(writeWarningCalls.length, 1);
+      assert.ok(
+        writeWarningCalls[0].includes(
+          "Continuing without tarball minimum age fallback"
+        )
+      );
     });
   });
 });

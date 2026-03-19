@@ -68,6 +68,10 @@ export async function main(args) {
       return 1;
     }
 
+    if (!proxy.verifyNoMinimumAgeBlockedRequests()) {
+      return 1;
+    }
+
     const auditStats = getAuditStats();
     if (auditStats.totalPackages > 0) {
       ui.writeVerbose(

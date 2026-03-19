@@ -20,6 +20,7 @@ import {
 
 /** @type {NewPackagesDatabase | null} */
 let cachedNewPackagesDatabase = null;
+let hasWarnedAboutUnavailableNewPackagesDatabase = false;
 
 /**
  * Returns the source identifier used in the feed for the current ecosystem.
@@ -42,7 +43,22 @@ export async function openNewPackagesDatabase() {
     return cachedNewPackagesDatabase;
   }
 
-  const newPackagesList = await getNewPackagesList();
+  /** @type {import("../api/aikido.js").NewPackageEntry[]} */
+  let newPackagesList;
+
+  try {
+    newPackagesList = await getNewPackagesList();
+  } catch (/** @type {any} */ error) {
+    if (!hasWarnedAboutUnavailableNewPackagesDatabase) {
+      ui.writeWarning(
+        `Failed to load the new packages list. Continuing without tarball minimum age fallback. ${error.message}`
+      );
+      hasWarnedAboutUnavailableNewPackagesDatabase = true;
+    }
+
+    cachedNewPackagesDatabase = { isNewlyReleasedPackage: () => false };
+    return cachedNewPackagesDatabase;
+  }
 
   /**
    * @param {string} name

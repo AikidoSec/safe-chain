@@ -195,7 +195,7 @@ export function getHasSuppressedVersions() {
  * @param {string} pattern
  * @returns {boolean}
  */
-function matchesExclusionPattern(packageName, pattern) {
+export function matchesExclusionPattern(packageName, pattern) {
   if (pattern.endsWith("/*")) {
     return packageName.startsWith(pattern.slice(0, -1));
   }

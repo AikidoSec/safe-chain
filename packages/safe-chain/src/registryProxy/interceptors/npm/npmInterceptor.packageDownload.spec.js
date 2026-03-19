@@ -1,9 +1,11 @@
-import { describe, it, mock } from "node:test";
+import { describe, it, mock, beforeEach } from "node:test";
 import assert from "node:assert";
 
 let lastPackage;
 let malwareResponse = false;
 let customRegistries = [];
+let newlyReleasedPackages = new Set();
+let skipMinimumPackageAgeSetting = false;
 
 mock.module("../../../scanning/audit/index.js", {
   namedExports: {
@@ -27,12 +29,28 @@ mock.module("../../../config/settings.js", {
     getMinimumPackageAgeHours: () => 24,
     getNpmCustomRegistries: () => customRegistries,
     getNpmMinimumPackageAgeExclusions: () => [],
-    skipMinimumPackageAge: () => false,
+    skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
+  },
+});
+mock.module("../../../scanning/newPackagesDatabase.js", {
+  namedExports: {
+    openNewPackagesDatabase: async () => ({
+      isNewlyReleasedPackage: (name, version) =>
+        newlyReleasedPackages.has(`${name}@${version}`),
+    }),
   },
 });
 
 describe("npmInterceptor", async () => {
   const { npmInterceptorForUrl } = await import("./npmInterceptor.js");
+
+  beforeEach(() => {
+    lastPackage = undefined;
+    malwareResponse = false;
+    customRegistries = [];
+    newlyReleasedPackages = new Set();
+    skipMinimumPackageAgeSetting = false;
+  });
 
   const parserCases = [
     // Regular packages
@@ -177,6 +195,36 @@ describe("npmInterceptor", async () => {
       "Forbidden - blocked by safe-chain",
       "Block response should have correct status message"
     );
+  });
+
+  it("should block direct tarball downloads for newly released packages", async () => {
+    const url =
+      "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz?integrity=sha512-abc123";
+    malwareResponse = false;
+    skipMinimumPackageAgeSetting = false;
+    newlyReleasedPackages = new Set(["lodash@4.17.21"]);
+
+    const interceptor = npmInterceptorForUrl(url);
+    const result = await interceptor.handleRequest(url);
+
+    assert.ok(result.blockResponse);
+    assert.equal(result.blockResponse.statusCode, 403);
+    assert.equal(
+      result.blockResponse.message,
+      "Forbidden - blocked by safe-chain minimum package age (lodash@4.17.21)"
+    );
+  });
+
+  it("should not block direct tarball downloads when minimum age checks are skipped", async () => {
+    const url = "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz";
+    malwareResponse = false;
+    skipMinimumPackageAgeSetting = true;
+    newlyReleasedPackages = new Set(["lodash@4.17.21"]);
+
+    const interceptor = npmInterceptorForUrl(url);
+    const result = await interceptor.handleRequest(url);
+
+    assert.equal(result.blockResponse, undefined);
   });
 });
 

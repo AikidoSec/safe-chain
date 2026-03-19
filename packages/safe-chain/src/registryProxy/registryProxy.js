@@ -10,11 +10,16 @@ import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
- * @type {{port: number | null, blockedRequests: {packageName: string, version: string, url: string}[]}}
+ * @type {{
+ *   port: number | null,
+ *   blockedRequests: {packageName: string, version: string, url: string}[],
+ *   blockedMinimumAgeRequests: {packageName: string, version: string, url: string}[]
+ * }}
  */
 const state = {
   port: null,
   blockedRequests: [],
+  blockedMinimumAgeRequests: [],
 };
 
 export function createSafeChainProxy() {
@@ -24,6 +29,7 @@ export function createSafeChainProxy() {
     startServer: () => startServer(server),
     stopServer: () => stopServer(server),
     verifyNoMaliciousPackages,
+    verifyNoMinimumAgeBlockedRequests,
     hasSuppressedVersions: getHasSuppressedVersions,
   };
 }
@@ -151,6 +157,18 @@ function handleConnect(req, clientSocket, head) {
         onMalwareBlocked(event.packageName, event.version, event.targetUrl);
       }
     );
+    interceptor.on(
+      "minimumAgeRequestBlocked",
+      (
+        /** @type {import("./interceptors/interceptorBuilder.js").MinimumAgeRequestBlockedEvent} */ event
+      ) => {
+        onMinimumAgeRequestBlocked(
+          event.packageName,
+          event.version,
+          event.targetUrl
+        );
+      }
+    );
 
     mitmConnect(req, clientSocket, interceptor);
   } else {
@@ -168,6 +186,16 @@ function handleConnect(req, clientSocket, head) {
  */
 function onMalwareBlocked(packageName, version, url) {
   state.blockedRequests.push({ packageName, version, url });
+}
+
+/**
+ *
+ * @param {string} packageName
+ * @param {string} version
+ * @param {string} url
+ */
+function onMinimumAgeRequestBlocked(packageName, version, url) {
+  state.blockedMinimumAgeRequests.push({ packageName, version, url });
 }
 
 function verifyNoMaliciousPackages() {
@@ -190,6 +218,38 @@ function verifyNoMaliciousPackages() {
 
   ui.emptyLine();
   ui.writeExitWithoutInstallingMaliciousPackages();
+  ui.emptyLine();
+
+  return false;
+}
+
+function verifyNoMinimumAgeBlockedRequests() {
+  if (state.blockedMinimumAgeRequests.length === 0) {
+    return true;
+  }
+
+  ui.emptyLine();
+
+  ui.writeInformation(
+    `Safe-chain: ${chalk.bold(
+      `blocked ${state.blockedMinimumAgeRequests.length} package downloads due to minimum age`
+    )}:`
+  );
+
+  for (const req of state.blockedMinimumAgeRequests) {
+    ui.writeInformation(` - ${req.packageName}@${req.version} (${req.url})`);
+  }
+
+  ui.writeInformation(
+    `  To disable this check, use: ${chalk.cyan(
+      "--safe-chain-skip-minimum-package-age"
+    )}`
+  );
+
+  ui.emptyLine();
+  ui.writeError(
+    "Safe-chain: Exiting without installing packages blocked by minimum age."
+  );
   ui.emptyLine();
 
   return false;
