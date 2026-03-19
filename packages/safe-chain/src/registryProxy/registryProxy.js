@@ -232,7 +232,7 @@ function verifyNoMinimumAgeBlockedRequests() {
 
   ui.writeInformation(
     `Safe-chain: ${chalk.bold(
-      `blocked ${state.blockedMinimumAgeRequests.length} package downloads due to minimum age`
+      `blocked ${state.blockedMinimumAgeRequests.length} direct package download request(s) due to minimum package age`
     )}:`
   );
 
@@ -248,7 +248,7 @@ function verifyNoMinimumAgeBlockedRequests() {
 
   ui.emptyLine();
   ui.writeError(
-    "Safe-chain: Exiting without installing packages blocked by minimum age."
+    "Safe-chain: Exiting without installing packages blocked by the direct download minimum package age check."
   );
   ui.emptyLine();
 

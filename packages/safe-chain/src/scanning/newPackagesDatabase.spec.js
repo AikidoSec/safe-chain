@@ -243,7 +243,7 @@ describe("newPackagesDatabase", async () => {
       assert.strictEqual(writeWarningCalls.length, 1);
       assert.ok(
         writeWarningCalls[0].includes(
-          "Continuing without tarball minimum age fallback"
+          "Continuing with metadata-based minimum age checks only"
         )
       );
     });

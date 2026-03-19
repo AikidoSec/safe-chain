@@ -51,7 +51,7 @@ export async function openNewPackagesDatabase() {
   } catch (/** @type {any} */ error) {
     if (!hasWarnedAboutUnavailableNewPackagesDatabase) {
       ui.writeWarning(
-        `Failed to load the new packages list. Continuing without tarball minimum age fallback. ${error.message}`
+        `Failed to load the new packages list used for direct package download request blocking. Continuing with metadata-based minimum age checks only. ${error.message}`
       );
       hasWarnedAboutUnavailableNewPackagesDatabase = true;
     }
@@ -112,14 +112,14 @@ async function getNewPackagesList() {
       return newPackagesList;
     } else {
       ui.writeWarning(
-        "The new packages list was downloaded, but could not be cached due to a missing version."
+        "The new packages list for direct package download request blocking was downloaded, but could not be cached due to a missing version."
       );
       return newPackagesList;
     }
   } catch (/** @type {any} */ error) {
     if (cachedList) {
       ui.writeWarning(
-        "Failed to fetch the latest new packages list. Using cached version."
+        "Failed to fetch the latest new packages list for direct package download request blocking. Using cached version."
       );
       return cachedList;
     }
