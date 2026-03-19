@@ -42,7 +42,7 @@ export async function troubleshootingExport() {
       resolve(zipFileName);
     });
 
-    archive.on('error', (err) => {
+    archive.on('error', (/** @type {Error} */ err) => {
       ui.writeError(`Failed to zip logs: ${err.message}`);
       reject(err);
     });
