@@ -119,8 +119,8 @@ export function cleanupCertBundle() {
   if (bundlePath) {
     try {
       fs.unlinkSync(bundlePath);
-    } catch {
-      // Ignore errors (file may already be gone)
+    } catch (err) {
+      ui.writeVerbose(`Failed to cleanup the create bundle at ${bundlePath}`, err)
     }
     bundlePath = null;
   }
