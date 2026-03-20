@@ -96,7 +96,7 @@ describe("newPackagesDatabase", async () => {
   describe("isNewlyReleasedPackage", () => {
     it("returns true for a package released within the age threshold", async () => {
       fetchedList = [
-        { source: "js", name: "foo", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
+        { package_name: "foo", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
       ];
 
       const db = await openNewPackagesDatabase();
@@ -105,7 +105,7 @@ describe("newPackagesDatabase", async () => {
 
     it("returns false for a package released outside the age threshold", async () => {
       fetchedList = [
-        { source: "js", name: "foo", version: "1.0.0", released_on: hoursAgo(48), scraped_on: hoursAgo(48) },
+        { package_name: "foo", version: "1.0.0", released_on: hoursAgo(48), scraped_on: hoursAgo(48) },
       ];
 
       const db = await openNewPackagesDatabase();
@@ -121,25 +121,25 @@ describe("newPackagesDatabase", async () => {
 
     it("returns false for a known package but different version", async () => {
       fetchedList = [
-        { source: "js", name: "foo", version: "2.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
+        { package_name: "foo", version: "2.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
       ];
 
       const db = await openNewPackagesDatabase();
       assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), false);
     });
 
-    it("ignores entries from a different source in a mixed feed", async () => {
+    it("matches the current feed ecosystem when source metadata is present", async () => {
       fetchedList = [
         {
-          source: "npm",
-          name: "foo",
+          source: "pypi",
+          package_name: "foo",
           version: "1.0.0",
           released_on: hoursAgo(1),
           scraped_on: hoursAgo(1),
         },
         {
-          source: "js",
-          name: "bar",
+          source: "npm",
+          package_name: "bar",
           version: "1.0.0",
           released_on: hoursAgo(1),
           scraped_on: hoursAgo(1),
@@ -155,7 +155,7 @@ describe("newPackagesDatabase", async () => {
     it("respects a custom minimumPackageAgeHours threshold", async () => {
       minimumPackageAgeHours = 168; // 7 days
       fetchedList = [
-        { source: "js", name: "foo", version: "1.0.0", released_on: hoursAgo(100), scraped_on: hoursAgo(100) },
+        { package_name: "foo", version: "1.0.0", released_on: hoursAgo(100), scraped_on: hoursAgo(100) },
       ];
 
       const db = await openNewPackagesDatabase();
@@ -172,7 +172,7 @@ describe("newPackagesDatabase", async () => {
   describe("caching behaviour", () => {
     it("uses local cache when etag matches", async () => {
       cachedList = [
-        { source: "js", name: "cached-pkg", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
+        { package_name: "cached-pkg", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
       ];
       cachedVersion = "etag-1";
       fetchVersionResult = "etag-1";
@@ -185,12 +185,12 @@ describe("newPackagesDatabase", async () => {
 
     it("fetches fresh list when etag does not match", async () => {
       cachedList = [
-        { source: "js", name: "stale-pkg", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
+        { package_name: "stale-pkg", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
       ];
       cachedVersion = "etag-old";
       fetchVersionResult = "etag-new";
       fetchedList = [
-        { source: "js", name: "fresh-pkg", version: "2.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
+        { package_name: "fresh-pkg", version: "2.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
       ];
 
       const db = await openNewPackagesDatabase();
@@ -201,8 +201,7 @@ describe("newPackagesDatabase", async () => {
     it("falls back to local cache when fetch fails", async () => {
       cachedList = [
         {
-          source: "js",
-          name: "cached-pkg",
+          package_name: "cached-pkg",
           version: "1.0.0",
           released_on: hoursAgo(1),
           scraped_on: hoursAgo(1),
@@ -221,7 +220,7 @@ describe("newPackagesDatabase", async () => {
 
     it("emits a warning when list has no version (cannot be cached)", async () => {
       fetchedList = [
-        { source: "js", name: "foo", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
+        { package_name: "foo", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
       ];
       fetchedVersion = undefined;
 

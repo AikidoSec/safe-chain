@@ -11,9 +11,9 @@ const malwareDatabaseUrls = {
   [ECOSYSTEM_PY]: "https://malware-list.aikido.dev/malware_pypi.json",
 };
 
-// TODO: replace with the real CDN URL once core publishes the S3 endpoint
 const newPackagesListUrls = {
-  [ECOSYSTEM_JS]: "https://new-packages.aikido.dev/js_packages.json",
+  [ECOSYSTEM_JS]: "https://malware-list.aikido.dev/releases_npm.json",
+  [ECOSYSTEM_PY]: "https://malware-list.aikido.dev/releases_pypi.json",
 };
 
 const DEFAULT_FETCH_RETRY_ATTEMPTS = 4;
@@ -27,8 +27,8 @@ const DEFAULT_FETCH_RETRY_ATTEMPTS = 4;
 
 /**
  * @typedef {Object} NewPackageEntry
- * @property {string} source
- * @property {string} name
+ * @property {string} [source]
+ * @property {string} package_name
  * @property {string} version
  * @property {number} released_on  - Unix timestamp (seconds)
  * @property {number} scraped_on   - Unix timestamp (seconds)

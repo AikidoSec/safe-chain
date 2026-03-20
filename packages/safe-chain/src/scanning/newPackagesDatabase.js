@@ -11,6 +11,7 @@ import {
   getMinimumPackageAgeHours,
   getEcoSystem,
   ECOSYSTEM_JS,
+  ECOSYSTEM_PY,
 } from "../config/settings.js";
 
 /**
@@ -23,11 +24,21 @@ let cachedNewPackagesDatabase = null;
 let hasWarnedAboutUnavailableNewPackagesDatabase = false;
 
 /**
- * Returns the source identifier used in the feed for the current ecosystem.
+ * Returns the ecosystem identifier expected in upstream/core release feeds.
  * @returns {string}
  */
 function getCurrentFeedSource() {
-  return getEcoSystem();
+  const ecosystem = getEcoSystem();
+
+  if (ecosystem === ECOSYSTEM_JS) {
+    return "npm";
+  }
+
+  if (ecosystem === ECOSYSTEM_PY) {
+    return "pypi";
+  }
+
+  return ecosystem;
 }
 
 /**
@@ -73,8 +84,8 @@ export async function openNewPackagesDatabase() {
 
     const entry = newPackagesList.find(
       (pkg) =>
-        pkg.source?.toLowerCase() === expectedSource &&
-        pkg.name === name &&
+        (!pkg.source || pkg.source.toLowerCase() === expectedSource) &&
+        pkg.package_name === name &&
         pkg.version === version
     );
 

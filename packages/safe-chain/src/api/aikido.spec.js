@@ -141,8 +141,7 @@ describe("aikido API", async () => {
     it("should succeed immediately when fetch succeeds on first try", async () => {
       const releases = [
         {
-          source: "NPM",
-          name: "fresh-pkg",
+          package_name: "fresh-pkg",
           version: "1.0.0",
           released_on: 123,
           scraped_on: 456,
@@ -174,7 +173,7 @@ describe("aikido API", async () => {
     });
 
     it("should return an empty list without fetching for unsupported ecosystems", async () => {
-      ecosystem = "py";
+      ecosystem = "ruby";
 
       const result = await fetchNewPackagesList();
 
