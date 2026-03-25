@@ -1,9 +1,8 @@
 name: Create Release
 
+# Workflow disabled — release pipeline moved to CircleCI (.circleci/config.yml)
 on:
-  push:
-    tags:
-      - "*"
+  workflow_dispatch:
 
 permissions:
   id-token: write
