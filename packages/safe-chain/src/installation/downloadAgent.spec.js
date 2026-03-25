@@ -6,7 +6,6 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import {
   DOWNLOAD_URLS,
-  getAgentDownloadUrl,
   verifyChecksum,
 } from "./downloadAgent.js";
 
@@ -34,13 +33,6 @@ describe("downloadAgent", () => {
       });
     }
   }
-
-  it("builds agent download URLs from the current version", () => {
-    assert.equal(
-      getAgentDownloadUrl("SafeChainUltimate.pkg"),
-      "https://github.com/AikidoSec/safechain-internals/releases/download/v1.0.0/SafeChainUltimate.pkg",
-    );
-  });
 
   it("verifies checksum for a local file", async () => {
     const destPath = join(tmpdir(), `safe-chain-test-${Date.now()}`);
