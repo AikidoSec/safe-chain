@@ -12,7 +12,7 @@ permissions:
 jobs:
   set-version:
     name: Set version number
-    runs-on: standard-runner-no-rights-public-ip
+    runs-on: open-source-releaser
     outputs:
       version: ${{ steps.get_version.outputs.tag }}
       is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
@@ -44,8 +44,7 @@ jobs:
   publish-binaries:
     name: Publish to GitHub release
     needs: [set-version, create-binaries]
-    runs-on: standard-runner-no-rights-public-ip
-
+    runs-on: open-source-releaser
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
