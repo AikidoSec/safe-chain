@@ -28,15 +28,12 @@ jobs:
 
       - name: Check if pre-release
         id: check_prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ steps.get_version.outputs.tag }}"
-          if echo "$TAG" | grep -Eq '(^|[.-])(alpha|beta|rc|pre)([.-]?[0-9]+)?$'; then
-            IS_PRERELEASE=true
-          else
-            IS_PRERELEASE=false
-          fi
+          IS_PRERELEASE=$(gh release view ${{ steps.get_version.outputs.tag }} --json isPrerelease --jq '.isPrerelease')
           echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-          echo "Tag $TAG is pre-release: $IS_PRERELEASE"
+          echo "Release ${{ steps.get_version.outputs.tag }} is pre-release: $IS_PRERELEASE"
 
   create-binaries:
     needs: set-version
