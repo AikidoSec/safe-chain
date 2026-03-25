@@ -280,8 +280,6 @@ jobs:
             - artifacts/safe-chain-win-arm64.exe
 
   publish-binaries:
-    # circleci_ip_ranges routes outbound traffic through static IPs.
-    # Requires a CircleCI Performance or Scale plan.
     machine:
       image: ubuntu-2404:current
     resource_class: medium
