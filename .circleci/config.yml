@@ -246,7 +246,7 @@ jobs:
   build-win:
     # CircleCI has no Windows ARM64 runner, so both Windows targets are built on x64
     executor:
-      name: win/server-2022
+      name: windows/server-2022
       shell: bash.exe
     resource_class: windows.medium
     steps:
