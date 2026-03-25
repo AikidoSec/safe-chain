@@ -248,7 +248,7 @@ jobs:
     executor:
       name: windows/server-2022
       shell: bash.exe
-    resource_class: windows.medium
+      resource_class: windows.medium
     steps:
       - checkout
       - attach_workspace:
