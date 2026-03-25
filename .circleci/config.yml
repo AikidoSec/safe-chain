@@ -244,8 +244,7 @@ jobs:
             - artifacts/safe-chain-linuxstatic-arm64
 
   build-win:
-    # CircleCI has no Windows ARM64 runner, so both Windows targets are built
-    # here on the x64 runner. pkg cross-compiles win-arm64 on win-x64 natively.
+    # CircleCI has no Windows ARM64 runner, so both Windows targets are built on x64
     executor:
       name: win/server-2022
       shell: bash.exe
