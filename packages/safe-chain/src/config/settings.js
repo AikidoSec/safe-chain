@@ -45,7 +45,7 @@ export function setEcoSystem(setting) {
   ecosystemSettings.ecoSystem = setting;
 }
 
-const defaultMinimumPackageAge = 24;
+const defaultMinimumPackageAge = 48;
 /** @returns {number} */
 export function getMinimumPackageAgeHours() {
   // Priority 1: CLI argument
