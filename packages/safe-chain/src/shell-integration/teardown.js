@@ -47,8 +47,14 @@ export async function teardown() {
         ui.writeError(
           `${chalk.bold("- " + shell.name + ":")} ${chalk.red(
             "Teardown failed"
-          )}. Please check your ${shell.name} configuration.`
+          )}`
         );
+        ui.emptyLine();
+        ui.writeInformation(`  ${chalk.bold("To tear down manually:")}`);
+        for (const instruction of shell.getManualTeardownInstructions()) {
+          ui.writeInformation(`    ${instruction}`);
+        }
+        ui.emptyLine();
       }
     }
 
