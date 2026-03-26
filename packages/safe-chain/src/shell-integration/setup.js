@@ -91,9 +91,7 @@ async function setupShell(shell) {
     );
   } else {
     ui.writeError(
-      `${chalk.bold("- " + shell.name + ":")} ${chalk.red(
-        "Setup failed",
-      )}. Please check your ${shell.name} configuration.`,
+      `${chalk.bold("- " + shell.name + ":")} ${chalk.red("Setup failed")}`,
     );
     if (error) {
       let message = `  Error: ${error.message}`;
@@ -102,6 +100,12 @@ async function setupShell(shell) {
       }
       ui.writeError(message);
     }
+    ui.emptyLine();
+    ui.writeInformation(`  ${chalk.bold("To set up manually:")}`);
+    for (const instruction of shell.getManualSetupInstructions()) {
+      ui.writeInformation(`    ${instruction}`);
+    }
+    ui.emptyLine();
   }
 
   return success;

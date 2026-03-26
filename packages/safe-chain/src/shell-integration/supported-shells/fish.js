@@ -66,6 +66,22 @@ function getStartupFile() {
   }
 }
 
+function getManualTeardownInstructions() {
+  return [
+    `Remove the following line from your ~/.config/fish/config.fish file:`,
+    `  source ~/.safe-chain/scripts/init-fish.fish`,
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  ];
+}
+
+function getManualSetupInstructions() {
+  return [
+    `Add the following line to your ~/.config/fish/config.fish file:`,
+    `  source ~/.safe-chain/scripts/init-fish.fish`,
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  ];
+}
+
 /**
  * @type {import("../shellDetection.js").Shell}
  */
@@ -74,4 +90,6 @@ export default {
   isInstalled,
   setup,
   teardown,
+  getManualSetupInstructions,
+  getManualTeardownInstructions,
 };

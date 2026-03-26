@@ -66,9 +66,27 @@ function getStartupFile() {
   }
 }
 
+function getManualTeardownInstructions() {
+  return [
+    `Remove the following line from your ~/.zshrc file:`,
+    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `Then restart your terminal or run: source ~/.zshrc`,
+  ];
+}
+
+function getManualSetupInstructions() {
+  return [
+    `Add the following line to your ~/.zshrc file:`,
+    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `Then restart your terminal or run: source ~/.zshrc`,
+  ];
+}
+
 export default {
   name: shellName,
   isInstalled,
   setup,
   teardown,
+  getManualSetupInstructions,
+  getManualTeardownInstructions,
 };
