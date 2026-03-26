@@ -71,6 +71,22 @@ function getStartupFile() {
   }
 }
 
+function getManualTeardownInstructions() {
+  return [
+    `Remove the following line from your PowerShell profile (run "echo $PROFILE" to find its location):`,
+    `  . "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"`,
+    `Then restart your terminal or run: . $PROFILE`,
+  ];
+}
+
+function getManualSetupInstructions() {
+  return [
+    `Add the following line to your PowerShell profile (run "echo $PROFILE" to find its location):`,
+    `  . "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"`,
+    `Then restart your terminal or run: . $PROFILE`,
+  ];
+}
+
 /**
  * @type {import("../shellDetection.js").Shell}
  */
@@ -79,4 +95,6 @@ export default {
   isInstalled,
   setup,
   teardown,
+  getManualSetupInstructions,
+  getManualTeardownInstructions,
 };

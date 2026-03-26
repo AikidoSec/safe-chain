@@ -123,6 +123,22 @@ function cygpathw(path) {
   }
 }
 
+function getManualTeardownInstructions() {
+  return [
+    `Remove the following line from your ~/.bashrc file:`,
+    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `Then restart your terminal or run: source ~/.bashrc`,
+  ];
+}
+
+function getManualSetupInstructions() {
+  return [
+    `Add the following line to your ~/.bashrc file:`,
+    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `Then restart your terminal or run: source ~/.bashrc`,
+  ];
+}
+
 /**
  * @type {import("../shellDetection.js").Shell}
  */
@@ -131,4 +147,6 @@ export default {
   isInstalled,
   setup,
   teardown,
+  getManualSetupInstructions,
+  getManualTeardownInstructions,
 };
