@@ -6,6 +6,7 @@ import {
 import { isMalwarePackage } from "../../../scanning/audit/index.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import {
+  getPackageNameFromMetadataResponse,
   isPackageInfoUrl,
   matchesExclusionPattern,
   modifyNpmInfoRequestHeaders,
@@ -47,8 +48,6 @@ function buildNpmInterceptor(registry) {
       registry
     );
     const minimumAgeChecksEnabled = !skipMinimumPackageAge();
-    const packageIsExcludedFromMinimumAgeChecks =
-      packageName && isExcludedFromMinimumPackageAge(packageName);
 
     if (await isMalwarePackage(packageName, version)) {
       reqContext.blockMalware(packageName, version);
@@ -81,7 +80,7 @@ function buildNpmInterceptor(registry) {
       minimumAgeChecksEnabled &&
       packageName &&
       version &&
-      !packageIsExcludedFromMinimumAgeChecks
+      !isExcludedFromMinimumPackageAge(packageName)
     ) {
       const newPackagesDatabase = await openNewPackagesDatabase();
 
@@ -105,27 +104,4 @@ function isExcludedFromMinimumPackageAge(packageName) {
   return exclusions.some((pattern) =>
     matchesExclusionPattern(packageName, pattern)
   );
-}
-
-/**
- * @param {Buffer} body
- * @param {NodeJS.Dict<string | string[]> | undefined} headers
- * @returns {string | undefined}
- */
-function getPackageNameFromMetadataResponse(body, headers) {
-  try {
-    const contentType = headers?.["content-type"];
-    const normalizedContentType = Array.isArray(contentType)
-      ? contentType.join(",")
-      : contentType;
-
-    if (!normalizedContentType?.toLowerCase().includes("application/json")) {
-      return undefined;
-    }
-
-    const bodyJson = JSON.parse(body.toString("utf8"));
-    return typeof bodyJson.name === "string" ? bodyJson.name : undefined;
-  } catch {
-    return undefined;
-  }
 }

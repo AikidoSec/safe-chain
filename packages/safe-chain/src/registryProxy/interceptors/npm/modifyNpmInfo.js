@@ -179,6 +179,25 @@ export function getHasSuppressedVersions() {
 }
 
 /**
+ * @param {Buffer} body
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @returns {string | undefined}
+ */
+export function getPackageNameFromMetadataResponse(body, headers) {
+  try {
+    const contentType = getHeaderValueAsString(headers, "content-type");
+    if (!contentType?.toLowerCase().includes("application/json")) {
+      return undefined;
+    }
+
+    const bodyJson = JSON.parse(body.toString("utf8"));
+    return typeof bodyJson.name === "string" ? bodyJson.name : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Checks if a package name matches an exclusion pattern.
  * Supports trailing wildcard (*) for prefix matching.
  * @param {string} packageName
