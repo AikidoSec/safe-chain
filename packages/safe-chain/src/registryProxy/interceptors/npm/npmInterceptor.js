@@ -13,7 +13,7 @@ import {
   modifyNpmInfoResponse,
 } from "./modifyNpmInfo.js";
 import { parseNpmPackageUrl } from "./parseNpmPackageUrl.js";
-import { openNewPackagesDatabase } from "../../../scanning/newPackagesDatabase.js";
+import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
 
 const knownJsRegistries = [
   "registry.npmjs.org",

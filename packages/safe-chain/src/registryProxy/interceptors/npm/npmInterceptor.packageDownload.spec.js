@@ -32,7 +32,7 @@ mock.module("../../../config/settings.js", {
     skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
   },
 });
-mock.module("../../../scanning/newPackagesDatabase.js", {
+mock.module("../../../scanning/newPackagesListCache.js", {
   namedExports: {
     openNewPackagesDatabase: async () => ({
       isNewlyReleasedPackage: (name, version) =>
