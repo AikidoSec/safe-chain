@@ -56,21 +56,7 @@ function buildNpmInterceptor(registry) {
 
     if (minimumAgeChecksEnabled && isPackageInfoUrl(reqContext.targetUrl)) {
       reqContext.modifyRequestHeaders(modifyNpmInfoRequestHeaders);
-      reqContext.modifyBody((body, headers) => {
-        const metadataPackageName = getPackageNameFromMetadataResponse(
-          body,
-          headers
-        );
-
-        if (
-          metadataPackageName &&
-          isExcludedFromMinimumPackageAge(metadataPackageName)
-        ) {
-          return body;
-        }
-
-        return modifyNpmInfoResponse(body, headers);
-      });
+      reqContext.modifyBody(modifyNpmInfoResponseUnlessExcluded);
       return;
     }
 
@@ -104,4 +90,22 @@ function isExcludedFromMinimumPackageAge(packageName) {
   return exclusions.some((pattern) =>
     matchesExclusionPattern(packageName, pattern)
   );
+}
+
+/**
+ * @param {Buffer} body
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @returns {Buffer}
+ */
+function modifyNpmInfoResponseUnlessExcluded(body, headers) {
+  const metadataPackageName = getPackageNameFromMetadataResponse(body, headers);
+
+  if (
+    metadataPackageName &&
+    isExcludedFromMinimumPackageAge(metadataPackageName)
+  ) {
+    return body;
+  }
+
+  return modifyNpmInfoResponse(body, headers);
 }
