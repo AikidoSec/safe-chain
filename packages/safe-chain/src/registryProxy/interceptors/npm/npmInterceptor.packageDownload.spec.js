@@ -211,7 +211,7 @@ describe("npmInterceptor", async () => {
     assert.equal(result.blockResponse.statusCode, 403);
     assert.equal(
       result.blockResponse.message,
-      "Forbidden - blocked by safe-chain minimum package age (lodash@4.17.21)"
+      "Forbidden - blocked by safe-chain direct download minimum package age (lodash@4.17.21)"
     );
   });
 
