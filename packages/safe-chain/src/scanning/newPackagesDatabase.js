@@ -19,6 +19,7 @@ import {
  * @property {function(string, string): boolean} isNewlyReleasedPackage
  */
 
+// Shared per-process cache to avoid rebuilding the same feed-backed database on each request.
 /** @type {NewPackagesDatabase | null} */
 let cachedNewPackagesDatabase = null;
 let hasWarnedAboutUnavailableNewPackagesDatabase = false;
