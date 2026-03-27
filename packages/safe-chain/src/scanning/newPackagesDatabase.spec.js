@@ -1,9 +1,10 @@
 import { describe, it, mock, beforeEach } from "node:test";
 import assert from "node:assert";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 // --- shared mutable state for mocks ---
-let cachedList = null;
-let cachedVersion = null;
 let fetchedList = [];
 let fetchedVersion = "etag-1";
 let fetchVersionResult = "etag-1";
@@ -13,6 +14,7 @@ let writeWarningCalls = [];
 let fetchListError = null;
 let fetchVersionError = null;
 let importCounter = 0;
+let testHomeDir = "";
 
 mock.module("../api/aikido.js", {
   namedExports: {
@@ -36,16 +38,6 @@ mock.module("../api/aikido.js", {
   },
 });
 
-mock.module("../config/configFile.js", {
-  namedExports: {
-    readNewPackagesListFromLocalCache: () => ({
-      newPackagesList: cachedList,
-      version: cachedVersion,
-    }),
-    writeNewPackagesListToLocalCache: () => {},
-  },
-});
-
 mock.module("../environment/userInteraction.js", {
   namedExports: {
     ui: {
@@ -66,8 +58,6 @@ mock.module("../config/settings.js", {
 
 describe("newPackagesDatabase", async () => {
   beforeEach(() => {
-    cachedList = null;
-    cachedVersion = null;
     fetchedList = [];
     fetchedVersion = "etag-1";
     fetchVersionResult = "etag-1";
@@ -76,6 +66,13 @@ describe("newPackagesDatabase", async () => {
     writeWarningCalls = [];
     fetchListError = null;
     fetchVersionError = null;
+    testHomeDir = path.join(
+      os.tmpdir(),
+      `safe-chain-new-packages-db-${process.pid}-${importCounter}`
+    );
+    fs.rmSync(testHomeDir, { recursive: true, force: true });
+    fs.mkdirSync(testHomeDir, { recursive: true });
+    process.env.HOME = testHomeDir;
   });
 
   async function openNewPackagesDatabase() {
@@ -91,6 +88,19 @@ describe("newPackagesDatabase", async () => {
 
   function hoursAgo(hours) {
     return Math.floor((Date.now() - hours * 3600 * 1000) / 1000);
+  }
+
+  function writeCachedList(list, version) {
+    const safeChainDir = path.join(testHomeDir, ".safe-chain");
+    fs.mkdirSync(safeChainDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(safeChainDir, `newPackagesList_${ecosystem}.json`),
+      JSON.stringify(list)
+    );
+    fs.writeFileSync(
+      path.join(safeChainDir, `newPackagesList_version_${ecosystem}.txt`),
+      version
+    );
   }
 
   describe("isNewlyReleasedPackage", () => {
@@ -171,10 +181,9 @@ describe("newPackagesDatabase", async () => {
 
   describe("caching behaviour", () => {
     it("uses local cache when etag matches", async () => {
-      cachedList = [
+      writeCachedList([
         { package_name: "cached-pkg", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
-      ];
-      cachedVersion = "etag-1";
+      ], "etag-1");
       fetchVersionResult = "etag-1";
       // fetchedList is empty — if we used the remote list, the lookup would return false
       fetchedList = [];
@@ -184,10 +193,9 @@ describe("newPackagesDatabase", async () => {
     });
 
     it("fetches fresh list when etag does not match", async () => {
-      cachedList = [
+      writeCachedList([
         { package_name: "stale-pkg", version: "1.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
-      ];
-      cachedVersion = "etag-old";
+      ], "etag-old");
       fetchVersionResult = "etag-new";
       fetchedList = [
         { package_name: "fresh-pkg", version: "2.0.0", released_on: hoursAgo(1), scraped_on: hoursAgo(1) },
@@ -199,15 +207,14 @@ describe("newPackagesDatabase", async () => {
     });
 
     it("falls back to local cache when fetch fails", async () => {
-      cachedList = [
+      writeCachedList([
         {
           package_name: "cached-pkg",
           version: "1.0.0",
           released_on: hoursAgo(1),
           scraped_on: hoursAgo(1),
         },
-      ];
-      cachedVersion = "etag-old";
+      ], "etag-old");
       fetchVersionResult = "etag-new";
       fetchListError = new Error("Network error");
 

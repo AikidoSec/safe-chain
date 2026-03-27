@@ -204,70 +204,6 @@ export function readDatabaseFromLocalCache() {
 }
 
 /**
- * @param {import("../api/aikido.js").NewPackageEntry[]} data
- * @param {string | number} version
- *
- * @returns {void}
- */
-export function writeNewPackagesListToLocalCache(data, version) {
-  try {
-    const listPath = getNewPackagesListPath();
-    const versionPath = getNewPackagesListVersionPath();
-
-    fs.writeFileSync(listPath, JSON.stringify(data));
-    fs.writeFileSync(versionPath, version.toString());
-  } catch {
-    ui.writeWarning(
-      "Failed to write new packages list to local cache, next time the list will be fetched from the server again."
-    );
-  }
-}
-
-/**
- * @returns {{newPackagesList: import("../api/aikido.js").NewPackageEntry[] | null, version: string | null}}
- */
-export function readNewPackagesListFromLocalCache() {
-  try {
-    const listPath = getNewPackagesListPath();
-    if (!fs.existsSync(listPath)) {
-      return { newPackagesList: null, version: null };
-    }
-
-    const data = fs.readFileSync(listPath, "utf8");
-    const newPackagesList = JSON.parse(data);
-    const versionPath = getNewPackagesListVersionPath();
-    let version = null;
-    if (fs.existsSync(versionPath)) {
-      version = fs.readFileSync(versionPath, "utf8").trim();
-    }
-    return { newPackagesList, version };
-  } catch {
-    ui.writeWarning(
-      "Failed to read new packages list from local cache. Continuing without local cache."
-    );
-    return { newPackagesList: null, version: null };
-  }
-}
-
-/**
- * @returns {string}
- */
-function getNewPackagesListPath() {
-  const safeChainDir = getSafeChainDirectory();
-  const ecosystem = getEcoSystem();
-  return path.join(safeChainDir, `newPackagesList_${ecosystem}.json`);
-}
-
-/**
- * @returns {string}
- */
-function getNewPackagesListVersionPath() {
-  const safeChainDir = getSafeChainDirectory();
-  const ecosystem = getEcoSystem();
-  return path.join(safeChainDir, `newPackagesList_version_${ecosystem}.txt`);
-}
-
-/**
  * @returns {SafeChainConfig}
  */
 function readConfigFile() {
@@ -315,6 +251,24 @@ function getDatabaseVersionPath() {
 /**
  * @returns {string}
  */
+export function getNewPackagesListPath() {
+  const safeChainDir = getSafeChainDirectory();
+  const ecosystem = getEcoSystem();
+  return path.join(safeChainDir, `newPackagesList_${ecosystem}.json`);
+}
+
+/**
+ * @returns {string}
+ */
+export function getNewPackagesListVersionPath() {
+  const safeChainDir = getSafeChainDirectory();
+  const ecosystem = getEcoSystem();
+  return path.join(safeChainDir, `newPackagesList_version_${ecosystem}.txt`);
+}
+
+/**
+ * @returns {string}
+ */
 function getConfigFilePath() {
   const primaryPath = path.join(getSafeChainDirectory(), "config.json");
   if (fs.existsSync(primaryPath)) {
@@ -332,7 +286,7 @@ function getConfigFilePath() {
 /**
  * @returns {string}
  */
-function getSafeChainDirectory() {
+export function getSafeChainDirectory() {
   const homeDir = os.homedir();
   const safeChainDir = path.join(homeDir, ".safe-chain");
 

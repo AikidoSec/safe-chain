@@ -28,8 +28,8 @@ export function createSafeChainProxy() {
   return {
     startServer: () => startServer(server),
     stopServer: () => stopServer(server),
-    verifyNoMaliciousPackages,
-    verifyNoMinimumAgeBlockedRequests,
+    hasBlockedMaliciousPackages,
+    hasBlockedMinimumAgeRequests,
     hasSuppressedVersions: getHasSuppressedVersions,
   };
 }
@@ -198,10 +198,9 @@ function onMinimumAgeRequestBlocked(packageName, version, url) {
   state.blockedMinimumAgeRequests.push({ packageName, version, url });
 }
 
-function verifyNoMaliciousPackages() {
+function hasBlockedMaliciousPackages() {
   if (state.blockedRequests.length === 0) {
-    // No malicious packages were blocked, so nothing to block
-    return true;
+    return false;
   }
 
   ui.emptyLine();
@@ -220,12 +219,12 @@ function verifyNoMaliciousPackages() {
   ui.writeExitWithoutInstallingMaliciousPackages();
   ui.emptyLine();
 
-  return false;
+  return true;
 }
 
-function verifyNoMinimumAgeBlockedRequests() {
+function hasBlockedMinimumAgeRequests() {
   if (state.blockedMinimumAgeRequests.length === 0) {
-    return true;
+    return false;
   }
 
   ui.emptyLine();
@@ -252,5 +251,5 @@ function verifyNoMinimumAgeBlockedRequests() {
   );
   ui.emptyLine();
 
-  return false;
+  return true;
 }

@@ -64,11 +64,11 @@ export async function main(args) {
     // Write all buffered logs
     ui.writeBufferedLogsAndStopBuffering();
 
-    if (!proxy.verifyNoMaliciousPackages()) {
+    if (proxy.hasBlockedMaliciousPackages()) {
       return 1;
     }
 
-    if (!proxy.verifyNoMinimumAgeBlockedRequests()) {
+    if (proxy.hasBlockedMinimumAgeRequests()) {
       return 1;
     }
 
