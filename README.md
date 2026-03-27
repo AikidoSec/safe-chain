@@ -113,7 +113,12 @@ The Aikido Safe Chain works by running a lightweight proxy server that intercept
 
 ### Minimum package age (npm only)
 
-For npm packages, Safe Chain temporarily suppresses packages published within the last 48 hours (by default) until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
+For npm packages, Safe Chain applies minimum package age checks in two ways:
+
+- During normal package resolution, Safe Chain suppresses versions that are newer than the configured minimum age from the package metadata returned by the registry.
+- For direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages.
+
+By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
 ⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry, pipx).
 
@@ -184,6 +189,11 @@ You can set the logging level through multiple sources (in order of priority):
 ## Minimum Package Age
 
 You can configure how long packages must exist before Safe Chain allows their installation. By default, packages must be at least 48 hours old before they can be installed through npm-based package managers.
+
+For npm-based package managers, this check currently has two enforcement modes:
+
+- Safe Chain suppresses too-young versions from package metadata during normal dependency resolution.
+- Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
 
 ### Configuration Options
 

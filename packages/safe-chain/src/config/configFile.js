@@ -251,6 +251,24 @@ function getDatabaseVersionPath() {
 /**
  * @returns {string}
  */
+export function getNewPackagesListPath() {
+  const safeChainDir = getSafeChainDirectory();
+  const ecosystem = getEcoSystem();
+  return path.join(safeChainDir, `newPackagesList_${ecosystem}.json`);
+}
+
+/**
+ * @returns {string}
+ */
+export function getNewPackagesListVersionPath() {
+  const safeChainDir = getSafeChainDirectory();
+  const ecosystem = getEcoSystem();
+  return path.join(safeChainDir, `newPackagesList_version_${ecosystem}.txt`);
+}
+
+/**
+ * @returns {string}
+ */
 function getConfigFilePath() {
   const primaryPath = path.join(getSafeChainDirectory(), "config.json");
   if (fs.existsSync(primaryPath)) {
@@ -268,7 +286,7 @@ function getConfigFilePath() {
 /**
  * @returns {string}
  */
-function getSafeChainDirectory() {
+export function getSafeChainDirectory() {
   const homeDir = os.homedir();
   const safeChainDir = path.join(homeDir, ".safe-chain");
 

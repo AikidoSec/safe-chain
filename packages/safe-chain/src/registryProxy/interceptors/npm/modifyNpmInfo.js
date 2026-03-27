@@ -1,4 +1,4 @@
-import { getMinimumPackageAgeHours, getNpmMinimumPackageAgeExclusions } from "../../../config/settings.js";
+import { getMinimumPackageAgeHours } from "../../../config/settings.js";
 import { ui } from "../../../environment/userInteraction.js";
 import { getHeaderValueAsString } from "../../http-utils.js";
 
@@ -62,16 +62,6 @@ export function modifyNpmInfoResponse(body, headers) {
 
     if (!bodyJson.time || !bodyJson["dist-tags"] || !bodyJson.versions) {
       // Just return the current body if the format is not
-      return body;
-    }
-
-    // Check if this package is excluded from minimum age filtering
-    const packageName = bodyJson.name;
-    const exclusions = getNpmMinimumPackageAgeExclusions();
-    if (packageName && exclusions.some((pattern) => matchesExclusionPattern(packageName, pattern))) {
-      ui.writeVerbose(
-        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`
-      );
       return body;
     }
 
@@ -189,13 +179,32 @@ export function getHasSuppressedVersions() {
 }
 
 /**
+ * @param {Buffer} body
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @returns {string | undefined}
+ */
+export function getPackageNameFromMetadataResponse(body, headers) {
+  try {
+    const contentType = getHeaderValueAsString(headers, "content-type");
+    if (!contentType?.toLowerCase().includes("application/json")) {
+      return undefined;
+    }
+
+    const bodyJson = JSON.parse(body.toString("utf8"));
+    return typeof bodyJson.name === "string" ? bodyJson.name : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Checks if a package name matches an exclusion pattern.
  * Supports trailing wildcard (*) for prefix matching.
  * @param {string} packageName
  * @param {string} pattern
  * @returns {boolean}
  */
-function matchesExclusionPattern(packageName, pattern) {
+export function matchesExclusionPattern(packageName, pattern) {
   if (pattern.endsWith("/*")) {
     return packageName.startsWith(pattern.slice(0, -1));
   }

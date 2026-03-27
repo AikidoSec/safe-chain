@@ -64,7 +64,11 @@ export async function main(args) {
     // Write all buffered logs
     ui.writeBufferedLogsAndStopBuffering();
 
-    if (!proxy.verifyNoMaliciousPackages()) {
+    if (proxy.hasBlockedMaliciousPackages()) {
+      return 1;
+    }
+
+    if (proxy.hasBlockedMinimumAgeRequests()) {
       return 1;
     }
 
@@ -81,7 +85,7 @@ export async function main(args) {
       ui.writeInformation(
         `${chalk.yellow(
           "ℹ",
-        )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`,
+        )} Safe-chain: Some package versions were suppressed during package metadata resolution due to minimum package age.`,
       );
       ui.writeInformation(
         `  To disable this check, use: ${chalk.cyan(
