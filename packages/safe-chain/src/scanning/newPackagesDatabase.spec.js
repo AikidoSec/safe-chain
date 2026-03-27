@@ -57,8 +57,6 @@ mock.module("../config/settings.js", {
 });
 
 // Import the warnings module so we can reset its state between tests.
-// The state (hasWarnedAboutUnavailableNewPackagesDatabase) lives in a separate
-// module and is not reset by the dynamic-import cache-buster trick used below.
 const { resetWarningState } = await import("./newPackagesDatabaseWarnings.js");
 
 describe("newPackagesDatabase", async () => {
