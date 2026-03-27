@@ -46,37 +46,86 @@ function buildNpmInterceptor(registry) {
       reqContext.targetUrl,
       registry
     );
+    const minimumAgeChecksEnabled = !skipMinimumPackageAge();
+    const packageIsExcludedFromMinimumAgeChecks =
+      packageName && isExcludedFromMinimumPackageAge(packageName);
 
     if (await isMalwarePackage(packageName, version)) {
       reqContext.blockMalware(packageName, version);
       return;
     }
 
-    if (!skipMinimumPackageAge() && isPackageInfoUrl(reqContext.targetUrl)) {
+    if (minimumAgeChecksEnabled && isPackageInfoUrl(reqContext.targetUrl)) {
       reqContext.modifyRequestHeaders(modifyNpmInfoRequestHeaders);
-      reqContext.modifyBody(modifyNpmInfoResponse);
+      reqContext.modifyBody((body, headers) => {
+        const metadataPackageName = getPackageNameFromMetadataResponse(
+          body,
+          headers
+        );
+
+        if (
+          metadataPackageName &&
+          isExcludedFromMinimumPackageAge(metadataPackageName)
+        ) {
+          return body;
+        }
+
+        return modifyNpmInfoResponse(body, headers);
+      });
       return;
     }
 
     // For tarball requests the metadata check above is skipped, so we check the
     // new packages list as a fallback (covers e.g. frozen-lockfile installs).
-    if (!skipMinimumPackageAge() && packageName && version) {
-      const exclusions = getNpmMinimumPackageAgeExclusions();
-      const isExcluded = exclusions.some((pattern) =>
-        matchesExclusionPattern(packageName, pattern)
-      );
+    if (
+      minimumAgeChecksEnabled &&
+      packageName &&
+      version &&
+      !packageIsExcludedFromMinimumAgeChecks
+    ) {
+      const newPackagesDatabase = await openNewPackagesDatabase();
 
-      if (!isExcluded) {
-        const newPackagesDatabase = await openNewPackagesDatabase();
-
-        if (newPackagesDatabase.isNewlyReleasedPackage(packageName, version)) {
-          reqContext.blockMinimumAgeRequest(
-            packageName,
-            version,
-            `Forbidden - blocked by safe-chain direct download minimum package age (${packageName}@${version})`
-          );
-        }
+      if (newPackagesDatabase.isNewlyReleasedPackage(packageName, version)) {
+        reqContext.blockMinimumAgeRequest(
+          packageName,
+          version,
+          `Forbidden - blocked by safe-chain direct download minimum package age (${packageName}@${version})`
+        );
       }
     }
   });
+}
+
+/**
+ * @param {string} packageName
+ * @returns {boolean}
+ */
+function isExcludedFromMinimumPackageAge(packageName) {
+  const exclusions = getNpmMinimumPackageAgeExclusions();
+  return exclusions.some((pattern) =>
+    matchesExclusionPattern(packageName, pattern)
+  );
+}
+
+/**
+ * @param {Buffer} body
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @returns {string | undefined}
+ */
+function getPackageNameFromMetadataResponse(body, headers) {
+  try {
+    const contentType = headers?.["content-type"];
+    const normalizedContentType = Array.isArray(contentType)
+      ? contentType.join(",")
+      : contentType;
+
+    if (!normalizedContentType?.toLowerCase().includes("application/json")) {
+      return undefined;
+    }
+
+    const bodyJson = JSON.parse(body.toString("utf8"));
+    return typeof bodyJson.name === "string" ? bodyJson.name : undefined;
+  } catch {
+    return undefined;
+  }
 }
