@@ -163,8 +163,10 @@ describe("newPackagesListCache", () => {
     });
 
     it("warns when writing fails", () => {
-      // Point HOME at a non-existent path so the write will fail
-      process.env.HOME = path.join(testHomeDir, "does-not-exist");
+      // Place a regular file at the .safe-chain path so getSafeChainDirectory
+      // returns it as-is (existsSync is true) but writing a child path fails.
+      const safeChainPath = path.join(testHomeDir, ".safe-chain");
+      fs.writeFileSync(safeChainPath, "not-a-directory");
 
       writeNewPackagesListToLocalCache([], "etag-fail");
 
