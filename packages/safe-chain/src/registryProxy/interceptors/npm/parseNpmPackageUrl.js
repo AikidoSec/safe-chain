@@ -12,9 +12,9 @@ export function parseNpmPackageUrl(url, registry) {
   }
 
   const registryIndex = urlWithoutParams.indexOf(registry);
-  const afterRegistry = urlWithoutParams.substring(
+  const afterRegistry = decodeURIComponent(urlWithoutParams.substring(
     registryIndex + registry.length + 1
-  ); // +1 to skip the slash
+  )); // +1 to skip the slash
 
   const separatorIndex = afterRegistry.indexOf("/-/");
   if (separatorIndex === -1) {

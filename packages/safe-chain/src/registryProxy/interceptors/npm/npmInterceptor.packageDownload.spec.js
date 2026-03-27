@@ -127,6 +127,10 @@ describe("npmInterceptor", async () => {
       url: "https://registry.yarnpkg.com/@babel/core/-/core-7.21.4.tgz",
       expected: { packageName: "@babel/core", version: "7.21.4" },
     },
+    {
+      url: "https://registry.yarnpkg.com/@music-i18n%2fverovio/-/verovio-1.4.1.tgz",
+      expected: { packageName: "@music-i18n/verovio", version: "1.4.1" },
+    },
     // URL to get package info, not tarball
     {
       url: "https://registry.npmjs.org/lodash",
