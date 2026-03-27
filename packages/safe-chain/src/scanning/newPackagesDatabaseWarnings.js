@@ -2,6 +2,7 @@ import { ui } from "../environment/userInteraction.js";
 
 let hasWarnedAboutUnavailableNewPackagesDatabase = false;
 
+/** @param {Error} error */
 export function warnOnceAboutUnavailableDatabase(error) {
   if (!hasWarnedAboutUnavailableNewPackagesDatabase) {
     ui.writeWarning(
