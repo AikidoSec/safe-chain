@@ -18,7 +18,7 @@ describe("npmInterceptor minimum package age", async () => {
       getEcoSystem: () => "js",
     },
   });
-  mock.module("../../../scanning/newPackagesDatabase.js", {
+  mock.module("../../../scanning/newPackagesListCache.js", {
     namedExports: {
       openNewPackagesDatabase: async () => ({
         isNewlyReleasedPackage: (name, version) =>

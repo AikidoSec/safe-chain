@@ -56,6 +56,11 @@ mock.module("../config/settings.js", {
   },
 });
 
+// Import the warnings module so we can reset its state between tests.
+// The state (hasWarnedAboutUnavailableNewPackagesDatabase) lives in a separate
+// module and is not reset by the dynamic-import cache-buster trick used below.
+const { resetWarningState } = await import("./newPackagesDatabaseWarnings.js");
+
 describe("newPackagesDatabase", async () => {
   beforeEach(() => {
     fetchedList = [];
@@ -66,6 +71,7 @@ describe("newPackagesDatabase", async () => {
     writeWarningCalls = [];
     fetchListError = null;
     fetchVersionError = null;
+    resetWarningState();
     testHomeDir = path.join(
       os.tmpdir(),
       `safe-chain-new-packages-db-${process.pid}-${importCounter}`
@@ -77,13 +83,13 @@ describe("newPackagesDatabase", async () => {
 
   async function openNewPackagesDatabase() {
     const module = await import(
-      `./newPackagesDatabase.js?test_case=${importCounter++}`
+      `./newPackagesListCache.js?test_case=${importCounter++}`
     );
     return module.openNewPackagesDatabase();
   }
 
   async function loadNewPackagesDatabaseModule() {
-    return import(`./newPackagesDatabase.js?test_case=${importCounter++}`);
+    return import(`./newPackagesListCache.js?test_case=${importCounter++}`);
   }
 
   function hoursAgo(hours) {
