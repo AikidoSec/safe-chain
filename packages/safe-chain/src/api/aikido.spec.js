@@ -144,7 +144,6 @@ describe("aikido API", async () => {
           package_name: "fresh-pkg",
           version: "1.0.0",
           released_on: 123,
-          scraped_on: 456,
         },
       ];
       mockFetch.mock.mockImplementationOnce(() => ({
