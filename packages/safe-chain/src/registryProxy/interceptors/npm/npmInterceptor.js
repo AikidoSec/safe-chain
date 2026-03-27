@@ -73,7 +73,7 @@ function buildNpmInterceptor(registry) {
           reqContext.blockMinimumAgeRequest(
             packageName,
             version,
-            `Forbidden - blocked by safe-chain minimum package age (${packageName}@${version})`
+            `Forbidden - blocked by safe-chain direct download minimum package age (${packageName}@${version})`
           );
         }
       }

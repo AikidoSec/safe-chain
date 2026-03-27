@@ -156,6 +156,10 @@ describe("aikido API", async () => {
       const result = await fetchNewPackagesList();
 
       assert.strictEqual(mockFetch.mock.calls.length, 1);
+      assert.strictEqual(
+        mockFetch.mock.calls[0].arguments[0],
+        "https://malware-list.aikido.dev/releases/npm.json"
+      );
       assert.deepStrictEqual(result.newPackagesList, releases);
       assert.strictEqual(result.version, '"etag-new-packages"');
     });
@@ -193,6 +197,13 @@ describe("aikido API", async () => {
       const result = await fetchNewPackagesListVersion();
 
       assert.strictEqual(mockFetch.mock.calls.length, 1);
+      assert.strictEqual(
+        mockFetch.mock.calls[0].arguments[0],
+        "https://malware-list.aikido.dev/releases/npm.json"
+      );
+      assert.deepStrictEqual(mockFetch.mock.calls[0].arguments[1], {
+        method: "HEAD",
+      });
       assert.strictEqual(result, '"new-packages-etag"');
     });
 

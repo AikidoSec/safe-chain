@@ -12,8 +12,8 @@ const malwareDatabaseUrls = {
 };
 
 const newPackagesListUrls = {
-  [ECOSYSTEM_JS]: "https://malware-list.aikido.dev/releases_npm.json",
-  [ECOSYSTEM_PY]: "https://malware-list.aikido.dev/releases_pypi.json",
+  [ECOSYSTEM_JS]: "https://malware-list.aikido.dev/releases/npm.json",
+  [ECOSYSTEM_PY]: "https://malware-list.aikido.dev/releases/pypi.json",
 };
 
 const DEFAULT_FETCH_RETRY_ATTEMPTS = 4;
