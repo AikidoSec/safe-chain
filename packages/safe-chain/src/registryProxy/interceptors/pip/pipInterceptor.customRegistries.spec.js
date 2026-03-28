@@ -2,7 +2,7 @@ import { describe, it, mock } from "node:test";
 import assert from "node:assert";
 
 describe("pipInterceptor custom registries", async () => {
-  let lastPackage;
+  let scannedPackages;
   let malwareResponse = false;
   let customRegistries = [];
 
@@ -27,7 +27,7 @@ describe("pipInterceptor custom registries", async () => {
   mock.module("../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
-        lastPackage = { packageName, version };
+        scannedPackages.push({ packageName, version });
         return malwareResponse;
       },
     },
@@ -46,6 +46,7 @@ describe("pipInterceptor custom registries", async () => {
   });
 
   it("should parse package from custom registry URL", async () => {
+    scannedPackages = [];
     customRegistries = ["my-custom-registry.example.com"];
     const url =
       "https://my-custom-registry.example.com/packages/xx/yy/foobar-1.2.3.tar.gz";
@@ -55,13 +56,16 @@ describe("pipInterceptor custom registries", async () => {
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foobar",
-      version: "1.2.3",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foobar" && version === "1.2.3"
+      )
+    );
   });
 
   it("should parse wheel package from custom registry URL", async () => {
+    scannedPackages = [];
     customRegistries = ["private-pypi.internal.com"];
     const url =
       "https://private-pypi.internal.com/packages/foo_bar-2.0.0-py3-none-any.whl";
@@ -71,10 +75,12 @@ describe("pipInterceptor custom registries", async () => {
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foo-bar",
-      version: "2.0.0",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foo-bar" && version === "2.0.0"
+      )
+    );
   });
 
   it("should handle multiple custom registries", async () => {
@@ -96,6 +102,7 @@ describe("pipInterceptor custom registries", async () => {
   });
 
   it("should block malicious package from custom registry", async () => {
+    scannedPackages = [];
     customRegistries = ["my-custom-registry.example.com"];
     malwareResponse = true;
 
@@ -115,6 +122,7 @@ describe("pipInterceptor custom registries", async () => {
   });
 
   it("should still work with known registries when custom registries are set", async () => {
+    scannedPackages = [];
     customRegistries = ["my-custom-registry.example.com"];
 
     const url =
@@ -126,10 +134,12 @@ describe("pipInterceptor custom registries", async () => {
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foobar",
-      version: "1.2.3",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foobar" && version === "1.2.3"
+      )
+    );
   });
 
   it("should not create interceptor for unknown registry when custom registries are set", () => {
@@ -152,6 +162,7 @@ describe("pipInterceptor custom registries", async () => {
   });
 
   it("should parse .whl.metadata from custom registry", async () => {
+    scannedPackages = [];
     customRegistries = ["private-pypi.internal.com"];
     const url =
       "https://private-pypi.internal.com/packages/foo_bar-2.0.0-py3-none-any.whl.metadata";
@@ -161,13 +172,16 @@ describe("pipInterceptor custom registries", async () => {
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foo-bar",
-      version: "2.0.0",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foo-bar" && version === "2.0.0"
+      )
+    );
   });
 
   it("should parse .tar.gz.metadata from custom registry", async () => {
+    scannedPackages = [];
     customRegistries = ["private-pypi.internal.com"];
     const url =
       "https://private-pypi.internal.com/packages/foo_bar-2.0.0.tar.gz.metadata";
@@ -177,9 +191,11 @@ describe("pipInterceptor custom registries", async () => {
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foo-bar",
-      version: "2.0.0",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foo-bar" && version === "2.0.0"
+      )
+    );
   });
 });

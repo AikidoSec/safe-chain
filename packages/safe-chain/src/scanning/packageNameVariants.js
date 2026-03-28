@@ -10,7 +10,10 @@ export function getEquivalentPackageNames(packageName, ecosystem) {
     return [packageName];
   }
 
-  return [...new Set([packageName, ...["-", "_", "."].map((separator) =>
-    packageName.replaceAll(/[._-]/g, separator)
-  )])];
+  const pythonSeparatorPattern = /[._-]/g;
+  const hyphenName = packageName.replaceAll(pythonSeparatorPattern, "-");
+  const underscoreName = packageName.replaceAll(pythonSeparatorPattern, "_");
+  const dotName = packageName.replaceAll(pythonSeparatorPattern, ".");
+
+  return [...new Set([packageName, hyphenName, underscoreName, dotName])];
 }

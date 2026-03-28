@@ -1,8 +1,10 @@
 import {
+  ECOSYSTEM_PY,
   getPipCustomRegistries,
   skipMinimumPackageAge,
 } from "../../../config/settings.js";
 import { isMalwarePackage } from "../../../scanning/audit/index.js";
+import { getEquivalentPackageNames } from "../../../scanning/packageNameVariants.js";
 import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import { isExcludedFromMinimumPackageAge } from "../minimumPackageAgeExclusions.js";
@@ -50,14 +52,21 @@ function createPipRequestHandler(registry) {
       registry
     );
 
-    // PyPI treats hyphens and underscores as equivalent distribution names.
-    const hyphenName = packageName?.includes("_")
-      ? packageName.replace(/_/g, "-")
-      : packageName;
+    if (!packageName) {
+      return;
+    }
 
-    const isMalicious =
-      await isMalwarePackage(packageName, version) ||
-      await isMalwarePackage(hyphenName, version);
+    const equivalentPackageNames = getEquivalentPackageNames(
+      packageName,
+      ECOSYSTEM_PY
+    );
+    let isMalicious = false;
+    for (const equivalentPackageName of equivalentPackageNames) {
+      if (await isMalwarePackage(equivalentPackageName, version)) {
+        isMalicious = true;
+        break;
+      }
+    }
 
     if (isMalicious) {
       reqContext.blockMalware(packageName, version);
@@ -65,7 +74,6 @@ function createPipRequestHandler(registry) {
     }
 
     if (
-      packageName &&
       version &&
       !skipMinimumPackageAge() &&
       !isExcludedFromMinimumPackageAge(packageName)

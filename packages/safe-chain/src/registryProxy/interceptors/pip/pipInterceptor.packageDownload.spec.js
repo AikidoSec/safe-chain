@@ -2,13 +2,13 @@ import { describe, it, mock } from "node:test";
 import assert from "node:assert";
 
 describe("pipInterceptor", async () => {
-  let lastPackage;
+  let scannedPackages;
   let malwareResponse = false;
 
   mock.module("../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
-        lastPackage = { packageName, version };
+        scannedPackages.push({ packageName, version });
         return malwareResponse;
       },
     },
@@ -111,12 +111,24 @@ describe("pipInterceptor", async () => {
 
   parserCases.forEach(({ url, expected }, index) => {
     it(`should parse URL ${index + 1}: ${url}`, async () => {
+      scannedPackages = [];
       const interceptor = pipInterceptorForUrl(url);
       assert.ok(interceptor, "Interceptor should be created for known pip registry");
 
       await interceptor.handleRequest(url);
 
-      assert.deepEqual(lastPackage, expected);
+      if (expected.packageName === undefined) {
+        assert.deepEqual(scannedPackages, []);
+        return;
+      }
+
+      assert.ok(
+        scannedPackages.some(
+          ({ packageName, version }) =>
+            packageName === expected.packageName &&
+            version === expected.version
+        )
+      );
     });
   });
 
@@ -127,6 +139,7 @@ describe("pipInterceptor", async () => {
   });
 
   it("should block malicious package", async () => {
+    scannedPackages = [];
     const url =
       "https://files.pythonhosted.org/packages/xx/yy/malicious_package-1.0.0.tar.gz";
     malwareResponse = true;
