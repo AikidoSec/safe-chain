@@ -4,61 +4,79 @@
  * @returns {{packageName: string | undefined, version: string | undefined}}
  */
 export function parsePipPackageFromUrl(url, registry) {
-  let packageName, version;
-
   if (!registry || typeof url !== "string") {
-    return { packageName, version };
+    return { packageName: undefined, version: undefined };
   }
 
   let urlObj;
   try {
     urlObj = new URL(url);
   } catch {
-    return { packageName, version };
+    return { packageName: undefined, version: undefined };
   }
 
   const lastSegment = urlObj.pathname.split("/").filter(Boolean).pop();
   if (!lastSegment) {
-    return { packageName, version };
+    return { packageName: undefined, version: undefined };
   }
 
   const filename = decodeURIComponent(lastSegment);
 
   const wheelExtRe = /\.whl(?:\.metadata)?$/;
   if (wheelExtRe.test(filename)) {
-    const base = filename.replace(wheelExtRe, "");
-    const firstDash = base.indexOf("-");
-    if (firstDash > 0) {
-      const dist = base.slice(0, firstDash);
-      const rest = base.slice(firstDash + 1);
-      const secondDash = rest.indexOf("-");
-      const rawVersion = secondDash >= 0 ? rest.slice(0, secondDash) : rest;
-      packageName = dist;
-      version = rawVersion;
-
-      if (version === "latest" || !packageName || !version) {
-        return { packageName: undefined, version: undefined };
-      }
-
-      return { packageName, version };
-    }
+    return parseWheelFilename(filename, wheelExtRe);
   }
 
   const sdistExtWithMetadataRe = /\.(tar\.gz|zip|tar\.bz2|tar\.xz)(\.metadata)?$/i;
-  if (sdistExtWithMetadataRe.test(filename)) {
-    const base = filename.replace(sdistExtWithMetadataRe, "");
-    const lastDash = base.lastIndexOf("-");
-    if (lastDash > 0 && lastDash < base.length - 1) {
-      packageName = base.slice(0, lastDash);
-      version = base.slice(lastDash + 1);
-
-      if (version === "latest" || !packageName || !version) {
-        return { packageName: undefined, version: undefined };
-      }
-
-      return { packageName, version };
-    }
+  if (!sdistExtWithMetadataRe.test(filename)) {
+    return { packageName: undefined, version: undefined };
   }
 
-  return { packageName: undefined, version: undefined };
+  return parseSdistFilename(filename, sdistExtWithMetadataRe);
+}
+
+/**
+ * @param {string} filename
+ * @param {RegExp} wheelExtRe
+ * @returns {{packageName: string | undefined, version: string | undefined}}
+ */
+function parseWheelFilename(filename, wheelExtRe) {
+  const base = filename.replace(wheelExtRe, "");
+  const firstDash = base.indexOf("-");
+  if (firstDash <= 0) {
+    return { packageName: undefined, version: undefined };
+  }
+
+  const packageName = base.slice(0, firstDash);
+  const rest = base.slice(firstDash + 1);
+  const secondDash = rest.indexOf("-");
+  const version = secondDash >= 0 ? rest.slice(0, secondDash) : rest;
+
+  if (version === "latest" || !packageName || !version) {
+    return { packageName: undefined, version: undefined };
+  }
+
+  return { packageName, version };
+}
+
+/**
+ * @param {string} filename
+ * @param {RegExp} sdistExtWithMetadataRe
+ * @returns {{packageName: string | undefined, version: string | undefined}}
+ */
+function parseSdistFilename(filename, sdistExtWithMetadataRe) {
+  const base = filename.replace(sdistExtWithMetadataRe, "");
+  const lastDash = base.lastIndexOf("-");
+  if (lastDash <= 0 || lastDash >= base.length - 1) {
+    return { packageName: undefined, version: undefined };
+  }
+
+  const packageName = base.slice(0, lastDash);
+  const version = base.slice(lastDash + 1);
+
+  if (version === "latest" || !packageName || !version) {
+    return { packageName: undefined, version: undefined };
+  }
+
+  return { packageName, version };
 }

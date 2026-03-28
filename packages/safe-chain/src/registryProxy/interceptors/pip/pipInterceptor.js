@@ -36,7 +36,15 @@ export function pipInterceptorForUrl(url) {
  * @returns {import("../interceptorBuilder.js").Interceptor | undefined}
  */
 function buildPipInterceptor(registry) {
-  return interceptRequests(async (reqContext) => {
+  return interceptRequests(createPipRequestHandler(registry));
+}
+
+/**
+ * @param {string} registry
+ * @returns {(reqContext: import("../interceptorBuilder.js").RequestInterceptionContext) => Promise<void>}
+ */
+function createPipRequestHandler(registry) {
+  return async (reqContext) => {
     const { packageName, version } = parsePipPackageFromUrl(
       reqContext.targetUrl,
       registry
@@ -76,5 +84,5 @@ function buildPipInterceptor(registry) {
         );
       }
     }
-  });
+  };
 }
