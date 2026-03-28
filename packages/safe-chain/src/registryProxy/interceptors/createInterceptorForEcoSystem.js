@@ -4,7 +4,7 @@ import {
   getEcoSystem,
 } from "../../config/settings.js";
 import { npmInterceptorForUrl } from "./npm/npmInterceptor.js";
-import { pipInterceptorForUrl } from "./pipInterceptor.js";
+import { pipInterceptorForUrl } from "./pip/pipInterceptor.js";
 
 /**
  * @param {string} url

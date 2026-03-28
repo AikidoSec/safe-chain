@@ -8,7 +8,6 @@ import {
   getNewPackagesListVersionPath,
 } from "../config/configFile.js";
 import { ui } from "../environment/userInteraction.js";
-import { getEcoSystem, ECOSYSTEM_JS } from "../config/settings.js";
 import { buildNewPackagesDatabase } from "./newPackagesDatabaseBuilder.js";
 import { warnOnceAboutUnavailableDatabase } from "./newPackagesDatabaseWarnings.js";
 
@@ -25,11 +24,6 @@ let cachedNewPackagesDatabase = null;
  */
 export async function openNewPackagesDatabase() {
   if (cachedNewPackagesDatabase) {
-    return cachedNewPackagesDatabase;
-  }
-
-  if (getEcoSystem() !== ECOSYSTEM_JS) {
-    cachedNewPackagesDatabase = { isNewlyReleasedPackage: () => false };
     return cachedNewPackagesDatabase;
   }
 

@@ -28,7 +28,7 @@ mock.module("../../../config/settings.js", {
     setEcoSystem: () => {},
     getMinimumPackageAgeHours: () => 24,
     getNpmCustomRegistries: () => customRegistries,
-    getNpmMinimumPackageAgeExclusions: () => [],
+    getMinimumPackageAgeExclusions: () => [],
     skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
   },
 });

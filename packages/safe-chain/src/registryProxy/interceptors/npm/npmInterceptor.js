@@ -1,6 +1,5 @@
 import {
   getNpmCustomRegistries,
-  getNpmMinimumPackageAgeExclusions,
   skipMinimumPackageAge,
 } from "../../../config/settings.js";
 import { isMalwarePackage } from "../../../scanning/audit/index.js";
@@ -8,12 +7,14 @@ import { interceptRequests } from "../interceptorBuilder.js";
 import {
   getPackageNameFromMetadataResponse,
   isPackageInfoUrl,
-  matchesExclusionPattern,
   modifyNpmInfoRequestHeaders,
   modifyNpmInfoResponse,
 } from "./modifyNpmInfo.js";
 import { parseNpmPackageUrl } from "./parseNpmPackageUrl.js";
 import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
+import {
+  isExcludedFromMinimumPackageAge,
+} from "../minimumPackageAgeExclusions.js";
 
 const knownJsRegistries = [
   "registry.npmjs.org",
@@ -79,17 +80,6 @@ function buildNpmInterceptor(registry) {
       }
     }
   });
-}
-
-/**
- * @param {string} packageName
- * @returns {boolean}
- */
-function isExcludedFromMinimumPackageAge(packageName) {
-  const exclusions = getNpmMinimumPackageAgeExclusions();
-  return exclusions.some((pattern) =>
-    matchesExclusionPattern(packageName, pattern)
-  );
 }
 
 /**

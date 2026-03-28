@@ -5,7 +5,7 @@ describe("pipInterceptor", async () => {
   let lastPackage;
   let malwareResponse = false;
 
-  mock.module("../../scanning/audit/index.js", {
+  mock.module("../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
         lastPackage = { packageName, version };
@@ -14,10 +14,27 @@ describe("pipInterceptor", async () => {
     },
   });
 
+  mock.module("../../../scanning/newPackagesListCache.js", {
+    namedExports: {
+      openNewPackagesDatabase: async () => ({
+        isNewlyReleasedPackage: () => false,
+      }),
+    },
+  });
+
+  mock.module("../../../config/settings.js", {
+    namedExports: {
+      ECOSYSTEM_PY: "py",
+      getEcoSystem: () => "py",
+      getMinimumPackageAgeExclusions: () => [],
+      getPipCustomRegistries: () => [],
+      skipMinimumPackageAge: () => false,
+    },
+  });
+
   const { pipInterceptorForUrl } = await import("./pipInterceptor.js");
 
   const parserCases = [
-    // Valid pip URLs
     {
       url: "https://files.pythonhosted.org/packages/xx/yy/foobar-1.2.3.tar.gz",
       expected: { packageName: "foobar", version: "1.2.3" },
@@ -35,7 +52,6 @@ describe("pipInterceptor", async () => {
       expected: { packageName: "foo-bar", version: "2.0.0" },
     },
     {
-      // Poetry preflight metadata alongside wheel (.whl.metadata)
       url: "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl.metadata",
       expected: { packageName: "foo-bar", version: "2.0.0" },
     },
@@ -52,7 +68,6 @@ describe("pipInterceptor", async () => {
       expected: { packageName: "foo-bar", version: "2.0.0b1" },
     },
     {
-      // sdist with metadata sidecar (.tar.gz.metadata)
       url: "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0.tar.gz.metadata",
       expected: { packageName: "foo-bar", version: "2.0.0" },
     },
@@ -76,7 +91,6 @@ describe("pipInterceptor", async () => {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-2.0.0-cp38-cp38-manylinux1_x86_64.whl",
       expected: { packageName: "foo-bar", version: "2.0.0" },
     },
-    // Invalid pip URLs
     {
       url: "https://pypi.org/simple/",
       expected: { packageName: undefined, version: undefined },
@@ -98,10 +112,7 @@ describe("pipInterceptor", async () => {
   parserCases.forEach(({ url, expected }, index) => {
     it(`should parse URL ${index + 1}: ${url}`, async () => {
       const interceptor = pipInterceptorForUrl(url);
-      assert.ok(
-        interceptor,
-        "Interceptor should be created for known npm registry"
-      );
+      assert.ok(interceptor, "Interceptor should be created for known pip registry");
 
       await interceptor.handleRequest(url);
 
@@ -111,14 +122,8 @@ describe("pipInterceptor", async () => {
 
   it("should not create interceptor for unknown registry", () => {
     const url = "https://example.com/packages/xx/yy/foobar-1.2.3.tar.gz";
-
     const interceptor = pipInterceptorForUrl(url);
-
-    assert.equal(
-      interceptor,
-      undefined,
-      "Interceptor should be undefined for unknown registry"
-    );
+    assert.equal(interceptor, undefined);
   });
 
   it("should block malicious package", async () => {
@@ -127,19 +132,15 @@ describe("pipInterceptor", async () => {
     malwareResponse = true;
 
     const interceptor = pipInterceptorForUrl(url);
-
     const result = await interceptor.handleRequest(url);
 
-    assert.ok(result.blockResponse, "Should contain a blockResponse");
-    assert.equal(
-      result.blockResponse.statusCode,
-      403,
-      "Block response should have status code 403"
-    );
+    assert.ok(result.blockResponse);
+    assert.equal(result.blockResponse.statusCode, 403);
     assert.equal(
       result.blockResponse.message,
-      "Forbidden - blocked by safe-chain",
-      "Block response should have correct status message"
+      "Forbidden - blocked by safe-chain"
     );
+
+    malwareResponse = false;
   });
 });

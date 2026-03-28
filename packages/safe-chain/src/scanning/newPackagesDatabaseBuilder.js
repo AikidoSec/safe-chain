@@ -4,10 +4,11 @@ import {
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
 } from "../config/settings.js";
+import { getEquivalentPackageNames } from "./packageNameVariants.js";
 
 /**
  * @typedef {Object} NewPackagesDatabase
- * @property {function(string, string): boolean} isNewlyReleasedPackage
+ * @property {function(string | undefined, string | undefined): boolean} isNewlyReleasedPackage
  */
 
 /**
@@ -33,21 +34,28 @@ function getCurrentFeedSource() {
  * @returns {NewPackagesDatabase}
  */
 export function buildNewPackagesDatabase(newPackagesList) {
+  const ecosystem = getEcoSystem();
+
   /**
-   * @param {string} name
-   * @param {string} version
+   * @param {string | undefined} name
+   * @param {string | undefined} version
    * @returns {boolean}
    */
   function isNewlyReleasedPackage(name, version) {
+    if (!name || !version) {
+      return false;
+    }
+
     const cutOff = new Date(
       new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
     );
     const expectedSource = getCurrentFeedSource();
+    const candidateNames = getEquivalentPackageNames(name, ecosystem);
 
     const entry = newPackagesList.find(
       (pkg) =>
         (!pkg.source || pkg.source.toLowerCase() === expectedSource) &&
-        pkg.package_name === name &&
+        candidateNames.includes(pkg.package_name) &&
         pkg.version === version
     );
 

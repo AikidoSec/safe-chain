@@ -50,6 +50,15 @@ describe("buildNewPackagesDatabase", () => {
       assert.strictEqual(db.isNewlyReleasedPackage("not-there", "1.0.0"), false);
     });
 
+    it("returns false when name or version is undefined", () => {
+      const db = buildNewPackagesDatabase([
+        { package_name: "foo", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage(undefined, "1.0.0"), false);
+      assert.strictEqual(db.isNewlyReleasedPackage("foo", undefined), false);
+    });
+
     it("returns false for a known package but different version", () => {
       const db = buildNewPackagesDatabase([
         { package_name: "foo", version: "2.0.0", released_on: hoursAgo(1) },
@@ -96,5 +105,54 @@ describe("buildNewPackagesDatabase", () => {
 
       minimumPackageAgeHours = 24; // reset
     });
+
+    it("matches underscore request names against hyphen feed names for python", () => {
+      ecosystem = "py";
+
+      const db = buildNewPackagesDatabase([
+        { source: "pypi", package_name: "foo-bar", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage("foo_bar", "1.0.0"), true);
+
+      ecosystem = "js";
+    });
+
+    it("matches hyphen request names against underscore feed names for python", () => {
+      ecosystem = "py";
+
+      const db = buildNewPackagesDatabase([
+        { source: "pypi", package_name: "foo_bar", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage("foo-bar", "1.0.0"), true);
+
+      ecosystem = "js";
+    });
+
+    it("matches dot request names against hyphen feed names for python", () => {
+      ecosystem = "py";
+
+      const db = buildNewPackagesDatabase([
+        { source: "pypi", package_name: "foo-bar", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage("foo.bar", "1.0.0"), true);
+
+      ecosystem = "js";
+    });
+
+    it("matches underscore request names against dot feed names for python", () => {
+      ecosystem = "py";
+
+      const db = buildNewPackagesDatabase([
+        { source: "pypi", package_name: "foo.bar", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage("foo_bar", "1.0.0"), true);
+
+      ecosystem = "js";
+    });
+
   });
 });

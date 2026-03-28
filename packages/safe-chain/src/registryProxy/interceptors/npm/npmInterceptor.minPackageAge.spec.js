@@ -14,7 +14,7 @@ describe("npmInterceptor minimum package age", async () => {
       getMinimumPackageAgeHours: () => minimumPackageAgeSettings,
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
       getNpmCustomRegistries: () => [],
-      getNpmMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
+      getMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
       getEcoSystem: () => "js",
     },
   });
