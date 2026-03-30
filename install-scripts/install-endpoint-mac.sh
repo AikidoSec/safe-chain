@@ -1,14 +1,14 @@
 #!/bin/sh
 
-# Downloads and installs SafeChain Ultimate endpoint on macOS
+# Downloads and installs Aikido Endpoint Protection on macOS
 #
 # Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN>
 
 set -e  # Exit on error
 
 # Configuration
-INSTALL_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.2.5/SafeChainUltimate.pkg"
-DOWNLOAD_SHA256="abc2b0e6c6a4ca33cd893eeb16744f9f2da90013fb1abac301f5c00c2ad8bc30"
+INSTALL_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.2.7/EndpointProtection.pkg"
+DOWNLOAD_SHA256="2c180c575b6fbeb1e33b69cf8357a2a7dbf6868b5f98cfb82b83243daccc0cf9"
 TOKEN_FILE="/tmp/aikido_endpoint_token.txt"
 
 # Colors for output
@@ -111,10 +111,10 @@ main() {
     esac
 
     # 2. Download and verify checksum
-    PKG_FILE=$(mktemp /tmp/SafeChainUltimate.XXXXXX.pkg)
+    PKG_FILE=$(mktemp /tmp/AikidoEndpoint.XXXXXX.pkg)
     trap cleanup EXIT
 
-    info "Downloading SafeChain Ultimate..."
+    info "Downloading Aikido Endpoint Protection..."
     download "$INSTALL_URL" "$PKG_FILE"
 
     info "Verifying checksum..."
@@ -124,10 +124,10 @@ main() {
     printf "%s" "$TOKEN" > "$TOKEN_FILE"
 
     # 4. Install the package
-    info "Installing SafeChain Ultimate..."
+    info "Installing Aikido Endpoint Protection..."
     installer -pkg "$PKG_FILE" -target /
 
-    info "SafeChain Ultimate installed successfully!"
+    info "Aikido Endpoint Protection installed successfully!"
 }
 
 main "$@"
