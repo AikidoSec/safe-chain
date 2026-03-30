@@ -1,4 +1,10 @@
 /**
+ * Parse Python package artifact URLs from PyPI-style registries.
+ * Examples:
+ * - Wheel: https://files.pythonhosted.org/packages/.../requests-2.28.1-py3-none-any.whl
+ * - Wheel metadata: https://files.pythonhosted.org/packages/.../requests-2.28.1-py3-none-any.whl.metadata
+ * - Sdist: https://files.pythonhosted.org/packages/.../requests-2.28.1.tar.gz
+ *
  * @param {string} url
  * @param {string} registry
  * @returns {{packageName: string | undefined, version: string | undefined}}
@@ -36,6 +42,11 @@ export function parsePipPackageFromUrl(url, registry) {
 }
 
 /**
+ * Parse wheel filenames and Poetry preflight metadata.
+ * Examples:
+ * - foo_bar-2.0.0-py3-none-any.whl
+ * - foo_bar-2.0.0-py3-none-any.whl.metadata
+ *
  * @param {string} filename
  * @param {RegExp} wheelExtRe
  * @returns {{packageName: string | undefined, version: string | undefined}}
@@ -52,6 +63,7 @@ function parseWheelFilename(filename, wheelExtRe) {
   const secondDash = rest.indexOf("-");
   const version = secondDash >= 0 ? rest.slice(0, secondDash) : rest;
 
+  // "latest" is a resolver-style token, not an actual published artifact version.
   if (version === "latest" || !packageName || !version) {
     return { packageName: undefined, version: undefined };
   }
@@ -60,6 +72,12 @@ function parseWheelFilename(filename, wheelExtRe) {
 }
 
 /**
+ * Parse source distribution filenames, with optional metadata suffix.
+ * Examples:
+ * - requests-2.28.1.tar.gz
+ * - requests-2.28.1.zip
+ * - requests-2.28.1.tar.gz.metadata
+ *
  * @param {string} filename
  * @param {RegExp} sdistExtWithMetadataRe
  * @returns {{packageName: string | undefined, version: string | undefined}}
@@ -74,6 +92,7 @@ function parseSdistFilename(filename, sdistExtWithMetadataRe) {
   const packageName = base.slice(0, lastDash);
   const version = base.slice(lastDash + 1);
 
+  // "latest" is a resolver-style token, not an actual published artifact version.
   if (version === "latest" || !packageName || !version) {
     return { packageName: undefined, version: undefined };
   }
