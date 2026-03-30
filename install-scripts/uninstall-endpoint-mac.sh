@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# Uninstalls SafeChain Ultimate endpoint on macOS
+# Uninstalls Aikido Endpoint Protection on macOS
 #
 # Usage: curl -fsSL <url> | sudo sh
 
 set -e  # Exit on error
 
 # Configuration
-UNINSTALL_SCRIPT="/Library/Application Support/AikidoSecurity/SafeChainUltimate/scripts/uninstall"
+UNINSTALL_SCRIPT="/Library/Application Support/AikidoSecurity/EndpointProtection/scripts/uninstall"
 
 # Colors for output
 RED='\033[0;31m'
@@ -38,13 +38,13 @@ main() {
 
     # Check if the uninstall script exists
     if [ ! -f "$UNINSTALL_SCRIPT" ]; then
-        error "SafeChain Ultimate does not appear to be installed (uninstall script not found)."
+        error "Aikido Endpoint Protection does not appear to be installed (uninstall script not found)."
     fi
 
-    info "Uninstalling SafeChain Ultimate..."
+    info "Uninstalling Aikido Endpoint Protection..."
     "$UNINSTALL_SCRIPT"
 
-    info "SafeChain Ultimate uninstalled successfully!"
+    info "Aikido Endpoint Protection uninstalled successfully!"
 }
 
 main "$@"

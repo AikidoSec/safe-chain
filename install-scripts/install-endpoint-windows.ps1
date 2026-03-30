@@ -1,4 +1,4 @@
-# Downloads and installs SafeChain Ultimate endpoint on Windows
+# Downloads and installs Aikido Endpoint Protection on Windows
 #
 # Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } -token <TOKEN>"
 
@@ -7,8 +7,8 @@ param(
 )
 
 # Configuration
-$InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.2.5/SafeChainUltimate.msi"
-$DownloadSha256 = "c4d1be7bb2128473b8e955244dc186b5d3f091f668b43cdd3d810cff9d38193c"
+$InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.2.7/EndpointProtection.msi"
+$DownloadSha256 = "7bad18d7df9e0654d2edd16a52aea34b0455c3c6d8fb407362d0a86a77cb7d4f"
 
 # Ensure TLS 1.2 is enabled for downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -53,9 +53,9 @@ function Install-Endpoint {
     }
 
     # 2. Download the .msi
-    $msiFile = Join-Path $env:TEMP "SafeChainUltimate-$([System.Guid]::NewGuid().ToString('N')).msi"
+    $msiFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).msi"
 
-    Write-Info "Downloading SafeChain Ultimate..."
+    Write-Info "Downloading Aikido Endpoint Protection..."
     try {
         $ProgressPreference = 'SilentlyContinue'
         Invoke-WebRequest -Uri $InstallUrl -OutFile $msiFile -UseBasicParsing
@@ -75,13 +75,13 @@ function Install-Endpoint {
         Write-Info "Checksum verified successfully."
 
         # 3. Install the package with token passed as MSI property
-        Write-Info "Installing SafeChain Ultimate..."
+        Write-Info "Installing Aikido Endpoint Protection..."
         $process = Start-Process -FilePath "msiexec" -ArgumentList "/i", "`"$msiFile`"", "/qn", "/norestart", "AIKIDO_TOKEN=$token" -Wait -PassThru
         if ($process.ExitCode -ne 0) {
             Write-Error-Custom "MSI installer failed (exit code: $($process.ExitCode))."
         }
 
-        Write-Info "SafeChain Ultimate installed successfully!"
+        Write-Info "Aikido Endpoint Protection installed successfully!"
     }
     finally {
         # Cleanup
