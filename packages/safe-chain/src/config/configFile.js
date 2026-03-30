@@ -129,18 +129,21 @@ export function getPipCustomRegistries() {
 }
 
 /**
- * Gets the minimum package age exclusions from the config file
+ * Gets the minimum package age exclusions from the config file for the current ecosystem
  * @returns {string[]}
  */
-export function getNpmMinimumPackageAgeExclusions() {
+export function getMinimumPackageAgeExclusions() {
   const config = readConfigFile();
+  const ecosystem = getEcoSystem();
+  const registryConfig = ecosystem === "py" ? config.pip : config.npm;
 
-  if (!config || !config.npm) {
+  if (!config || !registryConfig) {
     return [];
   }
 
-  const npmConfig = /** @type {SafeChainRegistryConfiguration} */ (config.npm);
-  const exclusions = npmConfig.minimumPackageAgeExclusions;
+  const typedRegistryConfig =
+    /** @type {SafeChainRegistryConfiguration} */ (registryConfig);
+  const exclusions = typedRegistryConfig.minimumPackageAgeExclusions;
 
   if (!Array.isArray(exclusions)) {
     return [];

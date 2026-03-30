@@ -188,11 +188,11 @@ function parseExclusionsFromEnv(envValue) {
  * Gets the minimum package age exclusions from both environment variable and config file (merged)
  * @returns {string[]}
  */
-export function getNpmMinimumPackageAgeExclusions() {
+export function getMinimumPackageAgeExclusions() {
   const envExclusions = parseExclusionsFromEnv(
-    environmentVariables.getNpmMinimumPackageAgeExclusions()
+    environmentVariables.getMinimumPackageAgeExclusions()
   );
-  const configExclusions = configFile.getNpmMinimumPackageAgeExclusions();
+  const configExclusions = configFile.getMinimumPackageAgeExclusions();
 
   // Merge both sources and remove duplicates
   const allExclusions = [...envExclusions, ...configExclusions];

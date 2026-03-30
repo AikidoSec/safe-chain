@@ -111,16 +111,19 @@ safe-chain --version
 
 The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, uv, poetry or pipx commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
 
-### Minimum package age (npm only)
+### Minimum package age
 
-For npm packages, Safe Chain applies minimum package age checks in two ways:
+Safe Chain applies minimum package age checks to supported ecosystems.
 
-- During normal package resolution, Safe Chain suppresses versions that are newer than the configured minimum age from the package metadata returned by the registry.
-- For direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages.
+Current enforcement differs by ecosystem:
+
+- npm-based package managers:
+  - during normal package resolution, Safe Chain suppresses versions that are newer than the configured minimum age from the package metadata returned by the registry
+  - for direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages
+- Python package managers:
+  - Safe Chain blocks direct package download requests using a cached list of newly released packages
 
 By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
-
-⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry, pipx).
 
 ### Shell Integration
 
@@ -188,12 +191,14 @@ You can set the logging level through multiple sources (in order of priority):
 
 ## Minimum Package Age
 
-You can configure how long packages must exist before Safe Chain allows their installation. By default, packages must be at least 48 hours old before they can be installed through npm-based package managers.
+You can configure how long packages must exist before Safe Chain allows their installation. By default, packages must be at least 48 hours old before they can be installed.
 
 For npm-based package managers, this check currently has two enforcement modes:
 
 - Safe Chain suppresses too-young versions from package metadata during normal dependency resolution.
 - Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
+
+For Python package managers, Safe Chain currently enforces minimum package age by blocking direct package download requests when they are matched against the cached newly released packages list.
 
 ### Configuration Options
 
@@ -225,13 +230,16 @@ You can set the minimum package age through multiple sources (in order of priori
 Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged). Use `@scope/*` to trust all packages from an organization:
 
 ```shell
-export SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
+export SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
 ```
 
 ```json
 {
   "npm": {
     "minimumPackageAgeExclusions": ["@aikidosec/*"]
+  },
+  "pip": {
+    "minimumPackageAgeExclusions": ["requests"]
   }
 }
 ```

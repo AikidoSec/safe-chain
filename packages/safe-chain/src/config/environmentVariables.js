@@ -41,6 +41,7 @@ export function getLoggingLevel() {
  * Example: "react,@aikidosec/safe-chain,lodash"
  * @returns {string | undefined}
  */
-export function getNpmMinimumPackageAgeExclusions() {
-  return process.env.SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS;
+export function getMinimumPackageAgeExclusions() {
+  return process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS ||
+    process.env.SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS;
 }

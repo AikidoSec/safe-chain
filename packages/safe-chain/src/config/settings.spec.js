@@ -14,7 +14,10 @@ mock.module("fs", {
 const {
   getNpmCustomRegistries,
   getPipCustomRegistries,
-  getNpmMinimumPackageAgeExclusions,
+  getMinimumPackageAgeExclusions,
+  setEcoSystem,
+  ECOSYSTEM_JS,
+  ECOSYSTEM_PY,
   getLoggingLevel,
   LOGGING_SILENT,
   LOGGING_NORMAL,
@@ -367,13 +370,18 @@ describe("getLoggingLevel", () => {
   });
 });
 
-describe("getNpmMinimumPackageAgeExclusions", () => {
+describe("getMinimumPackageAgeExclusions", () => {
   let originalEnv;
-  const envVarName = "SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS";
+  let originalLegacyEnv;
+  const envVarName = "SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS";
+  const legacyEnvVarName = "SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS";
 
   beforeEach(() => {
     originalEnv = process.env[envVarName];
+    originalLegacyEnv = process.env[legacyEnvVarName];
     delete process.env[envVarName];
+    delete process.env[legacyEnvVarName];
+    setEcoSystem(ECOSYSTEM_JS);
   });
 
   afterEach(() => {
@@ -382,13 +390,18 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
     } else {
       delete process.env[envVarName];
     }
+    if (originalLegacyEnv !== undefined) {
+      process.env[legacyEnvVarName] = originalLegacyEnv;
+    } else {
+      delete process.env[legacyEnvVarName];
+    }
     configFileContent = undefined;
   });
 
   it("should return empty array when no exclusions configured", () => {
     configFileContent = undefined;
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, []);
   });
@@ -400,7 +413,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
       },
     });
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["react", "@aikidosec/safe-chain"]);
   });
@@ -409,7 +422,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
     process.env[envVarName] = "lodash,express,@types/node";
     configFileContent = undefined;
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["lodash", "express", "@types/node"]);
   });
@@ -422,7 +435,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
       },
     });
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["lodash", "react"]);
   });
@@ -435,7 +448,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
       },
     });
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["lodash", "react", "express"]);
   });
@@ -444,7 +457,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
     process.env[envVarName] = "  lodash  ,  react  ";
     configFileContent = undefined;
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["lodash", "react"]);
   });
@@ -456,7 +469,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
       },
     });
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["@babel/core", "@types/react"]);
   });
@@ -465,7 +478,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
     process.env[envVarName] = "lodash,,react,";
     configFileContent = undefined;
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["lodash", "react"]);
   });
@@ -474,7 +487,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
     process.env[envVarName] = "";
     configFileContent = undefined;
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, []);
   });
@@ -483,7 +496,7 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
     process.env[envVarName] = "   ,  ,  ";
     configFileContent = undefined;
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, []);
   });
@@ -495,8 +508,29 @@ describe("getNpmMinimumPackageAgeExclusions", () => {
       },
     });
 
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["react", "lodash"]);
+  });
+
+  it("should fall back to the legacy npm environment variable", () => {
+    process.env[legacyEnvVarName] = "lodash,react";
+
+    const exclusions = getMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["lodash", "react"]);
+  });
+
+  it("should read exclusions from the python config when the current ecosystem is py", () => {
+    setEcoSystem(ECOSYSTEM_PY);
+    configFileContent = JSON.stringify({
+      pip: {
+        minimumPackageAgeExclusions: ["requests", "urllib3"],
+      },
+    });
+
+    const exclusions = getMinimumPackageAgeExclusions();
+
+    assert.deepStrictEqual(exclusions, ["requests", "urllib3"]);
   });
 });

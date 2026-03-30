@@ -174,10 +174,18 @@ describe("newPackagesDatabase", async () => {
       assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), true);
     });
 
-    it("returns false for all packages when ecosystem is not JS", async () => {
+    it("supports package checks for the python ecosystem", async () => {
       ecosystem = "py";
+      fetchedList = [
+        {
+          source: "pypi",
+          package_name: "foo",
+          version: "1.0.0",
+          released_on: hoursAgo(1),
+        },
+      ];
       const db = await openNewPackagesDatabase();
-      assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), false);
+      assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), true);
     });
   });
 
