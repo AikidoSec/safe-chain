@@ -34,7 +34,7 @@ describe("E2E: npm coverage using PATH", () => {
   it(`safe-chain succesfully installs safe packages`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "npm i axios --safe-chain-logging=verbose"
+      "npm i axios@1.13.0 --safe-chain-logging=verbose"
     );
 
     assert.ok(

@@ -34,7 +34,7 @@ describe("E2E: pnpm coverage", () => {
   it(`safe-chain succesfully installs safe packages`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "pnpm add axios --safe-chain-logging=verbose"
+      "pnpm add axios@1.13.0 --safe-chain-logging=verbose"
     );
 
     assert.ok(
