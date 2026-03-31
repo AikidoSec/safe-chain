@@ -40,7 +40,7 @@ describe("E2E: safe-chain setup-ci command", () => {
 
       const projectShell = await container.openShell(shell);
       const result = await projectShell.runCommand(
-        "npm i axios --safe-chain-logging=verbose"
+        "npm i axios@1.13.0 --safe-chain-logging=verbose"
       );
 
       const hasExpectedOutput = result.output.includes("Safe-chain: Scanned");

@@ -30,7 +30,7 @@ describe("E2E: safe-chain setup command", () => {
       const projectShell = await container.openShell(shell);
       await projectShell.runCommand("cd /testapp");
       const result = await projectShell.runCommand(
-        "npm i axios --safe-chain-logging=verbose"
+        "npm i axios@1.13.0 --safe-chain-logging=verbose"
       );
 
       const hasExpectedOutput = result.output.includes("Safe-chain: Scanned");
@@ -50,8 +50,8 @@ describe("E2E: safe-chain setup command", () => {
 
       const projectShell = await container.openShell(shell);
       await projectShell.runCommand("cd /testapp");
-      await projectShell.runCommand("npm i axios");
-      const result = await projectShell.runCommand("npm i axios");
+      await projectShell.runCommand("npm i axios@1.13.0");
+      const result = await projectShell.runCommand("npm i axios@1.13.0");
 
       assert.ok(
         !result.output.includes("Scanning for malicious packages..."),

@@ -32,7 +32,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     // Ensure NODE_EXTRA_CA_CERTS is not set
     await shell.runCommand("unset NODE_EXTRA_CA_CERTS");
     
-    const result = await shell.runCommand("npm install axios");
+    const result = await shell.runCommand("npm install axios@1.13.0");
 
     assert.ok(
       result.output.includes("added") || result.output.includes("up to date"),
@@ -55,7 +55,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     
     // Set NODE_EXTRA_CA_CERTS and run npm install
     const result = await shell.runCommand(
-      "NODE_EXTRA_CA_CERTS=/tmp/valid-certs.pem npm install axios"
+      "NODE_EXTRA_CA_CERTS=/tmp/valid-certs.pem npm install axios@1.13.0"
     );
 
     assert.ok(
@@ -69,7 +69,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     
     // Set NODE_EXTRA_CA_CERTS to a non-existent path
     const result = await shell.runCommand(
-      'export NODE_EXTRA_CA_CERTS="/tmp/nonexistent-certs.pem" && npm install axios'
+      'export NODE_EXTRA_CA_CERTS="/tmp/nonexistent-certs.pem" && npm install axios@1.13.0'
     );
 
     // Should still succeed - safe-chain should gracefully handle missing user certs
@@ -95,7 +95,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     
     // Set NODE_EXTRA_CA_CERTS to invalid cert
     const result = await shell.runCommand(
-      'export NODE_EXTRA_CA_CERTS="/tmp/invalid-certs.pem" && npm install axios'
+      'export NODE_EXTRA_CA_CERTS="/tmp/invalid-certs.pem" && npm install axios@1.13.0'
     );
 
     // Should still succeed - safe-chain should skip invalid user certs
@@ -116,7 +116,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     
     // Try to set NODE_EXTRA_CA_CERTS with path traversal
     const result = await shell.runCommand(
-      'export NODE_EXTRA_CA_CERTS="/tmp/../../../etc/passwd" && npm install axios'
+      'export NODE_EXTRA_CA_CERTS="/tmp/../../../etc/passwd" && npm install axios@1.13.0'
     );
 
     // Should still succeed - safe-chain should reject path traversal
@@ -133,7 +133,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     await shell.runCommand("touch /tmp/empty-certs.pem");
     
     const result = await shell.runCommand(
-      'export NODE_EXTRA_CA_CERTS="/tmp/empty-certs.pem" && npm install axios'
+      'export NODE_EXTRA_CA_CERTS="/tmp/empty-certs.pem" && npm install axios@1.13.0'
     );
 
     // Should still succeed - empty file should be ignored gracefully
@@ -150,7 +150,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     await shell.runCommand("mkdir -p /tmp/cert-dir");
     
     const result = await shell.runCommand(
-      'export NODE_EXTRA_CA_CERTS="/tmp/cert-dir" && npm install axios'
+      'export NODE_EXTRA_CA_CERTS="/tmp/cert-dir" && npm install axios@1.13.0'
     );
 
     // Should still succeed - directory should be treated as invalid cert file
@@ -169,7 +169,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     );
     
     const result = await shell.runCommand(
-      'cd /tmp/cert-test && export NODE_EXTRA_CA_CERTS="./certs.pem" && npm install axios'
+      'cd /tmp/cert-test && export NODE_EXTRA_CA_CERTS="./certs.pem" && npm install axios@1.13.0'
     );
 
     // Should still succeed - relative paths should be resolved properly
@@ -186,7 +186,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     await shell.runCommand("cp /etc/ssl/certs/ca-certificates.crt /tmp/absolute-certs.pem");
     
     const result = await shell.runCommand(
-      "NODE_EXTRA_CA_CERTS=/tmp/absolute-certs.pem npm install axios"
+      "NODE_EXTRA_CA_CERTS=/tmp/absolute-certs.pem npm install axios@1.13.0"
     );
 
     assert.ok(
@@ -202,7 +202,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     await shell.runCommand("cp /etc/ssl/certs/ca-certificates.crt /tmp/merge-certs.pem");
     
     const result = await shell.runCommand(
-      "NODE_EXTRA_CA_CERTS=/tmp/merge-certs.pem npm install axios lodash"
+      "NODE_EXTRA_CA_CERTS=/tmp/merge-certs.pem npm install axios@1.13.0 lodash"
     );
 
     assert.ok(
@@ -306,7 +306,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     await shell.runCommand("cp /etc/ssl/certs/ca-certificates.crt /tmp/yarn-certs.pem");
     
     const result = await shell.runCommand(
-      "NODE_EXTRA_CA_CERTS=/tmp/yarn-certs.pem yarn add axios"
+      "NODE_EXTRA_CA_CERTS=/tmp/yarn-certs.pem yarn add axios@1.13.0"
     );
 
     assert.ok(
@@ -322,7 +322,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     await shell.runCommand("cp /etc/ssl/certs/ca-certificates.crt /tmp/pnpm-certs.pem");
     
     const result = await shell.runCommand(
-      "NODE_EXTRA_CA_CERTS=/tmp/pnpm-certs.pem pnpm add axios"
+      "NODE_EXTRA_CA_CERTS=/tmp/pnpm-certs.pem pnpm add axios@1.13.0"
     );
 
     assert.ok(
@@ -336,7 +336,7 @@ describe("E2E: NODE_EXTRA_CA_CERTS merging", () => {
     
     // Create valid cert and run bun in the same command to ensure file exists
     const result = await shell.runCommand(
-      "cp /etc/ssl/certs/ca-certificates.crt /tmp/bun-certs.pem && NODE_EXTRA_CA_CERTS=/tmp/bun-certs.pem bun i axios"
+      "cp /etc/ssl/certs/ca-certificates.crt /tmp/bun-certs.pem && NODE_EXTRA_CA_CERTS=/tmp/bun-certs.pem bun i axios@1.13.0"
     );
 
     assert.ok(
