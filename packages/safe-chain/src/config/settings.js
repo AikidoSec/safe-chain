@@ -198,3 +198,30 @@ export function getMinimumPackageAgeExclusions() {
   const allExclusions = [...envExclusions, ...configExclusions];
   return [...new Set(allExclusions)];
 }
+
+/**
+ * Gets the malware list base URL with priority: CLI argument > environment variable > config file > default
+ * @returns {string}
+ */
+export function getMalwareListBaseUrl() {
+  // Priority 1: CLI argument
+  const cliValue = cliArguments.getMalwareListBaseUrl();
+  if (cliValue) {
+    return cliValue;
+  }
+
+  // Priority 2: Environment variable
+  const envValue = environmentVariables.getMalwareListBaseUrl();
+  if (envValue) {
+    return envValue;
+  }
+
+  // Priority 3: Config file
+  const configValue = configFile.getMalwareListBaseUrl();
+  if (configValue) {
+    return configValue;
+  }
+
+  // Default
+  return "https://malware-list.aikido.dev";
+}

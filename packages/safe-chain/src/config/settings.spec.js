@@ -15,6 +15,7 @@ const {
   getNpmCustomRegistries,
   getPipCustomRegistries,
   getMinimumPackageAgeExclusions,
+  getMalwareListBaseUrl,
   setEcoSystem,
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
@@ -532,5 +533,89 @@ describe("getMinimumPackageAgeExclusions", () => {
     const exclusions = getMinimumPackageAgeExclusions();
 
     assert.deepStrictEqual(exclusions, ["requests", "urllib3"]);
+  });
+});
+
+describe("getMalwareListBaseUrl", () => {
+  let originalEnv;
+  const envVarName = "SAFE_CHAIN_MALWARE_LIST_BASE_URL";
+
+  beforeEach(() => {
+    originalEnv = process.env[envVarName];
+    delete process.env[envVarName];
+    // Reset CLI arguments state
+    initializeCliArguments([]);
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env[envVarName] = originalEnv;
+    } else {
+      delete process.env[envVarName];
+    }
+    configFileContent = undefined;
+  });
+
+  it("should return default URL when nothing is configured", () => {
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://malware-list.aikido.dev");
+  });
+
+  it("should return CLI argument value with highest priority", () => {
+    initializeCliArguments(["--safe-chain-malware-list-base-url=https://cli-mirror.com"]);
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://cli-mirror.com");
+  });
+
+  it("should return environment variable value when no CLI argument", () => {
+    process.env[envVarName] = "https://env-mirror.com";
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://env-mirror.com");
+  });
+
+  it("should return config file value when no CLI or env", () => {
+    configFileContent = JSON.stringify({
+      malwareListBaseUrl: "https://config-mirror.com",
+    });
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://config-mirror.com");
+  });
+
+  it("should prioritize CLI over environment variable", () => {
+    process.env[envVarName] = "https://env-mirror.com";
+    initializeCliArguments(["--safe-chain-malware-list-base-url=https://cli-mirror.com"]);
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://cli-mirror.com");
+  });
+
+  it("should prioritize environment variable over config file", () => {
+    process.env[envVarName] = "https://env-mirror.com";
+    configFileContent = JSON.stringify({
+      malwareListBaseUrl: "https://config-mirror.com",
+    });
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://env-mirror.com");
+  });
+
+  it("should prioritize CLI over config file", () => {
+    initializeCliArguments(["--safe-chain-malware-list-base-url=https://cli-mirror.com"]);
+    configFileContent = JSON.stringify({
+      malwareListBaseUrl: "https://config-mirror.com",
+    });
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://cli-mirror.com");
   });
 });

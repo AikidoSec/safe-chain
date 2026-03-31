@@ -277,6 +277,41 @@ You can set custom registries through environment variable or config file. Both 
    }
    ```
 
+## Malware List Base URL
+
+Configure Safe Chain to fetch malware databases and new packages lists from a custom mirror URL. This allows you to host your own copy of the Aikido malware database.
+
+### Configuration Options
+
+You can set the malware list base URL through multiple sources (in order of priority):
+
+1. **CLI Argument** (highest priority):
+
+   ```shell
+   npm install express --safe-chain-malware-list-base-url=https://your-mirror.com
+   ```
+
+2. **Environment Variable**:
+
+   ```shell
+   export SAFE_CHAIN_MALWARE_LIST_BASE_URL=https://your-mirror.com
+   npm install express
+   ```
+
+3. **Config File** (`~/.safe-chain/config.json`):
+
+   ```json
+   {
+     "malwareListBaseUrl": "https://your-mirror.com"
+   }
+   ```
+
+The base URL should point to a server that mirrors the structure of `https://malware-list.aikido.dev/`, including the following paths:
+- `/malware_predictions.json` (JavaScript ecosystem malware database)
+- `/malware_pypi.json` (Python ecosystem malware database)
+- `/releases/npm.json` (JavaScript new packages list)
+- `/releases/pypi.json` (Python new packages list)
+
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.

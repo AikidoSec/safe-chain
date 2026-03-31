@@ -22,6 +22,7 @@ describe("aikido API", async () => {
       getEcoSystem: () => ecosystem,
       ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
+      getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
     },
   });
 
