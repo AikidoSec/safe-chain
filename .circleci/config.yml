@@ -1,0 +1,493 @@
+version: 2.1
+# env:
+# GITHUB_TOKEN  — GitHub token with repo write access (used by gh CLI)
+# NPM_PUBLISH_TOKEN — npm access token with publish rights
+
+orbs:
+  windows: circleci/windows@5.0
+
+executors:
+  linux-node20:
+    docker:
+      - image: cimg/node:20.18
+    resource_class: medium
+
+  linux-arm64-node20:
+    docker:
+      - image: cimg/node:20.18
+    resource_class: arm.medium
+
+  linux-machine:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+
+  # Intel Mac — used for node20-macos-x64 target
+  macos-x64:
+    macos:
+      xcode: "16.0.0"
+    resource_class: macos.x86.medium.gen2
+
+  macos-arm64:
+    macos:
+      xcode: "16.0.0"
+    resource_class: macos.m2.medium.gen1
+
+commands:
+  setup-node-20-macos:
+    steps:
+      - run:
+          name: Install Node.js 20
+          command: |
+            echo 'export NVM_DIR="$HOME/.nvm"' >> "$BASH_ENV"
+            echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> "$BASH_ENV"
+            source "$BASH_ENV"
+            nvm install 20
+            nvm alias default 20
+            node --version
+            npm --version
+
+  setup-node-20-windows:
+    steps:
+      - run:
+          name: Install Node.js 20
+          command: |
+            nvm install 20.18.0
+            nvm use 20.18.0
+            node --version
+            npm --version
+
+  install-safe-chain:
+    steps:
+      - run:
+          name: Setup safe-chain
+          command: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+
+  set-package-version:
+    steps:
+      - run:
+          name: Set version in safe-chain package
+          command: |
+            source version.env
+            if [ -n "${VERSION}" ]; then
+              npm --no-git-tag-version version "${VERSION}" --workspace=packages/safe-chain --ignore-scripts
+            fi
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
+
+jobs:
+  set-version:
+    executor: linux-machine
+    steps:
+      - checkout
+      - run:
+          name: Install GitHub CLI
+          command: |
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list
+            sudo apt-get update && sudo apt-get install -y gh
+      - run:
+          name: Extract version and check pre-release status
+          command: |
+            VERSION="${CIRCLE_TAG}"
+            echo "VERSION=${VERSION}" > version.env
+            IS_PRERELEASE=$(gh release view "${VERSION}" \
+              --json isPrerelease --jq '.isPrerelease' \
+              --repo AikidoSec/safe-chain)
+            echo "IS_PRERELEASE=${IS_PRERELEASE}" >> version.env
+            cat version.env
+      - persist_to_workspace:
+          root: .
+          paths:
+            - version.env
+
+  build-macos-x64:
+    executor: macos-x64
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - setup-node-20-macos
+      - install-safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci --ignore-scripts
+      - set-package-version
+      - run:
+          name: Create binary
+          command: node build.js node20-macos-x64
+      - run:
+          name: Stage artifact
+          command: |
+            mkdir -p artifacts
+            cp dist/safe-chain artifacts/safe-chain-macos-x64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/safe-chain-macos-x64
+
+  build-macos-arm64:
+    executor: macos-arm64
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - setup-node-20-macos
+      - install-safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci --ignore-scripts
+      - set-package-version
+      - run:
+          name: Create binary
+          command: node build.js node20-macos-arm64
+      - run:
+          name: Stage artifact
+          command: |
+            mkdir -p artifacts
+            cp dist/safe-chain artifacts/safe-chain-macos-arm64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/safe-chain-macos-arm64
+
+  build-linux-x64:
+    executor: linux-node20
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci --ignore-scripts
+      - set-package-version
+      - run:
+          name: Create binary
+          command: node build.js node20-linux-x64
+      - run:
+          name: Stage artifact
+          command: |
+            mkdir -p artifacts
+            cp dist/safe-chain artifacts/safe-chain-linux-x64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/safe-chain-linux-x64
+
+  build-linux-arm64:
+    executor: linux-arm64-node20
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci --ignore-scripts
+      - set-package-version
+      - run:
+          name: Create binary
+          command: node build.js node20-linux-arm64
+      - run:
+          name: Stage artifact
+          command: |
+            mkdir -p artifacts
+            cp dist/safe-chain artifacts/safe-chain-linux-arm64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/safe-chain-linux-arm64
+
+  build-linuxstatic-x64:
+    executor: linux-node20
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci --ignore-scripts
+      - set-package-version
+      - run:
+          name: Create binary
+          command: node build.js node20-linuxstatic-x64
+      - run:
+          name: Stage artifact
+          command: |
+            mkdir -p artifacts
+            cp dist/safe-chain artifacts/safe-chain-linuxstatic-x64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/safe-chain-linuxstatic-x64
+
+  build-linuxstatic-arm64:
+    executor: linux-arm64-node20
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci --ignore-scripts
+      - set-package-version
+      - run:
+          name: Create binary
+          command: node build.js node20-linuxstatic-arm64
+      - run:
+          name: Stage artifact
+          command: |
+            mkdir -p artifacts
+            cp dist/safe-chain artifacts/safe-chain-linuxstatic-arm64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/safe-chain-linuxstatic-arm64
+
+  build-win:
+    # CircleCI has no Windows ARM64 runner, so both Windows targets are built on x64
+    executor:
+      name: windows/server-2022
+      shell: bash.exe
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - setup-node-20-windows
+      - install-safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci --ignore-scripts
+      - set-package-version
+      - run:
+          name: Create win-x64 binary
+          command: node build.js node20-win-x64
+      - run:
+          name: Stage win-x64 artifact
+          command: |
+            mkdir -p artifacts
+            cp dist/safe-chain.exe artifacts/safe-chain-win-x64.exe
+      - run:
+          name: Create win-arm64 binary
+          command: node build.js node20-win-arm64
+      - run:
+          name: Stage win-arm64 artifact
+          command: cp dist/safe-chain.exe artifacts/safe-chain-win-arm64.exe
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/safe-chain-win-x64.exe
+            - artifacts/safe-chain-win-arm64.exe
+
+  publish-binaries:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    circleci_ip_ranges: true
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Prepare release artifacts
+          command: |
+            source version.env
+            mkdir -p release-artifacts
+            cp artifacts/safe-chain-macos-x64            release-artifacts/safe-chain-macos-x64
+            cp artifacts/safe-chain-macos-arm64          release-artifacts/safe-chain-macos-arm64
+            cp artifacts/safe-chain-linux-x64            release-artifacts/safe-chain-linux-x64
+            cp artifacts/safe-chain-linux-arm64          release-artifacts/safe-chain-linux-arm64
+            cp artifacts/safe-chain-linuxstatic-x64      release-artifacts/safe-chain-linuxstatic-x64
+            cp artifacts/safe-chain-linuxstatic-arm64    release-artifacts/safe-chain-linuxstatic-arm64
+            cp artifacts/safe-chain-win-x64.exe          release-artifacts/safe-chain-win-x64.exe
+            cp artifacts/safe-chain-win-arm64.exe        release-artifacts/safe-chain-win-arm64.exe
+            sed "s/\$(fetch_latest_version)/${VERSION}/" \
+              install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
+            sed "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" \
+              install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
+            cp install-scripts/uninstall-safe-chain.sh        release-artifacts/uninstall-safe-chain.sh
+            cp install-scripts/uninstall-safe-chain.ps1       release-artifacts/uninstall-safe-chain.ps1
+            cp install-scripts/install-endpoint-mac.sh        release-artifacts/install-endpoint-mac.sh
+            cp install-scripts/install-endpoint-windows.ps1   release-artifacts/install-endpoint-windows.ps1
+            cp install-scripts/uninstall-endpoint-mac.sh      release-artifacts/uninstall-endpoint-mac.sh
+            cp install-scripts/uninstall-endpoint-windows.ps1 release-artifacts/uninstall-endpoint-windows.ps1
+      - run:
+          name: Upload binaries to GitHub Release
+          command: |
+            source version.env
+            gh release upload "${VERSION}" \
+              release-artifacts/safe-chain-macos-x64 \
+              release-artifacts/safe-chain-macos-arm64 \
+              release-artifacts/safe-chain-linux-x64 \
+              release-artifacts/safe-chain-linux-arm64 \
+              release-artifacts/safe-chain-linuxstatic-x64 \
+              release-artifacts/safe-chain-linuxstatic-arm64 \
+              release-artifacts/safe-chain-win-x64.exe \
+              release-artifacts/safe-chain-win-arm64.exe \
+              release-artifacts/install-safe-chain.sh \
+              release-artifacts/install-safe-chain.ps1 \
+              release-artifacts/uninstall-safe-chain.sh \
+              release-artifacts/uninstall-safe-chain.ps1 \
+              release-artifacts/install-endpoint-mac.sh \
+              release-artifacts/install-endpoint-windows.ps1 \
+              release-artifacts/uninstall-endpoint-mac.sh \
+              release-artifacts/uninstall-endpoint-windows.ps1 \
+              --repo AikidoSec/safe-chain
+
+  publish-npm:
+    executor: linux-node20
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Skip if pre-release
+          command: |
+            source version.env
+            if [ "${IS_PRERELEASE}" = "true" ]; then
+              echo "Pre-release tag detected — skipping npm publish"
+              circleci-agent step halt
+            fi
+      - install-safe-chain
+      - run:
+          name: Set the version in safe-chain package
+          command: |
+            source version.env
+            npm --no-git-tag-version version "${VERSION}" --workspace=packages/safe-chain
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - run:
+          name: Run tests
+          command: npm run test
+      - run:
+          name: Copy documentation files to package
+          command: |
+            cp README.md packages/safe-chain/
+            cp LICENSE packages/safe-chain/
+            cp -r docs packages/safe-chain/
+      - run:
+          name: Configure npm authentication
+          command: echo "//registry.npmjs.org/:_authToken=${NPM_PUBLISH_TOKEN}" >> ~/.npmrc
+      - run:
+          name: Publish to npm
+          command: |
+            source version.env
+            echo "Publishing version ${VERSION} to NPM"
+            npm publish --workspace=packages/safe-chain --access public --provenance
+
+# ---------------------------------------------------------------------------
+# Workflow — triggered on every tag push (mirrors GitHub's on.push.tags: ["*"])
+# ---------------------------------------------------------------------------
+# IMPORTANT: In CircleCI, tag filters must be repeated on every job in the
+# workflow, otherwise those jobs are skipped for tag-triggered pipelines.
+
+workflows:
+  release:
+    jobs:
+      - set-version:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - build-macos-x64:
+          requires:
+            - set-version
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - build-macos-arm64:
+          requires:
+            - set-version
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - build-linux-x64:
+          requires:
+            - set-version
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - build-linux-arm64:
+          requires:
+            - set-version
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - build-linuxstatic-x64:
+          requires:
+            - set-version
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - build-linuxstatic-arm64:
+          requires:
+            - set-version
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - build-win:
+          requires:
+            - set-version
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      # publish-binaries and publish-npm both fan in from all build jobs and
+      # run in parallel, matching the original GitHub Actions structure.
+      - publish-binaries:
+          requires:
+            - build-macos-x64
+            - build-macos-arm64
+            - build-linux-x64
+            - build-linux-arm64
+            - build-linuxstatic-x64
+            - build-linuxstatic-arm64
+            - build-win
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
+      - publish-npm:
+          requires:
+            - build-macos-x64
+            - build-macos-arm64
+            - build-linux-x64
+            - build-linux-arm64
+            - build-linuxstatic-x64
+            - build-linuxstatic-arm64
+            - build-win
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
