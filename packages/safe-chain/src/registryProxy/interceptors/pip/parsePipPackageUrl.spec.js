@@ -21,6 +21,13 @@ describe("parsePipPackageUrl", () => {
     });
   });
 
+  it("parses per-version json metadata URLs", () => {
+    assert.deepEqual(
+      parsePipMetadataUrl("https://pypi.org/pypi/requests/2.28.1/json"),
+      { packageName: "requests", type: "json" }
+    );
+  });
+
   it("decodes encoded metadata package names", () => {
     assert.deepEqual(
       parsePipMetadataUrl("https://pypi.org/simple/foo-bar%5Fbaz/"),

@@ -58,12 +58,16 @@ function filterJsonMetadataFiles(
   }
 
   let modified = false;
+  const loggedVersions = new Set();
   json.files = json.files.filter((/** @type {any} */ file) => {
     const version = getPackageVersionFromMetadataFile(file, metadataUrl);
 
     if (version && isNewlyReleasedPackage(packageName, version)) {
       modified = true;
-      logSuppressedVersion(packageName, version);
+      if (!loggedVersions.has(version)) {
+        logSuppressedVersion(packageName, version);
+        loggedVersions.add(version);
+      }
       return false;
     }
 
@@ -118,12 +122,16 @@ function filterJsonMetadataUrls(
   }
 
   let modified = false;
+  const loggedVersions = new Set();
   json.urls = json.urls.filter((/** @type {any} */ file) => {
     const version = getPackageVersionFromMetadataFile(file, metadataUrl);
 
     if (version && isNewlyReleasedPackage(packageName, version)) {
       modified = true;
-      logSuppressedVersion(packageName, version);
+      if (!loggedVersions.has(version)) {
+        logSuppressedVersion(packageName, version);
+        loggedVersions.add(version);
+      }
       return false;
     }
 

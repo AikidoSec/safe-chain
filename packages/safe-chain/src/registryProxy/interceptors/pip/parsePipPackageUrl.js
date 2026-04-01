@@ -1,4 +1,19 @@
 /**
+ * Parses a PyPI metadata URL and returns the package name and API type.
+ *
+ * @example
+ * parsePipMetadataUrl("https://pypi.org/simple/requests/")
+ * // => { packageName: "requests", type: "simple" }
+ *
+ * parsePipMetadataUrl("https://pypi.org/pypi/requests/json")
+ * // => { packageName: "requests", type: "json" }
+ *
+ * parsePipMetadataUrl("https://pypi.org/pypi/requests/2.28.1/json")
+ * // => { packageName: "requests", type: "json" }
+ *
+ * parsePipMetadataUrl("https://files.pythonhosted.org/packages/requests-2.28.1.tar.gz")
+ * // => { packageName: undefined, type: undefined }
+ *
  * @param {string} url
  * @returns {{ packageName: string | undefined, type: "simple" | "json" | undefined }}
  */
@@ -29,7 +44,7 @@ export function parsePipMetadataUrl(url) {
   if (
     pathSegments.length >= 3 &&
     pathSegments[0] === "pypi" &&
-    pathSegments[2] === "json" &&
+    pathSegments[pathSegments.length - 1] === "json" &&
     pathSegments[1]
   ) {
     return {
