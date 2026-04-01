@@ -121,7 +121,8 @@ Current enforcement differs by ecosystem:
   - during normal package resolution, Safe Chain suppresses versions that are newer than the configured minimum age from the package metadata returned by the registry
   - for direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages
 - Python package managers:
-  - Safe Chain blocks direct package download requests using a cached list of newly released packages
+  - during package resolution, Safe Chain suppresses too-young files and releases from PyPI metadata responses
+  - for direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages
 
 By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
@@ -198,7 +199,10 @@ For npm-based package managers, this check currently has two enforcement modes:
 - Safe Chain suppresses too-young versions from package metadata during normal dependency resolution.
 - Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
 
-For Python package managers, Safe Chain currently enforces minimum package age by blocking direct package download requests when they are matched against the cached newly released packages list.
+For Python package managers, this check currently has two enforcement modes:
+
+- Safe Chain suppresses too-young files and releases from PyPI metadata during dependency resolution.
+- Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
 
 ### Configuration Options
 

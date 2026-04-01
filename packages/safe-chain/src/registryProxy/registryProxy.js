@@ -6,7 +6,7 @@ import { getCombinedCaBundlePath, cleanupCertBundle } from "./certBundle.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
-import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
+import { getHasSuppressedVersions } from "./interceptors/suppressedVersionsState.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**

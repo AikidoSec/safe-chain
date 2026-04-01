@@ -1,4 +1,55 @@
 /**
+ * @param {string} url
+ * @returns {{ packageName: string | undefined, type: "simple" | "json" | undefined }}
+ */
+export function parsePipMetadataUrl(url) {
+  if (typeof url !== "string") {
+    return { packageName: undefined, type: undefined };
+  }
+
+  let urlObj;
+  try {
+    urlObj = new URL(url);
+  } catch {
+    return { packageName: undefined, type: undefined };
+  }
+
+  const pathSegments = urlObj.pathname.split("/").filter(Boolean);
+  if (
+    pathSegments.length >= 2 &&
+    pathSegments[0] === "simple" &&
+    pathSegments[1]
+  ) {
+    return {
+      packageName: decodeURIComponent(pathSegments[1]),
+      type: "simple",
+    };
+  }
+
+  if (
+    pathSegments.length >= 3 &&
+    pathSegments[0] === "pypi" &&
+    pathSegments[2] === "json" &&
+    pathSegments[1]
+  ) {
+    return {
+      packageName: decodeURIComponent(pathSegments[1]),
+      type: "json",
+    };
+  }
+
+  return { packageName: undefined, type: undefined };
+}
+
+/**
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function isPipPackageInfoUrl(url) {
+  return !!parsePipMetadataUrl(url).packageName;
+}
+
+/**
  * Parse Python package artifact URLs from PyPI-style registries.
  * Examples:
  * - Wheel: https://files.pythonhosted.org/packages/.../requests-2.28.1-py3-none-any.whl

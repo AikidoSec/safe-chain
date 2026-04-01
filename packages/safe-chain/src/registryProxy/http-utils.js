@@ -15,3 +15,19 @@ export function getHeaderValueAsString(headers, headerName) {
 
   return header;
 }
+
+/**
+ * Remove headers that become stale when the response body is modified.
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @returns {void}
+ */
+export function clearCachingHeaders(headers) {
+  if (!headers) {
+    return;
+  }
+
+  delete headers["etag"];
+  delete headers["last-modified"];
+  delete headers["cache-control"];
+  delete headers["content-length"];
+}

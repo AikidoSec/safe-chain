@@ -215,10 +215,21 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
 
         buffer = requestHandler.modifyBody(buffer, headers);
 
-        if (proxyRes.headers["content-encoding"] === "gzip") {
-          buffer = gzipSync(buffer);
+        // For rewritten responses, send the final body uncompressed.
+        // This avoids mismatches between upstream compression metadata and the
+        // rewritten payload on the wire.
+        for (const headerName of Object.keys(headers)) {
+          const lowerHeaderName = headerName.toLowerCase();
+          if (
+            lowerHeaderName === "content-length" ||
+            lowerHeaderName === "transfer-encoding" ||
+            lowerHeaderName === "content-encoding"
+          ) {
+            delete headers[headerName];
+          }
         }
 
+        headers["content-length"] = String(buffer.byteLength);
         res.writeHead(statusCode, headers);
         res.end(buffer);
       });

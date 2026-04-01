@@ -10,8 +10,12 @@ describe("pipInterceptor custom registries", async () => {
     namedExports: {
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",
+      getLoggingLevel: () => "silent",
+      getMinimumPackageAgeHours: () => 48,
       getMinimumPackageAgeExclusions: () => [],
       getPipCustomRegistries: () => customRegistries,
+      LOGGING_SILENT: "silent",
+      LOGGING_VERBOSE: "verbose",
       skipMinimumPackageAge: () => false,
     },
   });
