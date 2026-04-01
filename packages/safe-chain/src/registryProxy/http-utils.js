@@ -18,6 +18,8 @@ export function getHeaderValueAsString(headers, headerName) {
 
 /**
  * Remove headers that become stale when the response body is modified.
+ * Mutates the provided headers object in place.
+ *
  * @param {NodeJS.Dict<string | string[]> | undefined} headers
  * @returns {void}
  */

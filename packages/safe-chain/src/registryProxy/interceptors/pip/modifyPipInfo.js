@@ -3,15 +3,8 @@ import { clearCachingHeaders } from "../../http-utils.js";
 import { normalizePipPackageName } from "../../../scanning/packageNameVariants.js";
 import { parsePipPackageFromUrl } from "./parsePipPackageUrl.js";
 export { parsePipMetadataUrl, isPipPackageInfoUrl } from "./parsePipPackageUrl.js";
-import {
-  calculateLatestVersion,
-  getAvailableVersionsFromJson,
-  getPackageVersionFromMetadataFile,
-} from "./pipMetadataVersionUtils.js";
-import {
-  getPipMetadataContentType,
-  logSuppressedVersion,
-} from "./pipMetadataResponseUtils.js";
+import { getPipMetadataContentType, logSuppressedVersion } from "./pipMetadataResponseUtils.js";
+import { modifyPipJsonResponse } from "./modifyPipJsonResponse.js";
 
 /**
  * @param {Buffer} body
@@ -134,63 +127,12 @@ function modifyJsonResponse(
   packageName
 ) {
   const json = JSON.parse(body.toString("utf8"));
-  let modified = false;
-
-  if (Array.isArray(json.files)) {
-    const filteredFiles = json.files.filter((/** @type {any} */ file) => {
-      const version = getPackageVersionFromMetadataFile(file, metadataUrl);
-
-      if (version && isNewlyReleasedPackage(packageName, version)) {
-        modified = true;
-        logSuppressedVersion(packageName, version);
-        return false;
-      }
-
-      return true;
-    });
-
-    json.files = filteredFiles;
-  }
-
-  if (json.releases && typeof json.releases === "object") {
-    for (const [version, files] of Object.entries(json.releases)) {
-      if (
-        Array.isArray(/** @type {unknown[]} */ (files)) &&
-        isNewlyReleasedPackage(packageName, version)
-      ) {
-        delete json.releases[version];
-        modified = true;
-        logSuppressedVersion(packageName, version);
-      }
-    }
-  }
-
-  if (Array.isArray(json.urls)) {
-    json.urls = json.urls.filter((/** @type {any} */ file) => {
-      const version = getPackageVersionFromMetadataFile(file, metadataUrl);
-
-      if (version && isNewlyReleasedPackage(packageName, version)) {
-        modified = true;
-        logSuppressedVersion(packageName, version);
-        return false;
-      }
-      return true;
-    });
-  }
-
-  if (json.info && typeof json.info === "object") {
-    const candidateVersions = getAvailableVersionsFromJson(json, metadataUrl);
-    const replacementVersion = calculateLatestVersion(candidateVersions);
-
-    if (
-      typeof json.info.version === "string" &&
-      replacementVersion &&
-      json.info.version !== replacementVersion
-    ) {
-      json.info.version = replacementVersion;
-      modified = true;
-    }
-  }
+  const modified = modifyPipJsonResponse(
+    json,
+    metadataUrl,
+    isNewlyReleasedPackage,
+    packageName
+  );
 
   if (!modified) return body;
   const modifiedBuffer = Buffer.from(JSON.stringify(json));

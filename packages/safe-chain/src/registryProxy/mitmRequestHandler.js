@@ -2,7 +2,7 @@ import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
-import { gunzipSync, gzipSync } from "zlib";
+import { gunzipSync } from "zlib";
 
 /**
  * @typedef {import("./interceptors/interceptorBuilder.js").Interceptor} Interceptor
@@ -105,6 +105,23 @@ function getRequestPathAndQuery(url) {
     return parsedUrl.pathname + parsedUrl.search + parsedUrl.hash;
   }
   return url;
+}
+
+/**
+ * @param {NodeJS.Dict<string | string[]>} headers
+ * @returns {void}
+ */
+function normalizeRewrittenResponseHeaders(headers) {
+  for (const headerName of Object.keys(headers)) {
+    const lowerHeaderName = headerName.toLowerCase();
+    if (
+      lowerHeaderName === "content-length" ||
+      lowerHeaderName === "transfer-encoding" ||
+      lowerHeaderName === "content-encoding"
+    ) {
+      delete headers[headerName];
+    }
+  }
 }
 
 /**
@@ -218,17 +235,7 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
         // For rewritten responses, send the final body uncompressed.
         // This avoids mismatches between upstream compression metadata and the
         // rewritten payload on the wire.
-        for (const headerName of Object.keys(headers)) {
-          const lowerHeaderName = headerName.toLowerCase();
-          if (
-            lowerHeaderName === "content-length" ||
-            lowerHeaderName === "transfer-encoding" ||
-            lowerHeaderName === "content-encoding"
-          ) {
-            delete headers[headerName];
-          }
-        }
-
+        normalizeRewrittenResponseHeaders(headers);
         headers["content-length"] = String(buffer.byteLength);
         res.writeHead(statusCode, headers);
         res.end(buffer);
