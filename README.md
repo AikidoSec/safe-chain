@@ -123,7 +123,7 @@ Current enforcement differs by ecosystem:
 - Python package managers:
   - Safe Chain blocks direct package download requests using a cached list of newly released packages
 
-By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
+By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age-1) section below.
 
 ### Shell Integration
 
