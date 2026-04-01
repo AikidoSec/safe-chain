@@ -121,5 +121,5 @@ function tokenizeVersion(version) {
  * @returns {boolean}
  */
 function isPrerelease(version) {
-  return /(?:^|[.\-_])(a|b|rc|dev)\d*/i.test(version);
+  return /(a|b|rc|dev)\d+/i.test(version);
 }
