@@ -76,7 +76,7 @@ describe("modifyPipInfo", async () => {
       })
     );
 
-    const modified = modifyPipInfoResponse(
+    modifyPipInfoResponse(
       body,
       headers,
       "https://pypi.org/pypi/requests/json",

@@ -109,9 +109,12 @@ function getRequestPathAndQuery(url) {
 
 /**
  * @param {NodeJS.Dict<string | string[]>} headers
- * @returns {void}
+ * @returns {NodeJS.Dict<string | string[]>}
  */
 function normalizeRewrittenResponseHeaders(headers) {
+  /** @type {NodeJS.Dict<string | string[]>} */
+  const normalizedHeaders = { ...headers };
+
   for (const headerName of Object.keys(headers)) {
     const lowerHeaderName = headerName.toLowerCase();
     if (
@@ -119,9 +122,11 @@ function normalizeRewrittenResponseHeaders(headers) {
       lowerHeaderName === "transfer-encoding" ||
       lowerHeaderName === "content-encoding"
     ) {
-      delete headers[headerName];
+      delete normalizedHeaders[headerName];
     }
   }
+
+  return normalizedHeaders;
 }
 
 /**
@@ -235,9 +240,9 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
         // For rewritten responses, send the final body uncompressed.
         // This avoids mismatches between upstream compression metadata and the
         // rewritten payload on the wire.
-        normalizeRewrittenResponseHeaders(headers);
-        headers["content-length"] = String(buffer.byteLength);
-        res.writeHead(statusCode, headers);
+        const rewrittenHeaders = normalizeRewrittenResponseHeaders(headers);
+        rewrittenHeaders["content-length"] = String(buffer.byteLength);
+        res.writeHead(statusCode, rewrittenHeaders);
         res.end(buffer);
       });
     } else {
