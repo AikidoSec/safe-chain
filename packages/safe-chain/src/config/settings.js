@@ -207,21 +207,34 @@ export function getMalwareListBaseUrl() {
   // Priority 1: CLI argument
   const cliValue = cliArguments.getMalwareListBaseUrl();
   if (cliValue) {
-    return cliValue;
+    return removeTrailingSlashes(cliValue);
   }
 
   // Priority 2: Environment variable
   const envValue = environmentVariables.getMalwareListBaseUrl();
   if (envValue) {
-    return envValue;
+    return removeTrailingSlashes(envValue);
   }
 
   // Priority 3: Config file
   const configValue = configFile.getMalwareListBaseUrl();
   if (configValue) {
-    return configValue;
+    return removeTrailingSlashes(configValue);
   }
 
   // Default
-  return "https://malware-list.aikido.dev";
+  return removeTrailingSlashes("https://malware-list.aikido.dev");
+}
+
+/**
+ * Removes trailing slashes from a URL-like string.
+ * @param {string} value
+ * @returns {string}
+ */
+function removeTrailingSlashes(value) {
+  if (!value || typeof value !== "string") {
+    return value;
+  }
+
+  return value.replace(/\/+$/, "");
 }

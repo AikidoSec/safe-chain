@@ -562,6 +562,32 @@ describe("getMalwareListBaseUrl", () => {
     assert.strictEqual(url, "https://malware-list.aikido.dev");
   });
 
+  it("should trim trailing slash from CLI argument", () => {
+    initializeCliArguments(["--safe-chain-malware-list-base-url=https://cli-mirror.com/"]);
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://cli-mirror.com");
+  });
+
+  it("should trim trailing slash from environment variable", () => {
+    process.env[envVarName] = "https://env-mirror.com/";
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://env-mirror.com");
+  });
+
+  it("should trim trailing slash from config file value", () => {
+    configFileContent = JSON.stringify({
+      malwareListBaseUrl: "https://config-mirror.com/",
+    });
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://config-mirror.com");
+  });
+
   it("should return CLI argument value with highest priority", () => {
     initializeCliArguments(["--safe-chain-malware-list-base-url=https://cli-mirror.com"]);
 

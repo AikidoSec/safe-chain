@@ -97,11 +97,12 @@ export async function fetchNewPackagesList() {
     const ecosystem = getEcoSystem();
     const baseUrl = getMalwareListBaseUrl();
     const path = newPackagesListPaths[/** @type {keyof typeof newPackagesListPaths} */ (ecosystem)];
-    const url = `${baseUrl}/${path}`;
 
-    if (!url) {
+    if (!path) {
       return { newPackagesList: [], version: undefined };
     }
+
+    const url = `${baseUrl}/${path}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -130,11 +131,12 @@ export async function fetchNewPackagesListVersion() {
     const ecosystem = getEcoSystem();
     const baseUrl = getMalwareListBaseUrl();
     const path = newPackagesListPaths[/** @type {keyof typeof newPackagesListPaths} */ (ecosystem)];
-    const url = `${baseUrl}/${path}`;
 
-    if (!url) {
+    if (!path) {
       return undefined;
     }
+
+    const url = `${baseUrl}/${path}`;
 
     const response = await fetch(url, { method: "HEAD" });
     if (!response.ok) {

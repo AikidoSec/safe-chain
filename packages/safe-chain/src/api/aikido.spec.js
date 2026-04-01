@@ -185,6 +185,15 @@ describe("aikido API", async () => {
       assert.deepStrictEqual(result.newPackagesList, []);
       assert.strictEqual(result.version, undefined);
     });
+
+    it("should return undefined version without fetching for unsupported ecosystems", async () => {
+      ecosystem = "ruby";
+
+      const result = await fetchNewPackagesListVersion();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 0);
+      assert.strictEqual(result, undefined);
+    });
   });
 
   describe("fetchNewPackagesListVersion", () => {
