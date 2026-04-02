@@ -5,11 +5,13 @@ describe("runRushCommand", () => {
   let runRushCommand;
   let safeSpawnMock;
   let mergeCalls;
+  let mergeResultEnv;
   let nextSpawnStatus;
   let nextSpawnError;
 
   beforeEach(async () => {
     mergeCalls = [];
+    mergeResultEnv = null;
     nextSpawnStatus = 0;
     nextSpawnError = null;
     safeSpawnMock = mock.fn(async () => {
@@ -32,6 +34,10 @@ describe("runRushCommand", () => {
       namedExports: {
         mergeSafeChainProxyEnvironmentVariables: (env) => {
           mergeCalls.push(env);
+          if (mergeResultEnv) {
+            return mergeResultEnv;
+          }
+
           return {
             ...env,
             HTTPS_PROXY: "http://localhost:8080",
@@ -95,5 +101,17 @@ describe("runRushCommand", () => {
     const res = await runRushCommand(["install"]);
 
     assert.strictEqual(res.status, 1);
+  });
+
+  it("does not mutate merged env object", async () => {
+    mergeResultEnv = {
+      HTTPS_PROXY: "http://localhost:8080",
+    };
+
+    await runRushCommand(["install"]);
+
+    assert.deepStrictEqual(mergeResultEnv, {
+      HTTPS_PROXY: "http://localhost:8080",
+    });
   });
 });

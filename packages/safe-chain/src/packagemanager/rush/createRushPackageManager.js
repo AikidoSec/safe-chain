@@ -22,23 +22,29 @@ async function scanRushAddCommand(args) {
     return [];
   }
 
-  const packageSpecs = extractRushAddPackageSpecs(args);
+  const parsedSpecs = extractRushAddPackageSpecs(args)
+    .map((spec) => parsePackageSpec(spec))
+    .filter((spec) => spec !== null);
+
+  const resolvedVersions = await Promise.all(
+    parsedSpecs.map(async (parsed) => {
+      const exactVersion = await resolvePackageVersion(parsed.name, parsed.version);
+      return {
+        parsed,
+        exactVersion,
+      };
+    }),
+  );
+
   const changes = [];
-
-  for (const spec of packageSpecs) {
-    const parsed = parsePackageSpec(spec);
-    if (!parsed) {
-      continue;
-    }
-
-    const exactVersion = await resolvePackageVersion(parsed.name, parsed.version);
-    if (!exactVersion) {
+  for (const resolved of resolvedVersions) {
+    if (!resolved.exactVersion) {
       continue;
     }
 
     changes.push({
-      name: parsed.name,
-      version: exactVersion,
+      name: resolved.parsed.name,
+      version: resolved.exactVersion,
       type: "add",
     });
   }

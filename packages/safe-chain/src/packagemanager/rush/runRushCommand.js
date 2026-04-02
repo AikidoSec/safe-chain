@@ -8,8 +8,9 @@ import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
  */
 export async function runRushCommand(args) {
   try {
-    const env = mergeSafeChainProxyEnvironmentVariables(process.env);
-    normalizeProxyEnvironmentVariables(env);
+    const env = normalizeProxyEnvironmentVariables(
+      mergeSafeChainProxyEnvironmentVariables(process.env),
+    );
 
     const result = await safeSpawn("rush", args, {
       stdio: "inherit",
@@ -27,37 +28,44 @@ export async function runRushCommand(args) {
  * lowercase or npm/yarn-specific environment variables.
  *
  * @param {Record<string, string>} env
+ * @returns {Record<string, string>}
  */
 function normalizeProxyEnvironmentVariables(env) {
-  if (env.HTTPS_PROXY && !env.HTTP_PROXY) {
-    env.HTTP_PROXY = env.HTTPS_PROXY;
+  const normalized = {
+    ...env,
+  };
+
+  if (normalized.HTTPS_PROXY && !normalized.HTTP_PROXY) {
+    normalized.HTTP_PROXY = normalized.HTTPS_PROXY;
   }
 
-  if (env.HTTP_PROXY && !env.http_proxy) {
-    env.http_proxy = env.HTTP_PROXY;
+  if (normalized.HTTP_PROXY && !normalized.http_proxy) {
+    normalized.http_proxy = normalized.HTTP_PROXY;
   }
 
-  if (env.HTTPS_PROXY && !env.https_proxy) {
-    env.https_proxy = env.HTTPS_PROXY;
+  if (normalized.HTTPS_PROXY && !normalized.https_proxy) {
+    normalized.https_proxy = normalized.HTTPS_PROXY;
   }
 
-  if (env.HTTP_PROXY && !env.npm_config_proxy) {
-    env.npm_config_proxy = env.HTTP_PROXY;
+  if (normalized.HTTP_PROXY && !normalized.npm_config_proxy) {
+    normalized.npm_config_proxy = normalized.HTTP_PROXY;
   }
 
-  if (env.HTTPS_PROXY && !env.npm_config_https_proxy) {
-    env.npm_config_https_proxy = env.HTTPS_PROXY;
+  if (normalized.HTTPS_PROXY && !normalized.npm_config_https_proxy) {
+    normalized.npm_config_https_proxy = normalized.HTTPS_PROXY;
   }
 
-  if (env.HTTP_PROXY && !env.NPM_CONFIG_PROXY) {
-    env.NPM_CONFIG_PROXY = env.HTTP_PROXY;
+  if (normalized.HTTP_PROXY && !normalized.NPM_CONFIG_PROXY) {
+    normalized.NPM_CONFIG_PROXY = normalized.HTTP_PROXY;
   }
 
-  if (env.HTTPS_PROXY && !env.NPM_CONFIG_HTTPS_PROXY) {
-    env.NPM_CONFIG_HTTPS_PROXY = env.HTTPS_PROXY;
+  if (normalized.HTTPS_PROXY && !normalized.NPM_CONFIG_HTTPS_PROXY) {
+    normalized.NPM_CONFIG_HTTPS_PROXY = normalized.HTTPS_PROXY;
   }
 
-  if (env.HTTPS_PROXY && !env.YARN_HTTPS_PROXY) {
-    env.YARN_HTTPS_PROXY = env.HTTPS_PROXY;
+  if (normalized.HTTPS_PROXY && !normalized.YARN_HTTPS_PROXY) {
+    normalized.YARN_HTTPS_PROXY = normalized.HTTPS_PROXY;
   }
+
+  return normalized;
 }
