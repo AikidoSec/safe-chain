@@ -134,6 +134,32 @@ describe("modifyPipInfo", async () => {
     assert.ok(modified.includes("foo_bar-1.0.0.tar.gz"));
   });
 
+  it("matches anchor href regex with single quotes and extra attributes", () => {
+    const headers = { "content-type": "application/vnd.pypi.simple.v1+html" };
+
+    const body = Buffer.from(`
+      <a
+        data-requires-python="&gt;=3.9"
+        class="pkg"
+        href='https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0.tar.gz'
+      >
+        foo_bar-2.0.0.tar.gz
+      </a>
+      <a href="https://files.pythonhosted.org/packages/xx/yy/foo_bar-1.0.0.tar.gz">foo_bar-1.0.0.tar.gz</a>
+    `);
+
+    const modified = modifyPipInfoResponse(
+      body,
+      headers,
+      "https://pypi.org/simple/foo-bar/",
+      (_packageName, version) => version === "2.0.0",
+      "foo-bar"
+    ).toString("utf8");
+
+    assert.ok(!modified.includes("foo_bar-2.0.0.tar.gz"));
+    assert.ok(modified.includes("foo_bar-1.0.0.tar.gz"));
+  });
+
   it("removes too-young files from simple JSON metadata", () => {
     const headers = {
       "content-type": "application/vnd.pypi.simple.v1+json",

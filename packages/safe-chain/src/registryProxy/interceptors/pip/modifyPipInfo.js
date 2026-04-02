@@ -6,6 +6,11 @@ export { parsePipMetadataUrl, isPipPackageInfoUrl } from "./parsePipPackageUrl.j
 import { getPipMetadataContentType, logSuppressedVersion } from "./pipMetadataResponseUtils.js";
 import { modifyPipJsonResponse } from "./modifyPipJsonResponse.js";
 
+// Match simple-index anchor tags and capture their href so we can suppress
+// individual distribution links from PyPI HTML metadata responses.
+const HTML_ANCHOR_HREF_RE =
+  /<a\b[^>]*href\s*=\s*(["'])([^"']+)\1[^>]*>[\s\S]*?<\/a>/gi;
+
 /**
  * @param {Buffer} body
  * @param {NodeJS.Dict<string | string[]> | undefined} headers
@@ -80,35 +85,56 @@ function modifyHtmlSimpleResponse(
 ) {
   const html = body.toString("utf8");
   let modified = false;
-
-  const updatedHtml = html.replace(
-    /<a\b[^>]*href\s*=\s*(["'])([^"']+)\1[^>]*>[\s\S]*?<\/a>/gi,
-    (anchor, _quote, href) => {
-      const resolvedHref = new URL(href, metadataUrl).toString();
-      const { packageName: hrefPackageName, version } = parsePipPackageFromUrl(
-        resolvedHref,
-        new URL(resolvedHref).host
-      );
-
-      if (
-        hrefPackageName &&
-        normalizePipPackageName(hrefPackageName) === normalizePipPackageName(packageName) &&
-        version &&
-        isNewlyReleasedPackage(packageName, version)
-      ) {
-        modified = true;
-        logSuppressedVersion(packageName, version);
-        return "";
-      }
-
-      return anchor;
+  const rewriteHtmlAnchor = createHtmlAnchorRewriter(
+    metadataUrl,
+    isNewlyReleasedPackage,
+    packageName,
+    () => {
+      modified = true;
     }
   );
+  const updatedHtml = html.replace(HTML_ANCHOR_HREF_RE, rewriteHtmlAnchor);
 
   if (!modified) return body;
   const modifiedBuffer = Buffer.from(updatedHtml);
   clearCachingHeaders(headers);
   return modifiedBuffer;
+}
+
+/**
+ * @param {string} metadataUrl
+ * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
+ * @param {string} packageName
+ * @param {() => void} onModified
+ * @returns {(anchor: string, quote: string, href: string) => string}
+ */
+function createHtmlAnchorRewriter(
+  metadataUrl,
+  isNewlyReleasedPackage,
+  packageName,
+  onModified
+) {
+  return (anchor, _quote, href) => {
+    const resolvedHref = new URL(href, metadataUrl).toString();
+    const { packageName: hrefPackageName, version } = parsePipPackageFromUrl(
+      resolvedHref,
+      new URL(resolvedHref).host
+    );
+
+    if (
+      hrefPackageName &&
+      normalizePipPackageName(hrefPackageName) ===
+        normalizePipPackageName(packageName) &&
+      version &&
+      isNewlyReleasedPackage(packageName, version)
+    ) {
+      onModified();
+      logSuppressedVersion(packageName, version);
+      return "";
+    }
+
+    return anchor;
+  };
 }
 
 /**
