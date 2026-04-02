@@ -37,21 +37,27 @@ export function getAvailableVersionsFromJson(json, metadataUrl) {
     return Object.keys(json.releases);
   }
 
-  if (Array.isArray(json.files)) {
-    return [
-      ...new Set(
-        json.files
-          .map((/** @type {any} */ file) =>
-            getPackageVersionFromMetadataFile(file, metadataUrl)
-          )
-          .filter((/** @type {string | undefined} */ version) =>
-            typeof version === "string"
-          )
-      ),
-    ];
+  if (!Array.isArray(json.files)) {
+    return [];
   }
 
-  return [];
+  return [
+    ...new Set(
+      json.files
+        .map((/** @type {any} */ file) =>
+          getPackageVersionFromMetadataFile(file, metadataUrl)
+        )
+        .filter(isDefinedString)
+    ),
+  ];
+}
+
+/**
+ * @param {string | undefined} value
+ * @returns {value is string}
+ */
+function isDefinedString(value) {
+  return typeof value === "string";
 }
 
 /**
