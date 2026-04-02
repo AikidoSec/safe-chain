@@ -80,6 +80,7 @@ jobs:
         if: inputs.version != ''
         env:
           VERSION: ${{ inputs.version }}
+        shell: bash
         run: npm --no-git-tag-version version $VERSION --workspace=packages/safe-chain --ignore-scripts
 
       - name: Create binary
