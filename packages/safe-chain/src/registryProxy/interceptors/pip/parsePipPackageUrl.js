@@ -30,11 +30,7 @@ export function parsePipMetadataUrl(url) {
   }
 
   const pathSegments = urlObj.pathname.split("/").filter(Boolean);
-  if (
-    pathSegments.length >= 2 &&
-    pathSegments[0] === "simple" &&
-    pathSegments[1]
-  ) {
+  if (pathSegments[0] === "simple" && pathSegments[1]) {
     return {
       packageName: decodeURIComponent(pathSegments[1]),
       type: "simple",
@@ -42,7 +38,6 @@ export function parsePipMetadataUrl(url) {
   }
 
   if (
-    pathSegments.length >= 3 &&
     pathSegments[0] === "pypi" &&
     pathSegments[pathSegments.length - 1] === "json" &&
     pathSegments[1]
