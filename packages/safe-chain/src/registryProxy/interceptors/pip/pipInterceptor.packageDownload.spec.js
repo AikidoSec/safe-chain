@@ -26,8 +26,12 @@ describe("pipInterceptor", async () => {
     namedExports: {
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",
+      getLoggingLevel: () => "silent",
+      getMinimumPackageAgeHours: () => 48,
       getMinimumPackageAgeExclusions: () => [],
       getPipCustomRegistries: () => [],
+      LOGGING_SILENT: "silent",
+      LOGGING_VERBOSE: "verbose",
       skipMinimumPackageAge: () => false,
     },
   });
