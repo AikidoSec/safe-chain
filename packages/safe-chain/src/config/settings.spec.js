@@ -2,12 +2,21 @@ import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 
 let configFileContent = undefined;
+let loggedMessages = [];
 mock.module("fs", {
   namedExports: {
     existsSync: () => configFileContent !== undefined,
     readFileSync: () => configFileContent,
     writeFileSync: (content) => (configFileContent = content),
     mkdirSync: () => {},
+  },
+});
+
+mock.module("../environment/userInteraction.js", {
+  namedExports: {
+    ui: {
+      writeInformation: (message) => loggedMessages.push(message),
+    },
   },
 });
 
@@ -545,6 +554,7 @@ describe("getMalwareListBaseUrl", () => {
     delete process.env[envVarName];
     // Reset CLI arguments state
     initializeCliArguments([]);
+    loggedMessages = [];
   });
 
   afterEach(() => {
@@ -643,5 +653,47 @@ describe("getMalwareListBaseUrl", () => {
     const url = getMalwareListBaseUrl();
 
     assert.strictEqual(url, "https://cli-mirror.com");
+  });
+
+  it("should mask credentials in logged URL from CLI argument", () => {
+    initializeCliArguments(["--safe-chain-malware-list-base-url=https://user:pass@cli-mirror.com"]);
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://user:pass@cli-mirror.com");
+    assert.strictEqual(loggedMessages.length, 1);
+    assert.strictEqual(loggedMessages[0], "Fetching malware lists from https://***@cli-mirror.com as defined by CLI argument --safe-chain-malware-list-base-url");
+  });
+
+  it("should mask credentials in logged URL from environment variable", () => {
+    process.env[envVarName] = "https://user:pass@env-mirror.com";
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://user:pass@env-mirror.com");
+    assert.strictEqual(loggedMessages.length, 1);
+    assert.strictEqual(loggedMessages[0], "Fetching malware lists from https://***@env-mirror.com as defined by environment variable SAFE_CHAIN_MALWARE_LIST_BASE_URL");
+  });
+
+  it("should mask credentials in logged URL from config file", () => {
+    configFileContent = JSON.stringify({
+      malwareListBaseUrl: "https://user:pass@config-mirror.com",
+    });
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://user:pass@config-mirror.com");
+    assert.strictEqual(loggedMessages.length, 1);
+    assert.strictEqual(loggedMessages[0], "Fetching malware lists from https://***@config-mirror.com as defined by config file (malwareListBaseUrl)");
+  });
+
+  it("should sanitize control characters in logged URL", () => {
+    initializeCliArguments(["--safe-chain-malware-list-base-url=https://user:pass@cli-mirror.com\nmalicious"]);
+
+    const url = getMalwareListBaseUrl();
+
+    assert.strictEqual(url, "https://user:pass@cli-mirror.com\nmalicious");
+    assert.strictEqual(loggedMessages.length, 1);
+    assert.strictEqual(loggedMessages[0], "Fetching malware lists from https://***@cli-mirror.commalicious as defined by CLI argument --safe-chain-malware-list-base-url");
   });
 });
