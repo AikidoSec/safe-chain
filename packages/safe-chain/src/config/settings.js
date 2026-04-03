@@ -201,6 +201,25 @@ export function getMinimumPackageAgeExclusions() {
 }
 
 /**
+ * Masks credentials in a URL for logging purposes.
+ * @param {string} url
+ * @returns {string}
+ */
+function maskCredentialsInUrl(url) {
+  if (!url || typeof url !== "string") {
+    return url;
+  }
+
+  // Mask credentials https://username:password@abc.example or https://username@abc.example by replacing with https://***@abc.example
+  let masked = url.replace(/:\/\/([^@]+)@/, "://***@");
+
+  // Remove control characters to prevent log poisoning
+  masked = masked.replace(/[\x00-\x1F\x7F]/g, "");
+
+  return masked;
+}
+
+/**
  * Gets the malware list base URL with priority: CLI argument > environment variable > config file > default
  * @returns {string}
  */
@@ -209,7 +228,7 @@ export function getMalwareListBaseUrl() {
   const cliValue = cliArguments.getMalwareListBaseUrl();
   if (cliValue) {
     const url = removeTrailingSlashes(cliValue);
-    ui.writeInformation(`Fetching malware lists from ${url} as defined by CLI argument --safe-chain-malware-list-base-url`);
+    ui.writeInformation(`Fetching malware lists from ${maskCredentialsInUrl(url)} as defined by CLI argument --safe-chain-malware-list-base-url`);
     return url;
   }
 
@@ -217,7 +236,7 @@ export function getMalwareListBaseUrl() {
   const envValue = environmentVariables.getMalwareListBaseUrl();
   if (envValue) {
     const url = removeTrailingSlashes(envValue);
-    ui.writeInformation(`Fetching malware lists from ${url} as defined by environment variable SAFE_CHAIN_MALWARE_LIST_BASE_URL`);
+    ui.writeInformation(`Fetching malware lists from ${maskCredentialsInUrl(url)} as defined by environment variable SAFE_CHAIN_MALWARE_LIST_BASE_URL`);
     return url;
   }
 
@@ -225,13 +244,13 @@ export function getMalwareListBaseUrl() {
   const configValue = configFile.getMalwareListBaseUrl();
   if (configValue) {
     const url = removeTrailingSlashes(configValue);
-    ui.writeInformation(`Fetching malware lists from ${url} as defined by config file (malwareListBaseUrl)`);
+    ui.writeInformation(`Fetching malware lists from ${maskCredentialsInUrl(url)} as defined by config file (malwareListBaseUrl)`);
     return url;
   }
 
   // Default
   const url = removeTrailingSlashes("https://malware-list.aikido.dev");
-  ui.writeInformation(`Fetching malware lists from ${url} (default)`);
+  ui.writeInformation(`Fetching malware lists from ${maskCredentialsInUrl(url)} (default)`);
   return url;
 }
 
