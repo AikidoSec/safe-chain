@@ -47,6 +47,10 @@ function uv() {
   wrapSafeChainCommand "uv" "$@"
 }
 
+function uvx() {
+  wrapSafeChainCommand "uvx" "$@"
+}
+
 function poetry() {
   wrapSafeChainCommand "poetry" "$@"
 }

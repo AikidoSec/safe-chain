@@ -51,6 +51,10 @@ function uv
     wrapSafeChainCommand "uv" $argv
 end
 
+function uvx
+    wrapSafeChainCommand "uvx" $argv
+end
+
 function poetry
     wrapSafeChainCommand "poetry" $argv
 end
