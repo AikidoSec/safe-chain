@@ -3,17 +3,18 @@ import {
   getEcoSystem,
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
+  getMalwareListBaseUrl,
 } from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 
-const malwareDatabaseUrls = {
-  [ECOSYSTEM_JS]: "https://malware-list.aikido.dev/malware_predictions.json",
-  [ECOSYSTEM_PY]: "https://malware-list.aikido.dev/malware_pypi.json",
+const malwareDatabasePaths = {
+  [ECOSYSTEM_JS]: "malware_predictions.json",
+  [ECOSYSTEM_PY]: "malware_pypi.json",
 };
 
-const newPackagesListUrls = {
-  [ECOSYSTEM_JS]: "https://malware-list.aikido.dev/releases/npm.json",
-  [ECOSYSTEM_PY]: "https://malware-list.aikido.dev/releases/pypi.json",
+const newPackagesListPaths = {
+  [ECOSYSTEM_JS]: "releases/npm.json",
+  [ECOSYSTEM_PY]: "releases/pypi.json",
 };
 
 const DEFAULT_FETCH_RETRY_ATTEMPTS = 4;
@@ -40,10 +41,11 @@ const DEFAULT_FETCH_RETRY_ATTEMPTS = 4;
 export async function fetchMalwareDatabase() {
   return retry(async () => {
     const ecosystem = getEcoSystem();
-    const malwareDatabaseUrl =
-      malwareDatabaseUrls[
-        /** @type {keyof typeof malwareDatabaseUrls} */ (ecosystem)
-      ];
+    const baseUrl = getMalwareListBaseUrl();
+    const path = malwareDatabasePaths[
+      /** @type {keyof typeof malwareDatabasePaths} */ (ecosystem)
+    ];
+    const malwareDatabaseUrl = `${baseUrl}/${path}`;
     const response = await fetch(malwareDatabaseUrl);
     if (!response.ok) {
       throw new Error(
@@ -69,10 +71,11 @@ export async function fetchMalwareDatabase() {
 export async function fetchMalwareDatabaseVersion() {
   return retry(async () => {
     const ecosystem = getEcoSystem();
-    const malwareDatabaseUrl =
-      malwareDatabaseUrls[
-        /** @type {keyof typeof malwareDatabaseUrls} */ (ecosystem)
-      ];
+    const baseUrl = getMalwareListBaseUrl();
+    const path = malwareDatabasePaths[
+      /** @type {keyof typeof malwareDatabasePaths} */ (ecosystem)
+    ];
+    const malwareDatabaseUrl = `${baseUrl}/${path}`;
     const response = await fetch(malwareDatabaseUrl, {
       method: "HEAD",
     });
@@ -92,12 +95,14 @@ export async function fetchMalwareDatabaseVersion() {
 export async function fetchNewPackagesList() {
   return retry(async () => {
     const ecosystem = getEcoSystem();
-    const url =
-      newPackagesListUrls[/** @type {keyof typeof newPackagesListUrls} */ (ecosystem)];
+    const baseUrl = getMalwareListBaseUrl();
+    const path = newPackagesListPaths[/** @type {keyof typeof newPackagesListPaths} */ (ecosystem)];
 
-    if (!url) {
+    if (!path) {
       return { newPackagesList: [], version: undefined };
     }
+
+    const url = `${baseUrl}/${path}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -124,12 +129,14 @@ export async function fetchNewPackagesList() {
 export async function fetchNewPackagesListVersion() {
   return retry(async () => {
     const ecosystem = getEcoSystem();
-    const url =
-      newPackagesListUrls[/** @type {keyof typeof newPackagesListUrls} */ (ecosystem)];
+    const baseUrl = getMalwareListBaseUrl();
+    const path = newPackagesListPaths[/** @type {keyof typeof newPackagesListPaths} */ (ecosystem)];
 
-    if (!url) {
+    if (!path) {
       return undefined;
     }
+
+    const url = `${baseUrl}/${path}`;
 
     const response = await fetch(url, { method: "HEAD" });
     if (!response.ok) {

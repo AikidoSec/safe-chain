@@ -1,4 +1,65 @@
 /**
+ * Parses a PyPI metadata URL and returns the package name and API type.
+ *
+ * @example
+ * parsePipMetadataUrl("https://pypi.org/simple/requests/")
+ * // => { packageName: "requests", type: "simple" }
+ *
+ * parsePipMetadataUrl("https://pypi.org/pypi/requests/json")
+ * // => { packageName: "requests", type: "json" }
+ *
+ * parsePipMetadataUrl("https://pypi.org/pypi/requests/2.28.1/json")
+ * // => { packageName: "requests", type: "json" }
+ *
+ * parsePipMetadataUrl("https://files.pythonhosted.org/packages/requests-2.28.1.tar.gz")
+ * // => { packageName: undefined, type: undefined }
+ *
+ * @param {string} url
+ * @returns {{ packageName: string | undefined, type: "simple" | "json" | undefined }}
+ */
+export function parsePipMetadataUrl(url) {
+  if (typeof url !== "string") {
+    return { packageName: undefined, type: undefined };
+  }
+
+  let urlObj;
+  try {
+    urlObj = new URL(url);
+  } catch {
+    return { packageName: undefined, type: undefined };
+  }
+
+  const pathSegments = urlObj.pathname.split("/").filter(Boolean);
+  if (pathSegments[0] === "simple" && pathSegments[1]) {
+    return {
+      packageName: decodeURIComponent(pathSegments[1]),
+      type: "simple",
+    };
+  }
+
+  if (
+    pathSegments[0] === "pypi" &&
+    pathSegments[pathSegments.length - 1] === "json" &&
+    pathSegments[1]
+  ) {
+    return {
+      packageName: decodeURIComponent(pathSegments[1]),
+      type: "json",
+    };
+  }
+
+  return { packageName: undefined, type: undefined };
+}
+
+/**
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function isPipPackageInfoUrl(url) {
+  return !!parsePipMetadataUrl(url).packageName;
+}
+
+/**
  * Parse Python package artifact URLs from PyPI-style registries.
  * Examples:
  * - Wheel: https://files.pythonhosted.org/packages/.../requests-2.28.1-py3-none-any.whl

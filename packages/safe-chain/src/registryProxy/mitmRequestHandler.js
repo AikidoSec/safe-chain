@@ -2,7 +2,8 @@ import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
-import { gunzipSync, gzipSync } from "zlib";
+import { gunzipSync } from "zlib";
+import { omitHeaders } from "./http-utils.js";
 
 /**
  * @typedef {import("./interceptors/interceptorBuilder.js").Interceptor} Interceptor
@@ -215,11 +216,16 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
 
         buffer = requestHandler.modifyBody(buffer, headers);
 
-        if (proxyRes.headers["content-encoding"] === "gzip") {
-          buffer = gzipSync(buffer);
-        }
-
-        res.writeHead(statusCode, headers);
+        // For rewritten responses, send the final body uncompressed.
+        // This avoids mismatches between upstream compression metadata and the
+        // rewritten payload on the wire.
+        const rewrittenHeaders = omitHeaders(
+          headers,
+          ["content-length", "transfer-encoding", "content-encoding"],
+          { caseInsensitive: true }
+        ) || {};
+        rewrittenHeaders["content-length"] = String(buffer.byteLength);
+        res.writeHead(statusCode, rewrittenHeaders);
         res.end(buffer);
       });
     } else {

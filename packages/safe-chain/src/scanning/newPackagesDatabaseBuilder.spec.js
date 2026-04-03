@@ -8,6 +8,7 @@ mock.module("../config/settings.js", {
   namedExports: {
     getMinimumPackageAgeHours: () => minimumPackageAgeHours,
     getEcoSystem: () => ecosystem,
+    getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
     ECOSYSTEM_JS: "js",
     ECOSYSTEM_PY: "py",
   },

@@ -121,7 +121,8 @@ Current enforcement differs by ecosystem:
   - during normal package resolution, Safe Chain suppresses versions that are newer than the configured minimum age from the package metadata returned by the registry
   - for direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages
 - Python package managers:
-  - Safe Chain blocks direct package download requests using a cached list of newly released packages
+  - during package resolution, Safe Chain suppresses too-young files and releases from PyPI metadata responses
+  - for direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages
 
 By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
@@ -198,7 +199,10 @@ For npm-based package managers, this check currently has two enforcement modes:
 - Safe Chain suppresses too-young versions from package metadata during normal dependency resolution.
 - Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
 
-For Python package managers, Safe Chain currently enforces minimum package age by blocking direct package download requests when they are matched against the cached newly released packages list.
+For Python package managers, this check currently has two enforcement modes:
+
+- Safe Chain suppresses too-young files and releases from PyPI metadata during dependency resolution.
+- Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
 
 ### Configuration Options
 
@@ -276,6 +280,41 @@ You can set custom registries through environment variable or config file. Both 
      }
    }
    ```
+
+## Malware List Base URL
+
+Configure Safe Chain to fetch malware databases and new packages lists from a custom mirror URL. This allows you to host your own copy of the Aikido malware database.
+
+### Configuration Options
+
+You can set the malware list base URL through multiple sources (in order of priority):
+
+1. **CLI Argument** (highest priority):
+
+   ```shell
+   npm install express --safe-chain-malware-list-base-url=https://your-mirror.com
+   ```
+
+2. **Environment Variable**:
+
+   ```shell
+   export SAFE_CHAIN_MALWARE_LIST_BASE_URL=https://your-mirror.com
+   npm install express
+   ```
+
+3. **Config File** (`~/.safe-chain/config.json`):
+
+   ```json
+   {
+     "malwareListBaseUrl": "https://your-mirror.com"
+   }
+   ```
+
+The base URL should point to a server that mirrors the structure of `https://malware-list.aikido.dev/`, including the following paths:
+- `/malware_predictions.json` (JavaScript ecosystem malware database)
+- `/malware_pypi.json` (Python ecosystem malware database)
+- `/releases/npm.json` (JavaScript new packages list)
+- `/releases/pypi.json` (Python new packages list)
 
 # Usage in CI/CD
 

@@ -1,10 +1,7 @@
 import { getMinimumPackageAgeHours } from "../../../config/settings.js";
 import { ui } from "../../../environment/userInteraction.js";
-import { getHeaderValueAsString } from "../../http-utils.js";
-
-const state = {
-  hasSuppressedVersions: false,
-};
+import { clearCachingHeaders, getHeaderValueAsString } from "../../http-utils.js";
+import { recordSuppressedVersion } from "../suppressedVersionsState.js";
 
 /**
  * @param {NodeJS.Dict<string | string[]>} headers
@@ -82,15 +79,7 @@ export function modifyNpmInfoResponse(body, headers) {
       const timestampValue = new Date(timestamp);
       if (timestampValue > cutOff) {
         deleteVersionFromJson(bodyJson, version);
-        if (headers) {
-          // When modifying the response, the etag and last-modified headers
-          // no longer match the content so they needs to be removed before sending the response.
-          delete headers["etag"];
-          delete headers["last-modified"];
-          // Removing the cache-control header will prevent the package manager from caching
-          // the modified response.
-          delete headers["cache-control"];
-        }
+        clearCachingHeaders(headers);
       }
     }
 
@@ -114,7 +103,7 @@ export function modifyNpmInfoResponse(body, headers) {
  * @param {string} version
  */
 function deleteVersionFromJson(json, version) {
-  state.hasSuppressedVersions = true;
+  recordSuppressedVersion();
 
   const packageName = typeof json?.name === "string" ? json.name : "(unknown)";
 
@@ -169,13 +158,6 @@ function getMostRecentTag(tagList) {
   }
 
   return current;
-}
-
-/**
- * @returns {boolean}
- */
-export function getHasSuppressedVersions() {
-  return state.hasSuppressedVersions;
 }
 
 /**
