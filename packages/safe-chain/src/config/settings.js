@@ -209,7 +209,7 @@ export function getMalwareListBaseUrl() {
   const cliValue = cliArguments.getMalwareListBaseUrl();
   if (cliValue) {
     const url = removeTrailingSlashes(cliValue);
-    ui.writeInformation(`Fetching malware lists from ${url} as defined by CLI argument --safe-chain-malware-list-base-url`);
+    ui.writeVerbose(`Fetching malware lists from ${url} as defined by CLI argument --safe-chain-malware-list-base-url`);
     return url;
   }
 
@@ -217,7 +217,7 @@ export function getMalwareListBaseUrl() {
   const envValue = environmentVariables.getMalwareListBaseUrl();
   if (envValue) {
     const url = removeTrailingSlashes(envValue);
-    ui.writeInformation(`Fetching malware lists from ${url} as defined by environment variable SAFE_CHAIN_MALWARE_LIST_BASE_URL`);
+    ui.writeVerbose(`Fetching malware lists from ${url} as defined by environment variable SAFE_CHAIN_MALWARE_LIST_BASE_URL`);
     return url;
   }
 
@@ -225,14 +225,12 @@ export function getMalwareListBaseUrl() {
   const configValue = configFile.getMalwareListBaseUrl();
   if (configValue) {
     const url = removeTrailingSlashes(configValue);
-    ui.writeInformation(`Fetching malware lists from ${url} as defined by config file (malwareListBaseUrl)`);
+    ui.writeVerbose(`Fetching malware lists from ${url} as defined by config file (malwareListBaseUrl)`);
     return url;
   }
 
   // Default
-  const url = removeTrailingSlashes("https://malware-list.aikido.dev");
-  ui.writeInformation(`Fetching malware lists from ${url} (default)`);
-  return url;
+  return removeTrailingSlashes("https://malware-list.aikido.dev");
 }
 
 /**
