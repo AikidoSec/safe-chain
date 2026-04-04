@@ -2,9 +2,9 @@ import { platform } from 'os';
 import { ui } from "../environment/userInteraction.js";
 import { readFileSync, existsSync } from "node:fs";
 import {randomUUID} from "node:crypto";
-import {createWriteStream} from "fs";
-import archiver from 'archiver';
+import {createWriteStream, readdirSync, statSync} from "fs";
 import path from "node:path";
+import yazl from "yazl";
 
 export async function printUltimateLogs() {
   const { proxyLogPath, ultimateLogPath, proxyErrLogPath, ultimateErrLogPath } = getPathsPerPlatform();
@@ -34,22 +34,28 @@ export async function troubleshootingExport() {
     const date = new Date().toISOString().split('T')[0];
     const uuid = randomUUID();
     const zipFileName = `safechain-ultimate-${date}-${uuid}.zip`;
+    const zipfile = new yazl.ZipFile();
+    const entries = readdirSync(logDir);
+    for (const entry of entries) {
+      const fullPath = path.join(logDir, entry);
+      if (statSync(fullPath).isFile()) {
+        zipfile.addFile(fullPath, entry);
+      }
+    }
+    zipfile.end();
+
     const output = createWriteStream(zipFileName);
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    zipfile.outputStream.pipe(output);
 
     output.on('close', () => {
       ui.writeInformation(`Logs collected and zipped as: ${path.resolve(zipFileName)}`);
       resolve(zipFileName);
     });
 
-    archive.on('error', (/** @type {Error} */ err) => {
+    output.on('error', (/** @type {Error} */ err) => {
       ui.writeError(`Failed to zip logs: ${err.message}`);
       reject(err);
     });
-
-    archive.pipe(output);
-    archive.directory(logDir, false);
-    archive.finalize();
   });
 }
 
