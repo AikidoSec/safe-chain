@@ -13,6 +13,7 @@ import { createPipPackageManager } from "./pip/createPackageManager.js";
 import { createUvPackageManager } from "./uv/createUvPackageManager.js";
 import { createPoetryPackageManager } from "./poetry/createPoetryPackageManager.js";
 import { createPipXPackageManager } from "./pipx/createPipXPackageManager.js";
+import { createRushPackageManager } from "./rush/createRushPackageManager.js";
 
 /**
  * @type {{packageManagerName: PackageManager | null}}
@@ -64,6 +65,8 @@ export function initializePackageManager(packageManagerName, context) {
     state.packageManagerName = createPoetryPackageManager();
   } else if (packageManagerName === "pipx") {
     state.packageManagerName = createPipXPackageManager();
+  } else if (packageManagerName === "rush") {
+    state.packageManagerName = createRushPackageManager();
   } else {
     throw new Error("Unsupported package manager: " + packageManagerName);
   }
