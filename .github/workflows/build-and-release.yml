@@ -137,5 +137,11 @@ jobs:
 
       - name: Publish to npm
         run: |
-          echo "Publishing version ${{ github.event.release.tag_name }} to NPM"
-          npm publish --workspace=packages/safe-chain --access public --provenance
+          VERSION="${{ github.event.release.tag_name }}"
+          echo "Publishing version $VERSION to NPM"
+          if [[ "$VERSION" == *"-"* ]]; then
+            PRERELEASE_TAG=$(echo "$VERSION" | sed 's/.*-\([^-]*\)$/\1/')
+            npm publish --workspace=packages/safe-chain --access public --provenance --tag "$PRERELEASE_TAG"
+          else
+            npm publish --workspace=packages/safe-chain --access public --provenance
+          fi
