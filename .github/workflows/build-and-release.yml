@@ -133,6 +133,7 @@ jobs:
           cp README.md packages/safe-chain/
           cp LICENSE packages/safe-chain/
           cp -r docs packages/safe-chain/
+          cp npm-shrinkwrap.json packages/safe-chain/
 
       - name: Publish to npm
         run: |
