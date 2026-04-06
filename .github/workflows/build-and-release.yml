@@ -101,7 +101,6 @@ jobs:
 
   publish-npm:
     name: Publish to npm
-    if: github.event_name == 'release'
     runs-on: ubuntu-latest
 
     steps:
