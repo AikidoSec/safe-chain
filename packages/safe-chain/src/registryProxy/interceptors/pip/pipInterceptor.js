@@ -8,6 +8,10 @@ import { getEquivalentPackageNames } from "../../../scanning/packageNameVariants
 import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import { isExcludedFromMinimumPackageAge } from "../minimumPackageAgeExclusions.js";
+import {
+  modifyPipInfoResponse,
+  parsePipMetadataUrl,
+} from "./modifyPipInfo.js";
 import { parsePipPackageFromUrl } from "./parsePipPackageUrl.js";
 
 const knownPipRegistries = [
@@ -47,6 +51,28 @@ function buildPipInterceptor(registry) {
  */
 function createPipRequestHandler(registry) {
   return async (reqContext) => {
+    const minimumAgeChecksEnabled = !skipMinimumPackageAge();
+    const metadataInfo = parsePipMetadataUrl(reqContext.targetUrl);
+    const metadataPackageName = metadataInfo.packageName;
+
+    if (
+      minimumAgeChecksEnabled &&
+      metadataPackageName &&
+      !isExcludedFromMinimumPackageAge(metadataPackageName)
+    ) {
+      const newPackagesDatabase = await openNewPackagesDatabase();
+      reqContext.modifyBody((body, headers) =>
+        modifyPipInfoResponse(
+          body,
+          headers,
+          reqContext.targetUrl,
+          newPackagesDatabase.isNewlyReleasedPackage,
+          metadataPackageName
+        )
+      );
+      return;
+    }
+
     const { packageName, version } = parsePipPackageFromUrl(
       reqContext.targetUrl,
       registry
@@ -75,7 +101,7 @@ function createPipRequestHandler(registry) {
 
     if (
       version &&
-      !skipMinimumPackageAge() &&
+      minimumAgeChecksEnabled &&
       !isExcludedFromMinimumPackageAge(packageName)
     ) {
       const newPackagesDatabase = await openNewPackagesDatabase();

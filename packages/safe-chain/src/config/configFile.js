@@ -10,6 +10,7 @@ import { getEcoSystem } from "./settings.js";
  * We cannot trust the input and should add the necessary validations
  * @property {unknown | Number} scanTimeout
  * @property {unknown | Number} minimumPackageAgeHours
+ * @property {unknown | string} malwareListBaseUrl
  * @property {unknown | SafeChainRegistryConfiguration} npm
  * @property {unknown | SafeChainRegistryConfiguration} pip
  *
@@ -80,6 +81,18 @@ export function getMinimumPackageAgeHours() {
     if (validated !== undefined) {
       return validated;
     }
+  }
+  return undefined;
+}
+
+/**
+ * Gets the malware list base URL from config file only
+ * @returns {string | undefined}
+ */
+export function getMalwareListBaseUrl() {
+  const config = readConfigFile();
+  if (config.malwareListBaseUrl && typeof config.malwareListBaseUrl === "string") {
+    return config.malwareListBaseUrl;
   }
   return undefined;
 }
@@ -214,6 +227,7 @@ function readConfigFile() {
   const emptyConfig = {
     scanTimeout: undefined,
     minimumPackageAgeHours: undefined,
+    malwareListBaseUrl: undefined,
     npm: {
       customRegistries: undefined,
     },

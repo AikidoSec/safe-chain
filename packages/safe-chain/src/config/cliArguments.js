@@ -1,12 +1,13 @@
 import { ui } from "../environment/userInteraction.js";
 
 /**
- * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined}}
+ * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined, malwareListBaseUrl: string | undefined}}
  */
 const state = {
   loggingLevel: undefined,
   skipMinimumPackageAge: undefined,
   minimumPackageAgeHours: undefined,
+  malwareListBaseUrl: undefined,
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
@@ -20,6 +21,7 @@ export function initializeCliArguments(args) {
   state.loggingLevel = undefined;
   state.skipMinimumPackageAge = undefined;
   state.minimumPackageAgeHours = undefined;
+  state.malwareListBaseUrl = undefined;
 
   const safeChainArgs = [];
   const remainingArgs = [];
@@ -35,6 +37,7 @@ export function initializeCliArguments(args) {
   setLoggingLevel(safeChainArgs);
   setSkipMinimumPackageAge(safeChainArgs);
   setMinimumPackageAgeHours(safeChainArgs);
+  setMalwareListBaseUrl(safeChainArgs);
   checkDeprecatedPythonFlag(args);
   return remainingArgs;
 }
@@ -107,6 +110,26 @@ function setMinimumPackageAgeHours(args) {
  */
 export function getMinimumPackageAgeHours() {
   return state.minimumPackageAgeHours;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setMalwareListBaseUrl(args) {
+  const argName = SAFE_CHAIN_ARG_PREFIX + "malware-list-base-url=";
+
+  const value = getLastArgEqualsValue(args, argName);
+  if (value) {
+    state.malwareListBaseUrl = value;
+  }
+}
+
+/**
+ * @returns {string | undefined}
+ */
+export function getMalwareListBaseUrl() {
+  return state.malwareListBaseUrl;
 }
 
 /**

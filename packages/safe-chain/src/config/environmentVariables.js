@@ -45,3 +45,13 @@ export function getMinimumPackageAgeExclusions() {
   return process.env.SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS ||
     process.env.SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS;
 }
+
+/**
+ * Gets the malware list base URL from environment variable
+ * Expected format: full URL without trailing slash
+ * Example: "https://malware-list.aikido.dev"
+ * @returns {string | undefined}
+ */
+export function getMalwareListBaseUrl() {
+  return process.env.SAFE_CHAIN_MALWARE_LIST_BASE_URL;
+}
