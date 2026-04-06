@@ -65,6 +65,10 @@ function pipx() {
   wrapSafeChainCommand "pipx" "$@"
 }
 
+function pdm() {
+  wrapSafeChainCommand "pdm" "$@"
+}
+
 function printSafeChainWarning() {
   # \033[43;30m is used to set the background color to yellow and text color to black
   # \033[0m is used to reset the text formatting

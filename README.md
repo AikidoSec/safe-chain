@@ -24,6 +24,7 @@ Aikido Safe Chain supports the following package managers:
 - 📦 **uv**
 - 📦 **poetry**
 - 📦 **pipx**
+- 📦 **pdm**
 
 # Usage
 
@@ -66,7 +67,7 @@ You can find all available versions on the [releases page](https://github.com/Ai
 ### Verify the installation
 
 1. **❗Restart your terminal** to start using the Aikido Safe Chain.
-   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
+   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv, pipx and pdm are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
 2. **Verify the installation** by running the verification command:
 
@@ -97,7 +98,7 @@ You can find all available versions on the [releases page](https://github.com/Ai
 
    - The output should show that Aikido Safe Chain is blocking the installation of these test packages as they are flagged as malware.
 
-When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry` and `pipx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
+When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry`, `pipx` and `pdm` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
 
 You can check the installed version by running:
 

@@ -77,6 +77,10 @@ RUN apt-get update && apt-get install -y pipx && \
         pipx install poetry && \
         ln -sf /root/.local/bin/poetry /usr/local/bin/poetry
 
+# Install PDM
+RUN pipx install pdm && \
+    ln -sf /root/.local/bin/pdm /usr/local/bin/pdm
+
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/
 RUN npm install -g /pkgs/*.tgz
