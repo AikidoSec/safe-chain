@@ -42,6 +42,13 @@ describe("Setup CI shell integration", () => {
       },
     });
 
+    // Mock shell detection to avoid touching real RC files during tests
+    mock.module("./shellDetection.js", {
+      namedExports: {
+        detectShells: () => [],
+      },
+    });
+
     // Mock the helpers module
     mock.module("./helpers.js", {
       namedExports: {
