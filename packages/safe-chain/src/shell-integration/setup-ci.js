@@ -52,7 +52,9 @@ function cleanupLegacyShellInit() {
   let shells;
   try {
     shells = detectShells();
-  } catch {
+  } catch (error) {
+    // Best-effort cleanup — skip if shell detection fails
+    console.warn("Failed to detect shells for legacy cleanup:", error);
     return;
   }
 
