@@ -9,6 +9,18 @@ param(
 
 $Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
 $SafeChainBase = if ($env:SAFE_CHAIN_DIR) { $env:SAFE_CHAIN_DIR } else { Join-Path $env:USERPROFILE ".safe-chain" }
+
+# Validate $SafeChainBase before any filesystem operations
+if (-not [System.IO.Path]::IsPathRooted($SafeChainBase)) {
+    Write-Host "[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: $SafeChainBase" -ForegroundColor Red; exit 1
+}
+if ($SafeChainBase -match '\.\.') {
+    Write-Host "[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)" -ForegroundColor Red; exit 1
+}
+if ($SafeChainBase -match '^[A-Za-z]:[/\\]?$' -or $SafeChainBase -eq '/') {
+    Write-Host "[ERROR] SAFE_CHAIN_DIR cannot be a root or drive-root directory" -ForegroundColor Red; exit 1
+}
+
 $InstallDir = Join-Path $SafeChainBase "bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
@@ -150,19 +162,6 @@ function Remove-VoltaInstallation {
 
 # Main installation
 function Install-SafeChain {
-    # Validate SAFE_CHAIN_DIR before using it to write files
-    if ($env:SAFE_CHAIN_DIR) {
-        if (-not [System.IO.Path]::IsPathRooted($env:SAFE_CHAIN_DIR)) {
-            Write-Error-Custom "SAFE_CHAIN_DIR must be an absolute path, got: $($env:SAFE_CHAIN_DIR)"
-        }
-        if ($env:SAFE_CHAIN_DIR -match '\.\.') {
-            Write-Error-Custom "SAFE_CHAIN_DIR must not contain path traversal (..)"
-        }
-        if ($env:SAFE_CHAIN_DIR -match '^[A-Za-z]:[/\\]?$' -or $env:SAFE_CHAIN_DIR -eq '/') {
-            Write-Error-Custom "SAFE_CHAIN_DIR cannot be a root or drive-root directory"
-        }
-    }
-
     # Show deprecation warning if SAFE_CHAIN_VERSION is set
     if (-not [string]::IsNullOrWhiteSpace($env:SAFE_CHAIN_VERSION)) {
         Write-Warn "SAFE_CHAIN_VERSION environment variable is deprecated."
