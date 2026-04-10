@@ -34,7 +34,7 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain zsh initialization script (any path, requires safe-chain comment)
+  // Remove init script source line to uninstall shell integration; marker ensures only safe-chain-added lines are removed
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
