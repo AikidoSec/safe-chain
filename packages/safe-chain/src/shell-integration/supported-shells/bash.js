@@ -35,7 +35,7 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain bash initialization script (any path, requires safe-chain comment)
+  // Marker comment ensures only safe-chain-added lines are removed, not user's own source statements
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
