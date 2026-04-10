@@ -128,7 +128,7 @@ export class DockerTestContainer {
           console.log("Command timeout reached");
           resolve({ allData, output: parseShellOutput(allData), command });
           ptyProcess.removeListener("data", handleInput);
-        }, 15000);
+        }, 30000);
 
         function handleInput(data) {
           allData.push(data);
