@@ -320,14 +320,14 @@ The base URL should point to a server that mirrors the structure of `https://mal
 
 By default, Safe Chain installs itself into `~/.safe-chain`. You can change this by setting `SAFE_CHAIN_DIR` before running the installer. This is useful for system-wide installations (e.g. inside a Docker image) or when you need to avoid conflicts with other tools.
 
-When set, all Safe Chain data (binary, shims, scripts) is placed under the custom directory instead of `~/.safe-chain`.
+When set, all Safe Chain data (binary, shims, scripts, config) is placed under the custom directory instead of `~/.safe-chain`.
 
 ```shell
 export SAFE_CHAIN_DIR=/usr/local/.safe-chain
 curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh
 ```
 
-> **Note:** CLI argument and config file options are not supported for `SAFE_CHAIN_DIR`. The config file lives inside the Safe Chain directory itself, creating a chicken-and-egg problem, and passing a directory path as a flag to package manager commands (e.g. `npm install express --safe-chain-dir=...`) does not make sense.
+This is a **one-time setting**. `safe-chain setup` automatically persists `SAFE_CHAIN_DIR` to your shell rc files (e.g. `~/.bashrc`, `~/.zshrc`) so that subsequent `safe-chain` commands (including teardown and re-setup) find the correct directory without needing the variable set again.
 
 # Usage in CI/CD
 
