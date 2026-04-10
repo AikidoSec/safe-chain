@@ -3,6 +3,7 @@ import * as os from "os";
 import fs from "fs";
 import path from "path";
 import { ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
+import { getSafeChainDir } from "../config/environmentVariables.js";
 import { safeSpawn } from "../utils/safeSpawn.js";
 import { ui } from "../environment/userInteraction.js";
 
@@ -122,17 +123,33 @@ export function getPackageManagerList() {
 }
 
 /**
+ * Returns the safe-chain base directory.
+ * Uses SAFE_CHAIN_DIR environment variable when set, otherwise defaults to ~/.safe-chain.
+ * @returns {string}
+ */
+export function getSafeChainBaseDir() {
+  return getSafeChainDir() ?? path.join(os.homedir(), ".safe-chain");
+}
+
+/**
+ * @returns {string}
+ */
+export function getBinDir() {
+  return path.join(getSafeChainBaseDir(), "bin");
+}
+
+/**
  * @returns {string}
  */
 export function getShimsDir() {
-  return path.join(os.homedir(), ".safe-chain", "shims");
+  return path.join(getSafeChainBaseDir(), "shims");
 }
 
 /**
  * @returns {string}
  */
 export function getScriptsDir() {
-  return path.join(os.homedir(), ".safe-chain", "scripts");
+  return path.join(getSafeChainBaseDir(), "scripts");
 }
 
 /**

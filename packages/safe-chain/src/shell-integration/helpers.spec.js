@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
 import fs from "node:fs";
 import path from "path";
 
@@ -15,6 +15,7 @@ describe("removeLinesMatchingPatternTests", () => {
     mock.module("node:os", {
       namedExports: {
         EOL: "\r\n", // Simulate Windows line endings
+        homedir,
         tmpdir: tmpdir,
         platform: () => "linux",
       },
@@ -180,5 +181,68 @@ describe("removeLinesMatchingPatternTests", () => {
 
     const resultLines = result.split("\n");
     assert.strictEqual(resultLines.length, 5, "Should have exactly 5 lines");
+  });
+});
+
+describe("getSafeChainBaseDir / getBinDir / getShimsDir / getScriptsDir", () => {
+  const customDir = "/usr/local/.safe-chain";
+
+  let originalSafeChainDir;
+
+  beforeEach(() => {
+    originalSafeChainDir = process.env.SAFE_CHAIN_DIR;
+    delete process.env.SAFE_CHAIN_DIR;
+  });
+
+  afterEach(() => {
+    if (originalSafeChainDir !== undefined) {
+      process.env.SAFE_CHAIN_DIR = originalSafeChainDir;
+    } else {
+      delete process.env.SAFE_CHAIN_DIR;
+    }
+  });
+
+  it("defaults base dir to ~/.safe-chain when SAFE_CHAIN_DIR is not set", async () => {
+    const { getSafeChainBaseDir } = await import("./helpers.js");
+    assert.strictEqual(getSafeChainBaseDir(), path.join(homedir(), ".safe-chain"));
+  });
+
+  it("uses SAFE_CHAIN_DIR as base dir when set", async () => {
+    process.env.SAFE_CHAIN_DIR = customDir;
+    const { getSafeChainBaseDir } = await import("./helpers.js");
+    assert.strictEqual(getSafeChainBaseDir(), customDir);
+  });
+
+  it("getBinDir returns ~/.safe-chain/bin by default", async () => {
+    const { getBinDir } = await import("./helpers.js");
+    assert.strictEqual(getBinDir(), path.join(homedir(), ".safe-chain", "bin"));
+  });
+
+  it("getBinDir returns custom dir + /bin when SAFE_CHAIN_DIR is set", async () => {
+    process.env.SAFE_CHAIN_DIR = customDir;
+    const { getBinDir } = await import("./helpers.js");
+    assert.strictEqual(getBinDir(), `${customDir}/bin`);
+  });
+
+  it("getShimsDir returns ~/.safe-chain/shims by default", async () => {
+    const { getShimsDir } = await import("./helpers.js");
+    assert.strictEqual(getShimsDir(), path.join(homedir(), ".safe-chain", "shims"));
+  });
+
+  it("getShimsDir returns custom dir + /shims when SAFE_CHAIN_DIR is set", async () => {
+    process.env.SAFE_CHAIN_DIR = customDir;
+    const { getShimsDir } = await import("./helpers.js");
+    assert.strictEqual(getShimsDir(), `${customDir}/shims`);
+  });
+
+  it("getScriptsDir returns ~/.safe-chain/scripts by default", async () => {
+    const { getScriptsDir } = await import("./helpers.js");
+    assert.strictEqual(getScriptsDir(), path.join(homedir(), ".safe-chain", "scripts"));
+  });
+
+  it("getScriptsDir returns custom dir + /scripts when SAFE_CHAIN_DIR is set", async () => {
+    process.env.SAFE_CHAIN_DIR = customDir;
+    const { getScriptsDir } = await import("./helpers.js");
+    assert.strictEqual(getScriptsDir(), `${customDir}/scripts`);
   });
 });
