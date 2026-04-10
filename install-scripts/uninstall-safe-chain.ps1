@@ -75,6 +75,19 @@ function Remove-VoltaInstallation {
 
 # Main uninstallation
 function Uninstall-SafeChain {
+    # Validate SAFE_CHAIN_DIR before using it to delete files
+    if ($env:SAFE_CHAIN_DIR) {
+        if (-not [System.IO.Path]::IsPathRooted($env:SAFE_CHAIN_DIR)) {
+            Write-Error-Custom "SAFE_CHAIN_DIR must be an absolute path, got: $($env:SAFE_CHAIN_DIR)"
+        }
+        if ($env:SAFE_CHAIN_DIR -match '\.\.') {
+            Write-Error-Custom "SAFE_CHAIN_DIR must not contain path traversal (..)"
+        }
+        if ($env:SAFE_CHAIN_DIR -match '^[A-Za-z]:[/\\]?$' -or $env:SAFE_CHAIN_DIR -eq '/') {
+            Write-Error-Custom "SAFE_CHAIN_DIR cannot be a root or drive-root directory"
+        }
+    }
+
     Write-Info "Uninstalling safe-chain..."
 
     # Run teardown if safe-chain is available

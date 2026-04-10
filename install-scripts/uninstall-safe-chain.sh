@@ -139,6 +139,20 @@ remove_nvm_installation() {
 
 # Main uninstallation
 main() {
+    # Validate SAFE_CHAIN_DIR before using it to delete files
+    if [ -n "${SAFE_CHAIN_DIR}" ]; then
+        case "${SAFE_CHAIN_DIR}" in
+            /*) ;; # absolute path — OK
+            *) error "SAFE_CHAIN_DIR must be an absolute path, got: ${SAFE_CHAIN_DIR}" ;;
+        esac
+        case "${SAFE_CHAIN_DIR}" in
+            *../*|*/..*|..) error "SAFE_CHAIN_DIR must not contain path traversal (..)" ;;
+        esac
+        if [ "${SAFE_CHAIN_DIR}" = "/" ]; then
+            error "SAFE_CHAIN_DIR cannot be the root directory"
+        fi
+    fi
+
     SAFE_CHAIN_LOCATION="$DOT_SAFE_CHAIN/bin/safe-chain"
 
     if [ -x "$SAFE_CHAIN_LOCATION" ]; then

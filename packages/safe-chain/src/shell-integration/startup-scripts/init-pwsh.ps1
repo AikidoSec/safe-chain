@@ -2,7 +2,8 @@
 # $IsWindows is only available in PowerShell Core 6.0+. If it doesn't exist, assume Windows PowerShell
 $isWindowsPlatform = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
 $pathSeparator = if ($isWindowsPlatform) { ';' } else { ':' }
-$safeChainBase = if ($env:SAFE_CHAIN_DIR) { $env:SAFE_CHAIN_DIR } else { Join-Path $HOME '.safe-chain' }
+# Guard against PATH separator injection: reject SAFE_CHAIN_DIR values containing the path separator
+$safeChainBase = if ($env:SAFE_CHAIN_DIR -and -not $env:SAFE_CHAIN_DIR.Contains($pathSeparator)) { $env:SAFE_CHAIN_DIR } else { Join-Path $HOME '.safe-chain' }
 $safeChainBin = Join-Path $safeChainBase 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 

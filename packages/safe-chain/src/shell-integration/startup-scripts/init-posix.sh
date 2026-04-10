@@ -1,4 +1,10 @@
-export PATH="$PATH:${SAFE_CHAIN_DIR:-$HOME/.safe-chain}/bin"
+# Guard against PATH separator injection: reject SAFE_CHAIN_DIR values containing ':'
+case "${SAFE_CHAIN_DIR}" in
+    *:*) _sc_base="${HOME}/.safe-chain" ;;
+    *)   _sc_base="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}" ;;
+esac
+export PATH="$PATH:${_sc_base}/bin"
+unset _sc_base
 
 function npx() {
   wrapSafeChainCommand "npx" "$@"
