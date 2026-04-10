@@ -4,13 +4,21 @@
 
 # Function to remove shim from PATH (POSIX-compliant)
 remove_shim_from_path() {
-    echo "$PATH" | sed "s|$HOME/.safe-chain/shims:||g"
+    _safe_chain_shims="${SAFE_CHAIN_DIR:-$HOME/.safe-chain}/shims"
+    echo "$PATH" | sed "s|${_safe_chain_shims}:||g"
 }
 
 if command -v safe-chain >/dev/null 2>&1; then
   # Remove shim directory from PATH when calling {{AIKIDO_COMMAND}} to prevent infinite loops
   PATH=$(remove_shim_from_path) exec safe-chain {{PACKAGE_MANAGER}} "$@"
 else
+  # safe-chain is not reachable — warn the user so they know protection is inactive
+  if [ -n "$SAFE_CHAIN_DIR" ]; then
+    printf "\033[43;30mWarning:\033[0m safe-chain is not accessible. Check that '%s/bin' is readable and executable by the current user.\n" "$SAFE_CHAIN_DIR" >&2
+  else
+    printf "\033[43;30mWarning:\033[0m safe-chain is not available to protect you from installing malware. {{PACKAGE_MANAGER}} will run without it.\n" >&2
+  fi
+
   # Dynamically find original {{PACKAGE_MANAGER}} (excluding this shim directory)
   original_cmd=$(PATH=$(remove_shim_from_path) command -v {{PACKAGE_MANAGER}})
   if [ -n "$original_cmd" ]; then

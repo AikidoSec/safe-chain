@@ -1,4 +1,4 @@
-export PATH="$PATH:$HOME/.safe-chain/bin"
+export PATH="$PATH:${SAFE_CHAIN_DIR:-$HOME/.safe-chain}/bin"
 
 function npx() {
   wrapSafeChainCommand "npx" "$@"

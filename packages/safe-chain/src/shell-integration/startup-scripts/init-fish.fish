@@ -1,4 +1,5 @@
-set -gx PATH $PATH $HOME/.safe-chain/bin
+set -l safe_chain_base (if set -q SAFE_CHAIN_DIR; echo $SAFE_CHAIN_DIR; else; echo $HOME/.safe-chain; end)
+set -gx PATH $PATH $safe_chain_base/bin
 
 function npx
     wrapSafeChainCommand "npx" $argv
