@@ -33,7 +33,7 @@ function teardown(tools) {
     );
   }
 
-  // Remove the line that sources the safe-chain PowerShell initialization script (any path, requires safe-chain comment)
+  // Match any installation path but require the Safe-chain marker to avoid removing unrelated user scripts
   removeLinesMatchingPattern(
     startupFile,
     /^\.\s+["']?.*init-pwsh\.ps1["']?.*#\s*Safe-chain/,
