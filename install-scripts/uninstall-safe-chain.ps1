@@ -4,19 +4,21 @@
 
 # Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
 $HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
+
+# Validate SAFE_CHAIN_DIR before use
+if ($env:SAFE_CHAIN_DIR) {
+    if (-not [System.IO.Path]::IsPathRooted($env:SAFE_CHAIN_DIR)) {
+        Write-Host "[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: $($env:SAFE_CHAIN_DIR)" -ForegroundColor Red; exit 1
+    }
+    if ($env:SAFE_CHAIN_DIR -match '\.\.') {
+        Write-Host "[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)" -ForegroundColor Red; exit 1
+    }
+    if ($env:SAFE_CHAIN_DIR -match '^[A-Za-z]:[/\\]?$' -or $env:SAFE_CHAIN_DIR -eq '/') {
+        Write-Host "[ERROR] SAFE_CHAIN_DIR cannot be a root or drive-root directory" -ForegroundColor Red; exit 1
+    }
+}
+
 $DotSafeChain = if ($env:SAFE_CHAIN_DIR) { $env:SAFE_CHAIN_DIR } else { Join-Path $HomeDir ".safe-chain" }
-
-# Validate $DotSafeChain before any filesystem operations
-if (-not [System.IO.Path]::IsPathRooted($DotSafeChain)) {
-    Write-Host "[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: $DotSafeChain" -ForegroundColor Red; exit 1
-}
-if ($DotSafeChain -match '\.\.') {
-    Write-Host "[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)" -ForegroundColor Red; exit 1
-}
-if ($DotSafeChain -match '^[A-Za-z]:[/\\]?$' -or $DotSafeChain -eq '/') {
-    Write-Host "[ERROR] SAFE_CHAIN_DIR cannot be a root or drive-root directory" -ForegroundColor Red; exit 1
-}
-
 $InstallDir = Join-Path $DotSafeChain "bin"
 
 # Helper functions

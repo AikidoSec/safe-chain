@@ -8,20 +8,22 @@ set -e  # Exit on error
 
 # Configuration
 VERSION="${SAFE_CHAIN_VERSION:-}"  # Will be fetched from latest release if not set
-SAFE_CHAIN_BASE="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
 
-# Validate SAFE_CHAIN_BASE before any filesystem operations
-case "${SAFE_CHAIN_BASE}" in
-    /*) ;;
-    *) printf '[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: %s\n' "${SAFE_CHAIN_BASE}" >&2; exit 1 ;;
-esac
-case "${SAFE_CHAIN_BASE}" in
-    *../*|*/..*|..) printf '[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)\n' >&2; exit 1 ;;
-esac
-if [ "${SAFE_CHAIN_BASE}" = "/" ]; then
-    printf '[ERROR] SAFE_CHAIN_DIR cannot be the root directory\n' >&2; exit 1
+# Validate SAFE_CHAIN_DIR before use
+if [ -n "${SAFE_CHAIN_DIR}" ]; then
+    case "${SAFE_CHAIN_DIR}" in
+        /*) ;;
+        *) printf '[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: %s\n' "${SAFE_CHAIN_DIR}" >&2; exit 1 ;;
+    esac
+    case "${SAFE_CHAIN_DIR}" in
+        *../*|*/..*|..) printf '[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)\n' >&2; exit 1 ;;
+    esac
+    if [ "${SAFE_CHAIN_DIR}" = "/" ]; then
+        printf '[ERROR] SAFE_CHAIN_DIR cannot be the root directory\n' >&2; exit 1
+    fi
 fi
 
+SAFE_CHAIN_BASE="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
 INSTALL_DIR="${SAFE_CHAIN_BASE}/bin"
 REPO_URL="https://github.com/AikidoSec/safe-chain"
 

@@ -7,19 +7,22 @@
 set -e  # Exit on error
 
 # Configuration
-DOT_SAFE_CHAIN="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
 
-# Validate DOT_SAFE_CHAIN before any filesystem operations
-case "${DOT_SAFE_CHAIN}" in
-    /*) ;;
-    *) printf '[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: %s\n' "${DOT_SAFE_CHAIN}" >&2; exit 1 ;;
-esac
-case "${DOT_SAFE_CHAIN}" in
-    *../*|*/..*|..) printf '[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)\n' >&2; exit 1 ;;
-esac
-if [ "${DOT_SAFE_CHAIN}" = "/" ]; then
-    printf '[ERROR] SAFE_CHAIN_DIR cannot be the root directory\n' >&2; exit 1
+# Validate SAFE_CHAIN_DIR before use
+if [ -n "${SAFE_CHAIN_DIR}" ]; then
+    case "${SAFE_CHAIN_DIR}" in
+        /*) ;;
+        *) printf '[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: %s\n' "${SAFE_CHAIN_DIR}" >&2; exit 1 ;;
+    esac
+    case "${SAFE_CHAIN_DIR}" in
+        *../*|*/..*|..) printf '[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)\n' >&2; exit 1 ;;
+    esac
+    if [ "${SAFE_CHAIN_DIR}" = "/" ]; then
+        printf '[ERROR] SAFE_CHAIN_DIR cannot be the root directory\n' >&2; exit 1
+    fi
 fi
+
+DOT_SAFE_CHAIN="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
 
 # Colors for output
 RED='\033[0;31m'
