@@ -142,19 +142,37 @@ function cygpathw(path) {
 }
 
 function getManualTeardownInstructions() {
-  return [
-    `Remove the following line from your ~/.bashrc file:`,
-    `  source ~/.safe-chain/scripts/init-posix.sh`,
-    `Then restart your terminal or run: source ~/.bashrc`,
-  ];
+  const customDir = getSafeChainDir();
+  const instructions = [`Remove the following line from your ~/.bashrc file:`];
+
+  if (customDir) {
+    instructions.push(
+      `  export SAFE_CHAIN_DIR="${customDir}"`,
+      `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
+    );
+  } else {
+    instructions.push(`  source ~/.safe-chain/scripts/init-posix.sh`);
+  }
+
+  instructions.push(`Then restart your terminal or run: source ~/.bashrc`);
+  return instructions;
 }
 
 function getManualSetupInstructions() {
-  return [
-    `Add the following line to your ~/.bashrc file:`,
-    `  source ~/.safe-chain/scripts/init-posix.sh`,
-    `Then restart your terminal or run: source ~/.bashrc`,
-  ];
+  const customDir = getSafeChainDir();
+  const instructions = [`Add the following line to your ~/.bashrc file:`];
+
+  if (customDir) {
+    instructions.push(
+      `  export SAFE_CHAIN_DIR="${customDir}"`,
+      `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
+    );
+  } else {
+    instructions.push(`  source ~/.safe-chain/scripts/init-posix.sh`);
+  }
+
+  instructions.push(`Then restart your terminal or run: source ~/.bashrc`);
+  return instructions;
 }
 
 /**

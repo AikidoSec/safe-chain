@@ -88,19 +88,41 @@ function getStartupFile() {
 }
 
 function getManualTeardownInstructions() {
-  return [
+  const customDir = getSafeChainDir();
+  const instructions = [
     `Remove the following line from your PowerShell profile (run "echo $PROFILE" to find its location):`,
-    `  . "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"`,
-    `Then restart your terminal or run: . $PROFILE`,
   ];
+
+  if (customDir) {
+    instructions.push(
+      `  $env:SAFE_CHAIN_DIR = '${customDir}'`,
+      `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`,
+    );
+  } else {
+    instructions.push(`  . "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"`);
+  }
+
+  instructions.push(`Then restart your terminal or run: . $PROFILE`);
+  return instructions;
 }
 
 function getManualSetupInstructions() {
-  return [
+  const customDir = getSafeChainDir();
+  const instructions = [
     `Add the following line to your PowerShell profile (run "echo $PROFILE" to find its location):`,
-    `  . "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"`,
-    `Then restart your terminal or run: . $PROFILE`,
   ];
+
+  if (customDir) {
+    instructions.push(
+      `  $env:SAFE_CHAIN_DIR = '${customDir}'`,
+      `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`,
+    );
+  } else {
+    instructions.push(`  . "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"`);
+  }
+
+  instructions.push(`Then restart your terminal or run: . $PROFILE`);
+  return instructions;
 }
 
 /**

@@ -27,7 +27,7 @@ describe("Setup CI shell integration", () => {
     );
     fs.writeFileSync(
       path.join(mockTemplateDir, "path-wrappers", "templates", "windows-wrapper.template.cmd"),
-      "@echo off\nREM Template for {{PACKAGE_MANAGER}}\n{{AIKIDO_COMMAND}} %*\n",
+      "@echo off\nif defined SAFE_CHAIN_DIR (\n    set \"SHIM_DIR=%SAFE_CHAIN_DIR%\\shims\"\n) else (\n    set \"SHIM_DIR=%USERPROFILE%\\.safe-chain\\shims\"\n)\n{{AIKIDO_COMMAND}} %*\n",
       "utf-8"
     );
 
@@ -143,6 +143,10 @@ describe("Setup CI shell integration", () => {
       assert.ok(npmShimContent.includes("aikido-npm"), "npm.cmd should contain aikido-npm");
       assert.ok(npmShimContent.includes("@echo off"), "npm.cmd should have Windows batch header");
       assert.ok(npmShimContent.includes("%*"), "npm.cmd should use Windows argument passing");
+      assert.ok(
+        npmShimContent.includes("if defined SAFE_CHAIN_DIR"),
+        "npm.cmd should honor SAFE_CHAIN_DIR when removing shim dir from PATH",
+      );
 
       // Verify Unix shims were NOT created
       const unixNpmShim = path.join(mockShimsDir, "npm");

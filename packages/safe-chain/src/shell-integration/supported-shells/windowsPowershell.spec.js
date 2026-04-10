@@ -241,6 +241,17 @@ describe("Windows PowerShell shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
+
+    it("should show custom manual teardown instructions when custom dir is set", () => {
+      getSafeChainDirResult = "C:\\custom\\safe-chain";
+
+      assert.deepStrictEqual(windowsPowershell.getManualTeardownInstructions(), [
+        'Remove the following line from your PowerShell profile (run "echo $PROFILE" to find its location):',
+        "  $env:SAFE_CHAIN_DIR = 'C:\\custom\\safe-chain'",
+        '  . "/test-home/.safe-chain/scripts/init-pwsh.ps1"',
+        "Then restart your terminal or run: . $PROFILE",
+      ]);
+    });
   });
 
   describe("execution policy", () => {

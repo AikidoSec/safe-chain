@@ -235,6 +235,17 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
+
+    it("should show custom manual setup instructions when custom dir is set", () => {
+      getSafeChainDirResult = "/custom/safe-chain";
+
+      assert.deepStrictEqual(bash.getManualSetupInstructions(), [
+        "Add the following line to your ~/.bashrc file:",
+        '  export SAFE_CHAIN_DIR="/custom/safe-chain"',
+        "  source /test-home/.safe-chain/scripts/init-posix.sh",
+        "Then restart your terminal or run: source ~/.bashrc",
+      ]);
+    });
   });
 
   describe("integration tests", () => {

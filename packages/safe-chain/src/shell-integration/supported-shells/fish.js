@@ -85,19 +85,45 @@ function getStartupFile() {
 }
 
 function getManualTeardownInstructions() {
-  return [
+  const customDir = getSafeChainDir();
+  const instructions = [
     `Remove the following line from your ~/.config/fish/config.fish file:`,
-    `  source ~/.safe-chain/scripts/init-fish.fish`,
-    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
   ];
+
+  if (customDir) {
+    instructions.push(
+      `  set -gx SAFE_CHAIN_DIR "${customDir}"`,
+      `  source ${path.join(getScriptsDir(), "init-fish.fish")}`,
+    );
+  } else {
+    instructions.push(`  source ~/.safe-chain/scripts/init-fish.fish`);
+  }
+
+  instructions.push(
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  );
+  return instructions;
 }
 
 function getManualSetupInstructions() {
-  return [
+  const customDir = getSafeChainDir();
+  const instructions = [
     `Add the following line to your ~/.config/fish/config.fish file:`,
-    `  source ~/.safe-chain/scripts/init-fish.fish`,
-    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
   ];
+
+  if (customDir) {
+    instructions.push(
+      `  set -gx SAFE_CHAIN_DIR "${customDir}"`,
+      `  source ${path.join(getScriptsDir(), "init-fish.fish")}`,
+    );
+  } else {
+    instructions.push(`  source ~/.safe-chain/scripts/init-fish.fish`);
+  }
+
+  instructions.push(
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  );
+  return instructions;
 }
 
 /**

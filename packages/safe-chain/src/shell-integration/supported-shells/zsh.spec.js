@@ -206,6 +206,17 @@ describe("Zsh shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
+
+    it("should show custom manual teardown instructions when custom dir is set", () => {
+      getSafeChainDirResult = "/custom/safe-chain";
+
+      assert.deepStrictEqual(zsh.getManualTeardownInstructions(), [
+        "Remove the following line from your ~/.zshrc file:",
+        '  export SAFE_CHAIN_DIR="/custom/safe-chain"',
+        "  source /test-home/.safe-chain/scripts/init-posix.sh",
+        "Then restart your terminal or run: source ~/.zshrc",
+      ]);
+    });
   });
 
   describe("integration tests", () => {
