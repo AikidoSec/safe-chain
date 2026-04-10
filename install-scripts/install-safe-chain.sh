@@ -8,7 +8,8 @@ set -e  # Exit on error
 
 # Configuration
 VERSION="${SAFE_CHAIN_VERSION:-}"  # Will be fetched from latest release if not set
-INSTALL_DIR="${HOME}/.safe-chain/bin"
+SAFE_CHAIN_BASE="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
+INSTALL_DIR="${SAFE_CHAIN_BASE}/bin"
 REPO_URL="https://github.com/AikidoSec/safe-chain"
 
 # Colors for output

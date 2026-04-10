@@ -8,7 +8,8 @@ param(
 )
 
 $Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
-$InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
+$SafeChainBase = if ($env:SAFE_CHAIN_DIR) { $env:SAFE_CHAIN_DIR } else { Join-Path $env:USERPROFILE ".safe-chain" }
+$InstallDir = Join-Path $SafeChainBase "bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
 # Ensure TLS 1.2 is enabled for downloads

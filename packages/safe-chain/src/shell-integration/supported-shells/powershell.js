@@ -4,6 +4,7 @@ import {
   removeLinesMatchingPattern,
   validatePowerShellExecutionPolicy,
   getScriptsDir,
+  getSafeChainDir,
 } from "../helpers.js";
 import { execSync } from "child_process";
 import path from "path";
@@ -38,6 +39,11 @@ function teardown(tools) {
     /^\.\s+["']?.*init-pwsh\.ps1["']?.*#\s*Safe-chain/,
   );
 
+  removeLinesMatchingPattern(
+    startupFile,
+    /^\$env:SAFE_CHAIN_DIR\s*=.*#\s*Safe-chain/,
+  );
+
   return true;
 }
 
@@ -51,6 +57,14 @@ async function setup() {
   }
 
   const startupFile = getStartupFile();
+
+  const customDir = getSafeChainDir();
+  if (customDir) {
+    addLineToFile(
+      startupFile,
+      `$env:SAFE_CHAIN_DIR = '${customDir}' # Safe-chain installation directory`,
+    );
+  }
 
   addLineToFile(
     startupFile,

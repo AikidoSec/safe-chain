@@ -122,7 +122,6 @@ function copyStartupFiles() {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
-    // Use absolute path for source
     const sourcePath = path.join(dirname, "startup-scripts", file);
     fs.copyFileSync(sourcePath, targetPath);
   }

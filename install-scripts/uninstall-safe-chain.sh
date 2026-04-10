@@ -7,7 +7,7 @@
 set -e  # Exit on error
 
 # Configuration
-DOT_SAFE_CHAIN="${HOME}/.safe-chain"
+DOT_SAFE_CHAIN="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -163,6 +163,7 @@ main() {
     else
         info "Installation directory $DOT_SAFE_CHAIN does not exist. Nothing to remove."
     fi
+
 }
 
 main "$@"

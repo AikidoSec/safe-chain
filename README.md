@@ -316,6 +316,19 @@ The base URL should point to a server that mirrors the structure of `https://mal
 - `/releases/npm.json` (JavaScript new packages list)
 - `/releases/pypi.json` (Python new packages list)
 
+## Custom Install Directory
+
+By default, Safe Chain installs itself into `~/.safe-chain`. You can change this by setting `SAFE_CHAIN_DIR` before running the installer. This is useful for system-wide installations (e.g. inside a Docker image) or when you need to avoid conflicts with other tools.
+
+When set, all Safe Chain data (binary, shims, scripts) is placed under the custom directory instead of `~/.safe-chain`.
+
+```shell
+export SAFE_CHAIN_DIR=/usr/local/.safe-chain
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh
+```
+
+> **Note:** CLI argument and config file options are not supported for `SAFE_CHAIN_DIR`. The config file lives inside the Safe Chain directory itself, creating a chicken-and-egg problem, and passing a directory path as a flag to package manager commands (e.g. `npm install express --safe-chain-dir=...`) does not make sense.
+
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.
@@ -406,6 +419,7 @@ pipeline {
   environment {
     // Jenkins does not automatically persist PATH updates from setup-ci,
     // so add the shims + binary directory explicitly for all stages.
+    // If you set SAFE_CHAIN_DIR, replace ~/.safe-chain with that path here.
     PATH = "${env.HOME}/.safe-chain/shims:${env.HOME}/.safe-chain/bin:${env.PATH}"
   }
 
@@ -461,7 +475,7 @@ To add safe-chain in GitLab pipelines, you need to install it in the image runni
    # Install safe-chain
    RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
-   # Add safe-chain to PATH
+   # Add safe-chain to PATH (update paths if you set SAFE_CHAIN_DIR during install)
    ENV PATH="/root/.safe-chain/shims:/root/.safe-chain/bin:${PATH}"
    ```
 

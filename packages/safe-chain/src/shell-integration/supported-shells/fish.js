@@ -3,6 +3,7 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
   getScriptsDir,
+  getSafeChainDir,
 } from "../helpers.js";
 import { execSync } from "child_process";
 import path from "path";
@@ -40,11 +41,26 @@ function teardown(tools) {
     eol
   );
 
+  removeLinesMatchingPattern(
+    startupFile,
+    /^set\s+-gx\s+SAFE_CHAIN_DIR\s+.*#\s*Safe-chain/,
+    eol
+  );
+
   return true;
 }
 
 function setup() {
   const startupFile = getStartupFile();
+
+  const customDir = getSafeChainDir();
+  if (customDir) {
+    addLineToFile(
+      startupFile,
+      `set -gx SAFE_CHAIN_DIR "${customDir}" # Safe-chain installation directory`,
+      eol
+    );
+  }
 
   addLineToFile(
     startupFile,

@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { ECOSYSTEM_JS, ECOSYSTEM_PY } from "../config/settings.js";
 import { getSafeChainDir } from "../config/environmentVariables.js";
+export { getSafeChainDir };
 import { safeSpawn } from "../utils/safeSpawn.js";
 import { ui } from "../environment/userInteraction.js";
 

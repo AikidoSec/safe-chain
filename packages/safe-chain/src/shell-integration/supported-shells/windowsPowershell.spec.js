@@ -9,6 +9,7 @@ describe("Windows PowerShell shell integration", () => {
   let mockStartupFile;
   let windowsPowershell;
   let executionPolicyResult;
+  let getSafeChainDirResult = undefined;
 
   beforeEach(async () => {
     // Create temporary startup file for testing
@@ -26,6 +27,7 @@ describe("Windows PowerShell shell integration", () => {
     mock.module("../helpers.js", {
       namedExports: {
         doesExecutableExistOnSystem: () => true,
+        getSafeChainDir: () => getSafeChainDirResult,
         addLineToFile: (filePath, line) => {
           if (!fs.existsSync(filePath)) {
             fs.writeFileSync(filePath, "", "utf-8");
@@ -63,6 +65,7 @@ describe("Windows PowerShell shell integration", () => {
 
     // Reset mocks
     mock.reset();
+    getSafeChainDirResult = undefined;
   });
 
   describe("isInstalled", () => {
@@ -203,6 +206,40 @@ describe("Windows PowerShell shell integration", () => {
         []
       ).length;
       assert.strictEqual(sourceMatches, 1, "Should not duplicate source lines");
+    });
+  });
+
+  describe("SAFE_CHAIN_DIR", () => {
+    it("should write $env:SAFE_CHAIN_DIR line to profile when custom dir is set", async () => {
+      getSafeChainDirResult = "C:\\custom\\safe-chain";
+      await windowsPowershell.setup();
+
+      const content = fs.readFileSync(mockStartupFile, "utf-8");
+      assert.ok(
+        content.includes("$env:SAFE_CHAIN_DIR = 'C:\\custom\\safe-chain' # Safe-chain installation directory")
+      );
+    });
+
+    it("should not write $env:SAFE_CHAIN_DIR line when no custom dir is set", async () => {
+      getSafeChainDirResult = undefined;
+      await windowsPowershell.setup();
+
+      const content = fs.readFileSync(mockStartupFile, "utf-8");
+      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
+    });
+
+    it("should remove $env:SAFE_CHAIN_DIR line on teardown", () => {
+      const initialContent = [
+        "# Windows PowerShell profile",
+        "$env:SAFE_CHAIN_DIR = 'C:\\custom\\safe-chain' # Safe-chain installation directory",
+        '. "/test-home/.safe-chain/scripts/init-pwsh.ps1" # Safe-chain PowerShell initialization script',
+      ].join("\n");
+
+      fs.writeFileSync(mockStartupFile, initialContent, "utf-8");
+
+      windowsPowershell.teardown(knownAikidoTools);
+      const content = fs.readFileSync(mockStartupFile, "utf-8");
+      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
   });
 

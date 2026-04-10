@@ -4,7 +4,7 @@
 
 # Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
 $HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
-$DotSafeChain = Join-Path $HomeDir ".safe-chain"
+$DotSafeChain = if ($env:SAFE_CHAIN_DIR) { $env:SAFE_CHAIN_DIR } else { Join-Path $HomeDir ".safe-chain" }
 $InstallDir = Join-Path $DotSafeChain "bin"
 
 # Helper functions
