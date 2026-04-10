@@ -4,7 +4,7 @@
 
 # Function to remove shim from PATH (POSIX-compliant)
 remove_shim_from_path() {
-    _safe_chain_shims="${SAFE_CHAIN_DIR:-$HOME/.safe-chain}/shims"
+    _safe_chain_shims="{{SHIMS_DIR}}"
     echo "$PATH" | sed "s|${_safe_chain_shims}:||g"
 }
 

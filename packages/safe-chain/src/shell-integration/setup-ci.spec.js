@@ -22,12 +22,12 @@ describe("Setup CI shell integration", () => {
     fs.mkdirSync(path.join(mockTemplateDir, "path-wrappers", "templates"), { recursive: true });
     fs.writeFileSync(
       path.join(mockTemplateDir, "path-wrappers", "templates", "unix-wrapper.template.sh"),
-      "#!/bin/bash\n# Template for {{PACKAGE_MANAGER}}\nexec {{AIKIDO_COMMAND}} \"$@\"\n",
+      "#!/bin/bash\n# Template for {{PACKAGE_MANAGER}}\nSHIM_DIR=\"{{SHIMS_DIR}}\"\nexec {{AIKIDO_COMMAND}} \"$@\"\n",
       "utf-8"
     );
     fs.writeFileSync(
       path.join(mockTemplateDir, "path-wrappers", "templates", "windows-wrapper.template.cmd"),
-      "@echo off\nif defined SAFE_CHAIN_DIR (\n    set \"SHIM_DIR=%SAFE_CHAIN_DIR%\\shims\"\n) else (\n    set \"SHIM_DIR=%USERPROFILE%\\.safe-chain\\shims\"\n)\n{{AIKIDO_COMMAND}} %*\n",
+      "@echo off\nset \"SHIM_DIR={{SHIMS_DIR}}\"\n{{AIKIDO_COMMAND}} %*\n",
       "utf-8"
     );
 
@@ -120,6 +120,10 @@ describe("Setup CI shell integration", () => {
       const npmShimContent = fs.readFileSync(npmShimPath, "utf-8");
       assert.ok(npmShimContent.includes("aikido-npm"), "npm shim should contain aikido-npm");
       assert.ok(npmShimContent.includes("#!/bin/bash"), "npm shim should have bash shebang");
+      assert.ok(
+        npmShimContent.includes(`SHIM_DIR="${mockShimsDir}"`),
+        "npm shim should embed the generated shims directory",
+      );
     });
 
     it("should create Windows .cmd shims on win32 platform", async () => {
@@ -144,8 +148,8 @@ describe("Setup CI shell integration", () => {
       assert.ok(npmShimContent.includes("@echo off"), "npm.cmd should have Windows batch header");
       assert.ok(npmShimContent.includes("%*"), "npm.cmd should use Windows argument passing");
       assert.ok(
-        npmShimContent.includes("if defined SAFE_CHAIN_DIR"),
-        "npm.cmd should honor SAFE_CHAIN_DIR when removing shim dir from PATH",
+        npmShimContent.includes(`set "SHIM_DIR=${mockShimsDir}"`),
+        "npm.cmd should embed the generated shims directory",
       );
 
       // Verify Unix shims were NOT created
