@@ -2,8 +2,10 @@ import {
   addLineToFile,
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
+  getScriptsDir,
 } from "../helpers.js";
 import { execSync } from "child_process";
+import path from "path";
 
 const shellName = "Zsh";
 const executableName = "zsh";
@@ -31,10 +33,10 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain zsh initialization script (~/.safe-chain/scripts/init-posix.sh)
+  // Removes the line that sources the safe-chain zsh initialization script (any path, requires safe-chain comment)
   removeLinesMatchingPattern(
     startupFile,
-    /^source\s+~\/\.safe-chain\/scripts\/init-posix\.sh/,
+    /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
     eol
   );
 
@@ -46,7 +48,7 @@ function setup() {
 
   addLineToFile(
     startupFile,
-    `source ~/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script`,
+    `source ${path.join(getScriptsDir(), "init-posix.sh")} # Safe-chain Zsh initialization script`,
     eol
   );
 

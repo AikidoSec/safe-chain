@@ -19,6 +19,7 @@ describe("Bash shell integration", () => {
     mock.module("../helpers.js", {
       namedExports: {
         doesExecutableExistOnSystem: () => true,
+        getScriptsDir: () => "/test-home/.safe-chain/scripts",
         addLineToFile: (filePath, line) => {
           if (!fs.existsSync(filePath)) {
             fs.writeFileSync(filePath, "", "utf-8");
@@ -109,7 +110,7 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
         content.includes(
-          "source ~/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
+          "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
         )
       );
     });
@@ -129,7 +130,7 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(windowsCygwinPath, "utf-8");
       assert.ok(
         content.includes(
-          "source ~/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
+          "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
         )
       );
     });
@@ -209,13 +210,13 @@ describe("Bash shell integration", () => {
       // Setup
       bash.setup(tools);
       let content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(content.includes("source ~/.safe-chain/scripts/init-posix.sh"));
+      assert.ok(content.includes("source /test-home/.safe-chain/scripts/init-posix.sh"));
 
       // Teardown
       bash.teardown(tools);
       content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes("source ~/.safe-chain/scripts/init-posix.sh")
+        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh")
       );
     });
 
@@ -236,7 +237,7 @@ describe("Bash shell integration", () => {
       const initialContent = [
         "#!/bin/bash",
         "alias npm='old-npm'",
-        "source ~/.safe-chain/scripts/init-posix.sh",
+        "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script",
         "alias ls='ls --color=auto'",
       ].join("\n");
 
@@ -247,7 +248,7 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("alias npm="));
       assert.ok(
-        !content.includes("source ~/.safe-chain/scripts/init-posix.sh")
+        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script")
       );
       assert.ok(content.includes("alias ls="));
     });

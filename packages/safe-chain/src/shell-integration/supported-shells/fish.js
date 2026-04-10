@@ -2,8 +2,10 @@ import {
   addLineToFile,
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
+  getScriptsDir,
 } from "../helpers.js";
 import { execSync } from "child_process";
+import path from "path";
 
 const shellName = "Fish";
 const executableName = "fish";
@@ -31,10 +33,10 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain fish initialization script (~/.safe-chain/scripts/init-fish.fish)
+  // Removes the line that sources the safe-chain fish initialization script (any path, requires safe-chain comment)
   removeLinesMatchingPattern(
     startupFile,
-    /^source\s+~\/\.safe-chain\/scripts\/init-fish\.fish/,
+    /^source\s+.*init-fish\.fish.*#\s*Safe-chain/,
     eol
   );
 
@@ -46,7 +48,7 @@ function setup() {
 
   addLineToFile(
     startupFile,
-    `source ~/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script`,
+    `source ${path.join(getScriptsDir(), "init-fish.fish")} # Safe-chain Fish initialization script`,
     eol
   );
 

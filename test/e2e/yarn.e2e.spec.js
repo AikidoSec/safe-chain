@@ -125,4 +125,43 @@ describe("E2E: yarn coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
+
+  describe("with SAFE_CHAIN_DIR (custom install directory)", () => {
+    const CUSTOM_DIR = "/usr/local/.safe-chain";
+    let customContainer;
+
+    beforeEach(async () => {
+      customContainer = new DockerTestContainer();
+      await customContainer.start();
+
+      // Run setup with the custom dir — init-posix.sh is copied to the custom
+      // scripts dir, and ~/.zshrc gets a source line pointing there
+      const setupShell = await customContainer.openShell("zsh");
+      await setupShell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
+      await setupShell.runCommand("safe-chain setup");
+    });
+
+    afterEach(async () => {
+      if (customContainer) {
+        await customContainer.stop();
+        customContainer = null;
+      }
+    });
+
+    it("blocks malicious yarn packages when scripts are in a custom directory", async () => {
+      // New shell sources ~/.zshrc → sources init-posix.sh from custom dir
+      // → defines yarn() shell function that routes through safe-chain
+      const shell = await customContainer.openShell("zsh");
+      const result = await shell.runCommand("yarn add safe-chain-test");
+
+      assert.ok(
+        result.output.includes("Malicious changes detected:"),
+        `Expected malicious package to be blocked. Output:\n${result.output}`
+      );
+      assert.ok(
+        result.output.includes("Exiting without installing malicious packages."),
+        `Expected malicious package to be blocked. Output:\n${result.output}`
+      );
+    });
+  });
 });

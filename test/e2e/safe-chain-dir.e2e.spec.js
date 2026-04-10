@@ -64,6 +64,57 @@ describe("E2E: SAFE_CHAIN_DIR support", () => {
     );
   });
 
+  it("setup writes the custom path to ~/.bashrc when SAFE_CHAIN_DIR is set", async () => {
+    const shell = await container.openShell("bash");
+    await shell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
+    await shell.runCommand("safe-chain setup");
+
+    const result = await shell.runCommand("cat ~/.bashrc");
+
+    assert.ok(
+      result.output.includes(`source ${CUSTOM_DIR}/scripts/init-posix.sh`),
+      `Expected ~/.bashrc to contain custom scripts path. Output:\n${result.output}`
+    );
+    assert.ok(
+      !result.output.includes("source ~/.safe-chain/scripts/init-posix.sh"),
+      `Expected ~/.bashrc to NOT contain default path. Output:\n${result.output}`
+    );
+  });
+
+  it("setup with SAFE_CHAIN_DIR still protects npm in a new shell session", async () => {
+    // Run setup with the custom dir
+    const setupShell = await container.openShell("bash");
+    await setupShell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
+    await setupShell.runCommand("safe-chain setup");
+
+    // Open a fresh shell — it will source ~/.bashrc which sources init-posix.sh
+    // from the custom dir, defining the npm wrapper function
+    const projectShell = await container.openShell("bash");
+    await projectShell.runCommand("cd /testapp");
+    const result = await projectShell.runCommand(
+      "npm i axios@1.13.0 --safe-chain-logging=verbose"
+    );
+
+    // "Safe-chain: Package" appears before npm downloads — confirms interception happened
+    assert.ok(
+      result.output.includes("Safe-chain: Package"),
+      `Expected npm to be protected after setup with SAFE_CHAIN_DIR. Output:\n${result.output}`
+    );
+  });
+
+  it("teardown removes the custom SAFE_CHAIN_DIR source line from ~/.bashrc", async () => {
+    const shell = await container.openShell("bash");
+    await shell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
+    await shell.runCommand("safe-chain setup");
+    await shell.runCommand("safe-chain teardown");
+
+    const result = await shell.runCommand("cat ~/.bashrc");
+    assert.ok(
+      !result.output.includes(`source ${CUSTOM_DIR}/scripts/init-posix.sh`),
+      `Expected custom source line to be removed from ~/.bashrc. Output:\n${result.output}`
+    );
+  });
+
   it("safe-chain protects a non-root user when installed to a shared dir with SAFE_CHAIN_DIR", async () => {
     // Step 1: create a non-root user inside the container
     container.dockerExec("useradd -m safeuser");

@@ -2,9 +2,11 @@ import {
   addLineToFile,
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
+  getScriptsDir,
 } from "../helpers.js";
 import { execSync, spawnSync } from "child_process";
 import * as os from "os";
+import path from "path";
 
 const shellName = "Bash";
 const executableName = "bash";
@@ -32,10 +34,10 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain bash initialization script (~/.safe-chain/scripts/init-posix.sh)
+  // Removes the line that sources the safe-chain bash initialization script (any path, requires safe-chain comment)
   removeLinesMatchingPattern(
     startupFile,
-    /^source\s+~\/\.safe-chain\/scripts\/init-posix\.sh/,
+    /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
     eol
   );
 
@@ -47,7 +49,7 @@ function setup() {
 
   addLineToFile(
     startupFile,
-    `source ~/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script`,
+    `source ${path.join(getScriptsDir(), "init-posix.sh")} # Safe-chain bash initialization script`,
     eol
   );
 

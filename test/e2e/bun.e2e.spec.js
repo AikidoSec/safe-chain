@@ -78,4 +78,39 @@ describe("E2E: bun coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
+
+  describe("with SAFE_CHAIN_DIR (custom install directory)", () => {
+    const CUSTOM_DIR = "/usr/local/.safe-chain";
+    let customContainer;
+
+    beforeEach(async () => {
+      customContainer = new DockerTestContainer();
+      await customContainer.start();
+
+      const setupShell = await customContainer.openShell("bash");
+      await setupShell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
+      await setupShell.runCommand("safe-chain setup");
+    });
+
+    afterEach(async () => {
+      if (customContainer) {
+        await customContainer.stop();
+        customContainer = null;
+      }
+    });
+
+    it("blocks malicious bun packages when scripts are in a custom directory", async () => {
+      const shell = await customContainer.openShell("bash");
+      const result = await shell.runCommand("bunx safe-chain-test");
+
+      assert.ok(
+        result.output.includes("blocked 1 malicious package downloads"),
+        `Expected malicious package to be blocked. Output:\n${result.output}`
+      );
+      assert.ok(
+        result.output.includes("Exiting without installing malicious packages."),
+        `Expected malicious package to be blocked. Output:\n${result.output}`
+      );
+    });
+  });
 });

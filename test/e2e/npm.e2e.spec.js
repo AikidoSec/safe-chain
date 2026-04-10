@@ -119,4 +119,39 @@ describe("E2E: npm coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
+
+  describe("with SAFE_CHAIN_DIR (custom install directory)", () => {
+    const CUSTOM_DIR = "/usr/local/.safe-chain";
+    let customContainer;
+
+    beforeEach(async () => {
+      customContainer = new DockerTestContainer();
+      await customContainer.start();
+
+      const setupShell = await customContainer.openShell("zsh");
+      await setupShell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
+      await setupShell.runCommand("safe-chain setup");
+    });
+
+    afterEach(async () => {
+      if (customContainer) {
+        await customContainer.stop();
+        customContainer = null;
+      }
+    });
+
+    it("blocks malicious npm packages when scripts are in a custom directory", async () => {
+      const shell = await customContainer.openShell("zsh");
+      const result = await shell.runCommand("npm i safe-chain-test");
+
+      assert.ok(
+        result.output.includes("Malicious changes detected:"),
+        `Expected malicious package to be blocked. Output:\n${result.output}`
+      );
+      assert.ok(
+        result.output.includes("Exiting without installing malicious packages."),
+        `Expected malicious package to be blocked. Output:\n${result.output}`
+      );
+    });
+  });
 });

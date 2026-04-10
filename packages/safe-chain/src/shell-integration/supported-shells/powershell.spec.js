@@ -40,6 +40,7 @@ describe("PowerShell Core shell integration", () => {
           fs.writeFileSync(filePath, filteredLines.join("\n"), "utf-8");
         },
         validatePowerShellExecutionPolicy: () => executionPolicyResult,
+        getScriptsDir: () => "/test-home/.safe-chain/scripts",
       },
     });
 
@@ -83,7 +84,7 @@ describe("PowerShell Core shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
         content.includes(
-          '. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script',
+          '. "/test-home/.safe-chain/scripts/init-pwsh.ps1" # Safe-chain PowerShell initialization script',
         ),
       );
     });
@@ -93,7 +94,7 @@ describe("PowerShell Core shell integration", () => {
     it("should remove init-pwsh.ps1 source line", () => {
       const initialContent = [
         "# PowerShell profile",
-        '. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script',
+        '. "/test-home/.safe-chain/scripts/init-pwsh.ps1" # Safe-chain PowerShell initialization script',
         "Set-Alias ls Get-ChildItem",
         "Set-Alias grep Select-String",
       ].join("\n");
@@ -105,7 +106,7 @@ describe("PowerShell Core shell integration", () => {
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"'),
+        !content.includes('. "/test-home/.safe-chain/scripts/init-pwsh.ps1"'),
       );
       assert.ok(content.includes("Set-Alias ls "));
       assert.ok(content.includes("Set-Alias grep "));
@@ -180,14 +181,14 @@ describe("PowerShell Core shell integration", () => {
       await powershell.setup();
       let content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"'),
+        content.includes('. "/test-home/.safe-chain/scripts/init-pwsh.ps1"'),
       );
 
       // Teardown
       powershell.teardown(knownAikidoTools);
       content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes('. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"'),
+        !content.includes('. "/test-home/.safe-chain/scripts/init-pwsh.ps1"'),
       );
     });
 
@@ -198,7 +199,7 @@ describe("PowerShell Core shell integration", () => {
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       const sourceMatches = (
-        content.match(/\. "\$HOME\\.safe-chain\\scripts\\init-pwsh\.ps1"/g) ||
+        content.match(/\. "\/test-home\/\.safe-chain\/scripts\/init-pwsh\.ps1"/g) ||
         []
       ).length;
       assert.strictEqual(sourceMatches, 1, "Should not duplicate source lines");

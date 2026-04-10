@@ -3,8 +3,10 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
   validatePowerShellExecutionPolicy,
+  getScriptsDir,
 } from "../helpers.js";
 import { execSync } from "child_process";
+import path from "path";
 
 const shellName = "Windows PowerShell";
 const executableName = "powershell";
@@ -30,10 +32,10 @@ function teardown(tools) {
     );
   }
 
-  // Remove the line that sources the safe-chain PowerShell initialization script
+  // Remove the line that sources the safe-chain PowerShell initialization script (any path, requires safe-chain comment)
   removeLinesMatchingPattern(
     startupFile,
-    /^\.\s+["']?\$HOME[/\\].safe-chain[/\\]scripts[/\\]init-pwsh\.ps1["']?/,
+    /^\.\s+["']?.*init-pwsh\.ps1["']?.*#\s*Safe-chain/,
   );
 
   return true;
@@ -52,7 +54,7 @@ async function setup() {
 
   addLineToFile(
     startupFile,
-    `. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script`,
+    `. "${path.join(getScriptsDir(), "init-pwsh.ps1")}" # Safe-chain PowerShell initialization script`,
   );
 
   return true;
