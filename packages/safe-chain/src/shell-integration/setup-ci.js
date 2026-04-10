@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
-import { getPackageManagerList, knownAikidoTools, getShimsDir } from "./helpers.js";
+import { getPackageManagerList, knownAikidoTools, getShimsDir, getBinDir } from "./helpers.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -31,7 +31,7 @@ export async function setupCi() {
   ui.emptyLine();
 
   const shimsDir = getShimsDir();
-  const binDir = path.join(os.homedir(), ".safe-chain", "bin");
+  const binDir = getBinDir();
   // Create the shims directory if it doesn't exist
   if (!fs.existsSync(shimsDir)) {
     fs.mkdirSync(shimsDir, { recursive: true });

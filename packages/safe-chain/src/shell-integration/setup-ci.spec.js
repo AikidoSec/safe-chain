@@ -51,6 +51,7 @@ describe("Setup CI shell integration", () => {
         ],
         getPackageManagerList: () => "npm, yarn",
         getShimsDir: () => mockShimsDir,
+        getBinDir: () => path.join(mockHomeDir, ".safe-chain", "bin"),
       },
     });
 
