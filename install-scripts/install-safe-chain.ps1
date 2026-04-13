@@ -38,7 +38,7 @@ function Test-InstallDir {
 }
 
 $Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
-$SafeChainBase = if ($InstallDir) { $InstallDir } else { Join-Path $env:USERPROFILE ".safe-chain" }
+$SafeChainBase = if ($InstallDir) { $InstallDir } else { Join-Path $HOME ".safe-chain" }
 
 $installDirValidation = Test-InstallDir -Dir $SafeChainBase
 if (-not $installDirValidation.Ok) {

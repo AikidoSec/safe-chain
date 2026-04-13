@@ -1,18 +1,12 @@
-_get_safe_chain_script_path() {
-    if [ -n "${BASH_SOURCE[0]:-}" ]; then
-        printf '%s\n' "${BASH_SOURCE[0]}"
-        return
-    fi
-
-    if [ -n "${ZSH_VERSION:-}" ]; then
-        eval 'printf "%s\n" "${(%):-%x}"'
-        return
-    fi
-
-    printf '%s\n' "$0"
-}
-
-_sc_script_path="$(_get_safe_chain_script_path)"
+if [ -n "${BASH_SOURCE[0]:-}" ]; then
+    _sc_script_path="${BASH_SOURCE[0]}"
+elif [ -n "${ZSH_VERSION:-}" ]; then
+    # ${(%):-%x} uses Zsh prompt expansion to get the sourced file's path.
+    # eval is required so other shells don't try to parse the Zsh-specific syntax.
+    eval '_sc_script_path="${(%):-%x}"'
+else
+    _sc_script_path="$0"
+fi
 _sc_scripts_dir=$(CDPATH= cd -- "$(dirname -- "$_sc_script_path")" 2>/dev/null && pwd -P)
 _sc_base=$(dirname -- "$_sc_scripts_dir")
 export PATH="$PATH:${_sc_base}/bin"

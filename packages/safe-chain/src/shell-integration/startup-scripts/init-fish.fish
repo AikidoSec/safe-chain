@@ -1,5 +1,6 @@
 set -l safe_chain_script (status filename)
-set -l safe_chain_base (path dirname (path dirname $safe_chain_script))
+set -l safe_chain_scripts_dir (dirname $safe_chain_script)
+set -l safe_chain_base (dirname $safe_chain_scripts_dir)
 set -gx PATH $PATH $safe_chain_base/bin
 
 function npx

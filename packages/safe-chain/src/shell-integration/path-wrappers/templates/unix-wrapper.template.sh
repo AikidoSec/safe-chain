@@ -5,6 +5,10 @@
 # Function to remove shim from PATH (POSIX-compliant)
 remove_shim_from_path() {
     _safe_chain_shims=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd -P)
+    if [ -z "$_safe_chain_shims" ]; then
+        echo "$PATH"
+        return
+    fi
     echo "$PATH" | sed "s|${_safe_chain_shims}:||g"
 }
 
