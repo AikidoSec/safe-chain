@@ -34,16 +34,10 @@ function teardown(tools) {
     );
   }
 
-  // Marker comment ensures only safe-chain-added lines are removed, not user's own source statements
+  // Removes the line that sources the safe-chain bash initialization script.
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
-    eol
-  );
-
-  removeLinesMatchingPattern(
-    startupFile,
-    /^export\s+SAFE_CHAIN_DIR=.*#\s*Safe-chain/,
     eol
   );
 
@@ -131,19 +125,20 @@ function cygpathw(path) {
   }
 }
 
-/** @param {string} preamble */
-function buildManualInstructions(preamble) {
-  const instructions = [preamble, `  source ${path.join(getScriptsDir(), "init-posix.sh")}`];
-  instructions.push(`Then restart your terminal or run: source ~/.bashrc`);
-  return instructions;
-}
-
 function getManualTeardownInstructions() {
-  return buildManualInstructions(`Remove the following line from your ~/.bashrc file:`);
+  return [
+    `Remove the following line from your ~/.bashrc file:`,
+    `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
+    `Then restart your terminal or run: source ~/.bashrc`,
+  ];
 }
 
 function getManualSetupInstructions() {
-  return buildManualInstructions(`Add the following line to your ~/.bashrc file:`);
+  return [
+    `Add the following line to your ~/.bashrc file:`,
+    `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
+    `Then restart your terminal or run: source ~/.bashrc`,
+  ];
 }
 
 /**

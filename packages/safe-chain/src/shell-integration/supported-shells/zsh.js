@@ -33,16 +33,10 @@ function teardown(tools) {
     );
   }
 
-  // Remove init script source line to uninstall shell integration; marker ensures only safe-chain-added lines are removed
+  // Removes the line that sources the safe-chain zsh initialization script.
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
-    eol
-  );
-
-  removeLinesMatchingPattern(
-    startupFile,
-    /^export\s+SAFE_CHAIN_DIR=.*#\s*Safe-chain/,
     eol
   );
 
@@ -74,19 +68,20 @@ function getStartupFile() {
   }
 }
 
-/** @param {string} preamble */
-function buildManualInstructions(preamble) {
-  const instructions = [preamble, `  source ${path.join(getScriptsDir(), "init-posix.sh")}`];
-  instructions.push(`Then restart your terminal or run: source ~/.zshrc`);
-  return instructions;
-}
-
 function getManualTeardownInstructions() {
-  return buildManualInstructions(`Remove the following line from your ~/.zshrc file:`);
+  return [
+    `Remove the following line from your ~/.zshrc file:`,
+    `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
+    `Then restart your terminal or run: source ~/.zshrc`,
+  ];
 }
 
 function getManualSetupInstructions() {
-  return buildManualInstructions(`Add the following line to your ~/.zshrc file:`);
+  return [
+    `Add the following line to your ~/.zshrc file:`,
+    `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
+    `Then restart your terminal or run: source ~/.zshrc`,
+  ];
 }
 
 export default {

@@ -171,40 +171,6 @@ describe("Zsh shell integration", () => {
     });
   });
 
-  describe("custom install dir", () => {
-    it("writes only the source line to the rc file", () => {
-      zsh.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(
-        content.includes("source /test-home/.safe-chain/scripts/init-posix.sh")
-      );
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("removes legacy export lines on teardown", () => {
-      const initialContent = [
-        "#!/bin/zsh",
-        'export SAFE_CHAIN_DIR="/custom/safe-chain" # Safe-chain installation directory',
-        "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script",
-      ].join("\n");
-
-      fs.writeFileSync(mockStartupFile, initialContent, "utf-8");
-
-      zsh.teardown(knownAikidoTools);
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("shows source-only manual teardown instructions", () => {
-      assert.deepStrictEqual(zsh.getManualTeardownInstructions(), [
-        "Remove the following line from your ~/.zshrc file:",
-        "  source /test-home/.safe-chain/scripts/init-posix.sh",
-        "Then restart your terminal or run: source ~/.zshrc",
-      ]);
-    });
-  });
-
   describe("integration tests", () => {
     it("should handle complete setup and teardown cycle", () => {
       const tools = [

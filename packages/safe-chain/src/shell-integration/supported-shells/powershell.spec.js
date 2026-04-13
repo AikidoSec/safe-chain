@@ -206,40 +206,6 @@ describe("PowerShell Core shell integration", () => {
     });
   });
 
-  describe("custom install dir", () => {
-    it("writes only the source line to the profile", async () => {
-      await powershell.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(
-        content.includes('. "/test-home/.safe-chain/scripts/init-pwsh.ps1"')
-      );
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("removes legacy env lines on teardown", () => {
-      const initialContent = [
-        "# PowerShell profile",
-        "$env:SAFE_CHAIN_DIR = 'C:\\custom\\safe-chain' # Safe-chain installation directory",
-        '. "/test-home/.safe-chain/scripts/init-pwsh.ps1" # Safe-chain PowerShell initialization script',
-      ].join("\n");
-
-      fs.writeFileSync(mockStartupFile, initialContent, "utf-8");
-
-      powershell.teardown(knownAikidoTools);
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("shows source-only manual setup instructions", () => {
-      assert.deepStrictEqual(powershell.getManualSetupInstructions(), [
-        'Add the following line to your PowerShell profile (run "echo $PROFILE" to find its location):',
-        '  . "/test-home/.safe-chain/scripts/init-pwsh.ps1"',
-        "Then restart your terminal or run: . $PROFILE",
-      ]);
-    });
-  });
-
   describe("execution policy", () => {
     it(`should throw for restricted policies`, async () => {
       executionPolicyResult = {

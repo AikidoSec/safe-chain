@@ -32,15 +32,10 @@ function teardown(tools) {
     );
   }
 
-  // Match any installation path but require the Safe-chain marker to avoid removing unrelated user scripts
+  // Removes the line that sources the safe-chain PowerShell initialization script.
   removeLinesMatchingPattern(
     startupFile,
     /^\.\s+["']?.*init-pwsh\.ps1["']?.*#\s*Safe-chain/,
-  );
-
-  removeLinesMatchingPattern(
-    startupFile,
-    /^\$env:SAFE_CHAIN_DIR\s*=.*#\s*Safe-chain/,
   );
 
   return true;
@@ -78,19 +73,20 @@ function getStartupFile() {
   }
 }
 
-/** @param {string} preamble */
-function buildManualInstructions(preamble) {
-  const instructions = [preamble, `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`];
-  instructions.push(`Then restart your terminal or run: . $PROFILE`);
-  return instructions;
-}
-
 function getManualTeardownInstructions() {
-  return buildManualInstructions(`Remove the following line from your PowerShell profile (run "echo $PROFILE" to find its location):`);
+  return [
+    `Remove the following line from your PowerShell profile (run "echo $PROFILE" to find its location):`,
+    `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`,
+    `Then restart your terminal or run: . $PROFILE`,
+  ];
 }
 
 function getManualSetupInstructions() {
-  return buildManualInstructions(`Add the following line to your PowerShell profile (run "echo $PROFILE" to find its location):`);
+  return [
+    `Add the following line to your PowerShell profile (run "echo $PROFILE" to find its location):`,
+    `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`,
+    `Then restart your terminal or run: . $PROFILE`,
+  ];
 }
 
 /**

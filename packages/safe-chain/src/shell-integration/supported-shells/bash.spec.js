@@ -200,40 +200,6 @@ describe("Bash shell integration", () => {
     });
   });
 
-  describe("custom install dir", () => {
-    it("writes only the source line to the rc file", () => {
-      bash.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(
-        content.includes("source /test-home/.safe-chain/scripts/init-posix.sh")
-      );
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("removes legacy export lines on teardown", () => {
-      const initialContent = [
-        '#!/bin/bash',
-        'export SAFE_CHAIN_DIR="/custom/safe-chain" # Safe-chain installation directory',
-        'source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script',
-      ].join("\n");
-
-      fs.writeFileSync(mockStartupFile, initialContent, "utf-8");
-
-      bash.teardown(knownAikidoTools);
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("shows source-only manual setup instructions", () => {
-      assert.deepStrictEqual(bash.getManualSetupInstructions(), [
-        "Add the following line to your ~/.bashrc file:",
-        "  source /test-home/.safe-chain/scripts/init-posix.sh",
-        "Then restart your terminal or run: source ~/.bashrc",
-      ]);
-    });
-  });
-
   describe("integration tests", () => {
     it("should handle complete setup and teardown cycle", () => {
       const tools = [

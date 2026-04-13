@@ -845,39 +845,4 @@ describe("E2E: pip coverage", () => {
     );
   });
 
-  describe("with SAFE_CHAIN_DIR (custom install directory)", () => {
-    const CUSTOM_DIR = "/usr/local/.safe-chain";
-    let customContainer;
-
-    beforeEach(async () => {
-      customContainer = new DockerTestContainer();
-      await customContainer.start();
-
-      const setupShell = await customContainer.openShell("zsh");
-      await setupShell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
-      await setupShell.runCommand("safe-chain setup");
-      await setupShell.runCommand("pip3 cache purge");
-    });
-
-    afterEach(async () => {
-      if (customContainer) {
-        await customContainer.stop();
-        customContainer = null;
-      }
-    });
-
-    it("intercepts pip3 install when scripts are in a custom directory", async () => {
-      // New shell sources ~/.zshrc → sources init-posix.sh from custom dir
-      // → defines pip3() shell function that routes through safe-chain
-      const shell = await customContainer.openShell("zsh");
-      const result = await shell.runCommand(
-        "pip3 install --break-system-packages requests --safe-chain-logging=verbose"
-      );
-
-      assert.ok(
-        result.output.includes("no malware found."),
-        `Expected pip3 to be protected with SAFE_CHAIN_DIR. Output:\n${result.output}`
-      );
-    });
-  });
 });

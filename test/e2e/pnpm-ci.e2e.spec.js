@@ -123,44 +123,4 @@ describe("E2E: pnpm coverage", () => {
     );
   });
 
-  describe("with SAFE_CHAIN_DIR (custom install directory)", () => {
-    const CUSTOM_DIR = "/usr/local/.safe-chain";
-    let customContainer;
-
-    beforeEach(async () => {
-      customContainer = new DockerTestContainer();
-      await customContainer.start();
-
-      const setupShell = await customContainer.openShell("zsh");
-      await setupShell.runCommand(`export SAFE_CHAIN_DIR=${CUSTOM_DIR}`);
-      await setupShell.runCommand("safe-chain setup-ci");
-      await setupShell.runCommand(
-        `echo 'export SAFE_CHAIN_DIR=${CUSTOM_DIR}' >> ~/.zshrc`
-      );
-      await setupShell.runCommand(
-        `echo 'export PATH="${CUSTOM_DIR}/shims:$PATH"' >> ~/.zshrc`
-      );
-    });
-
-    afterEach(async () => {
-      if (customContainer) {
-        await customContainer.stop();
-        customContainer = null;
-      }
-    });
-
-    it("blocks malicious pnpm packages when shims are in a custom directory", async () => {
-      const shell = await customContainer.openShell("zsh");
-      const result = await shell.runCommand("pnpm add safe-chain-test");
-
-      assert.ok(
-        result.output.includes("Malicious changes detected:"),
-        `Expected malicious package to be blocked. Output:\n${result.output}`
-      );
-      assert.ok(
-        result.output.includes("Exiting without installing malicious packages."),
-        `Expected malicious package to be blocked. Output:\n${result.output}`
-      );
-    });
-  });
 });

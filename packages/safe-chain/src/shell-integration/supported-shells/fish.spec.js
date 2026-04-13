@@ -153,39 +153,6 @@ describe("Fish shell integration", () => {
     });
   });
 
-  describe("custom install dir", () => {
-    it("writes only the source line to the config file", () => {
-      fish.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(
-        content.includes("source /test-home/.safe-chain/scripts/init-fish.fish")
-      );
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("removes legacy set lines on teardown", () => {
-      const initialContent = [
-        'set -gx SAFE_CHAIN_DIR "/custom/safe-chain" # Safe-chain installation directory',
-        "source /test-home/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script",
-      ].join("\n");
-
-      fs.writeFileSync(mockStartupFile, initialContent, "utf-8");
-
-      fish.teardown(knownAikidoTools);
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(!content.includes("SAFE_CHAIN_DIR"));
-    });
-
-    it("shows source-only manual setup instructions", () => {
-      assert.deepStrictEqual(fish.getManualSetupInstructions(), [
-        "Add the following line to your ~/.config/fish/config.fish file:",
-        "  source /test-home/.safe-chain/scripts/init-fish.fish",
-        "Then restart your terminal or run: source ~/.config/fish/config.fish",
-      ]);
-    });
-  });
-
   describe("integration tests", () => {
     it("should handle complete setup and teardown cycle", () => {
       const tools = [

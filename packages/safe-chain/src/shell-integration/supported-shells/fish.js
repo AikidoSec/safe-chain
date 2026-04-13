@@ -33,16 +33,10 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain fish initialization script (any path, requires safe-chain comment)
+  // Removes the line that sources the safe-chain fish initialization script.
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-fish\.fish.*#\s*Safe-chain/,
-    eol
-  );
-
-  removeLinesMatchingPattern(
-    startupFile,
-    /^set\s+-gx\s+SAFE_CHAIN_DIR\s+.*#\s*Safe-chain/,
     eol
   );
 
@@ -74,21 +68,20 @@ function getStartupFile() {
   }
 }
 
-/** @param {string} preamble */
-function buildManualInstructions(preamble) {
-  const instructions = [preamble, `  source ${path.join(getScriptsDir(), "init-fish.fish")}`];
-  instructions.push(
-    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
-  );
-  return instructions;
-}
-
 function getManualTeardownInstructions() {
-  return buildManualInstructions(`Remove the following line from your ~/.config/fish/config.fish file:`);
+  return [
+    `Remove the following line from your ~/.config/fish/config.fish file:`,
+    `  source ${path.join(getScriptsDir(), "init-fish.fish")}`,
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  ];
 }
 
 function getManualSetupInstructions() {
-  return buildManualInstructions(`Add the following line to your ~/.config/fish/config.fish file:`);
+  return [
+    `Add the following line to your ~/.config/fish/config.fish file:`,
+    `  source ${path.join(getScriptsDir(), "init-fish.fish")}`,
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  ];
 }
 
 /**
