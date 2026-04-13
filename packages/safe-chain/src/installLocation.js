@@ -1,5 +1,8 @@
 import path from "path";
 
+/** @type {NodeJS.Process & { pkg?: unknown }} */
+const processWithPkg = process;
+
 /**
  * @param {string} executablePath
  * @returns {string | undefined}
@@ -28,7 +31,7 @@ export function deriveInstallDirFromExecutablePath(executablePath) {
  * @returns {string | undefined}
  */
 export function getInstalledSafeChainDir(options = {}) {
-  const isPackaged = options.isPackaged ?? Boolean(process.pkg);
+  const isPackaged = options.isPackaged ?? Boolean(processWithPkg.pkg);
   if (!isPackaged) {
     return undefined;
   }

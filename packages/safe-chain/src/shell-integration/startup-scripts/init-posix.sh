@@ -5,7 +5,7 @@ _get_safe_chain_script_path() {
     fi
 
     if [ -n "${ZSH_VERSION:-}" ]; then
-        eval 'printf "%s\n" "${(%):-%N}"'
+        eval 'printf "%s\n" "${(%):-%x}"'
         return
     fi
 
