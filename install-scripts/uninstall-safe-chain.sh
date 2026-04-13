@@ -111,12 +111,27 @@ get_safe_chain_command_path() {
     command -v safe-chain
 }
 
-get_reported_install_dir() {
-    if ! command_exists safe-chain; then
+get_validated_safe_chain_command_path() {
+    command_path=$(get_safe_chain_command_path || true)
+    if [ -z "$command_path" ]; then
         return 1
     fi
 
-    install_dir=$(safe-chain get-install-dir 2>/dev/null || true)
+    install_dir=$(derive_install_dir_from_binary "$command_path" || true)
+    if [ -z "$install_dir" ]; then
+        return 1
+    fi
+
+    printf '%s\n' "$command_path"
+}
+
+get_reported_install_dir() {
+    safe_chain_path=$(get_validated_safe_chain_command_path || true)
+    if [ -z "$safe_chain_path" ]; then
+        return 1
+    fi
+
+    install_dir=$("$safe_chain_path" get-install-dir 2>/dev/null || true)
     if [ -n "$install_dir" ]; then
         printf '%s\n' "$install_dir"
         return 0
@@ -134,7 +149,7 @@ find_installed_safe_chain_binary() {
         return 0
     fi
 
-    command_path=$(get_safe_chain_command_path || true)
+    command_path=$(get_validated_safe_chain_command_path || true)
     if [ -n "$command_path" ]; then
         printf '%s\n' "$command_path"
         return 0
