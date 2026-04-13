@@ -57,14 +57,28 @@ function Get-SafeChainCommand {
     return Get-Command safe-chain -ErrorAction SilentlyContinue | Select-Object -First 1
 }
 
-function Get-ReportedInstallDir {
+function Get-ValidatedSafeChainCommandPath {
     $command = Get-SafeChainCommand
-    if (-not $command) {
+    if (-not $command -or [string]::IsNullOrWhiteSpace($command.Path)) {
+        return $null
+    }
+
+    $installDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path
+    if (-not $installDir) {
+        return $null
+    }
+
+    return $command.Path
+}
+
+function Get-ReportedInstallDir {
+    $safeChainPath = Get-ValidatedSafeChainCommandPath
+    if (-not $safeChainPath) {
         return $null
     }
 
     try {
-        $reportedInstallDir = & safe-chain get-install-dir 2>$null | Select-Object -First 1
+        $reportedInstallDir = & $safeChainPath get-install-dir 2>$null | Select-Object -First 1
         if ($reportedInstallDir) {
             $reportedInstallDir = $reportedInstallDir.Trim()
         }
@@ -110,12 +124,7 @@ function Find-SafeChainBinary {
         return $safeChainBin
     }
 
-    $command = Get-SafeChainCommand
-    if ($command) {
-        return $command.Source
-    }
-
-    return $null
+    return Get-ValidatedSafeChainCommandPath
 }
 
 function Invoke-SafeChainTeardown {
