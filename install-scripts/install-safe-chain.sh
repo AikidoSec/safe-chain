@@ -343,10 +343,16 @@ parse_arguments() {
                 if [ $# -eq 0 ]; then
                     error "Missing value for --install-dir"
                 fi
+                if [ -z "$1" ]; then
+                    error "--install-dir must not be empty"
+                fi
                 SAFE_CHAIN_BASE="$1"
                 ;;
             --install-dir=*)
                 SAFE_CHAIN_BASE="${1#--install-dir=}"
+                if [ -z "$SAFE_CHAIN_BASE" ]; then
+                    error "--install-dir must not be empty"
+                fi
                 ;;
             --include-python)
                 warn "--include-python is deprecated and ignored. Python ecosystem is now included by default."
