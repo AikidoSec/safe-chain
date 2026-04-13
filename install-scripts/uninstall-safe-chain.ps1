@@ -5,22 +5,6 @@
 # Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
 $HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
 
-# Validate SAFE_CHAIN_DIR before use
-if ($env:SAFE_CHAIN_DIR) {
-    if (-not [System.IO.Path]::IsPathRooted($env:SAFE_CHAIN_DIR)) {
-        Write-Host "[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: $($env:SAFE_CHAIN_DIR)" -ForegroundColor Red; exit 1
-    }
-    if ($env:SAFE_CHAIN_DIR -match '\.\.') {
-        Write-Host "[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)" -ForegroundColor Red; exit 1
-    }
-    if ($env:SAFE_CHAIN_DIR -match '^[A-Za-z]:[/\\]?$' -or $env:SAFE_CHAIN_DIR -eq '/') {
-        Write-Host "[ERROR] SAFE_CHAIN_DIR cannot be a root or drive-root directory" -ForegroundColor Red; exit 1
-    }
-}
-
-$DotSafeChain = if ($env:SAFE_CHAIN_DIR) { $env:SAFE_CHAIN_DIR } else { Join-Path $HomeDir ".safe-chain" }
-$InstallDir = Join-Path $DotSafeChain "bin"
-
 # Helper functions
 function Write-Info {
     param([string]$Message)
@@ -36,6 +20,64 @@ function Write-Error-Custom {
     param([string]$Message)
     Write-Host "[ERROR] $Message" -ForegroundColor Red
     exit 1
+}
+
+function Get-InstallDirFromBinaryPath {
+    param([string]$BinaryPath)
+
+    if ([string]::IsNullOrWhiteSpace($BinaryPath)) {
+        return $null
+    }
+
+    try {
+        $resolvedPath = (Resolve-Path -LiteralPath $BinaryPath -ErrorAction Stop).Path
+    }
+    catch {
+        $resolvedPath = [System.IO.Path]::GetFullPath($BinaryPath)
+    }
+
+    $fileName = [System.IO.Path]::GetFileName($resolvedPath)
+    if (($fileName -ne "safe-chain") -and ($fileName -ne "safe-chain.exe")) {
+        return $null
+    }
+
+    if ($resolvedPath -match '\.(js|cjs|mjs|cmd|ps1)$') {
+        return $null
+    }
+
+    $binDir = Split-Path -Parent $resolvedPath
+    if ((Split-Path -Leaf $binDir) -ne "bin") {
+        return $null
+    }
+
+    return (Split-Path -Parent $binDir)
+}
+
+function Get-SafeChainInstallDir {
+    $command = Get-Command safe-chain -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($command) {
+        try {
+            $reportedInstallDir = & safe-chain get-install-dir 2>$null | Select-Object -First 1
+            if ($reportedInstallDir) {
+                $reportedInstallDir = $reportedInstallDir.Trim()
+            }
+            if ($reportedInstallDir) {
+                return $reportedInstallDir
+            }
+        }
+        catch {
+            # Fall back to deriving the install dir from the discovered command path
+        }
+    }
+
+    if ($command -and $command.Path) {
+        $discoveredInstallDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path
+        if ($discoveredInstallDir) {
+            return $discoveredInstallDir
+        }
+    }
+
+    return (Join-Path $HomeDir ".safe-chain")
 }
 
 # Check and uninstall npm global package if present
@@ -90,6 +132,8 @@ function Remove-VoltaInstallation {
 # Main uninstallation
 function Uninstall-SafeChain {
     Write-Info "Uninstalling safe-chain..."
+    $DotSafeChain = Get-SafeChainInstallDir
+    $InstallDir = Join-Path $DotSafeChain "bin"
 
     # Run teardown if safe-chain is available
     # Check for both safe-chain.exe (Windows) and safe-chain (Unix) since PowerShell Core runs on all platforms

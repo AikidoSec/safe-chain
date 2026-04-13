@@ -8,7 +8,6 @@ import { knownAikidoTools } from "../helpers.js";
 describe("Fish shell integration", () => {
   let mockStartupFile;
   let fish;
-  let getSafeChainDirResult = undefined;
 
   beforeEach(async () => {
     // Create temporary startup file for testing
@@ -19,7 +18,6 @@ describe("Fish shell integration", () => {
       namedExports: {
         doesExecutableExistOnSystem: () => true,
         getScriptsDir: () => "/test-home/.safe-chain/scripts",
-        getSafeChainDir: () => getSafeChainDirResult,
         addLineToFile: (filePath, line) => {
           if (!fs.existsSync(filePath)) {
             fs.writeFileSync(filePath, "", "utf-8");
@@ -55,7 +53,6 @@ describe("Fish shell integration", () => {
 
     // Reset mocks
     mock.reset();
-    getSafeChainDirResult = undefined;
   });
 
   describe("isInstalled", () => {
@@ -156,26 +153,18 @@ describe("Fish shell integration", () => {
     });
   });
 
-  describe("SAFE_CHAIN_DIR", () => {
-    it("should write set line to config file when custom dir is set", () => {
-      getSafeChainDirResult = "/custom/safe-chain";
+  describe("custom install dir", () => {
+    it("writes only the source line to the config file", () => {
       fish.setup();
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        content.includes('set -gx SAFE_CHAIN_DIR "/custom/safe-chain" # Safe-chain installation directory')
+        content.includes("source /test-home/.safe-chain/scripts/init-fish.fish")
       );
-    });
-
-    it("should not write set line when no custom dir is set", () => {
-      getSafeChainDirResult = undefined;
-      fish.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should remove set line on teardown", () => {
+    it("removes legacy set lines on teardown", () => {
       const initialContent = [
         'set -gx SAFE_CHAIN_DIR "/custom/safe-chain" # Safe-chain installation directory',
         "source /test-home/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script",
@@ -188,12 +177,9 @@ describe("Fish shell integration", () => {
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should show custom manual setup instructions when custom dir is set", () => {
-      getSafeChainDirResult = "/custom/safe-chain";
-
+    it("shows source-only manual setup instructions", () => {
       assert.deepStrictEqual(fish.getManualSetupInstructions(), [
         "Add the following line to your ~/.config/fish/config.fish file:",
-        '  set -gx SAFE_CHAIN_DIR "/custom/safe-chain"',
         "  source /test-home/.safe-chain/scripts/init-fish.fish",
         "Then restart your terminal or run: source ~/.config/fish/config.fish",
       ]);

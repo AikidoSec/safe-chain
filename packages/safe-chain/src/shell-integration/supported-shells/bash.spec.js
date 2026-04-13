@@ -10,7 +10,6 @@ describe("Bash shell integration", () => {
   let bash;
   let windowsCygwinPath = "";
   let platform = "linux";
-  let getSafeChainDirResult = undefined;
 
   beforeEach(async () => {
     // Create temporary startup file for testing
@@ -21,7 +20,6 @@ describe("Bash shell integration", () => {
       namedExports: {
         doesExecutableExistOnSystem: () => true,
         getScriptsDir: () => "/test-home/.safe-chain/scripts",
-        getSafeChainDir: () => getSafeChainDirResult,
         addLineToFile: (filePath, line) => {
           if (!fs.existsSync(filePath)) {
             fs.writeFileSync(filePath, "", "utf-8");
@@ -91,7 +89,6 @@ describe("Bash shell integration", () => {
     // Reset mocks
     mock.reset();
     platform = "linux";
-    getSafeChainDirResult = undefined;
   });
 
   describe("isInstalled", () => {
@@ -203,26 +200,18 @@ describe("Bash shell integration", () => {
     });
   });
 
-  describe("SAFE_CHAIN_DIR", () => {
-    it("should write export line to rc file when custom dir is set", () => {
-      getSafeChainDirResult = "/custom/safe-chain";
+  describe("custom install dir", () => {
+    it("writes only the source line to the rc file", () => {
       bash.setup();
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        content.includes('export SAFE_CHAIN_DIR="/custom/safe-chain" # Safe-chain installation directory')
+        content.includes("source /test-home/.safe-chain/scripts/init-posix.sh")
       );
-    });
-
-    it("should not write export line when no custom dir is set", () => {
-      getSafeChainDirResult = undefined;
-      bash.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should remove export line on teardown", () => {
+    it("removes legacy export lines on teardown", () => {
       const initialContent = [
         '#!/bin/bash',
         'export SAFE_CHAIN_DIR="/custom/safe-chain" # Safe-chain installation directory',
@@ -236,12 +225,9 @@ describe("Bash shell integration", () => {
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should show custom manual setup instructions when custom dir is set", () => {
-      getSafeChainDirResult = "/custom/safe-chain";
-
+    it("shows source-only manual setup instructions", () => {
       assert.deepStrictEqual(bash.getManualSetupInstructions(), [
         "Add the following line to your ~/.bashrc file:",
-        '  export SAFE_CHAIN_DIR="/custom/safe-chain"',
         "  source /test-home/.safe-chain/scripts/init-posix.sh",
         "Then restart your terminal or run: source ~/.bashrc",
       ]);

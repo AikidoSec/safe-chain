@@ -2,24 +2,23 @@ import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 
 describe("certUtils", () => {
-  let originalSafeChainDir;
+  let installedSafeChainDir;
 
   beforeEach(() => {
-    originalSafeChainDir = process.env.SAFE_CHAIN_DIR;
+    installedSafeChainDir = undefined;
+    mock.module("../config/safeChainDir.js", {
+      namedExports: {
+        getSafeChainBaseDir: () => installedSafeChainDir ?? "/home/test/.safe-chain",
+      },
+    });
   });
 
   afterEach(() => {
-    if (originalSafeChainDir === undefined) {
-      delete process.env.SAFE_CHAIN_DIR;
-    } else {
-      process.env.SAFE_CHAIN_DIR = originalSafeChainDir;
-    }
-
     mock.reset();
   });
 
-  it("stores CA certificates in SAFE_CHAIN_DIR when configured", async () => {
-    process.env.SAFE_CHAIN_DIR = "/custom/safe-chain";
+  it("stores CA certificates in the packaged install dir when available", async () => {
+    installedSafeChainDir = "/custom/safe-chain";
 
     mock.module("fs", {
       defaultExport: {

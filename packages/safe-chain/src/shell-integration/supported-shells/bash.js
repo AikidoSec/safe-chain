@@ -3,7 +3,6 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
   getScriptsDir,
-  getSafeChainDir,
 } from "../helpers.js";
 import { execSync, spawnSync } from "child_process";
 import * as os from "os";
@@ -53,15 +52,6 @@ function teardown(tools) {
 
 function setup() {
   const startupFile = getStartupFile();
-
-  const customDir = getSafeChainDir();
-  if (customDir) {
-    addLineToFile(
-      startupFile,
-      `export SAFE_CHAIN_DIR="${customDir}" # Safe-chain installation directory`,
-      eol
-    );
-  }
 
   addLineToFile(
     startupFile,
@@ -143,18 +133,7 @@ function cygpathw(path) {
 
 /** @param {string} preamble */
 function buildManualInstructions(preamble) {
-  const customDir = getSafeChainDir();
-  const instructions = [preamble];
-
-  if (customDir) {
-    instructions.push(
-      `  export SAFE_CHAIN_DIR="${customDir}"`,
-      `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
-    );
-  } else {
-    instructions.push(`  source ~/.safe-chain/scripts/init-posix.sh`);
-  }
-
+  const instructions = [preamble, `  source ${path.join(getScriptsDir(), "init-posix.sh")}`];
   instructions.push(`Then restart your terminal or run: source ~/.bashrc`);
   return instructions;
 }

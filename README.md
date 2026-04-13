@@ -318,16 +318,21 @@ The base URL should point to a server that mirrors the structure of `https://mal
 
 ## Custom Install Directory
 
-By default, Safe Chain installs itself into `~/.safe-chain`. You can change this by setting `SAFE_CHAIN_DIR` before running the installer. This is useful for system-wide installations (e.g. inside a Docker image) or when you need to avoid conflicts with other tools.
+By default, Safe Chain installs itself into `~/.safe-chain`. You can change this by passing an explicit install directory to the installer. This is useful for system-wide installations (e.g. inside a Docker image) or when you need to avoid conflicts with other tools.
 
 When set, all Safe Chain data (binary, shims, scripts, config) is placed under the custom directory instead of `~/.safe-chain`.
 
 ```shell
-export SAFE_CHAIN_DIR=/usr/local/.safe-chain
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --install-dir /usr/local/.safe-chain
 ```
 
-This is a **one-time setting**. `safe-chain setup` automatically persists `SAFE_CHAIN_DIR` to your shell rc files (e.g. `~/.bashrc`, `~/.zshrc`) so that subsequent `safe-chain` commands (including teardown and re-setup) find the correct directory without needing the variable set again.
+On Windows, use `-InstallDir`:
+
+```powershell
+iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -InstallDir 'C:\ProgramData\safe-chain'"
+```
+
+This is a one-time installer choice. Runtime shell integration and uninstall now discover the installation from the installed scripts or binary and do not rely on an environment variable.
 
 # Usage in CI/CD
 
@@ -419,7 +424,7 @@ pipeline {
   environment {
     // Jenkins does not automatically persist PATH updates from setup-ci,
     // so add the shims + binary directory explicitly for all stages.
-    // If you set SAFE_CHAIN_DIR, replace ~/.safe-chain with that path here.
+    // If you installed into a custom directory, replace ~/.safe-chain with that path here.
     PATH = "${env.HOME}/.safe-chain/shims:${env.HOME}/.safe-chain/bin:${env.PATH}"
   }
 
@@ -475,7 +480,7 @@ To add safe-chain in GitLab pipelines, you need to install it in the image runni
    # Install safe-chain
    RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
-   # Add safe-chain to PATH (update paths if you set SAFE_CHAIN_DIR during install)
+   # Add safe-chain to PATH (update paths if you used a custom install dir)
    ENV PATH="/root/.safe-chain/shims:/root/.safe-chain/bin:${PATH}"
    ```
 

@@ -8,22 +8,6 @@ set -e  # Exit on error
 
 # Configuration
 
-# Validate SAFE_CHAIN_DIR before use
-if [ -n "${SAFE_CHAIN_DIR}" ]; then
-    case "${SAFE_CHAIN_DIR}" in
-        /*) ;;
-        *) printf '[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: %s\n' "${SAFE_CHAIN_DIR}" >&2; exit 1 ;;
-    esac
-    case "${SAFE_CHAIN_DIR}" in
-        *../*|*/..*|..) printf '[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)\n' >&2; exit 1 ;;
-    esac
-    if [ "${SAFE_CHAIN_DIR}" = "/" ]; then
-        printf '[ERROR] SAFE_CHAIN_DIR cannot be the root directory\n' >&2; exit 1
-    fi
-fi
-
-DOT_SAFE_CHAIN="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -47,6 +31,78 @@ error() {
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+resolve_path() {
+    target="$1"
+
+    while [ -L "$target" ]; do
+        link_target=$(readlink "$target" 2>/dev/null || echo "")
+        if [ -z "$link_target" ]; then
+            break
+        fi
+
+        case "$link_target" in
+            /*) target="$link_target" ;;
+            *)
+                target="$(dirname "$target")/$link_target"
+                ;;
+        esac
+    done
+
+    target_dir=$(dirname "$target")
+    target_name=$(basename "$target")
+
+    if cd "$target_dir" 2>/dev/null; then
+        printf '%s/%s\n' "$(pwd -P)" "$target_name"
+    else
+        printf '%s\n' "$target"
+    fi
+}
+
+derive_install_dir_from_binary() {
+    binary_path="$1"
+
+    if [ -z "$binary_path" ]; then
+        return 1
+    fi
+
+    resolved_path=$(resolve_path "$binary_path")
+    binary_name=$(basename "$resolved_path")
+    case "$binary_name" in
+        safe-chain|safe-chain.exe) ;;
+        *) return 1 ;;
+    esac
+
+    case "$resolved_path" in
+        *.js|*.cjs|*.mjs|*.cmd|*.ps1) return 1 ;;
+    esac
+
+    binary_dir=$(dirname "$resolved_path")
+    if [ "$(basename "$binary_dir")" != "bin" ]; then
+        return 1
+    fi
+
+    dirname "$binary_dir"
+}
+
+get_install_dir() {
+    if command_exists safe-chain; then
+        install_dir=$(safe-chain get-install-dir 2>/dev/null || true)
+        if [ -n "$install_dir" ]; then
+            printf '%s\n' "$install_dir"
+            return 0
+        fi
+
+        command_path=$(command -v safe-chain)
+        install_dir=$(derive_install_dir_from_binary "$command_path" || true)
+        if [ -n "$install_dir" ]; then
+            printf '%s\n' "$install_dir"
+            return 0
+        fi
+    fi
+
+    printf '%s\n' "${HOME}/.safe-chain"
 }
 
 # Check and uninstall npm global package if present
@@ -154,6 +210,7 @@ remove_nvm_installation() {
 
 # Main uninstallation
 main() {
+    DOT_SAFE_CHAIN=$(get_install_dir)
     SAFE_CHAIN_LOCATION="$DOT_SAFE_CHAIN/bin/safe-chain"
 
     if [ -x "$SAFE_CHAIN_LOCATION" ]; then

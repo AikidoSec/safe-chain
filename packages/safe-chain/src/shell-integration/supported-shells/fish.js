@@ -3,7 +3,6 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
   getScriptsDir,
-  getSafeChainDir,
 } from "../helpers.js";
 import { execSync } from "child_process";
 import path from "path";
@@ -53,15 +52,6 @@ function teardown(tools) {
 function setup() {
   const startupFile = getStartupFile();
 
-  const customDir = getSafeChainDir();
-  if (customDir) {
-    addLineToFile(
-      startupFile,
-      `set -gx SAFE_CHAIN_DIR "${customDir}" # Safe-chain installation directory`,
-      eol
-    );
-  }
-
   addLineToFile(
     startupFile,
     `source ${path.join(getScriptsDir(), "init-fish.fish")} # Safe-chain Fish initialization script`,
@@ -86,18 +76,7 @@ function getStartupFile() {
 
 /** @param {string} preamble */
 function buildManualInstructions(preamble) {
-  const customDir = getSafeChainDir();
-  const instructions = [preamble];
-
-  if (customDir) {
-    instructions.push(
-      `  set -gx SAFE_CHAIN_DIR "${customDir}"`,
-      `  source ${path.join(getScriptsDir(), "init-fish.fish")}`,
-    );
-  } else {
-    instructions.push(`  source ~/.safe-chain/scripts/init-fish.fish`);
-  }
-
+  const instructions = [preamble, `  source ${path.join(getScriptsDir(), "init-fish.fish")}`];
   instructions.push(
     `Then restart your terminal or run: source ~/.config/fish/config.fish`,
   );

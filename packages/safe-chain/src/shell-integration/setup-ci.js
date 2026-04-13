@@ -69,8 +69,7 @@ function createUnixShims(shimsDir) {
   for (const toolInfo of getToolsToSetup()) {
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
-      .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand)
-      .replaceAll("{{SHIMS_DIR}}", shimsDir);
+      .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
 
     const shimPath = path.join(shimsDir, toolInfo.tool);
     fs.writeFileSync(shimPath, shimContent, "utf-8");
@@ -109,8 +108,7 @@ function createWindowsShims(shimsDir) {
   for (const toolInfo of getToolsToSetup()) {
     const shimContent = template
       .replaceAll("{{PACKAGE_MANAGER}}", toolInfo.tool)
-      .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand)
-      .replaceAll("{{SHIMS_DIR}}", shimsDir);
+      .replaceAll("{{AIKIDO_COMMAND}}", toolInfo.aikidoCommand);
 
     const shimPath = `${shimsDir}/${toolInfo.tool}.cmd`;
     fs.writeFileSync(shimPath, shimContent, "utf-8");

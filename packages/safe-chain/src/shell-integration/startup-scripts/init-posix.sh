@@ -1,10 +1,22 @@
-# Guard against PATH separator injection: reject SAFE_CHAIN_DIR values containing ':'
-case "${SAFE_CHAIN_DIR}" in
-    *:*) _sc_base="${HOME}/.safe-chain" ;;
-    *)   _sc_base="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}" ;;
-esac
+_get_safe_chain_script_path() {
+    if [ -n "${BASH_SOURCE[0]:-}" ]; then
+        printf '%s\n' "${BASH_SOURCE[0]}"
+        return
+    fi
+
+    if [ -n "${ZSH_VERSION:-}" ]; then
+        eval 'printf "%s\n" "${(%):-%N}"'
+        return
+    fi
+
+    printf '%s\n' "$0"
+}
+
+_sc_script_path="$(_get_safe_chain_script_path)"
+_sc_scripts_dir=$(CDPATH= cd -- "$(dirname -- "$_sc_script_path")" 2>/dev/null && pwd -P)
+_sc_base=$(dirname -- "$_sc_scripts_dir")
 export PATH="$PATH:${_sc_base}/bin"
-unset _sc_base
+unset _sc_base _sc_script_path _sc_scripts_dir
 
 function npx() {
   wrapSafeChainCommand "npx" "$@"

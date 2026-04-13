@@ -16,6 +16,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import { knownAikidoTools } from "../src/shell-integration/helpers.js";
+import { getInstalledSafeChainDir } from "../src/installLocation.js";
 
 /** @type {string} */
 // This checks the current file's dirname in a way that's compatible with:
@@ -67,6 +68,17 @@ if (tool) {
   teardownDirectories();
 } else if (command === "setup-ci") {
   setupCi();
+} else if (command === "get-install-dir") {
+  const installDir = getInstalledSafeChainDir();
+  if (!installDir) {
+    ui.writeError(
+      "Install directory is only available for packaged safe-chain binaries.",
+    );
+    process.exit(1);
+  }
+
+  ui.writeInformation(installDir);
+  process.exit(0);
 } else if (command === "--version" || command === "-v" || command === "-v") {
   (async () => {
     ui.writeInformation(`Current safe-chain version: ${await getVersion()}`);
@@ -88,7 +100,7 @@ function writeHelp() {
   ui.writeInformation(
     `Available commands: ${chalk.cyan("setup")}, ${chalk.cyan(
       "teardown",
-    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("help")}, ${chalk.cyan(
+    )}, ${chalk.cyan("setup-ci")}, ${chalk.cyan("get-install-dir")}, ${chalk.cyan("help")}, ${chalk.cyan(
       "--version",
     )}`,
   );
@@ -107,6 +119,11 @@ function writeHelp() {
     `- ${chalk.cyan(
       "safe-chain setup-ci",
     )}: This will setup safe-chain for CI environments by creating shims and modifying the PATH.`,
+  );
+  ui.writeInformation(
+    `- ${chalk.cyan(
+      "safe-chain get-install-dir",
+    )}: Print the install directory for packaged safe-chain binaries.`,
   );
   ui.writeInformation(
     `- ${chalk.cyan("safe-chain --version")} (or ${chalk.cyan(

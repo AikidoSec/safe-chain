@@ -6,24 +6,50 @@
 
 set -e  # Exit on error
 
+validate_install_dir() {
+    dir="$1"
+
+    if [ -z "$dir" ]; then
+        return 0
+    fi
+
+    case "$dir" in
+        /*) ;;
+        *)
+            printf '[ERROR] --install-dir must be an absolute path, got: %s\n' "$dir" >&2
+            exit 1
+            ;;
+    esac
+
+    case "$dir" in
+        *:*)
+            printf '[ERROR] --install-dir must not contain the PATH separator (:)\n' >&2
+            exit 1
+            ;;
+    esac
+
+    if [ "$dir" = "/" ]; then
+        printf '[ERROR] --install-dir cannot be a root or drive-root directory\n' >&2
+        exit 1
+    fi
+
+    old_ifs=$IFS
+    IFS='/'
+    set -- $dir
+    IFS=$old_ifs
+
+    for segment in "$@"; do
+        if [ "$segment" = ".." ]; then
+            printf '[ERROR] --install-dir must not contain path traversal segments\n' >&2
+            exit 1
+        fi
+    done
+}
+
 # Configuration
 VERSION="${SAFE_CHAIN_VERSION:-}"  # Will be fetched from latest release if not set
+SAFE_CHAIN_BASE="${HOME}/.safe-chain"
 
-# Validate SAFE_CHAIN_DIR before use
-if [ -n "${SAFE_CHAIN_DIR}" ]; then
-    case "${SAFE_CHAIN_DIR}" in
-        /*) ;;
-        *) printf '[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: %s\n' "${SAFE_CHAIN_DIR}" >&2; exit 1 ;;
-    esac
-    case "${SAFE_CHAIN_DIR}" in
-        *../*|*/..*|..) printf '[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)\n' >&2; exit 1 ;;
-    esac
-    if [ "${SAFE_CHAIN_DIR}" = "/" ]; then
-        printf '[ERROR] SAFE_CHAIN_DIR cannot be the root directory\n' >&2; exit 1
-    fi
-fi
-
-SAFE_CHAIN_BASE="${SAFE_CHAIN_DIR:-${HOME}/.safe-chain}"
 INSTALL_DIR="${SAFE_CHAIN_BASE}/bin"
 REPO_URL="https://github.com/AikidoSec/safe-chain"
 
@@ -245,19 +271,33 @@ remove_nvm_installation() {
 
 # Parse command-line arguments
 parse_arguments() {
-    for arg in "$@"; do
-        case "$arg" in
+    while [ $# -gt 0 ]; do
+        case "$1" in
             --ci)
                 USE_CI_SETUP=true
+                ;;
+            --install-dir)
+                shift
+                if [ $# -eq 0 ]; then
+                    error "Missing value for --install-dir"
+                fi
+                SAFE_CHAIN_BASE="$1"
+                ;;
+            --install-dir=*)
+                SAFE_CHAIN_BASE="${1#--install-dir=}"
                 ;;
             --include-python)
                 warn "--include-python is deprecated and ignored. Python ecosystem is now included by default."
                 ;;
             *)
-                error "Unknown argument: $arg"
+                error "Unknown argument: $1"
                 ;;
         esac
+        shift
     done
+
+    validate_install_dir "${SAFE_CHAIN_BASE}"
+    INSTALL_DIR="${SAFE_CHAIN_BASE}/bin"
 }
 
 # Main installation

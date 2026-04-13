@@ -1,16 +1,14 @@
 import forge from "node-forge";
 import path from "path";
 import fs from "fs";
-import os from "os";
-import { getSafeChainDir } from "../config/environmentVariables.js";
+import { getSafeChainBaseDir } from "../config/safeChainDir.js";
 
 const ca = loadCa();
 
 const certCache = new Map();
 
 function getCertFolder() {
-  const safeChainDir = getSafeChainDir() ?? path.join(os.homedir(), ".safe-chain");
-  return path.join(safeChainDir, "certs");
+  return path.join(getSafeChainBaseDir(), "certs");
 }
 
 /**

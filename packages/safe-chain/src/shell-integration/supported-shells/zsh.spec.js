@@ -8,7 +8,6 @@ import { knownAikidoTools } from "../helpers.js";
 describe("Zsh shell integration", () => {
   let mockStartupFile;
   let zsh;
-  let getSafeChainDirResult = undefined;
 
   beforeEach(async () => {
     // Create temporary startup file for testing
@@ -19,7 +18,6 @@ describe("Zsh shell integration", () => {
       namedExports: {
         doesExecutableExistOnSystem: () => true,
         getScriptsDir: () => "/test-home/.safe-chain/scripts",
-        getSafeChainDir: () => getSafeChainDirResult,
         addLineToFile: (filePath, line) => {
           if (!fs.existsSync(filePath)) {
             fs.writeFileSync(filePath, "", "utf-8");
@@ -55,7 +53,6 @@ describe("Zsh shell integration", () => {
 
     // Reset mocks
     mock.reset();
-    getSafeChainDirResult = undefined;
   });
 
   describe("isInstalled", () => {
@@ -174,26 +171,18 @@ describe("Zsh shell integration", () => {
     });
   });
 
-  describe("SAFE_CHAIN_DIR", () => {
-    it("should write export line to rc file when custom dir is set", () => {
-      getSafeChainDirResult = "/custom/safe-chain";
+  describe("custom install dir", () => {
+    it("writes only the source line to the rc file", () => {
       zsh.setup();
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        content.includes('export SAFE_CHAIN_DIR="/custom/safe-chain" # Safe-chain installation directory')
+        content.includes("source /test-home/.safe-chain/scripts/init-posix.sh")
       );
-    });
-
-    it("should not write export line when no custom dir is set", () => {
-      getSafeChainDirResult = undefined;
-      zsh.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should remove export line on teardown", () => {
+    it("removes legacy export lines on teardown", () => {
       const initialContent = [
         "#!/bin/zsh",
         'export SAFE_CHAIN_DIR="/custom/safe-chain" # Safe-chain installation directory',
@@ -207,12 +196,9 @@ describe("Zsh shell integration", () => {
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should show custom manual teardown instructions when custom dir is set", () => {
-      getSafeChainDirResult = "/custom/safe-chain";
-
+    it("shows source-only manual teardown instructions", () => {
       assert.deepStrictEqual(zsh.getManualTeardownInstructions(), [
         "Remove the following line from your ~/.zshrc file:",
-        '  export SAFE_CHAIN_DIR="/custom/safe-chain"',
         "  source /test-home/.safe-chain/scripts/init-posix.sh",
         "Then restart your terminal or run: source ~/.zshrc",
       ]);

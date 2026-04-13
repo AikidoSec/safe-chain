@@ -9,7 +9,6 @@ describe("PowerShell Core shell integration", () => {
   let mockStartupFile;
   let powershell;
   let executionPolicyResult;
-  let getSafeChainDirResult = undefined;
 
   beforeEach(async () => {
     // Create temporary startup file for testing
@@ -27,7 +26,6 @@ describe("PowerShell Core shell integration", () => {
     mock.module("../helpers.js", {
       namedExports: {
         doesExecutableExistOnSystem: () => true,
-        getSafeChainDir: () => getSafeChainDirResult,
         addLineToFile: (filePath, line) => {
           if (!fs.existsSync(filePath)) {
             fs.writeFileSync(filePath, "", "utf-8");
@@ -65,7 +63,6 @@ describe("PowerShell Core shell integration", () => {
 
     // Reset mocks
     mock.reset();
-    getSafeChainDirResult = undefined;
   });
 
   describe("isInstalled", () => {
@@ -209,26 +206,18 @@ describe("PowerShell Core shell integration", () => {
     });
   });
 
-  describe("SAFE_CHAIN_DIR", () => {
-    it("should write $env:SAFE_CHAIN_DIR line to profile when custom dir is set", async () => {
-      getSafeChainDirResult = "C:\\custom\\safe-chain";
+  describe("custom install dir", () => {
+    it("writes only the source line to the profile", async () => {
       await powershell.setup();
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        content.includes("$env:SAFE_CHAIN_DIR = 'C:\\custom\\safe-chain' # Safe-chain installation directory")
+        content.includes('. "/test-home/.safe-chain/scripts/init-pwsh.ps1"')
       );
-    });
-
-    it("should not write $env:SAFE_CHAIN_DIR line when no custom dir is set", async () => {
-      getSafeChainDirResult = undefined;
-      await powershell.setup();
-
-      const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should remove $env:SAFE_CHAIN_DIR line on teardown", () => {
+    it("removes legacy env lines on teardown", () => {
       const initialContent = [
         "# PowerShell profile",
         "$env:SAFE_CHAIN_DIR = 'C:\\custom\\safe-chain' # Safe-chain installation directory",
@@ -242,12 +231,9 @@ describe("PowerShell Core shell integration", () => {
       assert.ok(!content.includes("SAFE_CHAIN_DIR"));
     });
 
-    it("should show custom manual setup instructions when custom dir is set", () => {
-      getSafeChainDirResult = "C:\\custom\\safe-chain";
-
+    it("shows source-only manual setup instructions", () => {
       assert.deepStrictEqual(powershell.getManualSetupInstructions(), [
         'Add the following line to your PowerShell profile (run "echo $PROFILE" to find its location):',
-        "  $env:SAFE_CHAIN_DIR = 'C:\\custom\\safe-chain'",
         '  . "/test-home/.safe-chain/scripts/init-pwsh.ps1"',
         "Then restart your terminal or run: . $PROFILE",
       ]);

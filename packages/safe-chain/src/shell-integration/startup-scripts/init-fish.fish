@@ -1,8 +1,5 @@
-# Guard against PATH separator injection: reject SAFE_CHAIN_DIR values containing ':'
-set -l safe_chain_base $HOME/.safe-chain
-if set -q SAFE_CHAIN_DIR; and not string match -q '*:*' -- $SAFE_CHAIN_DIR
-    set safe_chain_base $SAFE_CHAIN_DIR
-end
+set -l safe_chain_script (status filename)
+set -l safe_chain_base (path dirname (path dirname $safe_chain_script))
 set -gx PATH $PATH $safe_chain_base/bin
 
 function npx

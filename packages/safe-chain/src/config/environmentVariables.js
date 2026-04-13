@@ -55,14 +55,3 @@ export function getMinimumPackageAgeExclusions() {
 export function getMalwareListBaseUrl() {
   return process.env.SAFE_CHAIN_MALWARE_LIST_BASE_URL;
 }
-
-/**
- * Gets the safe-chain base directory from environment variable.
- * When set, all safe-chain data (bin, shims, scripts) will be placed under this directory
- * instead of the default ~/.safe-chain, enabling system-wide installations.
- * Example: "/usr/local/.safe-chain"
- * @returns {string | undefined}
- */
-export function getSafeChainDir() {
-  return process.env.SAFE_CHAIN_DIR;
-}

@@ -4,7 +4,6 @@ import {
   removeLinesMatchingPattern,
   validatePowerShellExecutionPolicy,
   getScriptsDir,
-  getSafeChainDir,
 } from "../helpers.js";
 import { execSync } from "child_process";
 import path from "path";
@@ -58,14 +57,6 @@ async function setup() {
 
   const startupFile = getStartupFile();
 
-  const customDir = getSafeChainDir();
-  if (customDir) {
-    addLineToFile(
-      startupFile,
-      `$env:SAFE_CHAIN_DIR = '${customDir}' # Safe-chain installation directory`,
-    );
-  }
-
   addLineToFile(
     startupFile,
     `. "${path.join(getScriptsDir(), "init-pwsh.ps1")}" # Safe-chain PowerShell initialization script`,
@@ -89,18 +80,7 @@ function getStartupFile() {
 
 /** @param {string} preamble */
 function buildManualInstructions(preamble) {
-  const customDir = getSafeChainDir();
-  const instructions = [preamble];
-
-  if (customDir) {
-    instructions.push(
-      `  $env:SAFE_CHAIN_DIR = '${customDir}'`,
-      `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`,
-    );
-  } else {
-    instructions.push(`  . "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1"`);
-  }
-
+  const instructions = [preamble, `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`];
   instructions.push(`Then restart your terminal or run: . $PROFILE`);
   return instructions;
 }

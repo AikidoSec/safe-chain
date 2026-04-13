@@ -4,25 +4,49 @@
 
 param(
     [switch]$ci,
-    [switch]$includepython
+    [switch]$includepython,
+    [string]$InstallDir
 )
 
-$Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
+function Test-InstallDir {
+    param([string]$Dir)
 
-# Validate SAFE_CHAIN_DIR before use
-if ($env:SAFE_CHAIN_DIR) {
-    if (-not [System.IO.Path]::IsPathRooted($env:SAFE_CHAIN_DIR)) {
-        Write-Host "[ERROR] SAFE_CHAIN_DIR must be an absolute path, got: $($env:SAFE_CHAIN_DIR)" -ForegroundColor Red; exit 1
+    if ([string]::IsNullOrWhiteSpace($Dir)) {
+        return @{ Ok = $true; Normalized = $null }
     }
-    if ($env:SAFE_CHAIN_DIR -match '\.\.') {
-        Write-Host "[ERROR] SAFE_CHAIN_DIR must not contain path traversal (..)" -ForegroundColor Red; exit 1
+
+    if (-not [System.IO.Path]::IsPathRooted($Dir)) {
+        return @{ Ok = $false; Reason = "-InstallDir must be an absolute path, got: $Dir" }
     }
-    if ($env:SAFE_CHAIN_DIR -match '^[A-Za-z]:[/\\]?$' -or $env:SAFE_CHAIN_DIR -eq '/') {
-        Write-Host "[ERROR] SAFE_CHAIN_DIR cannot be a root or drive-root directory" -ForegroundColor Red; exit 1
+
+    if ($Dir.Contains([System.IO.Path]::PathSeparator)) {
+        return @{ Ok = $false; Reason = "-InstallDir must not contain the PATH separator ($([System.IO.Path]::PathSeparator))" }
     }
+
+    $normalized = [System.IO.Path]::GetFullPath($Dir)
+    $root = [System.IO.Path]::GetPathRoot($normalized)
+    if ($normalized.TrimEnd('\', '/') -eq $root.TrimEnd('\', '/')) {
+        return @{ Ok = $false; Reason = "-InstallDir cannot be a root or drive-root directory" }
+    }
+
+    $segments = $normalized.Substring($root.Length).Split([char[]]@('\', '/'), [System.StringSplitOptions]::RemoveEmptyEntries)
+    if ($segments -contains "..") {
+        return @{ Ok = $false; Reason = "-InstallDir must not contain path traversal segments" }
+    }
+
+    return @{ Ok = $true; Normalized = $normalized }
 }
 
-$SafeChainBase = if ($env:SAFE_CHAIN_DIR) { $env:SAFE_CHAIN_DIR } else { Join-Path $env:USERPROFILE ".safe-chain" }
+$Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
+$SafeChainBase = if ($InstallDir) { $InstallDir } else { Join-Path $env:USERPROFILE ".safe-chain" }
+
+$installDirValidation = Test-InstallDir -Dir $SafeChainBase
+if (-not $installDirValidation.Ok) {
+    Write-Host "[ERROR] $($installDirValidation.Reason)" -ForegroundColor Red
+    exit 1
+}
+
+$SafeChainBase = $installDirValidation.Normalized
 $InstallDir = Join-Path $SafeChainBase "bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
