@@ -33,7 +33,7 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain zsh initialization script.
+  // Remove sourcing line to complete shell integration cleanup
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
