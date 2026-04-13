@@ -87,22 +87,72 @@ derive_install_dir_from_binary() {
 }
 
 get_install_dir() {
-    if command_exists safe-chain; then
-        install_dir=$(safe-chain get-install-dir 2>/dev/null || true)
-        if [ -n "$install_dir" ]; then
-            printf '%s\n' "$install_dir"
-            return 0
-        fi
+    reported_install_dir=$(get_reported_install_dir)
+    if [ -n "$reported_install_dir" ]; then
+        printf '%s\n' "$reported_install_dir"
+        return 0
+    fi
 
-        command_path=$(command -v safe-chain)
-        install_dir=$(derive_install_dir_from_binary "$command_path" || true)
-        if [ -n "$install_dir" ]; then
-            printf '%s\n' "$install_dir"
-            return 0
-        fi
+    command_path=$(get_safe_chain_command_path)
+    install_dir=$(derive_install_dir_from_binary "$command_path" || true)
+    if [ -n "$install_dir" ]; then
+        printf '%s\n' "$install_dir"
+        return 0
     fi
 
     printf '%s\n' "${HOME}/.safe-chain"
+}
+
+get_safe_chain_command_path() {
+    if ! command_exists safe-chain; then
+        return 1
+    fi
+
+    command -v safe-chain
+}
+
+get_reported_install_dir() {
+    if ! command_exists safe-chain; then
+        return 1
+    fi
+
+    install_dir=$(safe-chain get-install-dir 2>/dev/null || true)
+    if [ -n "$install_dir" ]; then
+        printf '%s\n' "$install_dir"
+        return 0
+    fi
+
+    return 1
+}
+
+find_installed_safe_chain_binary() {
+    dot_safe_chain="$1"
+
+    safe_chain_location="$dot_safe_chain/bin/safe-chain"
+    if [ -x "$safe_chain_location" ]; then
+        printf '%s\n' "$safe_chain_location"
+        return 0
+    fi
+
+    command_path=$(get_safe_chain_command_path || true)
+    if [ -n "$command_path" ]; then
+        printf '%s\n' "$command_path"
+        return 0
+    fi
+
+    return 1
+}
+
+run_safe_chain_teardown() {
+    safe_chain_command="$1"
+
+    if [ -z "$safe_chain_command" ]; then
+        warn "safe-chain command not found. Proceeding with uninstallation."
+        return
+    fi
+
+    info "Running safe-chain teardown..."
+    "$safe_chain_command" teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
 }
 
 # Check and uninstall npm global package if present
@@ -211,17 +261,8 @@ remove_nvm_installation() {
 # Main uninstallation
 main() {
     DOT_SAFE_CHAIN=$(get_install_dir)
-    SAFE_CHAIN_LOCATION="$DOT_SAFE_CHAIN/bin/safe-chain"
-
-    if [ -x "$SAFE_CHAIN_LOCATION" ]; then
-        info "Running safe-chain teardown..."
-        "$SAFE_CHAIN_LOCATION" teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-    elif command_exists safe-chain; then
-        info "Running safe-chain teardown..."
-        safe-chain teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-    else
-        warn "safe-chain command not found. Proceeding with uninstallation."
-    fi
+    SAFE_CHAIN_COMMAND=$(find_installed_safe_chain_binary "$DOT_SAFE_CHAIN" || true)
+    run_safe_chain_teardown "$SAFE_CHAIN_COMMAND"
 
     # Check for existing safe-chain installation through nvm, volta, or npm
     remove_npm_installation
@@ -235,7 +276,6 @@ main() {
     else
         info "Installation directory $DOT_SAFE_CHAIN does not exist. Nothing to remove."
     fi
-
 }
 
 main "$@"

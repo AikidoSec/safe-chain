@@ -137,6 +137,53 @@ function Get-Architecture {
     }
 }
 
+function Write-VersionDeprecationWarning {
+    if ([string]::IsNullOrWhiteSpace($env:SAFE_CHAIN_VERSION)) {
+        return
+    }
+
+    Write-Warn "SAFE_CHAIN_VERSION environment variable is deprecated."
+    Write-Warn ""
+    Write-Warn "Please use direct download URLs for version pinning instead:"
+    Write-Warn ""
+    if ($ci) {
+        Write-Warn "  iex `"& { `$(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1' -UseBasicParsing) } -ci`""
+    } else {
+        Write-Warn "  iex (iwr `"https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1`" -UseBasicParsing)"
+    }
+    Write-Warn ""
+}
+
+function Get-BinaryName {
+    param([string]$Architecture)
+
+    return "safe-chain-win-$Architecture.exe"
+}
+
+function Invoke-SafeChainSetup {
+    param(
+        [string]$BinaryPath,
+        [string]$InstallDirectory
+    )
+
+    $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
+
+    Write-Info "Running safe-chain $setupCmd..."
+    try {
+        $env:Path = "$env:Path;$InstallDirectory"
+        & $BinaryPath $setupCmd
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "safe-chain was installed but setup encountered issues."
+            Write-Warn "You can run 'safe-chain $setupCmd' manually later."
+        }
+    }
+    catch {
+        Write-Warn "safe-chain was installed but setup encountered issues: $_"
+        Write-Warn "You can run 'safe-chain $setupCmd' manually later."
+    }
+}
+
 # Check and uninstall npm global package if present
 function Remove-NpmInstallation {
     # Check if npm is available
@@ -188,19 +235,7 @@ function Remove-VoltaInstallation {
 
 # Main installation
 function Install-SafeChain {
-    # Show deprecation warning if SAFE_CHAIN_VERSION is set
-    if (-not [string]::IsNullOrWhiteSpace($env:SAFE_CHAIN_VERSION)) {
-        Write-Warn "SAFE_CHAIN_VERSION environment variable is deprecated."
-        Write-Warn ""
-        Write-Warn "Please use direct download URLs for version pinning instead:"
-        Write-Warn ""
-        if ($ci) {
-            Write-Warn "  iex `"& { `$(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1' -UseBasicParsing) } -ci`""
-        } else {
-            Write-Warn "  iex (iwr `"https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1`" -UseBasicParsing)"
-        }
-        Write-Warn ""
-    }
+    Write-VersionDeprecationWarning
 
     # Fetch latest version if VERSION is not set
     if ([string]::IsNullOrWhiteSpace($Version)) {
@@ -231,7 +266,7 @@ function Install-SafeChain {
 
     # Detect platform
     $arch = Get-Architecture
-    $binaryName = "safe-chain-win-$arch.exe"
+    $binaryName = Get-BinaryName -Architecture $arch
 
     Write-Info "Detected architecture: $arch"
 
@@ -277,31 +312,7 @@ function Install-SafeChain {
 
     Write-Info "Binary installed to: $finalFile"
 
-    # Build setup command based on parameters
-    $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
-    $setupArgs = @()
-
-    # Execute safe-chain setup
-    Write-Info "Running safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })..."
-    try {
-        $env:Path = "$env:Path;$InstallDir"
-
-        if ($setupArgs) {
-            & $finalFile $setupCmd $setupArgs
-        }
-        else {
-            & $finalFile $setupCmd
-        }
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warn "safe-chain was installed but setup encountered issues."
-            Write-Warn "You can run 'safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })' manually later."
-        }
-    }
-    catch {
-        Write-Warn "safe-chain was installed but setup encountered issues: $_"
-        Write-Warn "You can run 'safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })' manually later."
-    }
+    Invoke-SafeChainSetup -BinaryPath $finalFile -InstallDirectory $InstallDir
 }
 
 # Run installation

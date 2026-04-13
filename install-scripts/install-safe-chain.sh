@@ -168,6 +168,68 @@ download() {
     fi
 }
 
+warn_deprecated_version_env() {
+    if [ -z "$SAFE_CHAIN_VERSION" ]; then
+        return
+    fi
+
+    warn "SAFE_CHAIN_VERSION environment variable is deprecated."
+    warn ""
+    warn "Please use direct download URLs for version pinning instead:"
+    warn ""
+    if [ "$USE_CI_SETUP" = "true" ]; then
+        warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh -s -- --ci"
+    else
+        warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh"
+    fi
+    warn ""
+}
+
+ensure_version() {
+    if [ -n "$VERSION" ]; then
+        return
+    fi
+
+    info "Fetching latest release version..."
+    VERSION=$(fetch_latest_version)
+}
+
+get_binary_name() {
+    os="$1"
+    arch="$2"
+
+    if [ "$os" = "win" ]; then
+        printf 'safe-chain-%s-%s.exe\n' "$os" "$arch"
+    else
+        printf 'safe-chain-%s-%s\n' "$os" "$arch"
+    fi
+}
+
+get_final_binary_path() {
+    os="$1"
+
+    if [ "$os" = "win" ]; then
+        printf '%s/safe-chain.exe\n' "$INSTALL_DIR"
+    else
+        printf '%s/safe-chain\n' "$INSTALL_DIR"
+    fi
+}
+
+run_setup_command() {
+    final_file="$1"
+
+    setup_cmd="setup"
+    if [ "$USE_CI_SETUP" = "true" ]; then
+        setup_cmd="setup-ci"
+    fi
+
+    info "Running safe-chain $setup_cmd..."
+    if ! "$final_file" "$setup_cmd"; then
+        warn "safe-chain was installed but setup encountered issues."
+        warn "You can run 'safe-chain $setup_cmd' manually later."
+    fi
+}
+
 # Check and uninstall npm global package if present
 remove_npm_installation() {
     if ! command_exists npm; then
@@ -308,25 +370,9 @@ main() {
     # Parse command-line arguments
     parse_arguments "$@"
 
-    # Show deprecation warning if SAFE_CHAIN_VERSION is set
-    if [ -n "$SAFE_CHAIN_VERSION" ]; then
-        warn "SAFE_CHAIN_VERSION environment variable is deprecated."
-        warn ""
-        warn "Please use direct download URLs for version pinning instead:"
-        warn ""
-        if [ "$USE_CI_SETUP" = "true" ]; then
-            warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh -s -- --ci"
-        else
-            warn "  curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/${SAFE_CHAIN_VERSION}/install-safe-chain.sh | sh"
-        fi
-        warn ""
-    fi
+    warn_deprecated_version_env
 
-    # Fetch latest version if VERSION is not set
-    if [ -z "$VERSION" ]; then
-        info "Fetching latest release version..."
-        VERSION=$(fetch_latest_version)
-    fi
+    ensure_version
 
     # Check if the requested version is already installed
     if is_version_installed "$VERSION"; then
@@ -350,11 +396,7 @@ main() {
     # Detect platform
     OS=$(detect_os)
     ARCH=$(detect_arch)
-    if [ "$OS" = "win" ]; then
-        BINARY_NAME="safe-chain-${OS}-${ARCH}.exe"
-    else
-        BINARY_NAME="safe-chain-${OS}-${ARCH}"
-    fi
+    BINARY_NAME=$(get_binary_name "$OS" "$ARCH")
 
     info "Detected platform: ${OS}-${ARCH}"
 
@@ -372,11 +414,7 @@ main() {
     download "$DOWNLOAD_URL" "$TEMP_FILE"
 
     # Rename and make executable
-    if [ "$OS" = "win" ]; then
-        FINAL_FILE="${INSTALL_DIR}/safe-chain.exe"
-    else
-        FINAL_FILE="${INSTALL_DIR}/safe-chain"
-    fi
+    FINAL_FILE=$(get_final_binary_path "$OS")
     mv "$TEMP_FILE" "$FINAL_FILE" || error "Failed to move binary to $FINAL_FILE"
     if [ "$OS" != "win" ]; then
         chmod +x "$FINAL_FILE" || error "Failed to make binary executable"
@@ -384,20 +422,7 @@ main() {
 
     info "Binary installed to: $FINAL_FILE"
 
-    # Build setup command based on arguments
-    SETUP_CMD="setup"
-    SETUP_ARGS=""
-
-    if [ "$USE_CI_SETUP" = "true" ]; then
-        SETUP_CMD="setup-ci"
-    fi
-
-    # Execute safe-chain setup
-    info "Running safe-chain $SETUP_CMD $SETUP_ARGS..."
-    if ! "$FINAL_FILE" $SETUP_CMD $SETUP_ARGS; then
-        warn "safe-chain was installed but setup encountered issues."
-        warn "You can run 'safe-chain $SETUP_CMD $SETUP_ARGS' manually later."
-    fi
+    run_setup_command "$FINAL_FILE"
 }
 
 main "$@"

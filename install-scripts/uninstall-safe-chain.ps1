@@ -53,23 +53,39 @@ function Get-InstallDirFromBinaryPath {
     return (Split-Path -Parent $binDir)
 }
 
-function Get-SafeChainInstallDir {
-    $command = Get-Command safe-chain -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($command) {
-        try {
-            $reportedInstallDir = & safe-chain get-install-dir 2>$null | Select-Object -First 1
-            if ($reportedInstallDir) {
-                $reportedInstallDir = $reportedInstallDir.Trim()
-            }
-            if ($reportedInstallDir) {
-                return $reportedInstallDir
-            }
-        }
-        catch {
-            # Fall back to deriving the install dir from the discovered command path
-        }
+function Get-SafeChainCommand {
+    return Get-Command safe-chain -ErrorAction SilentlyContinue | Select-Object -First 1
+}
+
+function Get-ReportedInstallDir {
+    $command = Get-SafeChainCommand
+    if (-not $command) {
+        return $null
     }
 
+    try {
+        $reportedInstallDir = & safe-chain get-install-dir 2>$null | Select-Object -First 1
+        if ($reportedInstallDir) {
+            $reportedInstallDir = $reportedInstallDir.Trim()
+        }
+        if ($reportedInstallDir) {
+            return $reportedInstallDir
+        }
+    }
+    catch {
+        return $null
+    }
+
+    return $null
+}
+
+function Get-SafeChainInstallDir {
+    $reportedInstallDir = Get-ReportedInstallDir
+    if ($reportedInstallDir) {
+        return $reportedInstallDir
+    }
+
+    $command = Get-SafeChainCommand
     if ($command -and $command.Path) {
         $discoveredInstallDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path
         if ($discoveredInstallDir) {
@@ -78,6 +94,49 @@ function Get-SafeChainInstallDir {
     }
 
     return (Join-Path $HomeDir ".safe-chain")
+}
+
+function Find-SafeChainBinary {
+    param([string]$DotSafeChain)
+
+    $safeChainExe = Join-Path $DotSafeChain "bin/safe-chain.exe"
+    $safeChainBin = Join-Path $DotSafeChain "bin/safe-chain"
+
+    if (Test-Path $safeChainExe) {
+        return $safeChainExe
+    }
+
+    if (Test-Path $safeChainBin) {
+        return $safeChainBin
+    }
+
+    $command = Get-SafeChainCommand
+    if ($command) {
+        return $command.Source
+    }
+
+    return $null
+}
+
+function Invoke-SafeChainTeardown {
+    param([string]$SafeChainPath)
+
+    if (-not $SafeChainPath) {
+        Write-Warn "safe-chain command not found. Proceeding with uninstallation."
+        return
+    }
+
+    Write-Info "Running safe-chain teardown..."
+    try {
+        & $SafeChainPath teardown
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "safe-chain teardown encountered issues, continuing with uninstallation..."
+        }
+    }
+    catch {
+        Write-Warn "safe-chain teardown encountered issues: $_"
+        Write-Warn "Continuing with uninstallation..."
+    }
 }
 
 # Check and uninstall npm global package if present
@@ -133,50 +192,8 @@ function Remove-VoltaInstallation {
 function Uninstall-SafeChain {
     Write-Info "Uninstalling safe-chain..."
     $DotSafeChain = Get-SafeChainInstallDir
-    $InstallDir = Join-Path $DotSafeChain "bin"
-
-    # Run teardown if safe-chain is available
-    # Check for both safe-chain.exe (Windows) and safe-chain (Unix) since PowerShell Core runs on all platforms
-    $safeChainExe = Join-Path $InstallDir "safe-chain.exe"
-    $safeChainBin = Join-Path $InstallDir "safe-chain"
-
-    $safeChainPath = $null
-    if (Test-Path $safeChainExe) {
-        $safeChainPath = $safeChainExe
-    }
-    elseif (Test-Path $safeChainBin) {
-        $safeChainPath = $safeChainBin
-    }
-
-    if ($safeChainPath) {
-        Write-Info "Running safe-chain teardown..."
-        try {
-            & $safeChainPath teardown
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-            }
-        }
-        catch {
-            Write-Warn "safe-chain teardown encountered issues: $_"
-            Write-Warn "Continuing with uninstallation..."
-        }
-    }
-    elseif (Get-Command safe-chain -ErrorAction SilentlyContinue) {
-        Write-Info "Running safe-chain teardown..."
-        try {
-            safe-chain teardown
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-            }
-        }
-        catch {
-            Write-Warn "safe-chain teardown encountered issues: $_"
-            Write-Warn "Continuing with uninstallation..."
-        }
-    }
-    else {
-        Write-Warn "safe-chain command not found. Proceeding with uninstallation."
-    }
+    $safeChainPath = Find-SafeChainBinary -DotSafeChain $DotSafeChain
+    Invoke-SafeChainTeardown -SafeChainPath $safeChainPath
 
     # Remove npm and Volta installations
     Remove-NpmInstallation
