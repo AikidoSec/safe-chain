@@ -322,17 +322,17 @@ By default, Safe Chain installs itself into `~/.safe-chain`. You can change this
 
 When set, all Safe Chain data (binary, shims, scripts, config) is placed under the custom directory instead of `~/.safe-chain`.
 
+### Unix/Linux/macOS
+
 ```shell
 curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --install-dir /usr/local/.safe-chain
 ```
 
-On Windows, use `-InstallDir`:
+### Windows
 
 ```powershell
 iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -InstallDir 'C:\ProgramData\safe-chain'"
 ```
-
-This is a one-time installer choice. Runtime shell integration and uninstall now discover the installation from the installed scripts or binary and do not rely on an environment variable.
 
 # Usage in CI/CD
 
