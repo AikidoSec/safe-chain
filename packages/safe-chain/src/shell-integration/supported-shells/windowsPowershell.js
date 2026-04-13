@@ -32,7 +32,7 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain PowerShell initialization script.
+  // Remove sourcing line to clean up safe-chain integration from the shell profile
   removeLinesMatchingPattern(
     startupFile,
     /^\.\s+["']?.*init-pwsh\.ps1["']?.*#\s*Safe-chain/,
