@@ -33,7 +33,7 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain fish initialization script.
+  // Remove sourcing line to prevent safe-chain initialization in future shell sessions
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-fish\.fish.*#\s*Safe-chain/,
