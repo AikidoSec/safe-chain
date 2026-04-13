@@ -119,5 +119,4 @@ describe("E2E: npm coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
-
 });

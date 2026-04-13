@@ -197,5 +197,4 @@ describe("E2E: pipx coverage", () => {
       `Expected exit message. Output was:\n${result.output}`
     );
   });
-
 });

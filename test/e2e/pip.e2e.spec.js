@@ -844,5 +844,4 @@ describe("E2E: pip coverage", () => {
       `python -m pip SHOULD go through safe-chain. Output was:\n${result.output}`
     );
   });
-
 });

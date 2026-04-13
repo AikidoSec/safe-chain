@@ -84,5 +84,4 @@ describe("E2E: yarn coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
-
 });

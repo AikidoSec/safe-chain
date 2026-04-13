@@ -204,5 +204,4 @@ describe("E2E: safe-chain setup-ci command for pip/pip3", () => {
       );
     });
   }
-
 });

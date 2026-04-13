@@ -102,5 +102,4 @@ describe("E2E: npm coverage using PATH", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
-
 });

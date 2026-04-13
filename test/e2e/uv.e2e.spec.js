@@ -569,5 +569,4 @@ describe("E2E: uv coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
-
 });

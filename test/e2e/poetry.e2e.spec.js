@@ -422,5 +422,4 @@ describe("E2E: poetry coverage", () => {
       `Expected env list output. Output was:\n${envListResult.output}`
     );
   });
-
 });
