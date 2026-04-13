@@ -34,7 +34,7 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain bash initialization script.
+  // Remove sourcing line to disable safe-chain shell integration
   removeLinesMatchingPattern(
     startupFile,
     /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
