@@ -4,12 +4,19 @@
 
 # Function to remove shim from PATH (POSIX-compliant)
 remove_shim_from_path() {
-    _safe_chain_shims=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd -P)
-    if [ -z "$_safe_chain_shims" ]; then
+    _safe_chain_phys=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd -P)
+    if [ -z "$_safe_chain_phys" ]; then
         echo "$PATH"
         return
     fi
-    echo "$PATH" | sed "s|${_safe_chain_shims}:||g"
+    _path=$(echo "$PATH" | sed "s|${_safe_chain_phys}:||g")
+    # Also remove via dirname of $0 directly — on macOS /tmp is a symlink to /private/tmp,
+    # so pwd -P resolves to /private/tmp/… but PATH may still contain /tmp/….
+    _dir=$(dirname -- "$0")
+    case "$_dir" in
+        /*) [ "$_dir" != "$_safe_chain_phys" ] && _path=$(echo "$_path" | sed "s|${_dir}:||g") ;;
+    esac
+    echo "$_path"
 }
 
 if command -v safe-chain >/dev/null 2>&1; then
