@@ -17,7 +17,6 @@ describe("Zsh shell integration", () => {
     mock.module("../helpers.js", {
       namedExports: {
         doesExecutableExistOnSystem: () => true,
-        getScriptsDir: () => "/test-home/.safe-chain/scripts",
         addLineToFile: (filePath, line) => {
           if (!fs.existsSync(filePath)) {
             fs.writeFileSync(filePath, "", "utf-8");
@@ -31,6 +30,12 @@ describe("Zsh shell integration", () => {
           const filteredLines = lines.filter((line) => !pattern.test(line));
           fs.writeFileSync(filePath, filteredLines.join("\n"), "utf-8");
         },
+      },
+    });
+
+    mock.module("../../config/safeChainDir.js", {
+      namedExports: {
+        getScriptsDir: () => "/test-home/.safe-chain/scripts",
       },
     });
 

@@ -1,7 +1,8 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools, getPackageManagerList, getShimsDir, getScriptsDir } from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
+import { getShimsDir, getScriptsDir } from "../config/safeChainDir.js";
 import fs from "fs";
 
 /**

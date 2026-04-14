@@ -9,6 +9,7 @@ describe("certUtils", () => {
     mock.module("../config/safeChainDir.js", {
       namedExports: {
         getSafeChainBaseDir: () => installedSafeChainDir ?? "/home/test/.safe-chain",
+        getCertsDir: () => `${installedSafeChainDir ?? "/home/test/.safe-chain"}/certs`,
       },
     });
   });

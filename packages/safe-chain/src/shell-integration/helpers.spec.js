@@ -186,22 +186,27 @@ describe("removeLinesMatchingPatternTests", () => {
 
 describe("getSafeChainBaseDir / getBinDir / getShimsDir / getScriptsDir", () => {
   it("defaults base dir to ~/.safe-chain when no packaged install dir is available", async () => {
-    const { getSafeChainBaseDir } = await import("./helpers.js");
+    const { getSafeChainBaseDir } = await import("../config/safeChainDir.js");
     assert.strictEqual(getSafeChainBaseDir(), path.join(homedir(), ".safe-chain"));
   });
 
   it("getBinDir returns ~/.safe-chain/bin by default", async () => {
-    const { getBinDir } = await import("./helpers.js");
+    const { getBinDir } = await import("../config/safeChainDir.js");
     assert.strictEqual(getBinDir(), path.join(homedir(), ".safe-chain", "bin"));
   });
 
   it("getShimsDir returns ~/.safe-chain/shims by default", async () => {
-    const { getShimsDir } = await import("./helpers.js");
+    const { getShimsDir } = await import("../config/safeChainDir.js");
     assert.strictEqual(getShimsDir(), path.join(homedir(), ".safe-chain", "shims"));
   });
 
   it("getScriptsDir returns ~/.safe-chain/scripts by default", async () => {
-    const { getScriptsDir } = await import("./helpers.js");
+    const { getScriptsDir } = await import("../config/safeChainDir.js");
     assert.strictEqual(getScriptsDir(), path.join(homedir(), ".safe-chain", "scripts"));
+  });
+
+  it("getCertsDir returns ~/.safe-chain/certs by default", async () => {
+    const { getCertsDir } = await import("../config/safeChainDir.js");
+    assert.strictEqual(getCertsDir(), path.join(homedir(), ".safe-chain", "certs"));
   });
 });

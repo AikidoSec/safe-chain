@@ -2,8 +2,8 @@ import {
   addLineToFile,
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
-  getScriptsDir,
 } from "../helpers.js";
+import { getScriptsDir } from "../../config/safeChainDir.js";
 import { execSync, spawnSync } from "child_process";
 import * as os from "os";
 import path from "path";

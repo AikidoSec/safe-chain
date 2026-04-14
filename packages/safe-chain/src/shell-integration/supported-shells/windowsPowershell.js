@@ -3,8 +3,8 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
   validatePowerShellExecutionPolicy,
-  getScriptsDir,
 } from "../helpers.js";
+import { getScriptsDir } from "../../config/safeChainDir.js";
 import { execSync } from "child_process";
 import path from "path";
 

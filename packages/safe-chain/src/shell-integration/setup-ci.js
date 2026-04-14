@@ -1,24 +1,14 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
-import { getPackageManagerList, knownAikidoTools, getShimsDir, getBinDir } from "./helpers.js";
+import { getPackageManagerList, knownAikidoTools } from "./helpers.js";
+import {
+  getShimsDir,
+  getBinDir,
+  getPathWrapperTemplatePath,
+} from "../config/safeChainDir.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { fileURLToPath } from "url";
-
-/** @type {string} */
-// This checks the current file's dirname in a way that's compatible with:
-//  - Modulejs (import.meta.url)
-//  - ES modules (__dirname)
-// This is needed because safe-chain's npm package is built using ES modules,
-// but building the binaries requires commonjs.
-let dirname;
-if (import.meta.url) {
-  const filename = fileURLToPath(import.meta.url);
-  dirname = path.dirname(filename);
-} else {
-  dirname = __dirname;
-}
 
 /**
  * Loops over the detected shells and calls the setup function for each.
@@ -50,12 +40,7 @@ export async function setupCi() {
  */
 function createUnixShims(shimsDir) {
   // Read the template file
-  const templatePath = path.resolve(
-    dirname,
-    "path-wrappers",
-    "templates",
-    "unix-wrapper.template.sh"
-  );
+  const templatePath = getPathWrapperTemplatePath(import.meta.url, "unix-wrapper.template.sh");
 
   if (!fs.existsSync(templatePath)) {
     ui.writeError(`Template file not found: ${templatePath}`);
@@ -89,12 +74,7 @@ function createUnixShims(shimsDir) {
  */
 function createWindowsShims(shimsDir) {
   // Read the template file
-  const templatePath = path.resolve(
-    dirname,
-    "path-wrappers",
-    "templates",
-    "windows-wrapper.template.cmd"
-  );
+  const templatePath = getPathWrapperTemplatePath(import.meta.url, "windows-wrapper.template.cmd");
 
   if (!fs.existsSync(templatePath)) {
     ui.writeError(`Windows template file not found: ${templatePath}`);

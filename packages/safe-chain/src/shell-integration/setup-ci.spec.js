@@ -50,8 +50,15 @@ describe("Setup CI shell integration", () => {
           { tool: "yarn", aikidoCommand: "aikido-yarn" },
         ],
         getPackageManagerList: () => "npm, yarn",
+      },
+    });
+
+    mock.module("../config/safeChainDir.js", {
+      namedExports: {
         getShimsDir: () => mockShimsDir,
         getBinDir: () => path.join(mockHomeDir, ".safe-chain", "bin"),
+        getPathWrapperTemplatePath: (_moduleUrl, fileName) =>
+          path.join(mockTemplateDir, "path-wrappers", "templates", fileName),
       },
     });
 
@@ -61,22 +68,6 @@ describe("Setup CI shell integration", () => {
         homedir: () => mockHomeDir,
         platform: () => mockPlatform,
         EOL: "\n",
-      },
-    });
-
-    // Mock path module to resolve templates correctly
-    mock.module("path", {
-      namedExports: {
-        join: path.join,
-        dirname: () => mockTemplateDir,
-        resolve: (...args) => path.resolve(mockTemplateDir, ...args.slice(1)),
-      },
-    });
-
-    // Mock fileURLToPath
-    mock.module("url", {
-      namedExports: {
-        fileURLToPath: () => path.join(mockTemplateDir, "setup-ci.js"),
       },
     });
 

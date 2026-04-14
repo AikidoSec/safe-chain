@@ -25,15 +25,15 @@ function Test-InstallDir {
         return @{ Ok = $false; Reason = "-InstallDir must not contain the PATH separator ($([System.IO.Path]::PathSeparator))" }
     }
 
+    $inputSegments = $Dir.Split([char[]]@('\', '/'), [System.StringSplitOptions]::RemoveEmptyEntries)
+    if ($inputSegments -contains "..") {
+        return @{ Ok = $false; Reason = "-InstallDir must not contain path traversal segments" }
+    }
+
     $normalized = [System.IO.Path]::GetFullPath($Dir)
     $root = [System.IO.Path]::GetPathRoot($normalized)
     if ($normalized.TrimEnd('\', '/') -eq $root.TrimEnd('\', '/')) {
         return @{ Ok = $false; Reason = "-InstallDir cannot be a root or drive-root directory" }
-    }
-
-    $segments = $normalized.Substring($root.Length).Split([char[]]@('\', '/'), [System.StringSplitOptions]::RemoveEmptyEntries)
-    if ($segments -contains "..") {
-        return @{ Ok = $false; Reason = "-InstallDir must not contain path traversal segments" }
     }
 
     return @{ Ok = $true; Normalized = $normalized }

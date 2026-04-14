@@ -40,6 +40,11 @@ describe("Windows PowerShell shell integration", () => {
           fs.writeFileSync(filePath, filteredLines.join("\n"), "utf-8");
         },
         validatePowerShellExecutionPolicy: () => executionPolicyResult,
+      },
+    });
+
+    mock.module("../../config/safeChainDir.js", {
+      namedExports: {
         getScriptsDir: () => "/test-home/.safe-chain/scripts",
       },
     });
