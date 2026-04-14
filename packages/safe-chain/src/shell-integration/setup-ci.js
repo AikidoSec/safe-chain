@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { getPackageManagerList, knownAikidoTools, getShimsDir } from "./helpers.js";
+import { detectShells } from "./shellDetection.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -37,10 +38,32 @@ export async function setupCi() {
     fs.mkdirSync(shimsDir, { recursive: true });
   }
 
+  cleanupLegacyShellInit();
   createShims(shimsDir);
   ui.writeInformation(`Created shims in ${shimsDir}`);
   modifyPathForCi(shimsDir, binDir);
   ui.writeInformation(`Added shims directory to PATH for CI environments.`);
+}
+
+/**
+ * Removes shell-based initialization from RC files when switching to --ci install mode.
+ */
+function cleanupLegacyShellInit() {
+  let shells;
+  try {
+    shells = detectShells();
+  } catch {
+    // Best-effort cleanup — skip if shell detection fails
+    return;
+  }
+
+  for (const shell of shells) {
+    try {
+      shell.teardown(knownAikidoTools);
+    } catch {
+      // Best-effort cleanup — don't fail the install if teardown errors
+    }
+  }
 }
 
 /**

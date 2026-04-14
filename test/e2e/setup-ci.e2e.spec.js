@@ -53,6 +53,46 @@ describe("E2E: safe-chain setup-ci command", () => {
     });
   }
 
+  for (let shell of ["bash", "zsh"]) {
+    it(`safe-chain setup-ci removes legacy shell init left by a previous setup for ${shell}`, async () => {
+      const rcFile = shell === "zsh" ? "~/.zshrc" : "~/.bashrc";
+
+      // Simulate a previous non-CI install
+      const installationShell = await container.openShell(shell);
+      await installationShell.runCommand("safe-chain setup");
+
+      // Verify the legacy init line was added
+      const afterSetup = await installationShell.runCommand(`grep -c "init-posix.sh" ${rcFile} || true`);
+      assert.ok(
+        afterSetup.output.includes("1"),
+        `Expected init-posix.sh to be present in ${rcFile} after setup`
+      );
+
+      // Now run the CI install — should clean up the legacy line
+      await installationShell.runCommand("safe-chain setup-ci");
+      await installationShell.runCommand(
+        `echo 'export PATH="$HOME/.safe-chain/shims:$PATH"' >> ${rcFile}`
+      );
+
+      const afterSetupCi = await installationShell.runCommand(`grep -c "init-posix.sh" ${rcFile} || true`);
+      assert.ok(
+        !afterSetupCi.output.includes("1"),
+        `Expected init-posix.sh to be removed from ${rcFile} after setup-ci, but it was still present`
+      );
+
+      // Verify npm still works through shims in a new shell
+      const projectShell = await container.openShell(shell);
+      const result = await projectShell.runCommand(
+        "npm i axios@1.13.0 --safe-chain-logging=verbose"
+      );
+
+      assert.ok(
+        result.output.includes("Safe-chain: Scanned"),
+        `Expected npm to be wrapped by safe-chain shim after setup-ci.\nOutput was:\n${result.output}`
+      );
+    });
+  }
+
   it("writes to GITHUB_PATH when GITHUB_PATH is set", async () => {
     const installationShell = await container.openShell("zsh");
     await installationShell.runCommand("export GITHUB_PATH=/tmp/github_path");
