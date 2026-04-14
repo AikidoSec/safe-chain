@@ -200,7 +200,7 @@ ensure_version() {
     VERSION=$(fetch_latest_version)
 }
 
-# Returns the release binary filename for the detected OS and architecture.
+# Constructs platform-specific binary filename to match GitHub release asset naming convention.
 get_binary_name() {
     os="$1"
     arch="$2"
