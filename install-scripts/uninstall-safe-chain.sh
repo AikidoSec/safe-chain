@@ -33,6 +33,8 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Resolves a path to its canonical filesystem location when possible.
+# Follows symlinks so binary validation can inspect the real installed path.
 resolve_path() {
     target="$1"
 
@@ -60,6 +62,8 @@ resolve_path() {
     fi
 }
 
+# Derives the safe-chain base install directory from a packaged binary path.
+# Rejects wrapper scripts and paths that do not match the expected bin layout.
 derive_install_dir_from_binary() {
     binary_path="$1"
 
@@ -86,6 +90,8 @@ derive_install_dir_from_binary() {
     dirname "$binary_dir"
 }
 
+# Determines the installed safe-chain base directory for uninstall.
+# Prefers the binary-reported location, then infers it from PATH, then falls back to ~/.safe-chain.
 get_install_dir() {
     reported_install_dir=$(get_reported_install_dir)
     if [ -n "$reported_install_dir" ]; then
@@ -103,6 +109,8 @@ get_install_dir() {
     printf '%s\n' "${HOME}/.safe-chain"
 }
 
+# Returns the current safe-chain command path from PATH.
+# Fails when safe-chain is not currently resolvable.
 get_safe_chain_command_path() {
     if ! command_exists safe-chain; then
         return 1
@@ -111,6 +119,8 @@ get_safe_chain_command_path() {
     command -v safe-chain
 }
 
+# Returns the safe-chain command path only when it resolves to a valid packaged binary install.
+# Prevents the uninstaller from invoking arbitrary PATH entries.
 get_validated_safe_chain_command_path() {
     command_path=$(get_safe_chain_command_path || true)
     if [ -z "$command_path" ]; then
@@ -125,6 +135,8 @@ get_validated_safe_chain_command_path() {
     printf '%s\n' "$command_path"
 }
 
+# Asks the validated safe-chain binary for its install directory via get-install-dir.
+# Returns nothing if the command is unavailable or the lookup fails.
 get_reported_install_dir() {
     safe_chain_path=$(get_validated_safe_chain_command_path || true)
     if [ -z "$safe_chain_path" ]; then
@@ -140,6 +152,8 @@ get_reported_install_dir() {
     return 1
 }
 
+# Locates the installed safe-chain binary to use for teardown.
+# Checks the discovered install dir first, then falls back to a validated PATH entry.
 find_installed_safe_chain_binary() {
     dot_safe_chain="$1"
 
@@ -158,6 +172,8 @@ find_installed_safe_chain_binary() {
     return 1
 }
 
+# Runs safe-chain teardown before removing files.
+# Continues with uninstall even if teardown is unavailable or fails.
 run_safe_chain_teardown() {
     safe_chain_command="$1"
 

@@ -22,6 +22,8 @@ function Write-Error-Custom {
     exit 1
 }
 
+# Derives the safe-chain base install directory from a resolved binary path.
+# Rejects wrapper scripts and paths that do not match the packaged bin layout.
 function Get-InstallDirFromBinaryPath {
     param([string]$BinaryPath)
 
@@ -53,10 +55,14 @@ function Get-InstallDirFromBinaryPath {
     return (Split-Path -Parent $binDir)
 }
 
+# Returns the first safe-chain command found on PATH, if any.
+# Used as the starting point for install-dir discovery.
 function Get-SafeChainCommand {
     return Get-Command safe-chain -ErrorAction SilentlyContinue | Select-Object -First 1
 }
 
+# Returns the safe-chain command path only when it points to a valid packaged binary install.
+# Prevents teardown from invoking arbitrary wrappers or scripts from PATH.
 function Get-ValidatedSafeChainCommandPath {
     $command = Get-SafeChainCommand
     if (-not $command -or [string]::IsNullOrWhiteSpace($command.Path)) {
@@ -71,6 +77,8 @@ function Get-ValidatedSafeChainCommandPath {
     return $command.Path
 }
 
+# Invokes the validated safe-chain binary with get-install-dir and returns the reported base directory.
+# Safely returns $null when the command is unavailable or the lookup fails.
 function Get-ReportedInstallDir {
     $safeChainPath = Get-ValidatedSafeChainCommandPath
     if (-not $safeChainPath) {
@@ -93,6 +101,8 @@ function Get-ReportedInstallDir {
     return $null
 }
 
+# Determines the safe-chain base install directory for uninstall.
+# Prefers the binary-reported location, then derives it from PATH, then falls back to the default home-dir layout.
 function Get-SafeChainInstallDir {
     $reportedInstallDir = Get-ReportedInstallDir
     if ($reportedInstallDir) {
@@ -110,6 +120,8 @@ function Get-SafeChainInstallDir {
     return (Join-Path $HomeDir ".safe-chain")
 }
 
+# Finds the installed safe-chain binary inside the resolved install directory.
+# Falls back to a validated safe-chain command when the expected file is missing.
 function Find-SafeChainBinary {
     param([string]$DotSafeChain)
 
@@ -127,6 +139,8 @@ function Find-SafeChainBinary {
     return Get-ValidatedSafeChainCommandPath
 }
 
+# Runs safe-chain teardown before removing the installation directory.
+# Converts teardown failures into warnings so uninstall can still complete.
 function Invoke-SafeChainTeardown {
     param([string]$SafeChainPath)
 

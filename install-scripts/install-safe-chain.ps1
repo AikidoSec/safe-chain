@@ -8,6 +8,8 @@ param(
     [string]$InstallDir
 )
 
+# Validates and normalizes the requested install directory.
+# Rejects non-absolute, root, PATH-like, and traversal-containing paths.
 function Test-InstallDir {
     param([string]$Dir)
 
@@ -137,6 +139,8 @@ function Get-Architecture {
     }
 }
 
+# Emits the deprecation warning for SAFE_CHAIN_VERSION and prints the version-pinned install command.
+# Returns immediately when no version was provided through the environment.
 function Write-VersionDeprecationWarning {
     if ([string]::IsNullOrWhiteSpace($env:SAFE_CHAIN_VERSION)) {
         return
@@ -154,12 +158,16 @@ function Write-VersionDeprecationWarning {
     Write-Warn ""
 }
 
+# Builds the Windows release binary filename for the detected architecture.
+# Centralizes binary name generation for the download step.
 function Get-BinaryName {
     param([string]$Architecture)
 
     return "safe-chain-win-$Architecture.exe"
 }
 
+# Runs safe-chain setup or setup-ci after the binary is installed.
+# Temporarily appends the install directory to PATH and downgrades setup failures to warnings.
 function Invoke-SafeChainSetup {
     param(
         [string]$BinaryPath,

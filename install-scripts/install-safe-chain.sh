@@ -6,6 +6,8 @@
 
 set -e  # Exit on error
 
+# Validates a user-provided install dir and exits on unsafe values.
+# Rejects relative paths, root paths, PATH separators, and traversal segments.
 validate_install_dir() {
     dir="$1"
 
@@ -168,6 +170,8 @@ download() {
     fi
 }
 
+# Prints the deprecation warning for SAFE_CHAIN_VERSION and the replacement install command.
+# Returns immediately when no version was pinned through the environment.
 warn_deprecated_version_env() {
     if [ -z "$SAFE_CHAIN_VERSION" ]; then
         return
@@ -185,6 +189,8 @@ warn_deprecated_version_env() {
     warn ""
 }
 
+# Ensures VERSION is populated before installation continues.
+# Fetches the latest release only when no explicit version was provided.
 ensure_version() {
     if [ -n "$VERSION" ]; then
         return
@@ -194,6 +200,7 @@ ensure_version() {
     VERSION=$(fetch_latest_version)
 }
 
+# Returns the release binary filename for the detected OS and architecture.
 get_binary_name() {
     os="$1"
     arch="$2"
@@ -205,6 +212,8 @@ get_binary_name() {
     fi
 }
 
+# Returns the final installation path for the downloaded safe-chain binary.
+# Uses INSTALL_DIR and the platform-specific executable name.
 get_final_binary_path() {
     os="$1"
 
