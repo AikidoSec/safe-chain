@@ -93,13 +93,13 @@ derive_install_dir_from_binary() {
 # Determines the installed safe-chain base directory for uninstall.
 # Prefers the binary-reported location, then infers it from PATH, then falls back to ~/.safe-chain.
 get_install_dir() {
-    reported_install_dir=$(get_reported_install_dir)
+    reported_install_dir=$(get_reported_install_dir || true)
     if [ -n "$reported_install_dir" ]; then
         printf '%s\n' "$reported_install_dir"
         return 0
     fi
 
-    command_path=$(get_safe_chain_command_path)
+    command_path=$(get_safe_chain_command_path || true)
     install_dir=$(derive_install_dir_from_binary "$command_path" || true)
     if [ -n "$install_dir" ]; then
         printf '%s\n' "$install_dir"
