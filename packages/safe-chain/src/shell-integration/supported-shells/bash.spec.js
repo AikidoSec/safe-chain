@@ -9,6 +9,7 @@ describe("Bash shell integration", () => {
   let mockStartupFile;
   let bash;
   let windowsCygwinPath = "";
+  let mockScriptsDir = "/test-home/.safe-chain/scripts";
   let platform = "linux";
 
   beforeEach(async () => {
@@ -37,7 +38,7 @@ describe("Bash shell integration", () => {
 
     mock.module("../../config/safeChainDir.js", {
       namedExports: {
-        getScriptsDir: () => "/test-home/.safe-chain/scripts",
+        getScriptsDir: () => mockScriptsDir,
       },
     });
 
@@ -67,6 +68,17 @@ describe("Bash shell integration", () => {
               stdout: windowsCygwinPath + "\n",
             };
           }
+
+          if (
+            command === "cygpath" &&
+            args[0] === "-u" &&
+            args[1] === mockScriptsDir
+          ) {
+            return {
+              status: 0,
+              stdout: "/c/test-home/.safe-chain/scripts\n",
+            };
+          }
         },
       },
     });
@@ -93,6 +105,7 @@ describe("Bash shell integration", () => {
 
     // Reset mocks
     mock.reset();
+    mockScriptsDir = "/test-home/.safe-chain/scripts";
     platform = "linux";
   });
 
@@ -135,7 +148,24 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(windowsCygwinPath, "utf-8");
       assert.ok(
         content.includes(
-          "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
+          "source /c/test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
+        )
+      );
+    });
+
+    it("should write a bash-compatible scripts path on Windows", () => {
+      platform = "win32";
+      windowsCygwinPath = mockStartupFile;
+      mockScriptsDir = "C:\\test-home\\.safe-chain\\scripts";
+      mockStartupFile = "DUMMY";
+
+      const result = bash.setup();
+      assert.strictEqual(result, true);
+
+      const content = fs.readFileSync(windowsCygwinPath, "utf-8");
+      assert.ok(
+        content.includes(
+          "source /c/test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
         )
       );
     });
