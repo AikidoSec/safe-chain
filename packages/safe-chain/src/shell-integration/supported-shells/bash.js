@@ -118,7 +118,7 @@ function toBashPath(path) {
     }
 
     if (hasCygpath()) {
-      return cygpathu(path);
+      return convertCygwinPathToUnix(path);
     }
 
     return path.replace(/\\/g, "/");
@@ -176,7 +176,7 @@ function cygpathw(path) {
  *
  * @returns {string}
  */
-function cygpathu(path) {
+function convertCygwinPathToUnix(path) {
   try {
     var result = spawnSync("cygpath", ["-u", path], {
       encoding: "utf8",
