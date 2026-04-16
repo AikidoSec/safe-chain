@@ -317,6 +317,24 @@ The base URL should point to a server that mirrors the structure of `https://mal
 - `/releases/npm.json` (JavaScript new packages list)
 - `/releases/pypi.json` (Python new packages list)
 
+## Custom Install Directory
+
+By default, Safe Chain installs itself into `~/.safe-chain`. You can change this by passing an explicit install directory to the installer. This is useful for system-wide installations (e.g. inside a Docker image) or when you need to avoid conflicts with other tools.
+
+When set, all Safe Chain data (binary, shims, scripts, config) is placed under the custom directory instead of `~/.safe-chain`.
+
+### Unix/Linux/macOS
+
+```shell
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --install-dir /usr/local/.safe-chain
+```
+
+### Windows
+
+```powershell
+iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -InstallDir 'C:\ProgramData\safe-chain'"
+```
+
 # Usage in CI/CD
 
 You can protect your CI/CD pipelines from malicious packages by integrating Aikido Safe Chain into your build process. This ensures that any packages installed during your automated builds are checked for malware before installation.
@@ -407,6 +425,7 @@ pipeline {
   environment {
     // Jenkins does not automatically persist PATH updates from setup-ci,
     // so add the shims + binary directory explicitly for all stages.
+    // If you installed into a custom directory, replace ~/.safe-chain with that path here.
     PATH = "${env.HOME}/.safe-chain/shims:${env.HOME}/.safe-chain/bin:${env.PATH}"
   }
 
@@ -462,7 +481,7 @@ To add safe-chain in GitLab pipelines, you need to install it in the image runni
    # Install safe-chain
    RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
-   # Add safe-chain to PATH
+   # Add safe-chain to PATH (update paths if you used a custom install dir)
    ENV PATH="/root/.safe-chain/shims:/root/.safe-chain/bin:${PATH}"
    ```
 

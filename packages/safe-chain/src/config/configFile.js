@@ -3,6 +3,7 @@ import path from "path";
 import os from "os";
 import { ui } from "../environment/userInteraction.js";
 import { getEcoSystem } from "./settings.js";
+import { getSafeChainBaseDir } from "./safeChainDir.js";
 
 /**
  * @typedef {Object} SafeChainConfig
@@ -304,8 +305,7 @@ function getConfigFilePath() {
  * @returns {string}
  */
 export function getSafeChainDirectory() {
-  const homeDir = os.homedir();
-  const safeChainDir = path.join(homeDir, ".safe-chain");
+  const safeChainDir = getSafeChainBaseDir();
 
   if (!fs.existsSync(safeChainDir)) {
     fs.mkdirSync(safeChainDir, { recursive: true });

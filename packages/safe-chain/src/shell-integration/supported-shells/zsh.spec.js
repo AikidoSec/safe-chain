@@ -33,6 +33,12 @@ describe("Zsh shell integration", () => {
       },
     });
 
+    mock.module("../../config/safeChainDir.js", {
+      namedExports: {
+        getScriptsDir: () => "/test-home/.safe-chain/scripts",
+      },
+    });
+
     // Mock child_process execSync
     mock.module("child_process", {
       namedExports: {
@@ -73,7 +79,7 @@ describe("Zsh shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
         content.includes(
-          "source ~/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script"
+          "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script"
         )
       );
     });
@@ -83,7 +89,7 @@ describe("Zsh shell integration", () => {
       assert.strictEqual(result, true);
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(content.includes("source ~/.safe-chain/scripts/init-posix.sh"));
+      assert.ok(content.includes("source /test-home/.safe-chain/scripts/init-posix.sh"));
     });
   });
 
@@ -114,7 +120,7 @@ describe("Zsh shell integration", () => {
     it("should remove zsh initialization script source line", () => {
       const initialContent = [
         "#!/bin/zsh",
-        "source ~/.safe-chain/scripts/init-posix.sh",
+        "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script",
         "alias ls='ls --color=auto'",
       ].join("\n");
 
@@ -125,7 +131,7 @@ describe("Zsh shell integration", () => {
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes("source ~/.safe-chain/scripts/init-posix.sh")
+        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script")
       );
       assert.ok(content.includes("alias ls="));
     });
@@ -180,13 +186,13 @@ describe("Zsh shell integration", () => {
       // Setup
       zsh.setup();
       let content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(content.includes("source ~/.safe-chain/scripts/init-posix.sh"));
+      assert.ok(content.includes("source /test-home/.safe-chain/scripts/init-posix.sh"));
 
       // Teardown
       zsh.teardown(tools);
       content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes("source ~/.safe-chain/scripts/init-posix.sh")
+        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh")
       );
     });
 
@@ -207,7 +213,7 @@ describe("Zsh shell integration", () => {
       const initialContent = [
         "#!/bin/zsh",
         "alias npm='old-npm'",
-        "source ~/.safe-chain/scripts/init-posix.sh",
+        "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script",
         "alias ls='ls --color=auto'",
       ].join("\n");
 
@@ -218,7 +224,7 @@ describe("Zsh shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("alias npm="));
       assert.ok(
-        !content.includes("source ~/.safe-chain/scripts/init-posix.sh")
+        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script")
       );
       assert.ok(content.includes("alias ls="));
     });

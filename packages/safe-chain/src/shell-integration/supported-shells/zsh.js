@@ -3,7 +3,9 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
 } from "../helpers.js";
+import { getScriptsDir } from "../../config/safeChainDir.js";
 import { execSync } from "child_process";
+import path from "path";
 
 const shellName = "Zsh";
 const executableName = "zsh";
@@ -31,10 +33,10 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain zsh initialization script (~/.safe-chain/scripts/init-posix.sh)
+  // Remove sourcing line to complete shell integration cleanup
   removeLinesMatchingPattern(
     startupFile,
-    /^source\s+~\/\.safe-chain\/scripts\/init-posix\.sh/,
+    /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
     eol
   );
 
@@ -46,7 +48,7 @@ function setup() {
 
   addLineToFile(
     startupFile,
-    `source ~/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script`,
+    `source ${path.join(getScriptsDir(), "init-posix.sh")} # Safe-chain Zsh initialization script`,
     eol
   );
 
@@ -69,7 +71,7 @@ function getStartupFile() {
 function getManualTeardownInstructions() {
   return [
     `Remove the following line from your ~/.zshrc file:`,
-    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
     `Then restart your terminal or run: source ~/.zshrc`,
   ];
 }
@@ -77,7 +79,7 @@ function getManualTeardownInstructions() {
 function getManualSetupInstructions() {
   return [
     `Add the following line to your ~/.zshrc file:`,
-    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `  source ${path.join(getScriptsDir(), "init-posix.sh")}`,
     `Then restart your terminal or run: source ~/.zshrc`,
   ];
 }

@@ -128,20 +128,6 @@ export function getPackageManagerList() {
 }
 
 /**
- * @returns {string}
- */
-export function getShimsDir() {
-  return path.join(os.homedir(), ".safe-chain", "shims");
-}
-
-/**
- * @returns {string}
- */
-export function getScriptsDir() {
-  return path.join(os.homedir(), ".safe-chain", "scripts");
-}
-
-/**
  * @param {string} executableName
  *
  * @returns {boolean}

@@ -9,6 +9,7 @@ describe("Bash shell integration", () => {
   let mockStartupFile;
   let bash;
   let windowsCygwinPath = "";
+  let mockScriptsDir = "/test-home/.safe-chain/scripts";
   let platform = "linux";
 
   beforeEach(async () => {
@@ -32,6 +33,12 @@ describe("Bash shell integration", () => {
           const filteredLines = lines.filter((line) => !pattern.test(line));
           fs.writeFileSync(filePath, filteredLines.join("\n"), "utf-8");
         },
+      },
+    });
+
+    mock.module("../../config/safeChainDir.js", {
+      namedExports: {
+        getScriptsDir: () => mockScriptsDir,
       },
     });
 
@@ -61,6 +68,17 @@ describe("Bash shell integration", () => {
               stdout: windowsCygwinPath + "\n",
             };
           }
+
+          if (
+            command === "cygpath" &&
+            args[0] === "-u" &&
+            args[1] === mockScriptsDir
+          ) {
+            return {
+              status: 0,
+              stdout: "/c/test-home/.safe-chain/scripts\n",
+            };
+          }
         },
       },
     });
@@ -87,6 +105,7 @@ describe("Bash shell integration", () => {
 
     // Reset mocks
     mock.reset();
+    mockScriptsDir = "/test-home/.safe-chain/scripts";
     platform = "linux";
   });
 
@@ -109,7 +128,7 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
         content.includes(
-          "source ~/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
+          "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
         )
       );
     });
@@ -129,7 +148,24 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(windowsCygwinPath, "utf-8");
       assert.ok(
         content.includes(
-          "source ~/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
+          "source /c/test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
+        )
+      );
+    });
+
+    it("should write a bash-compatible scripts path on Windows", () => {
+      platform = "win32";
+      windowsCygwinPath = mockStartupFile;
+      mockScriptsDir = "C:\\test-home\\.safe-chain\\scripts";
+      mockStartupFile = "DUMMY";
+
+      const result = bash.setup();
+      assert.strictEqual(result, true);
+
+      const content = fs.readFileSync(windowsCygwinPath, "utf-8");
+      assert.ok(
+        content.includes(
+          "source /c/test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script"
         )
       );
     });
@@ -209,13 +245,13 @@ describe("Bash shell integration", () => {
       // Setup
       bash.setup(tools);
       let content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(content.includes("source ~/.safe-chain/scripts/init-posix.sh"));
+      assert.ok(content.includes("source /test-home/.safe-chain/scripts/init-posix.sh"));
 
       // Teardown
       bash.teardown(tools);
       content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        !content.includes("source ~/.safe-chain/scripts/init-posix.sh")
+        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh")
       );
     });
 
@@ -236,7 +272,7 @@ describe("Bash shell integration", () => {
       const initialContent = [
         "#!/bin/bash",
         "alias npm='old-npm'",
-        "source ~/.safe-chain/scripts/init-posix.sh",
+        "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script",
         "alias ls='ls --color=auto'",
       ].join("\n");
 
@@ -247,7 +283,7 @@ describe("Bash shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("alias npm="));
       assert.ok(
-        !content.includes("source ~/.safe-chain/scripts/init-posix.sh")
+        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script")
       );
       assert.ok(content.includes("alias ls="));
     });
