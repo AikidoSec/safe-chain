@@ -9,6 +9,7 @@ import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.
 import { interceptRequests } from "../interceptorBuilder.js";
 import { isExcludedFromMinimumPackageAge } from "../minimumPackageAgeExclusions.js";
 import {
+  modifyPipInfoRequestHeaders,
   modifyPipInfoResponse,
   parsePipMetadataUrl,
 } from "./modifyPipInfo.js";
@@ -61,6 +62,7 @@ function createPipRequestHandler(registry) {
       !isExcludedFromMinimumPackageAge(metadataPackageName)
     ) {
       const newPackagesDatabase = await openNewPackagesDatabase();
+      reqContext.modifyRequestHeaders(modifyPipInfoRequestHeaders);
       reqContext.modifyBody((body, headers) =>
         modifyPipInfoResponse(
           body,

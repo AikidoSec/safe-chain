@@ -129,6 +129,28 @@ describe("pipInterceptor minimum package age", async () => {
     newlyReleasedPackageResponse = false;
   });
 
+  it("strips If-None-Match and If-Modified-Since from metadata requests to prevent 304 cache bypass", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    newlyReleasedPackageResponse = true;
+
+    const interceptor = pipInterceptorForUrl(url);
+    const result = await interceptor.handleRequest(url);
+
+    const headers = {
+      "if-none-match": '"some-etag"',
+      "if-modified-since": "Thu, 01 Jan 2026 00:00:00 GMT",
+      accept: "*/*",
+    };
+
+    result.modifyRequestHeaders(headers);
+
+    assert.equal(headers["if-none-match"], undefined, "If-None-Match must be stripped");
+    assert.equal(headers["if-modified-since"], undefined, "If-Modified-Since must be stripped");
+    assert.equal(headers.accept, "*/*", "unrelated headers must be preserved");
+
+    newlyReleasedPackageResponse = false;
+  });
+
   it("should not block newly released package downloads when a dot-name package matches a hyphen exclusion", async () => {
     const url =
       "https://files.pythonhosted.org/packages/xx/yy/foo.bar-2.0.0.tar.gz";
