@@ -6,6 +6,23 @@ export { parsePipMetadataUrl, isPipPackageInfoUrl } from "./parsePipPackageUrl.j
 import { getPipMetadataContentType, logSuppressedVersion } from "./pipMetadataResponseUtils.js";
 import { modifyPipJsonResponse } from "./modifyPipJsonResponse.js";
 
+/**
+ * Strip conditional GET headers so PyPI always returns a full 200 response
+ * with a body we can rewrite. Without this, pip sends If-None-Match /
+ * If-Modified-Since, PyPI responds 304 Not Modified (empty body), and
+ * safe-chain cannot rewrite it — leaving pip with a cached index that still
+ * lists too-young versions. Those versions are then blocked at direct-download
+ * time with a hard 403, preventing dependency resolution from completing.
+ *
+ * @param {NodeJS.Dict<string | string[]>} headers
+ * @returns {NodeJS.Dict<string | string[]>}
+ */
+export function modifyPipInfoRequestHeaders(headers) {
+  delete headers["if-none-match"];
+  delete headers["if-modified-since"];
+  return headers;
+}
+
 // Match simple-index anchor tags and capture their href so we can suppress
 // individual distribution links from PyPI HTML metadata responses.
 const HTML_ANCHOR_HREF_RE =
