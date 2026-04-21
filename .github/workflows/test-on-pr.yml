@@ -113,7 +113,7 @@ jobs:
 
       - name: Install dependencies (root)
         run: |
-          mv ./npm-shrinkwrap.json ./package-lock.json
+          cp npm-shrinkwrap.json packages/safe-chain/
           npm ci
 
       - name: Run E2E tests

@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Copy package files first for better caching
 COPY packages/safe-chain/package*.json ./
+COPY packages/safe-chain/npm-shrinkwrap.json ./
 
 # Install dependencies
 RUN npm install
