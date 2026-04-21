@@ -1,4 +1,4 @@
-FROM node:24-bookworm as builder
+FROM node:24-bookworm AS builder
 
 ENV CI=true
 
@@ -14,7 +14,7 @@ COPY ./npm-shrinkwrap.json ./
 RUN npm ci
 
 # Copy the rest of the application
-COPY packages/safe-chain ./
+COPY packages/safe-chain ./packages/safe-chain
 
 # Build the application
 RUN npm --no-git-tag-version version 1.0.0 --allow-same-version --workspace=packages/safe-chain
