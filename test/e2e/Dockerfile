@@ -80,7 +80,8 @@ RUN apt-get update && apt-get install -y pipx && \
 
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/
-RUN npm install -g /pkgs/*.tgz
+# RUN npm install -g /pkgs/*.tgz
+RUN npm install -g @aikidosec/safe-chain
 
 WORKDIR /testapp
 RUN npm init -y
