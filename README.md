@@ -535,3 +535,18 @@ npm-ci:
 # Troubleshooting
 
 Having issues? See the [Troubleshooting Guide](https://help.aikido.dev/code-scanning/aikido-malware-scanning/safe-chain-troubleshooting) for help with common problems.
+
+# Using Safe Chain across a team?
+
+[Aikido Endpoint](https://www.aikido.dev/protect/endpoint-protection) builds on Safe Chain, extending package and extension security across more ecosystems:
+
+- **npm**
+- **PyPI**
+- **Maven**
+- **NuGet**
+- **VS Code**
+- **Open VSX**
+- **Chrome extensions**
+- **Skills.sh AI skills**
+
+Get centralized policy management, request-and-approval workflows, and visibility across every developer workstation in your org. Powered by the same Aikido Intel feed. Deploy it manually or manage it through your MDM tool (Jamf, Fleet, or Iru).
