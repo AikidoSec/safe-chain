@@ -32,6 +32,7 @@ export function openNewPackagesDatabase() {
       .then((newPackagesList) => buildNewPackagesDatabase(newPackagesList))
       .catch((/** @type {any} */ error) => {
         warnOnceAboutUnavailableDatabase(error);
+        cachedNewPackagesDatabasePromise = null;
         return { isNewlyReleasedPackage: () => false };
       });
   }
