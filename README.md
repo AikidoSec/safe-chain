@@ -545,7 +545,7 @@ Having issues? See the [Troubleshooting Guide](https://help.aikido.dev/code-scan
 - **Maven**
 - **NuGet**
 - **VS Code**
-- **Open VSX**
+- **Open VSX** - (Cursor, Windsurf, Kiro, Vs Codium, ...)
 - **Chrome extensions**
 - **Skills.sh AI skills**
 
