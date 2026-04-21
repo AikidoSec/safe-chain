@@ -112,9 +112,7 @@ jobs:
         run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
       - name: Install dependencies (root)
-        run: |
-          cp npm-shrinkwrap.json packages/safe-chain/
-          npm ci
+        run: npm ci
 
       - name: Run E2E tests
         env:
