@@ -4,11 +4,52 @@
 
 param(
     [switch]$ci,
-    [switch]$includepython
+    [switch]$includepython,
+    [string]$InstallDir
 )
 
+# Validates and normalizes the requested install directory.
+# Rejects non-absolute, root, PATH-like, and traversal-containing paths.
+function Test-InstallDir {
+    param([string]$Dir)
+
+    if ([string]::IsNullOrWhiteSpace($Dir)) {
+        return @{ Ok = $true; Normalized = $null }
+    }
+
+    if (-not [System.IO.Path]::IsPathRooted($Dir)) {
+        return @{ Ok = $false; Reason = "-InstallDir must be an absolute path, got: $Dir" }
+    }
+
+    if ($Dir.Contains([System.IO.Path]::PathSeparator)) {
+        return @{ Ok = $false; Reason = "-InstallDir must not contain the PATH separator ($([System.IO.Path]::PathSeparator))" }
+    }
+
+    $inputSegments = $Dir.Split([char[]]@('\', '/'), [System.StringSplitOptions]::RemoveEmptyEntries)
+    if ($inputSegments -contains "..") {
+        return @{ Ok = $false; Reason = "-InstallDir must not contain path traversal segments" }
+    }
+
+    $normalized = [System.IO.Path]::GetFullPath($Dir)
+    $root = [System.IO.Path]::GetPathRoot($normalized)
+    if ($normalized.TrimEnd('\', '/') -eq $root.TrimEnd('\', '/')) {
+        return @{ Ok = $false; Reason = "-InstallDir cannot be a root or drive-root directory" }
+    }
+
+    return @{ Ok = $true; Normalized = $normalized }
+}
+
 $Version = $env:SAFE_CHAIN_VERSION  # Will be fetched from latest release if not set
-$InstallDir = Join-Path $env:USERPROFILE ".safe-chain\bin"
+$SafeChainBase = if ($InstallDir) { $InstallDir } else { Join-Path $HOME ".safe-chain" }
+
+$installDirValidation = Test-InstallDir -Dir $SafeChainBase
+if (-not $installDirValidation.Ok) {
+    Write-Host "[ERROR] $($installDirValidation.Reason)" -ForegroundColor Red
+    exit 1
+}
+
+$SafeChainBase = $installDirValidation.Normalized
+$InstallDir = Join-Path $SafeChainBase "bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
 # Ensure TLS 1.2 is enabled for downloads
@@ -98,6 +139,59 @@ function Get-Architecture {
     }
 }
 
+# Emits the deprecation warning for SAFE_CHAIN_VERSION and prints the version-pinned install command.
+# Returns immediately when no version was provided through the environment.
+function Write-VersionDeprecationWarning {
+    if ([string]::IsNullOrWhiteSpace($env:SAFE_CHAIN_VERSION)) {
+        return
+    }
+
+    Write-Warn "SAFE_CHAIN_VERSION environment variable is deprecated."
+    Write-Warn ""
+    Write-Warn "Please use direct download URLs for version pinning instead:"
+    Write-Warn ""
+    if ($ci) {
+        Write-Warn "  iex `"& { `$(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1' -UseBasicParsing) } -ci`""
+    } else {
+        Write-Warn "  iex (iwr `"https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1`" -UseBasicParsing)"
+    }
+    Write-Warn ""
+}
+
+# Builds the Windows release binary filename for the detected architecture.
+# Centralizes binary name generation for the download step.
+function Get-BinaryName {
+    param([string]$Architecture)
+
+    return "safe-chain-win-$Architecture.exe"
+}
+
+# Runs safe-chain setup or setup-ci after the binary is installed.
+# Temporarily appends the install directory to PATH and downgrades setup failures to warnings.
+function Invoke-SafeChainSetup {
+    param(
+        [string]$BinaryPath,
+        [string]$InstallDirectory
+    )
+
+    $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
+
+    Write-Info "Running safe-chain $setupCmd..."
+    try {
+        $env:Path = "$env:Path;$InstallDirectory"
+        & $BinaryPath $setupCmd
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "safe-chain was installed but setup encountered issues."
+            Write-Warn "You can run 'safe-chain $setupCmd' manually later."
+        }
+    }
+    catch {
+        Write-Warn "safe-chain was installed but setup encountered issues: $_"
+        Write-Warn "You can run 'safe-chain $setupCmd' manually later."
+    }
+}
+
 # Check and uninstall npm global package if present
 function Remove-NpmInstallation {
     # Check if npm is available
@@ -149,19 +243,7 @@ function Remove-VoltaInstallation {
 
 # Main installation
 function Install-SafeChain {
-    # Show deprecation warning if SAFE_CHAIN_VERSION is set
-    if (-not [string]::IsNullOrWhiteSpace($env:SAFE_CHAIN_VERSION)) {
-        Write-Warn "SAFE_CHAIN_VERSION environment variable is deprecated."
-        Write-Warn ""
-        Write-Warn "Please use direct download URLs for version pinning instead:"
-        Write-Warn ""
-        if ($ci) {
-            Write-Warn "  iex `"& { `$(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1' -UseBasicParsing) } -ci`""
-        } else {
-            Write-Warn "  iex (iwr `"https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1`" -UseBasicParsing)"
-        }
-        Write-Warn ""
-    }
+    Write-VersionDeprecationWarning
 
     # Fetch latest version if VERSION is not set
     if ([string]::IsNullOrWhiteSpace($Version)) {
@@ -192,7 +274,7 @@ function Install-SafeChain {
 
     # Detect platform
     $arch = Get-Architecture
-    $binaryName = "safe-chain-win-$arch.exe"
+    $binaryName = Get-BinaryName -Architecture $arch
 
     Write-Info "Detected architecture: $arch"
 
@@ -238,31 +320,7 @@ function Install-SafeChain {
 
     Write-Info "Binary installed to: $finalFile"
 
-    # Build setup command based on parameters
-    $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
-    $setupArgs = @()
-
-    # Execute safe-chain setup
-    Write-Info "Running safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })..."
-    try {
-        $env:Path = "$env:Path;$InstallDir"
-
-        if ($setupArgs) {
-            & $finalFile $setupCmd $setupArgs
-        }
-        else {
-            & $finalFile $setupCmd
-        }
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warn "safe-chain was installed but setup encountered issues."
-            Write-Warn "You can run 'safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })' manually later."
-        }
-    }
-    catch {
-        Write-Warn "safe-chain was installed but setup encountered issues: $_"
-        Write-Warn "You can run 'safe-chain $setupCmd $(if ($setupArgs) { $setupArgs -join ' ' })' manually later."
-    }
+    Invoke-SafeChainSetup -BinaryPath $finalFile -InstallDirectory $InstallDir
 }
 
 # Run installation

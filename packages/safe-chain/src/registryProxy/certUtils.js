@@ -1,9 +1,8 @@
 import forge from "node-forge";
 import path from "path";
 import fs from "fs";
-import os from "os";
+import { getCertsDir } from "../config/safeChainDir.js";
 
-const certFolder = path.join(os.homedir(), ".safe-chain", "certs");
 const ca = loadCa();
 
 const certCache = new Map();
@@ -20,7 +19,7 @@ function createKeyIdentifier(publicKey) {
 }
 
 export function getCaCertPath() {
-  return path.join(certFolder, "ca-cert.pem");
+  return path.join(getCertsDir(), "ca-cert.pem");
 }
 
 /**
@@ -112,6 +111,7 @@ export function generateCertForHost(hostname) {
 }
 
 function loadCa() {
+  const certFolder = getCertsDir();
   const keyPath = path.join(certFolder, "ca-key.pem");
   const certPath = path.join(certFolder, "ca-cert.pem");
 

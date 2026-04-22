@@ -84,10 +84,14 @@ export class DockerTestContainer {
     }
   }
 
-  async openShell(shell) {
+  async openShell(shell, { user } = {}) {
+    const execArgs = user
+      ? ["exec", "-it", "-u", user, this.containerName, shell]
+      : ["exec", "-it", this.containerName, shell];
+
     let ptyProcess = pty.spawn(
       "docker",
-      ["exec", "-it", this.containerName, shell],
+      execArgs,
       {
         name: "xterm-color",
         cols: 80,

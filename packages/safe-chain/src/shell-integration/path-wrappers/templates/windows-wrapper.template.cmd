@@ -3,7 +3,8 @@ REM Generated wrapper for {{PACKAGE_MANAGER}} by safe-chain
 REM This wrapper intercepts {{PACKAGE_MANAGER}} calls for non-interactive environments
 
 REM Remove shim directory from PATH to prevent infinite loops
-set "SHIM_DIR=%USERPROFILE%\.safe-chain\shims"
+set "SHIM_DIR=%~dp0"
+if "%SHIM_DIR:~-1%"=="\" set "SHIM_DIR=%SHIM_DIR:~0,-1%"
 call set "CLEAN_PATH=%%PATH:%SHIM_DIR%;=%%"
 
 REM Check if aikido command is available with clean PATH

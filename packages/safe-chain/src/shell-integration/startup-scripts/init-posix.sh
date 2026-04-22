@@ -1,4 +1,16 @@
-export PATH="$PATH:$HOME/.safe-chain/bin"
+if [ -n "${BASH_SOURCE[0]:-}" ]; then
+    _sc_script_path="${BASH_SOURCE[0]}"
+elif [ -n "${ZSH_VERSION:-}" ]; then
+    # ${(%):-%x} uses Zsh prompt expansion to get the sourced file's path.
+    # eval is required so other shells don't try to parse the Zsh-specific syntax.
+    eval '_sc_script_path="${(%):-%x}"'
+else
+    _sc_script_path="$0"
+fi
+_sc_scripts_dir=$(CDPATH= cd -- "$(dirname -- "$_sc_script_path")" 2>/dev/null && pwd -P)
+_sc_base=$(dirname -- "$_sc_scripts_dir")
+export PATH="$PATH:${_sc_base}/bin"
+unset _sc_base _sc_script_path _sc_scripts_dir
 
 function npx() {
   wrapSafeChainCommand "npx" "$@"
@@ -45,6 +57,10 @@ function pip3() {
 
 function uv() {
   wrapSafeChainCommand "uv" "$@"
+}
+
+function uvx() {
+  wrapSafeChainCommand "uvx" "$@"
 }
 
 function poetry() {

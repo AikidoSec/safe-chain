@@ -1,4 +1,7 @@
-set -gx PATH $PATH $HOME/.safe-chain/bin
+set -l safe_chain_script (status filename)
+set -l safe_chain_scripts_dir (dirname $safe_chain_script)
+set -l safe_chain_base (dirname $safe_chain_scripts_dir)
+set -gx PATH $PATH $safe_chain_base/bin
 
 function npx
     wrapSafeChainCommand "npx" $argv
@@ -49,6 +52,10 @@ end
 
 function uv
     wrapSafeChainCommand "uv" $argv
+end
+
+function uvx
+    wrapSafeChainCommand "uvx" $argv
 end
 
 function poetry
