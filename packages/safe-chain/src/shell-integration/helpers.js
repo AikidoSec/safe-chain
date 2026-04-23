@@ -73,6 +73,12 @@ export const knownAikidoTools = [
     internalPackageManagerName: "uv",
   },
   {
+    tool: "uvx",
+    aikidoCommand: "aikido-uvx",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "uvx",
+  },
+  {
     tool: "pip",
     aikidoCommand: "aikido-pip",
     ecoSystem: ECOSYSTEM_PY,
@@ -125,20 +131,6 @@ export function getPackageManagerList() {
   }
   const lastTool = tools.pop();
   return `${tools.join(", ")}, and ${lastTool} commands`;
-}
-
-/**
- * @returns {string}
- */
-export function getShimsDir() {
-  return path.join(os.homedir(), ".safe-chain", "shims");
-}
-
-/**
- * @returns {string}
- */
-export function getScriptsDir() {
-  return path.join(os.homedir(), ".safe-chain", "scripts");
 }
 
 /**

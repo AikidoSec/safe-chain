@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
 import fs from "node:fs";
 import path from "path";
 
@@ -15,6 +15,7 @@ describe("removeLinesMatchingPatternTests", () => {
     mock.module("node:os", {
       namedExports: {
         EOL: "\r\n", // Simulate Windows line endings
+        homedir,
         tmpdir: tmpdir,
         platform: () => "linux",
       },
@@ -180,5 +181,32 @@ describe("removeLinesMatchingPatternTests", () => {
 
     const resultLines = result.split("\n");
     assert.strictEqual(resultLines.length, 5, "Should have exactly 5 lines");
+  });
+});
+
+describe("getSafeChainBaseDir / getBinDir / getShimsDir / getScriptsDir", () => {
+  it("defaults base dir to ~/.safe-chain when no packaged install dir is available", async () => {
+    const { getSafeChainBaseDir } = await import("../config/safeChainDir.js");
+    assert.strictEqual(getSafeChainBaseDir(), path.join(homedir(), ".safe-chain"));
+  });
+
+  it("getBinDir returns ~/.safe-chain/bin by default", async () => {
+    const { getBinDir } = await import("../config/safeChainDir.js");
+    assert.strictEqual(getBinDir(), path.join(homedir(), ".safe-chain", "bin"));
+  });
+
+  it("getShimsDir returns ~/.safe-chain/shims by default", async () => {
+    const { getShimsDir } = await import("../config/safeChainDir.js");
+    assert.strictEqual(getShimsDir(), path.join(homedir(), ".safe-chain", "shims"));
+  });
+
+  it("getScriptsDir returns ~/.safe-chain/scripts by default", async () => {
+    const { getScriptsDir } = await import("../config/safeChainDir.js");
+    assert.strictEqual(getScriptsDir(), path.join(homedir(), ".safe-chain", "scripts"));
+  });
+
+  it("getCertsDir returns ~/.safe-chain/certs by default", async () => {
+    const { getCertsDir } = await import("../config/safeChainDir.js");
+    assert.strictEqual(getCertsDir(), path.join(homedir(), ".safe-chain", "certs"));
   });
 });

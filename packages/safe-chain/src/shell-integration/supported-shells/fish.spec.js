@@ -33,6 +33,12 @@ describe("Fish shell integration", () => {
       },
     });
 
+    mock.module("../../config/safeChainDir.js", {
+      namedExports: {
+        getScriptsDir: () => "/test-home/.safe-chain/scripts",
+      },
+    });
+
     // Mock child_process execSync
     mock.module("child_process", {
       namedExports: {
@@ -72,7 +78,7 @@ describe("Fish shell integration", () => {
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(
-        content.includes('source ~/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script')
+        content.includes('source /test-home/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script')
       );
     });
 
@@ -81,7 +87,7 @@ describe("Fish shell integration", () => {
       fish.setup();
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
-      const sourceMatches = (content.match(/source ~\/\.safe-chain\/scripts\/init-fish\.fish/g) || []).length;
+      const sourceMatches = (content.match(/source \/test-home\/\.safe-chain\/scripts\/init-fish\.fish/g) || []).length;
       assert.strictEqual(sourceMatches, 2, "Should allow multiple source lines (helper doesn't dedupe)");
     });
   });
@@ -93,7 +99,7 @@ describe("Fish shell integration", () => {
         "alias npm 'aikido-npm'",
         "alias npx 'aikido-npx'",
         "alias yarn 'aikido-yarn'",
-        "source ~/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script",
+        "source /test-home/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script",
         "alias ls 'ls --color=auto'",
         "alias grep 'grep --color=auto'",
       ].join("\n");
@@ -107,7 +113,7 @@ describe("Fish shell integration", () => {
       assert.ok(!content.includes("alias npm "));
       assert.ok(!content.includes("alias npx "));
       assert.ok(!content.includes("alias yarn "));
-      assert.ok(!content.includes("source ~/.safe-chain/scripts/init-fish.fish"));
+      assert.ok(!content.includes("source /test-home/.safe-chain/scripts/init-fish.fish"));
       assert.ok(content.includes("alias ls "));
       assert.ok(content.includes("alias grep "));
     });
@@ -162,12 +168,12 @@ describe("Fish shell integration", () => {
       // Setup
       fish.setup();
       let content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(content.includes('source ~/.safe-chain/scripts/init-fish.fish'));
+      assert.ok(content.includes('source /test-home/.safe-chain/scripts/init-fish.fish'));
 
       // Teardown
       fish.teardown(tools);
       content = fs.readFileSync(mockStartupFile, "utf-8");
-      assert.ok(!content.includes("source ~/.safe-chain/scripts/init-fish.fish"));
+      assert.ok(!content.includes("source /test-home/.safe-chain/scripts/init-fish.fish"));
     });
 
     it("should handle multiple setup calls", () => {
@@ -176,7 +182,7 @@ describe("Fish shell integration", () => {
       fish.setup();
 
       const content = fs.readFileSync(mockStartupFile, "utf-8");
-      const sourceMatches = (content.match(/source ~\/\.safe-chain\/scripts\/init-fish\.fish/g) || []).length;
+      const sourceMatches = (content.match(/source \/test-home\/\.safe-chain\/scripts\/init-fish\.fish/g) || []).length;
       assert.strictEqual(sourceMatches, 1, "Should have exactly one source line after setup-teardown-setup cycle");
     });
   });

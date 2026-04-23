@@ -3,8 +3,10 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
 } from "../helpers.js";
+import { getScriptsDir } from "../../config/safeChainDir.js";
 import { execSync, spawnSync } from "child_process";
 import * as os from "os";
+import path from "path";
 
 const shellName = "Bash";
 const executableName = "bash";
@@ -32,10 +34,10 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain bash initialization script (~/.safe-chain/scripts/init-posix.sh)
+  // Remove sourcing line to disable safe-chain shell integration
   removeLinesMatchingPattern(
     startupFile,
-    /^source\s+~\/\.safe-chain\/scripts\/init-posix\.sh/,
+    /^source\s+.*init-posix\.sh.*#\s*Safe-chain/,
     eol
   );
 
@@ -44,10 +46,11 @@ function teardown(tools) {
 
 function setup() {
   const startupFile = getStartupFile();
+  const scriptsDir = getShellScriptsDir();
 
   addLineToFile(
     startupFile,
-    `source ~/.safe-chain/scripts/init-posix.sh # Safe-chain bash initialization script`,
+    `source ${path.posix.join(scriptsDir, "init-posix.sh")} # Safe-chain bash initialization script`,
     eol
   );
 
@@ -94,6 +97,51 @@ function windowsFixPath(path) {
   }
 }
 
+function getShellScriptsDir() {
+  return toBashPath(getScriptsDir());
+}
+
+/**
+ * @param {string} path
+ *
+ * @returns {string}
+ */
+function toBashPath(path) {
+  try {
+    if (os.platform() !== "win32") {
+      return path.replace(/\\/g, "/");
+    }
+
+    const directWindowsPath = windowsPathToBashPath(path);
+    if (directWindowsPath) {
+      return directWindowsPath;
+    }
+
+    if (hasCygpath()) {
+      return convertCygwinPathToUnix(path);
+    }
+
+    return path.replace(/\\/g, "/");
+  } catch {
+    return path.replace(/\\/g, "/");
+  }
+}
+
+/**
+ * @param {string} path
+ *
+ * @returns {string | undefined}
+ */
+function windowsPathToBashPath(path) {
+  const match = /^([A-Za-z]):[\\/](.*)$/.exec(path);
+  if (!match) {
+    return undefined;
+  }
+
+  const [, driveLetter, rest] = match;
+  return `/${driveLetter.toLowerCase()}/${rest.replace(/\\/g, "/")}`;
+}
+
 function hasCygpath() {
   try {
     var result = spawnSync("where", ["cygpath"], { shell: executableName });
@@ -123,18 +171,40 @@ function cygpathw(path) {
   }
 }
 
+/**
+ * @param {string} path
+ *
+ * @returns {string}
+ */
+function convertCygwinPathToUnix(path) {
+  try {
+    var result = spawnSync("cygpath", ["-u", path], {
+      encoding: "utf8",
+      shell: executableName,
+    });
+    if (result.status === 0) {
+      return result.stdout.trim();
+    }
+    return path.replace(/\\/g, "/");
+  } catch {
+    return path.replace(/\\/g, "/");
+  }
+}
+
 function getManualTeardownInstructions() {
+  const scriptsDir = getShellScriptsDir();
   return [
     `Remove the following line from your ~/.bashrc file:`,
-    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `  source ${path.posix.join(scriptsDir, "init-posix.sh")}`,
     `Then restart your terminal or run: source ~/.bashrc`,
   ];
 }
 
 function getManualSetupInstructions() {
+  const scriptsDir = getShellScriptsDir();
   return [
     `Add the following line to your ~/.bashrc file:`,
-    `  source ~/.safe-chain/scripts/init-posix.sh`,
+    `  source ${path.posix.join(scriptsDir, "init-posix.sh")}`,
     `Then restart your terminal or run: source ~/.bashrc`,
   ];
 }

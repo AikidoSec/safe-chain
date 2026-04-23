@@ -2,7 +2,8 @@
 # $IsWindows is only available in PowerShell Core 6.0+. If it doesn't exist, assume Windows PowerShell
 $isWindowsPlatform = if (Test-Path variable:IsWindows) { $IsWindows } else { $true }
 $pathSeparator = if ($isWindowsPlatform) { ';' } else { ':' }
-$safeChainBin = Join-Path (Join-Path $HOME '.safe-chain') 'bin'
+$safeChainBase = Split-Path -Parent $PSScriptRoot
+$safeChainBin = Join-Path $safeChainBase 'bin'
 $env:PATH = "$env:PATH$pathSeparator$safeChainBin"
 
 function npx {
@@ -50,6 +51,10 @@ function pip3 {
 
 function uv {
     Invoke-WrappedCommand "uv" $args $MyInvocation.Line $MyInvocation.OffsetInLine
+}
+
+function uvx {
+    Invoke-WrappedCommand "uvx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
 function poetry {
