@@ -7,7 +7,7 @@
 set -e  # Exit on error
 
 # Configuration
-UNINSTALL_SCRIPT="/Library/Application Support/AikidoSecurity/EndpointProtection/scripts/uninstall"
+UNINSTALL_SCRIPT="/Applications/Aikido Endpoint Protection.app/Contents/Resources/scripts/uninstall"
 
 # Colors for output
 RED='\033[0;31m'
