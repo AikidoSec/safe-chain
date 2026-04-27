@@ -4,13 +4,20 @@ import { createBuiltInProxyServer } from "./builtInProxy/createBuiltInProxyServe
 import { getCombinedCaBundlePath } from "./certBundle.js";
 
 /**
- * @typedef {Object} SafeChainProxy
- * @prop {() => Promise<void>} startServer
- * @prop {() => Promise<void>} stopServer
- * @prop {() => boolean} verifyNoMaliciousPackages
- * @prop {() => boolean} hasSuppressedVersions
- * @prop {() => Number | null} getServerPort
- * @prop {() => string | null} getCaCert
+ * @typedef {Object} MalwareBlockedEvent
+ * @prop {string} packageName
+ * @prop {string} packageVersion
+ * 
+ * @typedef {{ malwareBlocked: [MalwareBlockedEvent] }} ProxyServerEvents
+ * 
+ * @import { EventEmitter } from "node:stream"
+ * @typedef {EventEmitter<ProxyServerEvents> & {
+ *   startServer: () => Promise<void>
+ *   stopServer: () => Promise<void>
+ *   getServerPort: () => Number | null
+ *   getCaCert: () => string | null
+ *   hasSuppressedVersions: () => boolean
+ * }} SafeChainProxy
  *
  * @typedef {Object} ProxySettings
  * @prop {string | null} proxyUrl
@@ -27,9 +34,10 @@ export function createSafeChainProxy() {
 
   let ramaPath = getRamaPath();
   if (ramaPath) {
-    ui.writeInformation("Starting safe-chain rama proxy");
+    ui.writeVerbose("Starting safe-chain rama proxy");
     server = createRamaProxy(ramaPath);
   } else {
+    ui.writeVerbose("Starting built-in proxy");
     server = createBuiltInProxyServer();
   }
 
