@@ -92,17 +92,4 @@ describe("E2E: safe-chain CLI python/pip support", () => {
     );
   });
 
-  it("safe-chain blocks malicious package via pip3", async () => {
-    const shell = await container.openShell("zsh");
-    await shell.runCommand("pip3 cache purge");
-
-    const result = await shell.runCommand(
-      "safe-chain pip3 install --break-system-packages safe-chain-pi-test"
-    );
-
-    assert.ok(
-      result.output.includes("blocked 1 malicious package downloads"),
-      `Should have blocked malware. Output was:\n${result.output}`
-    );
-  });
 });

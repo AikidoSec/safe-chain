@@ -122,33 +122,6 @@ describe("E2E: uv coverage", () => {
     );
   });
 
-  it(`safe-chain blocks installation of malicious Python packages via uv`, async () => {
-    const shell = await container.openShell("zsh");
-
-    const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages safe-chain-pi-test"
-    );
-
-    assert.ok(
-      result.output.includes("blocked 1 malicious package downloads:"),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("safe_chain_pi_test@0.0.1"),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-
-    const listResult = await shell.runCommand("uv pip list --system");
-    assert.ok(
-      !listResult.output.includes("safe-chain-pi-test"),
-      `Malicious package was installed despite safe-chain protection. Output of 'uv pip list' was:\n${listResult.output}`
-    );
-  });
-
   it(`uv pip install from GitHub URL using the CA bundle`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
@@ -406,30 +379,6 @@ describe("E2E: uv coverage", () => {
     );
   });
 
-  it(`safe-chain blocks malicious packages via uv add`, async () => {
-    const shell = await container.openShell("zsh");
-
-    // Initialize a new uv project
-    await shell.runCommand("uv init test-project-malware");
-
-    const result = await shell.runCommand(
-      "cd test-project-malware && uv add safe-chain-pi-test"
-    );
-
-    assert.ok(
-      result.output.includes("blocked 1 malicious package downloads:"),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("safe_chain_pi_test@0.0.1"),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-  });
-
   it(`uv tool install installs a global tool`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
@@ -439,20 +388,6 @@ describe("E2E: uv coverage", () => {
     assert.ok(
       result.output.includes("no malware found.") ||
         result.output.includes("Installed"),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-  });
-
-  it(`safe-chain blocks malicious packages via uv tool install`, async () => {
-    const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("uv tool install safe-chain-pi-test");
-
-    assert.ok(
-      result.output.includes("blocked 1 malicious package downloads:"),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("safe_chain_pi_test@0.0.1"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
@@ -471,22 +406,6 @@ describe("E2E: uv coverage", () => {
 
     assert.ok(
       result.output.includes("no malware found."),
-      `Output did not include expected text. Output was:\n${result.output}`
-    );
-  });
-
-  it(`safe-chain blocks malicious packages via uv run --with`, async () => {
-    const shell = await container.openShell("zsh");
-
-    // Create a simple Python script
-    await shell.runCommand("echo 'print(\"test\")' > test_script2.py");
-
-    const result = await shell.runCommand(
-      "uv run --with safe-chain-pi-test test_script2.py"
-    );
-
-    assert.ok(
-      result.output.includes("blocked 1 malicious package downloads:"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });

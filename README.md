@@ -98,13 +98,7 @@ You can find all available versions on the [releases page](https://github.com/Ai
    npm install safe-chain-test
    ```
 
-   For Python:
-
-   ```shell
-   pip3 install safe-chain-pi-test
-   ```
-
-   - The output should show that Aikido Safe Chain is blocking the installation of these test packages as they are flagged as malware.
+   - The output should show that Aikido Safe Chain is blocking the installation of this test package as it is flagged as malware.
 
 When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `uvx`, `poetry` and `pipx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
 

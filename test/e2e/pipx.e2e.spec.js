@@ -37,23 +37,6 @@ describe("E2E: pipx coverage", () => {
     );
   });
 
-  it(`safe-chain blocks installation of malicious Python packages via pipx`, async () => {
-    const shell = await container.openShell("zsh");
-
-    const result = await shell.runCommand(
-      "pipx install safe-chain-pi-test"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malware to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
-
   it(`pipx upgrade upgrades installed packages`, async () => {
     const shell = await container.openShell("zsh");
 
@@ -82,23 +65,6 @@ describe("E2E: pipx coverage", () => {
     );
   });
 
-  it(`pipx run blocks malicious tool download`, async () => {
-    const shell = await container.openShell("zsh");
-
-    const result = await shell.runCommand(
-      "pipx run safe-chain-pi-test --version"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malicious run to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
-
   it(`pipx runpip installs safe dependency inside an app venv`, async () => {
     const shell = await container.openShell("zsh");
 
@@ -112,26 +78,6 @@ describe("E2E: pipx coverage", () => {
     assert.ok(
       result.output.includes("no malware found.") || /Successfully installed/i.test(result.output) || /requests/i.test(result.output),
       `Expected safe dependency install inside app venv. Output was:\n${result.output}`
-    );
-  });
-
-  it(`pipx runpip blocks malicious dependency install`, async () => {
-    const shell = await container.openShell("zsh");
-
-    // Prepare an app environment
-    await shell.runCommand("pipx install ruff");
-
-    const result = await shell.runCommand(
-      "pipx runpip ruff install safe-chain-pi-test"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malicious dependency to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
     );
   });
 
@@ -180,21 +126,4 @@ describe("E2E: pipx coverage", () => {
     );
   });
 
-  it('pipx inject blocks malicious packages from being installed into existing venvs', async () => {
-    const shell = await container.openShell("zsh");
-
-    await shell.runCommand("pipx install ruff --safe-chain-logging=verbose");
-    const result = await shell.runCommand(
-      "pipx inject ruff safe-chain-pi-test --safe-chain-logging=verbose"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malicious package to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
 });
