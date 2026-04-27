@@ -1,3 +1,4 @@
+import { EventEmitter } from "events";
 import {
   getMinimumPackageAgeHours,
   getNpmMinimumPackageAgeExclusions,
@@ -5,9 +6,8 @@ import {
 import { ui } from "../../../../environment/userInteraction.js";
 import { getHeaderValueAsString } from "../../http-utils.js";
 
-const state = {
-  hasSuppressedVersions: false,
-};
+/** @type {EventEmitter<{ versionsRemoved: [{packageName: string, packageVersions: string[]}] }>} */
+export const modifyResponseEventEmitter = new EventEmitter();
 
 /**
  * @param {NodeJS.Dict<string | string[]>} headers
@@ -71,15 +71,20 @@ export function modifyNpmInfoResponse(body, headers) {
     // Check if this package is excluded from minimum age filtering
     const packageName = bodyJson.name;
     const exclusions = getNpmMinimumPackageAgeExclusions();
-    if (packageName && exclusions.some((pattern) => matchesExclusionPattern(packageName, pattern))) {
+    if (
+      packageName &&
+      exclusions.some((pattern) =>
+        matchesExclusionPattern(packageName, pattern),
+      )
+    ) {
       ui.writeVerbose(
-        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`
+        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`,
       );
       return body;
     }
 
     const cutOff = new Date(
-      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
+      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000,
     );
 
     const hasLatestTag = !!bodyJson["dist-tags"]["latest"];
@@ -91,9 +96,13 @@ export function modifyNpmInfoResponse(body, headers) {
       }))
       .filter((x) => x.version !== "created" && x.version !== "modified");
 
+    const removedVersions = [];
+
     for (const { version, timestamp } of versions) {
       const timestampValue = new Date(timestamp);
       if (timestampValue > cutOff) {
+        removedVersions.push(version);
+
         deleteVersionFromJson(bodyJson, version);
         if (headers) {
           // When modifying the response, the etag and last-modified headers
@@ -113,10 +122,17 @@ export function modifyNpmInfoResponse(body, headers) {
       bodyJson["dist-tags"]["latest"] = calculateLatestTag(bodyJson.time);
     }
 
+    if (removedVersions.length > 0) {
+      modifyResponseEventEmitter.emit("versionsRemoved", {
+        packageName: packageName,
+        packageVersions: removedVersions,
+      });
+    }
+
     return Buffer.from(JSON.stringify(bodyJson));
   } catch (/** @type {any} */ err) {
     ui.writeVerbose(
-      `Safe-chain: Package metadata not in expected format - bypassing modification. Error: ${err.message}`
+      `Safe-chain: Package metadata not in expected format - bypassing modification. Error: ${err.message}`,
     );
     return body;
   }
@@ -127,12 +143,10 @@ export function modifyNpmInfoResponse(body, headers) {
  * @param {string} version
  */
 function deleteVersionFromJson(json, version) {
-  state.hasSuppressedVersions = true;
-
   const packageName = typeof json?.name === "string" ? json.name : "(unknown)";
 
   ui.writeVerbose(
-    `Safe-chain: ${packageName}@${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`
+    `Safe-chain: ${packageName}@${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`,
   );
 
   delete json.time[version];
@@ -151,18 +165,20 @@ function deleteVersionFromJson(json, version) {
  */
 function calculateLatestTag(tagList) {
   const entries = Object.entries(tagList).filter(
-    ([version, _]) => version !== "created" && version !== "modified"
+    ([version, _]) => version !== "created" && version !== "modified",
   );
 
   const latestFullRelease = getMostRecentTag(
-    Object.fromEntries(entries.filter(([version, _]) => !version.includes("-")))
+    Object.fromEntries(
+      entries.filter(([version, _]) => !version.includes("-")),
+    ),
   );
   if (latestFullRelease) {
     return latestFullRelease;
   }
 
   const latestPrerelease = getMostRecentTag(
-    Object.fromEntries(entries.filter(([version, _]) => version.includes("-")))
+    Object.fromEntries(entries.filter(([version, _]) => version.includes("-"))),
   );
   return latestPrerelease;
 }
@@ -182,13 +198,6 @@ function getMostRecentTag(tagList) {
   }
 
   return current;
-}
-
-/**
- * @returns {boolean}
- */
-export function getHasSuppressedVersions() {
-  return state.hasSuppressedVersions;
 }
 
 /**

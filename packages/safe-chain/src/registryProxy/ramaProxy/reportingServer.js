@@ -10,7 +10,14 @@ const SERVER_STOP_TIMEOUT_MS = 1000;
  */
 
 /**
- * @typedef {{ blockReceived: [BlockEvent] }} ReportingServerEvents
+ * @typedef {Object} MinPackageAgeEvent
+ * @property {number} ts_ms
+ * @property {{ product: string, identifier: string }} artifact
+ * @property {string[]} suppressed_versions
+ */
+
+/**
+ * @typedef {{ blockReceived: [BlockEvent], minPackageAgeSuppressionReceived: [MinPackageAgeEvent] }} ReportingServerEvents
  */
 
 /**
@@ -36,6 +43,11 @@ export function getReportingServer() {
     if (req.method === "POST" && req.url?.startsWith("/events/block")) {
       await parseBlockEventFromRequest(req).then((blockEvent) => {
         emitter.emit("blockReceived", blockEvent);
+      });
+    }
+    else if (req.method === "POST" && req.url?.startsWith("/events/min-package-age")) {
+      await parseMinPackageAgeEventFromRequest(req).then((minPackageAgeEvent) => {
+        emitter.emit("minPackageAgeSuppressionReceived", minPackageAgeEvent);
       });
     }
     res.writeHead(200);
@@ -75,12 +87,30 @@ export function getReportingServer() {
  * @param {http.IncomingMessage} req
  * @returns {Promise<BlockEvent>}
  */
-function parseBlockEventFromRequest(req) {
+async function parseBlockEventFromRequest(req) {
+  const requestData = await getRequestDataAsString(req);
+  return JSON.parse(requestData);
+}
+
+/**
+ * @param {http.IncomingMessage} req
+ * @returns {Promise<MinPackageAgeEvent>}
+ */
+async function parseMinPackageAgeEventFromRequest(req) {
+  const requestData = await getRequestDataAsString(req);
+  return JSON.parse(requestData);
+}
+
+/**
+ * @param {http.IncomingMessage} req 
+ * @returns {Promise<string>}
+ */
+function getRequestDataAsString(req) {
   return new Promise((resolve, reject) => {
     /** @type {Buffer[]} */
     const chunks = [];
     req.on("data", (chunk) => chunks.push(chunk));
-    req.on("end", () => resolve(JSON.parse(Buffer.concat(chunks).toString())));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString()));
     req.on("error", reject);
   });
 }
