@@ -36,13 +36,7 @@ Verify that malware detection is working:
 npm install safe-chain-test
 ```
 
-**For Python:**
-
-```bash
-pip3 install safe-chain-pi-test
-```
-
-These test packages are flagged as malware and should be blocked by Safe Chain.
+This test package is flagged as malware and should be blocked by Safe Chain.
 
 **If the test package installs successfully instead of being blocked**, see [Malware Not Being Blocked](#malware-not-being-blocked) below.
 

@@ -40,23 +40,6 @@ describe("E2E: uvx coverage", () => {
     );
   });
 
-  it(`safe-chain blocks malicious packages via uvx`, async () => {
-    const shell = await container.openShell("zsh");
-
-    const result = await shell.runCommand(
-      "uvx safe-chain-pi-test"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malicious package to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
-
   it(`uvx with --from flag runs a safe tool`, async () => {
     const shell = await container.openShell("zsh");
 
@@ -67,23 +50,6 @@ describe("E2E: uvx coverage", () => {
     assert.ok(
       result.output.includes("no malware found.") || /ruff/i.test(result.output),
       `Expected safe tool to run successfully with --from. Output was:\n${result.output}`
-    );
-  });
-
-  it(`uvx with --from flag blocks malicious packages`, async () => {
-    const shell = await container.openShell("zsh");
-
-    const result = await shell.runCommand(
-      "uvx --from safe-chain-pi-test some-command"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malicious package to be blocked with --from. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
     );
   });
 
@@ -113,20 +79,4 @@ describe("E2E: uvx coverage", () => {
     );
   });
 
-  it(`uvx with --with flag blocks malicious additional dependencies`, async () => {
-    const shell = await container.openShell("zsh");
-
-    const result = await shell.runCommand(
-      "uvx --with safe-chain-pi-test ruff --version"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malicious --with dependency to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
 });

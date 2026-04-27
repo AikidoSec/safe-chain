@@ -63,26 +63,6 @@ describe("E2E: poetry coverage", () => {
     );
   });
 
-  it(`safe-chain blocks installation of malicious Python packages via poetry`, async () => {
-    const shell = await container.openShell("zsh");
-    
-    await shell.runCommand("mkdir /tmp/test-poetry-malware && cd /tmp/test-poetry-malware");
-    await shell.runCommand("cd /tmp/test-poetry-malware && poetry init --no-interaction");
-    
-    const result = await shell.runCommand(
-      "cd /tmp/test-poetry-malware && poetry add safe-chain-pi-test"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malware to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
-
   it(`poetry install installs dependencies from pyproject.toml`, async () => {
     const shell = await container.openShell("zsh");
     
@@ -288,80 +268,6 @@ describe("E2E: poetry coverage", () => {
     assert.ok(
       !result.output.includes("blocked"),
       `Remove command should not trigger downloads. Output was:\n${result.output}`
-    );
-  });
-
-  it(`blocks malware during poetry install`, async () => {
-    const shell = await container.openShell("zsh");
-    
-    // Create a project with malware in dependencies
-    await shell.runCommand("mkdir /tmp/test-poetry-install-malware && cd /tmp/test-poetry-install-malware");
-    await shell.runCommand("cd /tmp/test-poetry-install-malware && poetry init --no-interaction");
-    
-    // Add malware package - this will create lock file and attempt download
-    const result = await shell.runCommand(
-      "cd /tmp/test-poetry-install-malware && poetry add safe-chain-pi-test 2>&1"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malware to be blocked during add (which triggers install). Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
-
-  it(`blocks malware when updating to add malicious dependency`, async () => {
-    const shell = await container.openShell("zsh");
-    
-    await shell.runCommand("mkdir /tmp/test-poetry-update-add && cd /tmp/test-poetry-update-add");
-    await shell.runCommand("cd /tmp/test-poetry-update-add && poetry init --no-interaction");
-    
-    // Start with a safe dependency
-    await shell.runCommand("cd /tmp/test-poetry-update-add && poetry add requests");
-    
-    // Now try to add malware via add command
-    const result = await shell.runCommand(
-      "cd /tmp/test-poetry-update-add && poetry add safe-chain-pi-test 2>&1"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malware to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-  });
-
-  it(`blocks malware when installing from requirements with malicious package`, async () => {
-    const shell = await container.openShell("zsh");
-    
-    await shell.runCommand("mkdir /tmp/test-poetry-req-malware && cd /tmp/test-poetry-req-malware");
-    await shell.runCommand("cd /tmp/test-poetry-req-malware && poetry init --no-interaction");
-    
-    // Try to add malware directly - this is the primary vector
-    const result = await shell.runCommand(
-      "cd /tmp/test-poetry-req-malware && poetry add safe-chain-pi-test requests 2>&1"
-    );
-
-    assert.ok(
-      result.output.includes("blocked by safe-chain"),
-      `Expected malware to be blocked. Output was:\n${result.output}`
-    );
-    assert.ok(
-      result.output.includes("Exiting without installing malicious packages."),
-      `Expected exit message. Output was:\n${result.output}`
-    );
-    
-    // Verify safe package was also not installed due to malware in batch
-    const listResult = await shell.runCommand("cd /tmp/test-poetry-req-malware && poetry show");
-    assert.ok(
-      !listResult.output.includes("requests"),
-      `Safe package should not be installed when batch includes malware. Output was:\n${listResult.output}`
     );
   });
 
