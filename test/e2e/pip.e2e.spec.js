@@ -128,7 +128,7 @@ describe("E2E: pip coverage", () => {
   it(`safe-chain blocks installation of malicious Python packages`, async () => {
     const shell = await container.openShell("zsh");
     const result = await shell.runCommand(
-      "pip3 install --break-system-packages safe-chain-pi-test"
+      "pip3 install --break-system-packages numpy==2.4.4 --safe-chain-logging=verbose"
     );
 
     assert.ok(
@@ -136,7 +136,7 @@ describe("E2E: pip coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
     assert.ok(
-      result.output.includes("safe_chain_pi_test@0.0.1"),
+      result.output.includes("numpy@2.4.4"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
     assert.ok(
@@ -146,7 +146,7 @@ describe("E2E: pip coverage", () => {
 
     const listResult = await shell.runCommand("pip3 list");
     assert.ok(
-      !listResult.output.includes("safe-chain-pi-test"),
+      !listResult.output.includes("numpy"),
       `Malicious package was installed despite safe-chain protection. Output of 'pip3 list' was:\n${listResult.output}`
     );
   });
