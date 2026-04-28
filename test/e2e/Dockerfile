@@ -84,3 +84,5 @@ RUN npm install -g /pkgs/*.tgz
 WORKDIR /testapp
 RUN npm init -y
 
+COPY test/e2e/utils/malwarelistmirror.mjs /utils/malwarelistmirror.mjs
+ENV SAFE_CHAIN_MALWARE_LIST_BASE_URL=http://127.0.0.1:5555

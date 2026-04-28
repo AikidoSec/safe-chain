@@ -97,7 +97,7 @@ describe("E2E: safe-chain CLI python/pip support", () => {
     await shell.runCommand("pip3 cache purge");
 
     const result = await shell.runCommand(
-      "safe-chain pip3 install --break-system-packages safe-chain-pi-test"
+      "safe-chain pip3 install --break-system-packages numpy==2.4.4"
     );
 
     assert.ok(
