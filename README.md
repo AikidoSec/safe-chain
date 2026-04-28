@@ -471,7 +471,7 @@ steps:
       name: Install
       script:
         - curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
-        - export PATH=~/.safe-chain/shims:$PATH
+        - export PATH=~/.safe-chain/shims:~/.safe-chain/bin:$PATH
         - npm ci
 ```
 
