@@ -55,6 +55,18 @@ SAFE_CHAIN_BASE="${HOME}/.safe-chain"
 INSTALL_DIR="${SAFE_CHAIN_BASE}/bin"
 REPO_URL="https://github.com/AikidoSec/safe-chain"
 
+# SHA256 checksums for release binaries.
+# Empty in source; populated by the release pipeline via sed.
+# When empty (running from main), checksum verification is skipped.
+SHA256_MACOS_X64=""
+SHA256_MACOS_ARM64=""
+SHA256_LINUX_X64=""
+SHA256_LINUX_ARM64=""
+SHA256_LINUXSTATIC_X64=""
+SHA256_LINUXSTATIC_ARM64=""
+SHA256_WIN_X64=""
+SHA256_WIN_ARM64=""
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -154,6 +166,57 @@ fetch_latest_version() {
     fi
 
     echo "$latest_version"
+}
+
+# Returns the expected SHA256 for the detected platform, or empty if the
+# release pipeline has not baked one in (i.e. running the source from main).
+get_expected_sha256() {
+    os="$1"; arch="$2"
+    case "${os}-${arch}" in
+        macos-x64)         echo "$SHA256_MACOS_X64" ;;
+        macos-arm64)       echo "$SHA256_MACOS_ARM64" ;;
+        linux-x64)         echo "$SHA256_LINUX_X64" ;;
+        linux-arm64)       echo "$SHA256_LINUX_ARM64" ;;
+        linuxstatic-x64)   echo "$SHA256_LINUXSTATIC_X64" ;;
+        linuxstatic-arm64) echo "$SHA256_LINUXSTATIC_ARM64" ;;
+        win-x64)           echo "$SHA256_WIN_X64" ;;
+        win-arm64)         echo "$SHA256_WIN_ARM64" ;;
+        *)                 echo "" ;;
+    esac
+}
+
+compute_sha256() {
+    file="$1"
+    if command_exists sha256sum; then
+        sha256sum "$file" | awk '{print $1}'
+    elif command_exists shasum; then
+        shasum -a 256 "$file" | awk '{print $1}'
+    else
+        echo ""
+    fi
+}
+
+# Verifies the downloaded binary against the expected hash baked in by the release pipeline.
+# No-op when no expected hash is set (running the script from main).
+verify_checksum() {
+    file="$1"; expected="$2"
+
+    if [ -z "$expected" ]; then
+        return
+    fi
+
+    actual=$(compute_sha256 "$file")
+    if [ -z "$actual" ]; then
+        rm -f "$file"
+        error "Cannot verify checksum: neither sha256sum nor shasum is available. Install one and re-run."
+    fi
+
+    if [ "$actual" != "$expected" ]; then
+        rm -f "$file"
+        error "Checksum verification failed. Expected: $expected, Got: $actual"
+    fi
+
+    info "Checksum verified."
 }
 
 # Download file
@@ -427,6 +490,9 @@ main() {
 
     info "Downloading from: $DOWNLOAD_URL"
     download "$DOWNLOAD_URL" "$TEMP_FILE"
+
+    EXPECTED_SHA256=$(get_expected_sha256 "$OS" "$ARCH")
+    verify_checksum "$TEMP_FILE" "$EXPECTED_SHA256"
 
     # Rename and make executable
     FINAL_FILE=$(get_final_binary_path "$OS")

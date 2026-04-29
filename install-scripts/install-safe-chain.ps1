@@ -52,6 +52,20 @@ $SafeChainBase = $installDirValidation.Normalized
 $InstallDir = Join-Path $SafeChainBase "bin"
 $RepoUrl = "https://github.com/AikidoSec/safe-chain"
 
+# SHA256 checksums for release binaries.
+# Empty in source; populated by the release pipeline.
+# When empty (running from main), checksum verification is skipped.
+# Non-Windows hashes are unused today (PS script is Windows-only) but baked in
+# for future cross-platform support.
+$SHA256_MACOS_X64 = ""
+$SHA256_MACOS_ARM64 = ""
+$SHA256_LINUX_X64 = ""
+$SHA256_LINUX_ARM64 = ""
+$SHA256_LINUXSTATIC_X64 = ""
+$SHA256_LINUXSTATIC_ARM64 = ""
+$SHA256_WIN_X64 = ""
+$SHA256_WIN_ARM64 = ""
+
 # Ensure TLS 1.2 is enabled for downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -164,6 +178,38 @@ function Get-BinaryName {
     param([string]$Architecture)
 
     return "safe-chain-win-$Architecture.exe"
+}
+
+# Returns the expected SHA256 for the given OS+arch, or empty if not baked in.
+function Get-ExpectedSha256 {
+    param([string]$Os, [string]$Architecture)
+    switch ("$Os-$Architecture") {
+        "macos-x64"         { return $SHA256_MACOS_X64 }
+        "macos-arm64"       { return $SHA256_MACOS_ARM64 }
+        "linux-x64"         { return $SHA256_LINUX_X64 }
+        "linux-arm64"       { return $SHA256_LINUX_ARM64 }
+        "linuxstatic-x64"   { return $SHA256_LINUXSTATIC_X64 }
+        "linuxstatic-arm64" { return $SHA256_LINUXSTATIC_ARM64 }
+        "win-x64"           { return $SHA256_WIN_X64 }
+        "win-arm64"         { return $SHA256_WIN_ARM64 }
+        default             { return "" }
+    }
+}
+
+function Test-Checksum {
+    param([string]$File, [string]$Expected)
+
+    if ([string]::IsNullOrWhiteSpace($Expected)) { return }
+
+    $actual = (Get-FileHash -Path $File -Algorithm SHA256).Hash.ToLowerInvariant()
+    $expectedLower = $Expected.ToLowerInvariant()
+
+    if ($actual -ne $expectedLower) {
+        Remove-Item -Path $File -Force -ErrorAction SilentlyContinue
+        Write-Error-Custom "Checksum verification failed. Expected: $expectedLower, Got: $actual"
+    }
+
+    Write-Info "Checksum verified."
 }
 
 # Runs safe-chain setup or setup-ci after the binary is installed.
@@ -304,6 +350,9 @@ function Install-SafeChain {
     catch {
         Write-Error-Custom "Failed to download from $downloadUrl : $_"
     }
+
+    $expectedSha = Get-ExpectedSha256 -Os "win" -Architecture $arch
+    Test-Checksum -File $tempFile -Expected $expectedSha
 
     # Rename to final location
     $finalFile = Join-Path $InstallDir "safe-chain.exe"
