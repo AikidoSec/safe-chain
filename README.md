@@ -290,6 +290,12 @@ You can set custom registries through environment variable or config file. Both 
    }
    ```
 
+## PYPI Configuration File
+
+If you rely on a `pip.conf` file for pip configuration you must point pip at it explicitly via the `PIP_CONFIG_FILE` environment variable so Safe Chain can merge it.
+
+Safe Chain runs pip behind its MITM proxy and writes a temporary pip configuration file to inject its certificate and proxy settings. When `PIP_CONFIG_FILE` is set, Safe Chain merges its settings into a copy of your file (your original file is never modified) so your `index-url`, credentials, and other options are preserved. When `PIP_CONFIG_FILE` is not set, pip's user-level config (e.g. `~/.config/pip/pip.conf`) might be overridden by Safe Chain's temporary file and your settings will not be picked up.
+
 ## Malware List Base URL
 
 Configure Safe Chain to fetch malware databases and new packages lists from a custom mirror URL. This allows you to host your own copy of the Aikido malware database.
