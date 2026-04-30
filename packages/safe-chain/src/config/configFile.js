@@ -12,6 +12,9 @@ import { getSafeChainBaseDir } from "./safeChainDir.js";
  * @property {unknown | Number} scanTimeout
  * @property {unknown | Number} minimumPackageAgeHours
  * @property {unknown | string} malwareListBaseUrl
+ * @property {unknown | string} logFile
+ * @property {unknown | string} logFileFormat
+ * @property {unknown | string} logFileVerbosity
  * @property {unknown | SafeChainRegistryConfiguration} npm
  * @property {unknown | SafeChainRegistryConfiguration} pip
  *
@@ -94,6 +97,42 @@ export function getMalwareListBaseUrl() {
   const config = readConfigFile();
   if (config.malwareListBaseUrl && typeof config.malwareListBaseUrl === "string") {
     return config.malwareListBaseUrl;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the log file path from the config file
+ * @returns {string | undefined}
+ */
+export function getLogFile() {
+  const config = readConfigFile();
+  if (config.logFile && typeof config.logFile === "string") {
+    return config.logFile;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the log file format from the config file
+ * @returns {string | undefined}
+ */
+export function getLogFileFormat() {
+  const config = readConfigFile();
+  if (config.logFileFormat && typeof config.logFileFormat === "string") {
+    return config.logFileFormat;
+  }
+  return undefined;
+}
+
+/**
+ * Gets the log file verbosity from the config file
+ * @returns {string | undefined}
+ */
+export function getLogFileVerbosity() {
+  const config = readConfigFile();
+  if (config.logFileVerbosity && typeof config.logFileVerbosity === "string") {
+    return config.logFileVerbosity;
   }
   return undefined;
 }
@@ -229,6 +268,9 @@ function readConfigFile() {
     scanTimeout: undefined,
     minimumPackageAgeHours: undefined,
     malwareListBaseUrl: undefined,
+    logFile: undefined,
+    logFileFormat: undefined,
+    logFileVerbosity: undefined,
     npm: {
       customRegistries: undefined,
     },

@@ -6,6 +6,7 @@ import {
   LOGGING_SILENT,
   LOGGING_VERBOSE,
 } from "../config/settings.js";
+import { writeToLogFile } from "./fileLogger.js";
 
 /**
  * @type {{ bufferOutput: boolean, bufferedMessages:(() => void)[]}}
@@ -26,7 +27,7 @@ function isVerboseMode() {
 function emptyLine() {
   if (isSilentMode()) return;
 
-  writeInformation("");
+  writeOrBuffer(() => console.log(""));
 }
 
 /**
@@ -35,6 +36,8 @@ function emptyLine() {
  * @returns {void}
  */
 function writeInformation(message, ...optionalParams) {
+  writeToLogFile("info", message, ...optionalParams);
+
   if (isSilentMode()) return;
 
   writeOrBuffer(() => console.log(message, ...optionalParams));
@@ -46,6 +49,19 @@ function writeInformation(message, ...optionalParams) {
  * @returns {void}
  */
 function writeWarning(message, ...optionalParams) {
+  writeToLogFile("warning", message, ...optionalParams);
+  writeWarningToConsole(message, ...optionalParams);
+}
+
+/**
+ * Console-only warning. Used by fileLogger to surface its own failures
+ * without re-entering writeToLogFile and creating a runtime cycle.
+ *
+ * @param {string} message
+ * @param {...any} optionalParams
+ * @returns {void}
+ */
+function writeWarningToConsole(message, ...optionalParams) {
   if (isSilentMode()) return;
 
   if (!isCi()) {
@@ -60,6 +76,8 @@ function writeWarning(message, ...optionalParams) {
  * @returns {void}
  */
 function writeError(message, ...optionalParams) {
+  writeToLogFile("error", message, ...optionalParams);
+
   if (!isCi()) {
     message = chalk.red(message);
   }
@@ -68,6 +86,8 @@ function writeError(message, ...optionalParams) {
 
 function writeExitWithoutInstallingMaliciousPackages() {
   let message = "Safe-chain: Exiting without installing malicious packages.";
+  writeToLogFile("error", message);
+
   if (!isCi()) {
     message = chalk.red(message);
   }
@@ -80,6 +100,8 @@ function writeExitWithoutInstallingMaliciousPackages() {
  * @returns {void}
  */
 function writeVerbose(message, ...optionalParams) {
+  writeToLogFile("verbose", message, ...optionalParams);
+
   if (!isVerboseMode()) return;
 
   writeOrBuffer(() => console.log(message, ...optionalParams));
@@ -114,6 +136,7 @@ export const ui = {
   writeVerbose,
   writeInformation,
   writeWarning,
+  writeWarningToConsole,
   writeError,
   writeExitWithoutInstallingMaliciousPackages,
   emptyLine,

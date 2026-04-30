@@ -36,7 +36,12 @@ describe("pipInterceptor minimum package age", async () => {
       getPipCustomRegistries: () => [],
       LOGGING_SILENT: "silent",
       LOGGING_VERBOSE: "verbose",
+      LOG_FILE_FORMAT_JSON: "json",
+      LOG_FILE_FORMAT_PLAIN: "plain",
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
+      getLogFileFormat: () => "json",
+      getLogFileVerbosity: () => "verbose",
+      getLogFile: () => undefined,
     },
   });
 

@@ -202,6 +202,45 @@ You can set the logging level through multiple sources (in order of priority):
 
    This is useful for setting a default logging level for all package manager commands in your terminal session or CI/CD environment.
 
+## File Logging
+
+You can mirror Aikido Safe Chain output to a log file using the `--safe-chain-log-file` flag or the `SAFE_CHAIN_LOG_FILE` environment variable. File logging is disabled by default and enabled when a path is set. The file format (`--safe-chain-log-file-format`) and verbosity (`--safe-chain-log-file-verbosity`) are controlled independently from the terminal output.
+
+### Configuration Options
+
+Set through any of these (in order of priority):
+
+1. **CLI Argument** (highest priority):
+
+   ```shell
+   npm install express \
+     --safe-chain-log-file=~/safe-chain.log \
+     --safe-chain-log-file-format=plain \
+     --safe-chain-log-file-verbosity=normal
+   ```
+
+2. **Environment Variable**:
+
+   ```shell
+   export SAFE_CHAIN_LOG_FILE=~/safe-chain.log
+   export SAFE_CHAIN_LOG_FILE_FORMAT=plain
+   export SAFE_CHAIN_LOG_FILE_VERBOSITY=normal
+   ```
+
+3. **Config File** (`~/.safe-chain/config.json`):
+
+   ```json
+   {
+     "logFile": "~/safe-chain.log",
+     "logFileFormat": "plain",
+     "logFileVerbosity": "normal"
+   }
+   ```
+
+`logFileFormat` — `json` (default) or `plain`.
+
+`logFileVerbosity` — `silent`, `normal`, or `verbose` (default). Independent from `--safe-chain-logging`.
+
 ## Minimum Package Age
 
 You can configure how long packages must exist before Safe Chain allows their installation. By default, packages must be at least 48 hours old before they can be installed.

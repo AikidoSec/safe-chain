@@ -5,6 +5,9 @@ import {
   getLoggingLevel,
   getSkipMinimumPackageAge,
   getMinimumPackageAgeHours,
+  getLogFile,
+  getLogFileFormat,
+  getLogFileVerbosity,
 } from "./cliArguments.js";
 import { ui } from "../environment/userInteraction.js";
 
@@ -307,5 +310,141 @@ describe("initializeCliArguments", () => {
     } finally {
       ui.writeWarning = originalWriteWarning;
     }
+  });
+
+  it("should not set logFile when no log-file argument is passed", () => {
+    initializeCliArguments(["install", "express"]);
+
+    assert.strictEqual(getLogFile(), undefined);
+  });
+
+  it("should parse log-file value and set state", () => {
+    const args = ["--safe-chain-log-file=/tmp/safe-chain.log", "install"];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install"]);
+    assert.strictEqual(getLogFile(), "/tmp/safe-chain.log");
+  });
+
+  it("should use the last log-file argument when multiple are provided", () => {
+    const args = [
+      "--safe-chain-log-file=/tmp/first.log",
+      "--safe-chain-log-file=/tmp/second.log",
+      "install",
+    ];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getLogFile(), "/tmp/second.log");
+  });
+
+  it("should handle log-file with other safe-chain arguments", () => {
+    const args = [
+      "--safe-chain-logging=verbose",
+      "--safe-chain-log-file=/tmp/test.log",
+      "install",
+      "lodash",
+    ];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install", "lodash"]);
+    assert.strictEqual(getLoggingLevel(), "verbose");
+    assert.strictEqual(getLogFile(), "/tmp/test.log");
+  });
+
+  it("should reset logFile between calls", () => {
+    initializeCliArguments(["--safe-chain-log-file=/tmp/test.log", "install"]);
+    assert.strictEqual(getLogFile(), "/tmp/test.log");
+
+    initializeCliArguments(["install"]);
+    assert.strictEqual(getLogFile(), undefined);
+  });
+
+  it("should not set logFileFormat when no log-file-format argument is passed", () => {
+    initializeCliArguments(["install", "express"]);
+
+    assert.strictEqual(getLogFileFormat(), undefined);
+  });
+
+  it("should parse log-file-format=json and set state", () => {
+    const args = ["--safe-chain-log-file-format=json", "install"];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install"]);
+    assert.strictEqual(getLogFileFormat(), "json");
+  });
+
+  it("should parse log-file-format=plain and set state", () => {
+    const args = ["--safe-chain-log-file-format=plain", "install"];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getLogFileFormat(), "plain");
+  });
+
+  it("should handle log-file-format case-insensitively", () => {
+    initializeCliArguments(["--safe-chain-log-file-format=JSON", "install"]);
+
+    assert.strictEqual(getLogFileFormat(), "json");
+  });
+
+  it("should use the last log-file-format argument when multiple are provided", () => {
+    const args = [
+      "--safe-chain-log-file-format=plain",
+      "--safe-chain-log-file-format=json",
+      "install",
+    ];
+    initializeCliArguments(args);
+
+    assert.strictEqual(getLogFileFormat(), "json");
+  });
+
+  it("should reset logFileFormat between calls", () => {
+    initializeCliArguments(["--safe-chain-log-file-format=json", "install"]);
+    assert.strictEqual(getLogFileFormat(), "json");
+
+    initializeCliArguments(["install"]);
+    assert.strictEqual(getLogFileFormat(), undefined);
+  });
+
+  it("should handle log-file and log-file-format together", () => {
+    const args = [
+      "--safe-chain-log-file=/tmp/out.log",
+      "--safe-chain-log-file-format=json",
+      "install",
+    ];
+    const result = initializeCliArguments(args);
+
+    assert.deepEqual(result, ["install"]);
+    assert.strictEqual(getLogFile(), "/tmp/out.log");
+    assert.strictEqual(getLogFileFormat(), "json");
+  });
+
+  it("should not set logFileVerbosity when no log-file-verbosity argument is passed", () => {
+    initializeCliArguments(["install"]);
+
+    assert.strictEqual(getLogFileVerbosity(), undefined);
+  });
+
+  it("should parse log-file-verbosity values and lowercase them", () => {
+    initializeCliArguments(["--safe-chain-log-file-verbosity=Verbose", "install"]);
+
+    assert.strictEqual(getLogFileVerbosity(), "verbose");
+  });
+
+  it("should reset logFileVerbosity between calls", () => {
+    initializeCliArguments(["--safe-chain-log-file-verbosity=silent"]);
+    assert.strictEqual(getLogFileVerbosity(), "silent");
+
+    initializeCliArguments(["install"]);
+    assert.strictEqual(getLogFileVerbosity(), undefined);
+  });
+
+  it("should use the last log-file-verbosity argument when multiple are provided", () => {
+    initializeCliArguments([
+      "--safe-chain-log-file-verbosity=normal",
+      "--safe-chain-log-file-verbosity=silent",
+      "install",
+    ]);
+
+    assert.strictEqual(getLogFileVerbosity(), "silent");
   });
 });

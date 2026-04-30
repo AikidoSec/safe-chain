@@ -32,7 +32,12 @@ describe("pipInterceptor", async () => {
       getPipCustomRegistries: () => [],
       LOGGING_SILENT: "silent",
       LOGGING_VERBOSE: "verbose",
+      LOG_FILE_FORMAT_JSON: "json",
+      LOG_FILE_FORMAT_PLAIN: "plain",
       skipMinimumPackageAge: () => false,
+      getLogFileFormat: () => "json",
+      getLogFileVerbosity: () => "verbose",
+      getLogFile: () => undefined,
     },
   });
 

@@ -347,6 +347,132 @@ for (const { packageManager, getCustomRegistries } of [
   });
 }
 
+describe("getLogFile", async () => {
+  const { getLogFile } = await import("./configFile.js");
+
+  afterEach(() => {
+    mockFiles.clear();
+  });
+
+  it("should return undefined when config file doesn't exist", () => {
+    assert.strictEqual(getLogFile(), undefined);
+  });
+
+  it("should return undefined when logFile is not set", () => {
+    setConfigContent(JSON.stringify({ scanTimeout: 5000 }));
+
+    assert.strictEqual(getLogFile(), undefined);
+  });
+
+  it("should return log file path from config", () => {
+    setConfigContent(JSON.stringify({ logFile: "/tmp/safe-chain.log" }));
+
+    assert.strictEqual(getLogFile(), "/tmp/safe-chain.log");
+  });
+
+  it("should return undefined for non-string logFile values", () => {
+    setConfigContent(JSON.stringify({ logFile: 123 }));
+
+    assert.strictEqual(getLogFile(), undefined);
+  });
+
+  it("should return undefined for empty string logFile", () => {
+    setConfigContent(JSON.stringify({ logFile: "" }));
+
+    assert.strictEqual(getLogFile(), undefined);
+  });
+
+  it("should handle malformed JSON and return undefined", () => {
+    setConfigContent("{ invalid json");
+
+    assert.strictEqual(getLogFile(), undefined);
+  });
+});
+
+describe("getLogFileFormat", async () => {
+  const { getLogFileFormat } = await import("./configFile.js");
+
+  afterEach(() => {
+    mockFiles.clear();
+  });
+
+  it("should return undefined when config file doesn't exist", () => {
+    assert.strictEqual(getLogFileFormat(), undefined);
+  });
+
+  it("should return undefined when logFileFormat is not set", () => {
+    setConfigContent(JSON.stringify({ scanTimeout: 5000 }));
+
+    assert.strictEqual(getLogFileFormat(), undefined);
+  });
+
+  it("should return log format from config", () => {
+    setConfigContent(JSON.stringify({ logFileFormat: "json" }));
+
+    assert.strictEqual(getLogFileFormat(), "json");
+  });
+
+  it("should return plain format from config", () => {
+    setConfigContent(JSON.stringify({ logFileFormat: "plain" }));
+
+    assert.strictEqual(getLogFileFormat(), "plain");
+  });
+
+  it("should return undefined for non-string logFileFormat values", () => {
+    setConfigContent(JSON.stringify({ logFileFormat: 42 }));
+
+    assert.strictEqual(getLogFileFormat(), undefined);
+  });
+
+  it("should return undefined for empty string logFileFormat", () => {
+    setConfigContent(JSON.stringify({ logFileFormat: "" }));
+
+    assert.strictEqual(getLogFileFormat(), undefined);
+  });
+
+  it("should handle malformed JSON and return undefined", () => {
+    setConfigContent("{ invalid json");
+
+    assert.strictEqual(getLogFileFormat(), undefined);
+  });
+});
+
+describe("getLogFileVerbosity", async () => {
+  const { getLogFileVerbosity } = await import("./configFile.js");
+
+  afterEach(() => {
+    mockFiles.clear();
+  });
+
+  it("should return undefined when config file doesn't exist", () => {
+    assert.strictEqual(getLogFileVerbosity(), undefined);
+  });
+
+  it("should return undefined when logFileVerbosity is not set", () => {
+    setConfigContent(JSON.stringify({ scanTimeout: 5000 }));
+
+    assert.strictEqual(getLogFileVerbosity(), undefined);
+  });
+
+  it("should return verbosity from config", () => {
+    setConfigContent(JSON.stringify({ logFileVerbosity: "normal" }));
+
+    assert.strictEqual(getLogFileVerbosity(), "normal");
+  });
+
+  it("should return undefined for non-string values", () => {
+    setConfigContent(JSON.stringify({ logFileVerbosity: 42 }));
+
+    assert.strictEqual(getLogFileVerbosity(), undefined);
+  });
+
+  it("should return undefined for empty string", () => {
+    setConfigContent(JSON.stringify({ logFileVerbosity: "" }));
+
+    assert.strictEqual(getLogFileVerbosity(), undefined);
+  });
+});
+
 describe("config file location fallback", async () => {
   const { getScanTimeout } = await import("./configFile.js");
 

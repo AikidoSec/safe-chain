@@ -23,6 +23,8 @@ mock.module("../../../config/settings.js", {
     LOGGING_VERBOSE: "verbose",
     ECOSYSTEM_JS: "js",
     ECOSYSTEM_PY: "py",
+    LOG_FILE_FORMAT_JSON: "json",
+    LOG_FILE_FORMAT_PLAIN: "plain",
     getLoggingLevel: () => "normal",
     getEcoSystem: () => "js",
     setEcoSystem: () => {},
@@ -30,6 +32,9 @@ mock.module("../../../config/settings.js", {
     getNpmCustomRegistries: () => customRegistries,
     getMinimumPackageAgeExclusions: () => [],
     skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
+    getLogFileFormat: () => "json",
+    getLogFileVerbosity: () => "verbose",
+    getLogFile: () => undefined,
   },
 });
 mock.module("../../../scanning/newPackagesListCache.js", {
