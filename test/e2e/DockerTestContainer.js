@@ -58,10 +58,19 @@ export class DockerTestContainer {
         `docker run -d --name ${this.containerName} ${imageName} sleep infinity`,
         { stdio: "ignore" }
       );
+      
+      await this.startMalwareMirror();
+
       this.isRunning = true;
     } catch (error) {
       throw new Error(`Failed to start container: ${error.message}`);
     }
+  }
+
+  async startMalwareMirror() {
+    const shell = await this.openShell("zsh");
+    await shell.runCommand("node /utils/malwarelistmirror.mjs &");
+    await shell.runCommand("until curl -sf http://127.0.0.1:5555/ready; do sleep 0.2; done");
   }
 
   dockerExec(command, daemon = false) {
@@ -125,7 +134,7 @@ export class DockerTestContainer {
         const timeout = setTimeout(() => {
           // Fallback in case the command doesn't finish in a reasonable time
           // oxlint-disable-next-line no-console - having this log in CI helps diagnose issues
-          console.log("Command timeout reached");
+          console.log(`Command timeout reached for "${command}"`);
           resolve({ allData, output: parseShellOutput(allData), command });
           ptyProcess.removeListener("data", handleInput);
         }, 15000);

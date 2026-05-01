@@ -41,7 +41,7 @@ describe("E2E: pipx coverage", () => {
     const shell = await container.openShell("zsh");
 
     const result = await shell.runCommand(
-      "pipx install safe-chain-pi-test"
+      "pipx install numpy==2.4.4"
     );
 
     assert.ok(
@@ -86,7 +86,7 @@ describe("E2E: pipx coverage", () => {
     const shell = await container.openShell("zsh");
 
     const result = await shell.runCommand(
-      "pipx run safe-chain-pi-test --version"
+      "pipx run numpy==2.4.4 --version"
     );
 
     assert.ok(
@@ -122,7 +122,7 @@ describe("E2E: pipx coverage", () => {
     await shell.runCommand("pipx install ruff");
 
     const result = await shell.runCommand(
-      "pipx runpip ruff install safe-chain-pi-test"
+      "pipx runpip ruff install numpy==2.4.4"
     );
 
     assert.ok(
@@ -185,7 +185,7 @@ describe("E2E: pipx coverage", () => {
 
     await shell.runCommand("pipx install ruff --safe-chain-logging=verbose");
     const result = await shell.runCommand(
-      "pipx inject ruff safe-chain-pi-test --safe-chain-logging=verbose"
+      "pipx inject ruff numpy==2.4.4 --safe-chain-logging=verbose"
     );
 
     assert.ok(

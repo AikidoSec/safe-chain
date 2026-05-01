@@ -16,30 +16,27 @@ import { warnOnceAboutUnavailableDatabase } from "./newPackagesDatabaseWarnings.
  */
 
 // Shared per-process cache to avoid rebuilding the same feed-backed database on each request.
-/** @type {NewPackagesDatabase | null} */
-let cachedNewPackagesDatabase = null;
+// Caching the Promise (rather than the resolved database) prevents duplicate fetches. If we cached the resolved
+// value, multiple callers could pass the null-check before the first fetch completes (because each `await` yields
+// control back to the event loop, allowing other callers to run). Since the Promise assignment is synchronous, all
+// concurrent callers see it immediately and share a single fetch.
+/** @type {Promise<NewPackagesDatabase> | null} */
+let cachedNewPackagesDatabasePromise = null;
 
 /**
  * @returns {Promise<NewPackagesDatabase>}
  */
-export async function openNewPackagesDatabase() {
-  if (cachedNewPackagesDatabase) {
-    return cachedNewPackagesDatabase;
+export function openNewPackagesDatabase() {
+  if (!cachedNewPackagesDatabasePromise) {
+    cachedNewPackagesDatabasePromise = getNewPackagesList()
+      .then((newPackagesList) => buildNewPackagesDatabase(newPackagesList))
+      .catch((/** @type {any} */ error) => {
+        warnOnceAboutUnavailableDatabase(error);
+        cachedNewPackagesDatabasePromise = null;
+        return { isNewlyReleasedPackage: () => false };
+      });
   }
-
-  /** @type {import("../api/aikido.js").NewPackageEntry[]} */
-  let newPackagesList;
-
-  try {
-    newPackagesList = await getNewPackagesList();
-  } catch (/** @type {any} */ error) {
-    warnOnceAboutUnavailableDatabase(error);
-    cachedNewPackagesDatabase = { isNewlyReleasedPackage: () => false };
-    return cachedNewPackagesDatabase;
-  }
-
-  cachedNewPackagesDatabase = buildNewPackagesDatabase(newPackagesList);
-  return cachedNewPackagesDatabase;
+  return cachedNewPackagesDatabasePromise;
 }
 
 /**

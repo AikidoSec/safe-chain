@@ -126,7 +126,7 @@ describe("E2E: uv coverage", () => {
     const shell = await container.openShell("zsh");
 
     const result = await shell.runCommand(
-      "uv pip install --system --break-system-packages safe-chain-pi-test"
+      "uv pip install --system --break-system-packages numpy==2.4.4"
     );
 
     assert.ok(
@@ -134,7 +134,7 @@ describe("E2E: uv coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
     assert.ok(
-      result.output.includes("safe_chain_pi_test@0.0.1"),
+      result.output.includes("numpy@2.4.4"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
     assert.ok(
@@ -144,7 +144,7 @@ describe("E2E: uv coverage", () => {
 
     const listResult = await shell.runCommand("uv pip list --system");
     assert.ok(
-      !listResult.output.includes("safe-chain-pi-test"),
+      !listResult.output.includes("numpy"),
       `Malicious package was installed despite safe-chain protection. Output of 'uv pip list' was:\n${listResult.output}`
     );
   });
@@ -413,7 +413,7 @@ describe("E2E: uv coverage", () => {
     await shell.runCommand("uv init test-project-malware");
 
     const result = await shell.runCommand(
-      "cd test-project-malware && uv add safe-chain-pi-test"
+      "cd test-project-malware && uv add numpy==2.4.4"
     );
 
     assert.ok(
@@ -421,7 +421,7 @@ describe("E2E: uv coverage", () => {
       `Output did not include expected text. Output was:\n${result.output}`
     );
     assert.ok(
-      result.output.includes("safe_chain_pi_test@0.0.1"),
+      result.output.includes("numpy@2.4.4"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
     assert.ok(
@@ -445,14 +445,14 @@ describe("E2E: uv coverage", () => {
 
   it(`safe-chain blocks malicious packages via uv tool install`, async () => {
     const shell = await container.openShell("zsh");
-    const result = await shell.runCommand("uv tool install safe-chain-pi-test");
+    const result = await shell.runCommand("uv tool install numpy==2.4.4");
 
     assert.ok(
       result.output.includes("blocked 1 malicious package downloads:"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
     assert.ok(
-      result.output.includes("safe_chain_pi_test@0.0.1"),
+      result.output.includes("numpy@2.4.4"),
       `Output did not include expected text. Output was:\n${result.output}`
     );
   });
@@ -482,7 +482,7 @@ describe("E2E: uv coverage", () => {
     await shell.runCommand("echo 'print(\"test\")' > test_script2.py");
 
     const result = await shell.runCommand(
-      "uv run --with safe-chain-pi-test test_script2.py"
+      "uv run --with numpy==2.4.4 test_script2.py"
     );
 
     assert.ok(

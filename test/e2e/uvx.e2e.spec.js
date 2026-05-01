@@ -44,7 +44,7 @@ describe("E2E: uvx coverage", () => {
     const shell = await container.openShell("zsh");
 
     const result = await shell.runCommand(
-      "uvx safe-chain-pi-test"
+      "uvx numpy==2.4.4"
     );
 
     assert.ok(
@@ -74,7 +74,7 @@ describe("E2E: uvx coverage", () => {
     const shell = await container.openShell("zsh");
 
     const result = await shell.runCommand(
-      "uvx --from safe-chain-pi-test some-command"
+      "uvx --from numpy==2.4.4 some-command"
     );
 
     assert.ok(
@@ -117,7 +117,7 @@ describe("E2E: uvx coverage", () => {
     const shell = await container.openShell("zsh");
 
     const result = await shell.runCommand(
-      "uvx --with safe-chain-pi-test ruff --version"
+      "uvx --with numpy==2.4.4 ruff --version"
     );
 
     assert.ok(
