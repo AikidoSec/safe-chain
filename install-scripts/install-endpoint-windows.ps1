@@ -7,8 +7,8 @@ param(
 )
 
 # Configuration
-$InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.3.1/EndpointProtection.msi"
-$DownloadSha256 = "6d72170cfd2090c6af8e111a625fa3961f9dc345495117db4f1d7c518d537076"
+$InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.3.4/EndpointProtection.msi"
+$DownloadSha256 = "0699379716a9a8b1531befa538befb237252af9f7fd780b33f4dce73588c6f83"
 
 # Ensure TLS 1.2 is enabled for downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
