@@ -28,6 +28,14 @@ function pnpx() {
   wrapSafeChainCommand "pnpx" "$@"
 }
 
+function rush() {
+  wrapSafeChainCommand "rush" "$@"
+}
+
+function rushx() {
+  wrapSafeChainCommand "rushx" "$@"
+}
+
 function bun() {
   wrapSafeChainCommand "bun" "$@"
 }

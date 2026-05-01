@@ -13,6 +13,8 @@
     "aikido-yarn": "bin/aikido-yarn.js",
     "aikido-pnpm": "bin/aikido-pnpm.js",
     "aikido-pnpx": "bin/aikido-pnpx.js",
+    "aikido-rush": "bin/aikido-rush.js",
+    "aikido-rushx": "bin/aikido-rushx.js",
     "aikido-bun": "bin/aikido-bun.js",
     "aikido-bunx": "bin/aikido-bunx.js",
     "aikido-uv": "bin/aikido-uv.js",
@@ -37,7 +39,7 @@
   "keywords": [],
   "author": "Aikido Security",
   "license": "AGPL-3.0-or-later",
-  "description": "The Aikido Safe Chain wraps around the [npm cli](https://github.com/npm/cli), [npx](https://github.com/npm/cli/blob/latest/docs/content/commands/npx.md), [yarn](https://yarnpkg.com/), [pnpm](https://pnpm.io/), [pnpx](https://pnpm.io/cli/dlx), [bun](https://bun.sh/), [bunx](https://bun.sh/docs/cli/bunx), [uv](https://docs.astral.sh/uv/) (Python), and [pip](https://pip.pypa.io/) to provide extra checks before installing new packages. This tool will detect when a package contains malware and prompt you to exit, preventing npm, npx, yarn, pnpm, pnpx, bun, bunx, uv, uvx, or pip/pip3 from downloading or running the malware.",
+  "description": "The Aikido Safe Chain wraps around the [npm cli](https://github.com/npm/cli), [npx](https://github.com/npm/cli/blob/latest/docs/content/commands/npx.md), [yarn](https://yarnpkg.com/), [pnpm](https://pnpm.io/), [pnpx](https://pnpm.io/cli/dlx), [rush](https://rushjs.io/), [rushx](https://rushjs.io/pages/commands/rushx/), [bun](https://bun.sh/), [bunx](https://bun.sh/docs/cli/bunx), [uv](https://docs.astral.sh/uv/) (Python), and [pip](https://pip.pypa.io/) to provide extra checks before installing new packages. This tool will detect when a package contains malware and prompt you to exit, preventing npm, npx, yarn, pnpm, pnpx, rush, rushx, bun, bunx, uv, uvx, or pip/pip3 from downloading or running the malware.",
   "dependencies": {
     "certifi": "14.5.15",
     "chalk": "5.4.1",
