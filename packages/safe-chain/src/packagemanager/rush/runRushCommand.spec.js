@@ -64,7 +64,7 @@ describe("runRushCommand", () => {
   });
 
   it("spawns rush with merged proxy env", async () => {
-    const res = await runRushCommand(["install"]);
+    const res = await runRushCommand("rush", ["install"]);
 
     assert.strictEqual(res.status, 0);
     assert.strictEqual(safeSpawnMock.mock.calls.length, 1);
@@ -88,7 +88,7 @@ describe("runRushCommand", () => {
   it("returns spawn result status", async () => {
     nextSpawnStatus = 7;
 
-    const res = await runRushCommand(["update"]);
+    const res = await runRushCommand("rush", ["update"]);
 
     assert.strictEqual(res.status, 7);
   });
@@ -98,7 +98,7 @@ describe("runRushCommand", () => {
       code: "ENOENT",
     });
 
-    const res = await runRushCommand(["install"]);
+    const res = await runRushCommand("rush", ["install"]);
 
     assert.strictEqual(res.status, 1);
   });
@@ -108,7 +108,7 @@ describe("runRushCommand", () => {
       HTTPS_PROXY: "http://localhost:8080",
     };
 
-    await runRushCommand(["install"]);
+    await runRushCommand("rush", ["install"]);
 
     assert.deepStrictEqual(mergeResultEnv, {
       HTTPS_PROXY: "http://localhost:8080",

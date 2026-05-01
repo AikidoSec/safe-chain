@@ -14,6 +14,7 @@ import { createUvPackageManager } from "./uv/createUvPackageManager.js";
 import { createPoetryPackageManager } from "./poetry/createPoetryPackageManager.js";
 import { createPipXPackageManager } from "./pipx/createPipXPackageManager.js";
 import { createRushPackageManager } from "./rush/createRushPackageManager.js";
+import { createRushxPackageManager } from "./rushx/createRushxPackageManager.js";
 import { createUvxPackageManager } from "./uvx/createUvxPackageManager.js";
 
 /**
@@ -70,6 +71,8 @@ export function initializePackageManager(packageManagerName, context) {
     state.packageManagerName = createPipXPackageManager();
   } else if (packageManagerName === "rush") {
     state.packageManagerName = createRushPackageManager();
+  } else if (packageManagerName === "rushx") {
+    state.packageManagerName = createRushxPackageManager();
   } else {
     throw new Error("Unsupported package manager: " + packageManagerName);
   }

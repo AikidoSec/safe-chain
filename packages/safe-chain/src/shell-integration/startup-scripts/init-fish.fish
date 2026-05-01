@@ -19,6 +19,14 @@ function pnpx
     wrapSafeChainCommand "pnpx" $argv
 end
 
+function rush
+    wrapSafeChainCommand "rush" $argv
+end
+
+function rushx
+    wrapSafeChainCommand "rushx" $argv
+end
+
 function bun
     wrapSafeChainCommand "bun" $argv
 end

@@ -48,9 +48,8 @@ describe("Setup CI shell integration", () => {
         knownAikidoTools: [
           { tool: "npm", aikidoCommand: "aikido-npm" },
           { tool: "yarn", aikidoCommand: "aikido-yarn" },
-          { tool: "rush", aikidoCommand: "aikido-rush" },
         ],
-        getPackageManagerList: () => "npm, yarn, rush",
+        getPackageManagerList: () => "npm, yarn",
       },
     });
 
@@ -108,10 +107,6 @@ describe("Setup CI shell integration", () => {
       const yarnShimPath = path.join(mockShimsDir, "yarn");
       assert.ok(fs.existsSync(yarnShimPath), "yarn shim should exist");
 
-      // Check if rush shim was created
-      const rushShimPath = path.join(mockShimsDir, "rush");
-      assert.ok(fs.existsSync(rushShimPath), "rush shim should exist");
-
       // Check content of npm shim
       const npmShimContent = fs.readFileSync(npmShimPath, "utf-8");
       assert.ok(npmShimContent.includes("aikido-npm"), "npm shim should contain aikido-npm");
@@ -137,9 +132,6 @@ describe("Setup CI shell integration", () => {
 
       const yarnShimPath = path.join(mockShimsDir, "yarn.cmd");
       assert.ok(fs.existsSync(yarnShimPath), "yarn.cmd shim should exist");
-
-      const rushShimPath = path.join(mockShimsDir, "rush.cmd");
-      assert.ok(fs.existsSync(rushShimPath), "rush.cmd shim should exist");
 
       // Check content of npm.cmd shim
       const npmShimContent = fs.readFileSync(npmShimPath, "utf-8");

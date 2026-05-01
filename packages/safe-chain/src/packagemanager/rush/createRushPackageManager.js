@@ -6,7 +6,7 @@ import { resolvePackageVersion } from "../../api/npmApi.js";
  */
 export function createRushPackageManager() {
   return {
-    runCommand: runRushCommand,
+    runCommand: (args) => runRushCommand("rush", args),
     // We pre-scan rush add commands and rely on MITM for install/update flows.
     isSupportedCommand: (args) => getRushCommand(args) === "add",
     getDependencyUpdatesForCommand: scanRushAddCommand,

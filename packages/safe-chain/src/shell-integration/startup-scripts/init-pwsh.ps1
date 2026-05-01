@@ -22,6 +22,14 @@ function pnpx {
     Invoke-WrappedCommand "pnpx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
+function rush {
+    Invoke-WrappedCommand "rush" $args $MyInvocation.Line $MyInvocation.OffsetInLine
+}
+
+function rushx {
+    Invoke-WrappedCommand "rushx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
+}
+
 function bun {
     Invoke-WrappedCommand "bun" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }

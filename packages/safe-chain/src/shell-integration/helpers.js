@@ -55,6 +55,12 @@ export const knownAikidoTools = [
     internalPackageManagerName: "rush",
   },
   {
+    tool: "rushx",
+    aikidoCommand: "aikido-rushx",
+    ecoSystem: ECOSYSTEM_JS,
+    internalPackageManagerName: "rushx",
+  },
+  {
     tool: "bun",
     aikidoCommand: "aikido-bun",
     ecoSystem: ECOSYSTEM_JS,
