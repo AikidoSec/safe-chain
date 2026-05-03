@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it, afterEach } from "node:test";
 import assert from "node:assert";
 import {
   initializeCliArguments,
@@ -307,5 +307,47 @@ describe("initializeCliArguments", () => {
     } finally {
       ui.writeWarning = originalWriteWarning;
     }
+  });
+});
+
+describe("environment variable support", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it("should set logging level from SAFE_CHAIN_LOGGING env var", () => {
+    process.env.SAFE_CHAIN_LOGGING = "VERBOSE";
+    initializeCliArguments(["install"]);
+    assert.strictEqual(getLoggingLevel(), "verbose");
+  });
+
+  it("should let CLI flag override SAFE_CHAIN_LOGGING", () => {
+    process.env.SAFE_CHAIN_LOGGING = "silent";
+    initializeCliArguments(["--safe-chain-logging=verbose", "install"]);
+    assert.strictEqual(getLoggingLevel(), "verbose");
+  });
+
+  for (const truthyValue of ["1", "True", "YES"]) {
+    it(`should set skipMinimumPackageAge when env var is '${truthyValue}'`, () => {
+      process.env.SAFE_CHAIN_SKIP_MINIMUM_PACKAGE_AGE = truthyValue;
+      initializeCliArguments(["install"]);
+      assert.strictEqual(getSkipMinimumPackageAge(), true);
+    });
+  }
+
+  for (const falsyValue of ["0", "false", "no", ""]) {
+    it(`should not set skipMinimumPackageAge when env var is '${falsyValue}'`, () => {
+      process.env.SAFE_CHAIN_SKIP_MINIMUM_PACKAGE_AGE = falsyValue;
+      initializeCliArguments(["install"]);
+      assert.strictEqual(getSkipMinimumPackageAge(), undefined);
+    });
+  }
+
+  it("should let CLI flag override SAFE_CHAIN_SKIP_MINIMUM_PACKAGE_AGE", () => {
+    process.env.SAFE_CHAIN_SKIP_MINIMUM_PACKAGE_AGE = "false";
+    initializeCliArguments(["--safe-chain-skip-minimum-package-age", "install"]);
+    assert.strictEqual(getSkipMinimumPackageAge(), true);
   });
 });
