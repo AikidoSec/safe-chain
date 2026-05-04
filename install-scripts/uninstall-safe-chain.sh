@@ -7,7 +7,6 @@
 set -e  # Exit on error
 
 # Configuration
-INSTALL_DIR="${HOME}/.safe-chain/bin"
 
 # Colors for output
 RED='\033[0;31m'
@@ -32,6 +31,159 @@ error() {
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
+}
+
+# Resolves a path to its canonical filesystem location when possible.
+# Follows symlinks so binary validation can inspect the real installed path.
+resolve_path() {
+    target="$1"
+
+    while [ -L "$target" ]; do
+        link_target=$(readlink "$target" 2>/dev/null || echo "")
+        if [ -z "$link_target" ]; then
+            break
+        fi
+
+        case "$link_target" in
+            /*) target="$link_target" ;;
+            *)
+                target="$(dirname "$target")/$link_target"
+                ;;
+        esac
+    done
+
+    target_dir=$(dirname "$target")
+    target_name=$(basename "$target")
+
+    if cd "$target_dir" 2>/dev/null; then
+        printf '%s/%s\n' "$(pwd -P)" "$target_name"
+    else
+        printf '%s\n' "$target"
+    fi
+}
+
+# Derives the safe-chain base install directory from a packaged binary path.
+# Rejects wrapper scripts and paths that do not match the expected bin layout.
+derive_install_dir_from_binary() {
+    binary_path="$1"
+
+    if [ -z "$binary_path" ]; then
+        return 1
+    fi
+
+    resolved_path=$(resolve_path "$binary_path")
+    binary_name=$(basename "$resolved_path")
+    case "$binary_name" in
+        safe-chain|safe-chain.exe) ;;
+        *) return 1 ;;
+    esac
+
+    case "$resolved_path" in
+        *.js|*.cjs|*.mjs|*.cmd|*.ps1) return 1 ;;
+    esac
+
+    binary_dir=$(dirname "$resolved_path")
+    if [ "$(basename "$binary_dir")" != "bin" ]; then
+        return 1
+    fi
+
+    dirname "$binary_dir"
+}
+
+# Determines the installed safe-chain base directory for uninstall.
+# Prefers the binary-reported location, then infers it from PATH, then falls back to ~/.safe-chain.
+get_install_dir() {
+    reported_install_dir=$(get_reported_install_dir || true)
+    if [ -n "$reported_install_dir" ]; then
+        printf '%s\n' "$reported_install_dir"
+        return 0
+    fi
+
+    command_path=$(get_safe_chain_command_path || true)
+    install_dir=$(derive_install_dir_from_binary "$command_path" || true)
+    if [ -n "$install_dir" ]; then
+        printf '%s\n' "$install_dir"
+        return 0
+    fi
+
+    printf '%s\n' "${HOME}/.safe-chain"
+}
+
+# Returns the current safe-chain command path from PATH.
+# Fails when safe-chain is not currently resolvable.
+get_safe_chain_command_path() {
+    if ! command_exists safe-chain; then
+        return 1
+    fi
+
+    command -v safe-chain
+}
+
+# Returns the safe-chain command path only when it resolves to a valid packaged binary install.
+# Prevents the uninstaller from invoking arbitrary PATH entries.
+get_validated_safe_chain_command_path() {
+    command_path=$(get_safe_chain_command_path || true)
+    if [ -z "$command_path" ]; then
+        return 1
+    fi
+
+    install_dir=$(derive_install_dir_from_binary "$command_path" || true)
+    if [ -z "$install_dir" ]; then
+        return 1
+    fi
+
+    printf '%s\n' "$command_path"
+}
+
+# Asks the validated safe-chain binary for its install directory via get-install-dir.
+# Returns nothing if the command is unavailable or the lookup fails.
+get_reported_install_dir() {
+    safe_chain_path=$(get_validated_safe_chain_command_path || true)
+    if [ -z "$safe_chain_path" ]; then
+        return 1
+    fi
+
+    install_dir=$("$safe_chain_path" get-install-dir 2>/dev/null || true)
+    if [ -n "$install_dir" ]; then
+        printf '%s\n' "$install_dir"
+        return 0
+    fi
+
+    return 1
+}
+
+# Locates the installed safe-chain binary to use for teardown.
+# Checks the discovered install dir first, then falls back to a validated PATH entry.
+find_installed_safe_chain_binary() {
+    dot_safe_chain="$1"
+
+    safe_chain_location="$dot_safe_chain/bin/safe-chain"
+    if [ -x "$safe_chain_location" ]; then
+        printf '%s\n' "$safe_chain_location"
+        return 0
+    fi
+
+    command_path=$(get_validated_safe_chain_command_path || true)
+    if [ -n "$command_path" ]; then
+        printf '%s\n' "$command_path"
+        return 0
+    fi
+
+    return 1
+}
+
+# Runs safe-chain teardown before removing files.
+# Continues with uninstall even if teardown is unavailable or fails.
+run_safe_chain_teardown() {
+    safe_chain_command="$1"
+
+    if [ -z "$safe_chain_command" ]; then
+        warn "safe-chain command not found. Proceeding with uninstallation."
+        return
+    fi
+
+    info "Running safe-chain teardown..."
+    "$safe_chain_command" teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
 }
 
 # Check and uninstall npm global package if present
@@ -139,17 +291,9 @@ remove_nvm_installation() {
 
 # Main uninstallation
 main() {
-    SAFE_CHAIN_LOCATION="$INSTALL_DIR/safe-chain"
-
-    if [ -x "$SAFE_CHAIN_LOCATION" ]; then
-        info "Running safe-chain teardown..."
-        "$SAFE_CHAIN_LOCATION" teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-    elif command_exists safe-chain; then
-        info "Running safe-chain teardown..."
-        safe-chain teardown || warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-    else
-        warn "safe-chain command not found. Proceeding with uninstallation."
-    fi
+    DOT_SAFE_CHAIN=$(get_install_dir)
+    SAFE_CHAIN_COMMAND=$(find_installed_safe_chain_binary "$DOT_SAFE_CHAIN" || true)
+    run_safe_chain_teardown "$SAFE_CHAIN_COMMAND"
 
     # Check for existing safe-chain installation through nvm, volta, or npm
     remove_npm_installation
@@ -157,11 +301,11 @@ main() {
     remove_nvm_installation
 
     # Remove install dir recursively if it exists
-    if [ -d "$INSTALL_DIR" ]; then
-        info "Removing installation directory $INSTALL_DIR"
-        rm -rf "$INSTALL_DIR" || error "Failed to remove $INSTALL_DIR"
+    if [ -d "$DOT_SAFE_CHAIN" ]; then
+        info "Removing installation directory $DOT_SAFE_CHAIN"
+        rm -rf "$DOT_SAFE_CHAIN" || error "Failed to remove $DOT_SAFE_CHAIN"
     else
-        info "Installation directory $INSTALL_DIR does not exist. Nothing to remove."
+        info "Installation directory $DOT_SAFE_CHAIN does not exist. Nothing to remove."
     fi
 }
 

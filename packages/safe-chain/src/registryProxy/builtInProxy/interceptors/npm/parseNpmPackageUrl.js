@@ -5,12 +5,29 @@
  */
 export function parseNpmPackageUrl(url, registry) {
   let packageName, version;
-  if (!registry || !url.endsWith(".tgz")) {
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(url);
+  } catch {
     return { packageName, version };
   }
 
-  const registryIndex = url.indexOf(registry);
-  const afterRegistry = url.substring(registryIndex + registry.length + 1); // +1 to skip the slash
+  const pathname = parsedUrl.pathname;
+
+  if (!registry || !pathname.endsWith(".tgz")) {
+    return { packageName, version };
+  }
+
+  const registryPrefix = `${registry}/`;
+  const urlAfterProtocol = `${parsedUrl.host}${pathname}`;
+  if (!urlAfterProtocol.startsWith(registryPrefix)) {
+    return { packageName, version };
+  }
+
+  const afterRegistry = decodeURIComponent(
+    urlAfterProtocol.substring(registryPrefix.length)
+  );
 
   const separatorIndex = afterRegistry.indexOf("/-/");
   if (separatorIndex === -1) {

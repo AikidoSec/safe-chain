@@ -4,7 +4,9 @@ import {
   removeLinesMatchingPattern,
   validatePowerShellExecutionPolicy,
 } from "../helpers.js";
+import { getScriptsDir } from "../../config/safeChainDir.js";
 import { execSync } from "child_process";
+import path from "path";
 
 const shellName = "PowerShell Core";
 const executableName = "pwsh";
@@ -30,10 +32,10 @@ function teardown(tools) {
     );
   }
 
-  // Remove the line that sources the safe-chain PowerShell initialization script
+  // Remove sourcing line to prevent shell from loading safe-chain after uninstallation
   removeLinesMatchingPattern(
     startupFile,
-    /^\.\s+["']?\$HOME[/\\].safe-chain[/\\]scripts[/\\]init-pwsh\.ps1["']?/,
+    /^\.\s+["']?.*init-pwsh\.ps1["']?.*#\s*Safe-chain/,
   );
 
   return true;
@@ -52,7 +54,7 @@ async function setup() {
 
   addLineToFile(
     startupFile,
-    `. "$HOME\\.safe-chain\\scripts\\init-pwsh.ps1" # Safe-chain PowerShell initialization script`,
+    `. "${path.join(getScriptsDir(), "init-pwsh.ps1")}" # Safe-chain PowerShell initialization script`,
   );
 
   return true;
@@ -71,6 +73,22 @@ function getStartupFile() {
   }
 }
 
+function getManualTeardownInstructions() {
+  return [
+    `Remove the following line from your PowerShell profile (run "echo $PROFILE" to find its location):`,
+    `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`,
+    `Then restart your terminal or run: . $PROFILE`,
+  ];
+}
+
+function getManualSetupInstructions() {
+  return [
+    `Add the following line to your PowerShell profile (run "echo $PROFILE" to find its location):`,
+    `  . "${path.join(getScriptsDir(), "init-pwsh.ps1")}"`,
+    `Then restart your terminal or run: . $PROFILE`,
+  ];
+}
+
 /**
  * @type {import("../shellDetection.js").Shell}
  */
@@ -79,4 +97,6 @@ export default {
   isInstalled,
   setup,
   teardown,
+  getManualSetupInstructions,
+  getManualTeardownInstructions,
 };

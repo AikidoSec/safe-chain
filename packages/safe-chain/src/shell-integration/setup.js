@@ -1,28 +1,10 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import {
-  knownAikidoTools,
-  getPackageManagerList,
-  getScriptsDir,
-} from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
+import { getScriptsDir, getStartupScriptSourcePath } from "../config/safeChainDir.js";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-
-/** @type {string} */
-// This checks the current file's dirname in a way that's compatible with:
-//  - Modulejs (import.meta.url)
-//  - ES modules (__dirname)
-// This is needed because safe-chain's npm package is built using ES modules,
-// but building the binaries requires commonjs.
-let dirname;
-if (import.meta.url) {
-  const filename = fileURLToPath(import.meta.url);
-  dirname = path.dirname(filename);
-} else {
-  dirname = __dirname;
-}
 
 /**
  * Loops over the detected shells and calls the setup function for each.
@@ -91,9 +73,7 @@ async function setupShell(shell) {
     );
   } else {
     ui.writeError(
-      `${chalk.bold("- " + shell.name + ":")} ${chalk.red(
-        "Setup failed",
-      )}. Please check your ${shell.name} configuration.`,
+      `${chalk.bold("- " + shell.name + ":")} ${chalk.red("Setup failed")}`,
     );
     if (error) {
       let message = `  Error: ${error.message}`;
@@ -102,6 +82,12 @@ async function setupShell(shell) {
       }
       ui.writeError(message);
     }
+    ui.emptyLine();
+    ui.writeInformation(`  ${chalk.bold("To set up manually:")}`);
+    for (const instruction of shell.getManualSetupInstructions()) {
+      ui.writeInformation(`    ${instruction}`);
+    }
+    ui.emptyLine();
   }
 
   return success;
@@ -118,8 +104,7 @@ function copyStartupFiles() {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
-    // Use absolute path for source
-    const sourcePath = path.join(dirname, "startup-scripts", file);
+    const sourcePath = getStartupScriptSourcePath(import.meta.url, file);
     fs.copyFileSync(sourcePath, targetPath);
   }
 }

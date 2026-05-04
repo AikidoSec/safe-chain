@@ -3,7 +3,9 @@ import {
   doesExecutableExistOnSystem,
   removeLinesMatchingPattern,
 } from "../helpers.js";
+import { getScriptsDir } from "../../config/safeChainDir.js";
 import { execSync } from "child_process";
+import path from "path";
 
 const shellName = "Fish";
 const executableName = "fish";
@@ -31,10 +33,10 @@ function teardown(tools) {
     );
   }
 
-  // Removes the line that sources the safe-chain fish initialization script (~/.safe-chain/scripts/init-fish.fish)
+  // Remove sourcing line to prevent safe-chain initialization in future shell sessions
   removeLinesMatchingPattern(
     startupFile,
-    /^source\s+~\/\.safe-chain\/scripts\/init-fish\.fish/,
+    /^source\s+.*init-fish\.fish.*#\s*Safe-chain/,
     eol
   );
 
@@ -46,7 +48,7 @@ function setup() {
 
   addLineToFile(
     startupFile,
-    `source ~/.safe-chain/scripts/init-fish.fish # Safe-chain Fish initialization script`,
+    `source ${path.join(getScriptsDir(), "init-fish.fish")} # Safe-chain Fish initialization script`,
     eol
   );
 
@@ -66,6 +68,22 @@ function getStartupFile() {
   }
 }
 
+function getManualTeardownInstructions() {
+  return [
+    `Remove the following line from your ~/.config/fish/config.fish file:`,
+    `  source ${path.join(getScriptsDir(), "init-fish.fish")}`,
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  ];
+}
+
+function getManualSetupInstructions() {
+  return [
+    `Add the following line to your ~/.config/fish/config.fish file:`,
+    `  source ${path.join(getScriptsDir(), "init-fish.fish")}`,
+    `Then restart your terminal or run: source ~/.config/fish/config.fish`,
+  ];
+}
+
 /**
  * @type {import("../shellDetection.js").Shell}
  */
@@ -74,4 +92,6 @@ export default {
   isInstalled,
   setup,
   teardown,
+  getManualSetupInstructions,
+  getManualTeardownInstructions,
 };

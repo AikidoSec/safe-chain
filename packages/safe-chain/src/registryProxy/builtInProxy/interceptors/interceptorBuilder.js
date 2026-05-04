@@ -10,6 +10,7 @@ import { EventEmitter } from "events";
  * @typedef {Object} RequestInterceptionContext
  * @property {string} targetUrl
  * @property {(packageName: string | undefined, version: string | undefined) => void} blockMalware
+ * @property {(packageName: string, version: string, message: string) => void} blockMinimumAgeRequest
  * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => NodeJS.Dict<string | string[]>) => void} modifyRequestHeaders
  * @property {(modificationFunc: (body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer) => void} modifyBody
  * @property {() => RequestInterceptionHandler} build
@@ -22,6 +23,12 @@ import { EventEmitter } from "events";
  * @property {(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer} modifyBody
  *
  * @typedef {Object} MalwareBlockedEvent
+ * @property {string} packageName
+ * @property {string} version
+ * @property {string} targetUrl
+ * @property {number} timestamp
+ *
+ * @typedef {Object} MinimumAgeRequestBlockedEvent
  * @property {string} packageName
  * @property {string} version
  * @property {string} targetUrl
@@ -81,10 +88,7 @@ function createRequestContext(targetUrl, eventEmitter) {
    * @param {string | undefined} version
    */
   function blockMalwareSetup(packageName, version) {
-    blockResponse = {
-      statusCode: 403,
-      message: "Forbidden - blocked by safe-chain",
-    };
+    blockResponse = createBlockResponse("Forbidden - blocked by safe-chain");
 
     // Emit the malwareBlocked event
     eventEmitter.emit("malwareBlocked", {
@@ -93,6 +97,34 @@ function createRequestContext(targetUrl, eventEmitter) {
       targetUrl,
       timestamp: Date.now(),
     });
+  }
+
+  /**
+   * @param {string} message
+   */
+  function blockMinimumAgeRequestSetup(
+    /** @type {string} */ packageName,
+    /** @type {string} */ version,
+    /** @type {string} */ message
+  ) {
+    blockResponse = createBlockResponse(message);
+    eventEmitter.emit("minimumAgeRequestBlocked", {
+      packageName,
+      version,
+      targetUrl,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * @param {string} message
+   * @returns {{statusCode: number, message: string}}
+   */
+  function createBlockResponse(message) {
+    return {
+      statusCode: 403,
+      message,
+    };
   }
 
   /** @returns {RequestInterceptionHandler} */
@@ -139,6 +171,7 @@ function createRequestContext(targetUrl, eventEmitter) {
   return {
     targetUrl,
     blockMalware: blockMalwareSetup,
+    blockMinimumAgeRequest: blockMinimumAgeRequestSetup,
     modifyRequestHeaders: (func) => reqheaderModificationFuncs.push(func),
     modifyBody: (func) => modifyBodyFuncs.push(func),
     build,

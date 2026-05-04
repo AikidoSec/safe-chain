@@ -22,12 +22,12 @@ describe("Setup CI shell integration", () => {
     fs.mkdirSync(path.join(mockTemplateDir, "path-wrappers", "templates"), { recursive: true });
     fs.writeFileSync(
       path.join(mockTemplateDir, "path-wrappers", "templates", "unix-wrapper.template.sh"),
-      "#!/bin/bash\n# Template for {{PACKAGE_MANAGER}}\nexec {{AIKIDO_COMMAND}} \"$@\"\n",
+      "#!/bin/bash\n# Template for {{PACKAGE_MANAGER}}\n_safe_chain_shims=$(CDPATH= cd -- \"$(dirname -- \"$0\")\" 2>/dev/null && pwd -P)\nexec {{AIKIDO_COMMAND}} \"$@\"\n",
       "utf-8"
     );
     fs.writeFileSync(
       path.join(mockTemplateDir, "path-wrappers", "templates", "windows-wrapper.template.cmd"),
-      "@echo off\nREM Template for {{PACKAGE_MANAGER}}\n{{AIKIDO_COMMAND}} %*\n",
+      "@echo off\nset \"SHIM_DIR=%~dp0\"\n{{AIKIDO_COMMAND}} %*\n",
       "utf-8"
     );
 
@@ -50,7 +50,15 @@ describe("Setup CI shell integration", () => {
           { tool: "yarn", aikidoCommand: "aikido-yarn" },
         ],
         getPackageManagerList: () => "npm, yarn",
+      },
+    });
+
+    mock.module("../config/safeChainDir.js", {
+      namedExports: {
         getShimsDir: () => mockShimsDir,
+        getBinDir: () => path.join(mockHomeDir, ".safe-chain", "bin"),
+        getPathWrapperTemplatePath: (_moduleUrl, fileName) =>
+          path.join(mockTemplateDir, "path-wrappers", "templates", fileName),
       },
     });
 
@@ -60,22 +68,6 @@ describe("Setup CI shell integration", () => {
         homedir: () => mockHomeDir,
         platform: () => mockPlatform,
         EOL: "\n",
-      },
-    });
-
-    // Mock path module to resolve templates correctly
-    mock.module("path", {
-      namedExports: {
-        join: path.join,
-        dirname: () => mockTemplateDir,
-        resolve: (...args) => path.resolve(mockTemplateDir, ...args.slice(1)),
-      },
-    });
-
-    // Mock fileURLToPath
-    mock.module("url", {
-      namedExports: {
-        fileURLToPath: () => path.join(mockTemplateDir, "setup-ci.js"),
       },
     });
 
@@ -119,6 +111,10 @@ describe("Setup CI shell integration", () => {
       const npmShimContent = fs.readFileSync(npmShimPath, "utf-8");
       assert.ok(npmShimContent.includes("aikido-npm"), "npm shim should contain aikido-npm");
       assert.ok(npmShimContent.includes("#!/bin/bash"), "npm shim should have bash shebang");
+      assert.ok(
+        npmShimContent.includes("_safe_chain_shims=$(CDPATH= cd -- \"$(dirname -- \"$0\")\" 2>/dev/null && pwd -P)"),
+        "npm shim should derive the shims directory from its own location",
+      );
     });
 
     it("should create Windows .cmd shims on win32 platform", async () => {
@@ -142,6 +138,10 @@ describe("Setup CI shell integration", () => {
       assert.ok(npmShimContent.includes("aikido-npm"), "npm.cmd should contain aikido-npm");
       assert.ok(npmShimContent.includes("@echo off"), "npm.cmd should have Windows batch header");
       assert.ok(npmShimContent.includes("%*"), "npm.cmd should use Windows argument passing");
+      assert.ok(
+        npmShimContent.includes('set "SHIM_DIR=%~dp0"'),
+        "npm.cmd should derive the shims directory from its own location",
+      );
 
       // Verify Unix shims were NOT created
       const unixNpmShim = path.join(mockShimsDir, "npm");

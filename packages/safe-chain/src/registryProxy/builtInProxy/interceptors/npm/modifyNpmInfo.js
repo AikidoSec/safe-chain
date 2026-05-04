@@ -4,7 +4,7 @@ import {
   getNpmMinimumPackageAgeExclusions,
 } from "../../../../config/settings.js";
 import { ui } from "../../../../environment/userInteraction.js";
-import { getHeaderValueAsString } from "../../http-utils.js";
+import { clearCachingHeaders, getHeaderValueAsString } from "../../http-utils.js";
 
 /** @type {EventEmitter<{ versionsRemoved: [{packageName: string, packageVersions: string[]}] }>} */
 export const modifyResponseEventEmitter = new EventEmitter();
@@ -104,15 +104,7 @@ export function modifyNpmInfoResponse(body, headers) {
         removedVersions.push(version);
 
         deleteVersionFromJson(bodyJson, version);
-        if (headers) {
-          // When modifying the response, the etag and last-modified headers
-          // no longer match the content so they needs to be removed before sending the response.
-          delete headers["etag"];
-          delete headers["last-modified"];
-          // Removing the cache-control header will prevent the package manager from caching
-          // the modified response.
-          delete headers["cache-control"];
-        }
+        clearCachingHeaders(headers);
       }
     }
 
@@ -212,4 +204,23 @@ function matchesExclusionPattern(packageName, pattern) {
     return packageName.startsWith(pattern.slice(0, -1));
   }
   return packageName === pattern;
+}
+
+/**
+ * @param {Buffer} body
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @returns {string | undefined}
+ */
+export function getPackageNameFromMetadataResponse(body, headers) {
+  try {
+    const contentType = getHeaderValueAsString(headers, "content-type");
+    if (!contentType?.toLowerCase().includes("application/json")) {
+      return undefined;
+    }
+
+    const bodyJson = JSON.parse(body.toString("utf8"));
+    return typeof bodyJson.name === "string" ? bodyJson.name : undefined;
+  } catch {
+    return undefined;
+  }
 }

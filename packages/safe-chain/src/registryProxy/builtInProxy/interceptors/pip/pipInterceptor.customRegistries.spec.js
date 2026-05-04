@@ -2,20 +2,36 @@ import { describe, it, mock } from "node:test";
 import assert from "node:assert";
 
 describe("pipInterceptor custom registries", async () => {
-  let lastPackage;
+  let scannedPackages;
   let malwareResponse = false;
   let customRegistries = [];
 
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
+      ECOSYSTEM_PY: "py",
+      getEcoSystem: () => "py",
+      getLoggingLevel: () => "silent",
+      getMinimumPackageAgeHours: () => 48,
+      getMinimumPackageAgeExclusions: () => [],
       getPipCustomRegistries: () => customRegistries,
+      LOGGING_SILENT: "silent",
+      LOGGING_VERBOSE: "verbose",
+      skipMinimumPackageAge: () => false,
     },
   });
 
-  mock.module("../../../scanning/audit/index.js", {
+  mock.module("../../../../scanning/newPackagesListCache.js", {
+    namedExports: {
+      openNewPackagesDatabase: async () => ({
+        isNewlyReleasedPackage: () => false,
+      }),
+    },
+  });
+
+  mock.module("../../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
-        lastPackage = { packageName, version };
+        scannedPackages.push({ packageName, version });
         return malwareResponse;
       },
     },
@@ -30,42 +46,45 @@ describe("pipInterceptor custom registries", async () => {
 
     const interceptor = pipInterceptorForUrl(url);
 
-    assert.ok(
-      interceptor,
-      "Interceptor should be created for custom registry"
-    );
+    assert.ok(interceptor);
   });
 
   it("should parse package from custom registry URL", async () => {
+    scannedPackages = [];
     customRegistries = ["my-custom-registry.example.com"];
     const url =
       "https://my-custom-registry.example.com/packages/xx/yy/foobar-1.2.3.tar.gz";
 
     const interceptor = pipInterceptorForUrl(url);
-    assert.ok(interceptor, "Interceptor should be created");
+    assert.ok(interceptor);
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foobar",
-      version: "1.2.3",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foobar" && version === "1.2.3"
+      )
+    );
   });
 
   it("should parse wheel package from custom registry URL", async () => {
+    scannedPackages = [];
     customRegistries = ["private-pypi.internal.com"];
     const url =
       "https://private-pypi.internal.com/packages/foo_bar-2.0.0-py3-none-any.whl";
 
     const interceptor = pipInterceptorForUrl(url);
-    assert.ok(interceptor, "Interceptor should be created");
+    assert.ok(interceptor);
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foo-bar",
-      version: "2.0.0",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foo-bar" && version === "2.0.0"
+      )
+    );
   });
 
   it("should handle multiple custom registries", async () => {
@@ -82,14 +101,12 @@ describe("pipInterceptor custom registries", async () => {
     const interceptor1 = pipInterceptorForUrl(url1);
     const interceptor2 = pipInterceptorForUrl(url2);
 
-    assert.ok(interceptor1, "Interceptor should be created for first registry");
-    assert.ok(
-      interceptor2,
-      "Interceptor should be created for second registry"
-    );
+    assert.ok(interceptor1);
+    assert.ok(interceptor2);
   });
 
   it("should block malicious package from custom registry", async () => {
+    scannedPackages = [];
     customRegistries = ["my-custom-registry.example.com"];
     malwareResponse = true;
 
@@ -97,26 +114,19 @@ describe("pipInterceptor custom registries", async () => {
       "https://my-custom-registry.example.com/packages/malicious_package-1.0.0.tar.gz";
 
     const interceptor = pipInterceptorForUrl(url);
-    assert.ok(interceptor, "Interceptor should be created");
+    assert.ok(interceptor);
 
     const result = await interceptor.handleRequest(url);
 
-    assert.ok(result.blockResponse, "Should contain a blockResponse");
-    assert.equal(
-      result.blockResponse.statusCode,
-      403,
-      "Block response should have status code 403"
-    );
-    assert.equal(
-      result.blockResponse.message,
-      "Forbidden - blocked by safe-chain",
-      "Block response should have correct status message"
-    );
+    assert.ok(result.blockResponse);
+    assert.equal(result.blockResponse.statusCode, 403);
+    assert.equal(result.blockResponse.message, "Forbidden - blocked by safe-chain");
 
     malwareResponse = false;
   });
 
   it("should still work with known registries when custom registries are set", async () => {
+    scannedPackages = [];
     customRegistries = ["my-custom-registry.example.com"];
 
     const url =
@@ -124,17 +134,16 @@ describe("pipInterceptor custom registries", async () => {
 
     const interceptor = pipInterceptorForUrl(url);
 
-    assert.ok(
-      interceptor,
-      "Interceptor should be created for known registry even with custom registries set"
-    );
+    assert.ok(interceptor);
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foobar",
-      version: "1.2.3",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foobar" && version === "1.2.3"
+      )
+    );
   });
 
   it("should not create interceptor for unknown registry when custom registries are set", () => {
@@ -143,11 +152,7 @@ describe("pipInterceptor custom registries", async () => {
 
     const interceptor = pipInterceptorForUrl(url);
 
-    assert.equal(
-      interceptor,
-      undefined,
-      "Interceptor should be undefined for unknown registry"
-    );
+    assert.equal(interceptor, undefined);
   });
 
   it("should handle empty custom registries array", () => {
@@ -157,42 +162,44 @@ describe("pipInterceptor custom registries", async () => {
 
     const interceptor = pipInterceptorForUrl(url);
 
-    assert.equal(
-      interceptor,
-      undefined,
-      "Interceptor should be undefined when no custom registries are configured"
-    );
+    assert.equal(interceptor, undefined);
   });
 
   it("should parse .whl.metadata from custom registry", async () => {
+    scannedPackages = [];
     customRegistries = ["private-pypi.internal.com"];
     const url =
       "https://private-pypi.internal.com/packages/foo_bar-2.0.0-py3-none-any.whl.metadata";
 
     const interceptor = pipInterceptorForUrl(url);
-    assert.ok(interceptor, "Interceptor should be created");
+    assert.ok(interceptor);
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foo-bar",
-      version: "2.0.0",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foo-bar" && version === "2.0.0"
+      )
+    );
   });
 
   it("should parse .tar.gz.metadata from custom registry", async () => {
+    scannedPackages = [];
     customRegistries = ["private-pypi.internal.com"];
     const url =
       "https://private-pypi.internal.com/packages/foo_bar-2.0.0.tar.gz.metadata";
 
     const interceptor = pipInterceptorForUrl(url);
-    assert.ok(interceptor, "Interceptor should be created");
+    assert.ok(interceptor);
 
     await interceptor.handleRequest(url);
 
-    assert.deepEqual(lastPackage, {
-      packageName: "foo-bar",
-      version: "2.0.0",
-    });
+    assert.ok(
+      scannedPackages.some(
+        ({ packageName, version }) =>
+          packageName === "foo-bar" && version === "2.0.0"
+      )
+    );
   });
 });

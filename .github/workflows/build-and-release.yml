@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "*"
+  release:
+    types: [published]
 
 permissions:
   id-token: write
@@ -12,30 +14,19 @@ permissions:
 jobs:
   set-version:
     name: Set version number
-    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    runs-on: open-source-releaser
     outputs:
       version: ${{ steps.get_version.outputs.tag }}
-      is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Set version number
         id: get_version
         run: |
           version="${{ github.ref_name }}"
           echo "tag=$version" >> $GITHUB_OUTPUT
 
-      - name: Check if pre-release
-        id: check_prerelease
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          IS_PRERELEASE=$(gh release view ${{ steps.get_version.outputs.tag }} --json isPrerelease --jq '.isPrerelease')
-          echo "is_prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-          echo "Release ${{ steps.get_version.outputs.tag }} is pre-release: $IS_PRERELEASE"
-
   create-binaries:
+    if: github.event_name == 'push'
     needs: set-version
     uses: ./.github/workflows/create-artifact.yml
     with:
@@ -43,9 +34,9 @@ jobs:
 
   publish-binaries:
     name: Publish to GitHub release
+    if: github.event_name == 'push'
     needs: [set-version, create-binaries]
-    runs-on: ubuntu-latest
-
+    runs-on: open-source-releaser
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -69,20 +60,59 @@ jobs:
           mv binaries/safe-chain-win-x64/safe-chain.exe release-artifacts/safe-chain-win-x64.exe
           mv binaries/safe-chain-win-arm64/safe-chain.exe release-artifacts/safe-chain-win-arm64.exe
 
-      - name: Move install scripts and hard-code version
+      - name: Move install scripts and hard-code version and checksums
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
         run: |
-          sed "s/\$(fetch_latest_version)/${VERSION}/" install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
-          sed "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
+          SHA_MACOS_X64=$(sha256sum release-artifacts/safe-chain-macos-x64         | awk '{print $1}')
+          SHA_MACOS_ARM64=$(sha256sum release-artifacts/safe-chain-macos-arm64     | awk '{print $1}')
+          SHA_LINUX_X64=$(sha256sum release-artifacts/safe-chain-linux-x64         | awk '{print $1}')
+          SHA_LINUX_ARM64=$(sha256sum release-artifacts/safe-chain-linux-arm64     | awk '{print $1}')
+          SHA_LINUXSTATIC_X64=$(sha256sum release-artifacts/safe-chain-linuxstatic-x64     | awk '{print $1}')
+          SHA_LINUXSTATIC_ARM64=$(sha256sum release-artifacts/safe-chain-linuxstatic-arm64 | awk '{print $1}')
+          SHA_WIN_X64=$(sha256sum release-artifacts/safe-chain-win-x64.exe         | awk '{print $1}')
+          SHA_WIN_ARM64=$(sha256sum release-artifacts/safe-chain-win-arm64.exe     | awk '{print $1}')
+
+          sed \
+            -e "s/\$(fetch_latest_version)/${VERSION}/" \
+            -e "s|^SHA256_MACOS_X64=\"\"|SHA256_MACOS_X64=\"${SHA_MACOS_X64}\"|" \
+            -e "s|^SHA256_MACOS_ARM64=\"\"|SHA256_MACOS_ARM64=\"${SHA_MACOS_ARM64}\"|" \
+            -e "s|^SHA256_LINUX_X64=\"\"|SHA256_LINUX_X64=\"${SHA_LINUX_X64}\"|" \
+            -e "s|^SHA256_LINUX_ARM64=\"\"|SHA256_LINUX_ARM64=\"${SHA_LINUX_ARM64}\"|" \
+            -e "s|^SHA256_LINUXSTATIC_X64=\"\"|SHA256_LINUXSTATIC_X64=\"${SHA_LINUXSTATIC_X64}\"|" \
+            -e "s|^SHA256_LINUXSTATIC_ARM64=\"\"|SHA256_LINUXSTATIC_ARM64=\"${SHA_LINUXSTATIC_ARM64}\"|" \
+            -e "s|^SHA256_WIN_X64=\"\"|SHA256_WIN_X64=\"${SHA_WIN_X64}\"|" \
+            -e "s|^SHA256_WIN_ARM64=\"\"|SHA256_WIN_ARM64=\"${SHA_WIN_ARM64}\"|" \
+            install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
+
+          sed \
+            -e "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" \
+            -e "s|^\$SHA256_MACOS_X64 = \"\"|\$SHA256_MACOS_X64 = \"${SHA_MACOS_X64}\"|" \
+            -e "s|^\$SHA256_MACOS_ARM64 = \"\"|\$SHA256_MACOS_ARM64 = \"${SHA_MACOS_ARM64}\"|" \
+            -e "s|^\$SHA256_LINUX_X64 = \"\"|\$SHA256_LINUX_X64 = \"${SHA_LINUX_X64}\"|" \
+            -e "s|^\$SHA256_LINUX_ARM64 = \"\"|\$SHA256_LINUX_ARM64 = \"${SHA_LINUX_ARM64}\"|" \
+            -e "s|^\$SHA256_LINUXSTATIC_X64 = \"\"|\$SHA256_LINUXSTATIC_X64 = \"${SHA_LINUXSTATIC_X64}\"|" \
+            -e "s|^\$SHA256_LINUXSTATIC_ARM64 = \"\"|\$SHA256_LINUXSTATIC_ARM64 = \"${SHA_LINUXSTATIC_ARM64}\"|" \
+            -e "s|^\$SHA256_WIN_X64 = \"\"|\$SHA256_WIN_X64 = \"${SHA_WIN_X64}\"|" \
+            -e "s|^\$SHA256_WIN_ARM64 = \"\"|\$SHA256_WIN_ARM64 = \"${SHA_WIN_ARM64}\"|" \
+            install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
+
           cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
           cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
+          cp install-scripts/install-endpoint-mac.sh release-artifacts/install-endpoint-mac.sh
+          cp install-scripts/install-endpoint-windows.ps1 release-artifacts/install-endpoint-windows.ps1
+          cp install-scripts/uninstall-endpoint-mac.sh release-artifacts/uninstall-endpoint-mac.sh
+          cp install-scripts/uninstall-endpoint-windows.ps1 release-artifacts/uninstall-endpoint-windows.ps1
 
-      - name: Upload binaries to existing GitHub Release
+      - name: Create draft release and upload assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.set-version.outputs.version }}
         run: |
-          gh release upload ${{ needs.set-version.outputs.version }} \
+          if ! gh release view "$VERSION" &>/dev/null; then
+            gh release create "$VERSION" --draft --title "$VERSION" --generate-notes
+          fi
+          gh release upload "$VERSION" --clobber \
             release-artifacts/safe-chain-macos-x64 \
             release-artifacts/safe-chain-macos-arm64 \
             release-artifacts/safe-chain-linux-x64 \
@@ -94,12 +124,15 @@ jobs:
             release-artifacts/install-safe-chain.sh \
             release-artifacts/install-safe-chain.ps1 \
             release-artifacts/uninstall-safe-chain.sh \
-            release-artifacts/uninstall-safe-chain.ps1
+            release-artifacts/uninstall-safe-chain.ps1 \
+            release-artifacts/install-endpoint-mac.sh \
+            release-artifacts/install-endpoint-windows.ps1 \
+            release-artifacts/uninstall-endpoint-mac.sh \
+            release-artifacts/uninstall-endpoint-windows.ps1
 
   publish-npm:
     name: Publish to npm
-    needs: [set-version, create-binaries]
-    if: needs.set-version.outputs.is_prerelease != 'true'
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
 
     steps:
@@ -118,7 +151,7 @@ jobs:
         run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
       - name: Set the version in safe-chain package
-        run: npm --no-git-tag-version version ${{ needs.set-version.outputs.version }} --workspace=packages/safe-chain
+        run: npm --no-git-tag-version version ${{ github.event.release.tag_name }} --workspace=packages/safe-chain
 
       - name: Install dependencies
         run: npm ci
@@ -131,8 +164,15 @@ jobs:
           cp README.md packages/safe-chain/
           cp LICENSE packages/safe-chain/
           cp -r docs packages/safe-chain/
+          cp npm-shrinkwrap.json packages/safe-chain/
 
       - name: Publish to npm
         run: |
-          echo "Publishing version ${{ needs.set-version.outputs.version }} to NPM"
-          npm publish --workspace=packages/safe-chain --access public --provenance
+          VERSION="${{ github.event.release.tag_name }}"
+          echo "Publishing version $VERSION to NPM"
+          if [[ "$VERSION" == *"-"* ]]; then
+            PRERELEASE_TAG=$(echo "$VERSION" | sed 's/.*-\([^-]*\)$/\1/')
+            npm publish --workspace=packages/safe-chain --access public --provenance --tag "$PRERELEASE_TAG"
+          else
+            npm publish --workspace=packages/safe-chain --access public --provenance
+          fi

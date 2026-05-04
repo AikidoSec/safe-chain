@@ -3,6 +3,7 @@ import path from "path";
 import os from "os";
 import { ui } from "../environment/userInteraction.js";
 import { getEcoSystem } from "./settings.js";
+import { getSafeChainBaseDir } from "./safeChainDir.js";
 
 /**
  * @typedef {Object} SafeChainConfig
@@ -10,6 +11,7 @@ import { getEcoSystem } from "./settings.js";
  * We cannot trust the input and should add the necessary validations
  * @property {unknown | Number} scanTimeout
  * @property {unknown | Number} minimumPackageAgeHours
+ * @property {unknown | string} malwareListBaseUrl
  * @property {unknown | SafeChainRegistryConfiguration} npm
  * @property {unknown | SafeChainRegistryConfiguration} pip
  *
@@ -85,6 +87,18 @@ export function getMinimumPackageAgeHours() {
 }
 
 /**
+ * Gets the malware list base URL from config file only
+ * @returns {string | undefined}
+ */
+export function getMalwareListBaseUrl() {
+  const config = readConfigFile();
+  if (config.malwareListBaseUrl && typeof config.malwareListBaseUrl === "string") {
+    return config.malwareListBaseUrl;
+  }
+  return undefined;
+}
+
+/**
  * Gets the custom npm registries from the config file (format parsing only, no validation)
  * @returns {string[]}
  */
@@ -129,18 +143,21 @@ export function getPipCustomRegistries() {
 }
 
 /**
- * Gets the minimum package age exclusions from the config file
+ * Gets the minimum package age exclusions from the config file for the current ecosystem
  * @returns {string[]}
  */
-export function getNpmMinimumPackageAgeExclusions() {
+export function getMinimumPackageAgeExclusions() {
   const config = readConfigFile();
+  const ecosystem = getEcoSystem();
+  const registryConfig = ecosystem === "py" ? config.pip : config.npm;
 
-  if (!config || !config.npm) {
+  if (!config || !registryConfig) {
     return [];
   }
 
-  const npmConfig = /** @type {SafeChainRegistryConfiguration} */ (config.npm);
-  const exclusions = npmConfig.minimumPackageAgeExclusions;
+  const typedRegistryConfig =
+    /** @type {SafeChainRegistryConfiguration} */ (registryConfig);
+  const exclusions = typedRegistryConfig.minimumPackageAgeExclusions;
 
   if (!Array.isArray(exclusions)) {
     return [];
@@ -211,6 +228,7 @@ function readConfigFile() {
   const emptyConfig = {
     scanTimeout: undefined,
     minimumPackageAgeHours: undefined,
+    malwareListBaseUrl: undefined,
     npm: {
       customRegistries: undefined,
     },
@@ -251,8 +269,48 @@ function getDatabaseVersionPath() {
 /**
  * @returns {string}
  */
+export function getNewPackagesListPath() {
+  const safeChainDir = getSafeChainDirectory();
+  const ecosystem = getEcoSystem();
+  return path.join(safeChainDir, `newPackagesList_${ecosystem}.json`);
+}
+
+/**
+ * @returns {string}
+ */
+export function getNewPackagesListVersionPath() {
+  const safeChainDir = getSafeChainDirectory();
+  const ecosystem = getEcoSystem();
+  return path.join(safeChainDir, `newPackagesList_version_${ecosystem}.txt`);
+}
+
+/**
+ * @returns {string}
+ */
 function getConfigFilePath() {
-  return path.join(getAikidoDirectory(), "config.json");
+  const primaryPath = path.join(getSafeChainDirectory(), "config.json");
+  if (fs.existsSync(primaryPath)) {
+    return primaryPath;
+  }
+
+  const legacyPath = path.join(getAikidoDirectory(), "config.json");
+  if (fs.existsSync(legacyPath)) {
+    return legacyPath;
+  }
+
+  return primaryPath;
+}
+
+/**
+ * @returns {string}
+ */
+export function getSafeChainDirectory() {
+  const safeChainDir = getSafeChainBaseDir();
+
+  if (!fs.existsSync(safeChainDir)) {
+    fs.mkdirSync(safeChainDir, { recursive: true });
+  }
+  return safeChainDir;
 }
 
 /**

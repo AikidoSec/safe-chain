@@ -11,6 +11,8 @@ import { ui } from "../environment/userInteraction.js";
  * @property {() => boolean} isInstalled
  * @property {(tools: import("./helpers.js").AikidoTool[]) => boolean|Promise<boolean>} setup
  * @property {(tools: import("./helpers.js").AikidoTool[]) => boolean} teardown
+ * @property {() => string[]} getManualSetupInstructions
+ * @property {() => string[]} getManualTeardownInstructions
  */
 
 /**

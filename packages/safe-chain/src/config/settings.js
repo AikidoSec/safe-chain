@@ -1,6 +1,7 @@
 import * as cliArguments from "./cliArguments.js";
 import * as configFile from "./configFile.js";
 import * as environmentVariables from "./environmentVariables.js";
+import { ui } from "../environment/userInteraction.js";
 
 export const LOGGING_SILENT = "silent";
 export const LOGGING_NORMAL = "normal";
@@ -45,7 +46,7 @@ export function setEcoSystem(setting) {
   ecosystemSettings.ecoSystem = setting;
 }
 
-const defaultMinimumPackageAge = 24;
+const defaultMinimumPackageAge = 48;
 /** @returns {number} */
 export function getMinimumPackageAgeHours() {
   // Priority 1: CLI argument
@@ -188,13 +189,59 @@ function parseExclusionsFromEnv(envValue) {
  * Gets the minimum package age exclusions from both environment variable and config file (merged)
  * @returns {string[]}
  */
-export function getNpmMinimumPackageAgeExclusions() {
+export function getMinimumPackageAgeExclusions() {
   const envExclusions = parseExclusionsFromEnv(
-    environmentVariables.getNpmMinimumPackageAgeExclusions()
+    environmentVariables.getMinimumPackageAgeExclusions()
   );
-  const configExclusions = configFile.getNpmMinimumPackageAgeExclusions();
+  const configExclusions = configFile.getMinimumPackageAgeExclusions();
 
   // Merge both sources and remove duplicates
   const allExclusions = [...envExclusions, ...configExclusions];
   return [...new Set(allExclusions)];
+}
+
+/**
+ * Gets the malware list base URL with priority: CLI argument > environment variable > config file > default
+ * @returns {string}
+ */
+export function getMalwareListBaseUrl() {
+  // Priority 1: CLI argument
+  const cliValue = cliArguments.getMalwareListBaseUrl();
+  if (cliValue) {
+    const url = removeTrailingSlashes(cliValue);
+    ui.writeVerbose(`Fetching malware lists from ${url} as defined by CLI argument --safe-chain-malware-list-base-url`);
+    return url;
+  }
+
+  // Priority 2: Environment variable
+  const envValue = environmentVariables.getMalwareListBaseUrl();
+  if (envValue) {
+    const url = removeTrailingSlashes(envValue);
+    ui.writeVerbose(`Fetching malware lists from ${url} as defined by environment variable SAFE_CHAIN_MALWARE_LIST_BASE_URL`);
+    return url;
+  }
+
+  // Priority 3: Config file
+  const configValue = configFile.getMalwareListBaseUrl();
+  if (configValue) {
+    const url = removeTrailingSlashes(configValue);
+    ui.writeVerbose(`Fetching malware lists from ${url} as defined by config file (malwareListBaseUrl)`);
+    return url;
+  }
+
+  // Default
+  return removeTrailingSlashes("https://malware-list.aikido.dev");
+}
+
+/**
+ * Removes trailing slashes from a URL-like string.
+ * @param {string} value
+ * @returns {string}
+ */
+function removeTrailingSlashes(value) {
+  if (!value || typeof value !== "string") {
+    return value;
+  }
+
+  return value.replace(/\/+$/, "");
 }

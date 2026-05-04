@@ -4,7 +4,7 @@ import { createBuiltInProxyServer } from "./builtInProxy/createBuiltInProxyServe
 import { getCombinedCaBundlePath } from "./certBundle.js";
 
 /**
- * @typedef {Object} MalwareBlockedEvent
+ * @typedef {Object} PackageBlockedEvent
  * @prop {string} packageName
  * @prop {string} packageVersion
  *
@@ -13,7 +13,8 @@ import { getCombinedCaBundlePath } from "./certBundle.js";
  * @prop {string[]} packageVersions
  *
  * @typedef {{ 
- *    malwareBlocked: [MalwareBlockedEvent], 
+ *    malwareBlocked: [PackageBlockedEvent], 
+ *    minimumAgeRequestBlocked: [PackageBlockedEvent]
  *    minPackageAgeVersionsSuppressed: [MinPackageAgeSuppressionEvent]
  * }} ProxyServerEvents
  *
@@ -61,7 +62,7 @@ export function getProxySettings() {
     };
   }
 
-  const proxyUrl = `http://localhost:${server.getServerPort()}`;
+  const proxyUrl = `http://127.0.0.1:${server.getServerPort()}`;
   const caCert = server.getCaCert();
   const caCertBundlePath = getCombinedCaBundlePath(caCert);
 
