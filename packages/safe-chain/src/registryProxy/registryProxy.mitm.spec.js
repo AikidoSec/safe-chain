@@ -7,7 +7,7 @@ import {
   createSafeChainProxy,
   mergeSafeChainProxyEnvironmentVariables,
 } from "./registryProxy.js";
-import { getCaCertPath } from "./certUtils.js";
+import { getCaCertPath } from "./builtInProxy/certUtils.js";
 import {
   setEcoSystem,
   ECOSYSTEM_JS,

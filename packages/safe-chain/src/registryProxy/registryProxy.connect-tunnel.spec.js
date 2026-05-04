@@ -14,14 +14,14 @@ const mockIsImdsEndpoint = (host) => {
   ].includes(host);
 };
 
-mock.module("./isImdsEndpoint.js", {
+mock.module("./builtInProxy/isImdsEndpoint.js", {
   namedExports: {
     isImdsEndpoint: mockIsImdsEndpoint,
   },
 });
 
 // Mock getConnectTimeout to speed up tests
-mock.module("./getConnectTimeout.js", {
+mock.module("./builtInProxy/getConnectTimeout.js", {
   namedExports: {
     getConnectTimeout: (host) => {
       // IMDS endpoints: 100ms (real: 3s)
@@ -111,6 +111,9 @@ describe("registryProxy.connectTunnel", () => {
 
   describe("Error Handling", () => {
     it("should return 502 Bad Gateway for invalid hostname", async () => {
+      // We need to make sure we're not running behind an existing safe-chain installation to allow this test to work
+      const https_proxy = process.env.HTTPS_PROXY;
+      delete process.env.HTTPS_PROXY;
       const socket = await connectToProxy(proxyHost, proxyPort);
       const connectRequest = `CONNECT invalid.hostname.that.does.not.exist:443 HTTP/1.1\r\nHost: invalid.hostname.that.does.not.exist:443\r\n\r\n`;
       socket.write(connectRequest);
@@ -123,8 +126,11 @@ describe("registryProxy.connectTunnel", () => {
         });
       });
 
-      assert.ok(responseData.includes("HTTP/1.1 502 Bad Gateway"));
+      assert.ok(responseData.includes("HTTP/1.1 502 Bad Gateway"), responseData);
       socket.destroy();
+      if (https_proxy) {
+        process.env.HTTPS_PROXY = https_proxy;
+      }
     });
 
     it("should handle client disconnect during tunnel establishment", async () => {
@@ -185,13 +191,13 @@ describe("registryProxy.connectTunnel", () => {
       // Should return 504 Gateway Timeout (not 502 - 504 is for actual timeouts)
       assert.ok(
         responseData.includes("HTTP/1.1 504 Gateway Timeout"),
-        "Should return 504 for timeout"
+        "Should return 504 for timeout",
       );
 
       // Should timeout around 100ms for IMDS endpoints (allow some margin)
       assert.ok(
         duration >= 80 && duration < 200,
-        `IMDS timeout should be ~80-200ms, got ${duration}ms`
+        `IMDS timeout should be ~80-200ms, got ${duration}ms`,
       );
 
       socket.destroy();

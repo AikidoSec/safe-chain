@@ -1,5 +1,5 @@
-import { getMinimumPackageAgeHours } from "../../../config/settings.js";
-import { ui } from "../../../environment/userInteraction.js";
+import { getMinimumPackageAgeHours } from "../../../../config/settings.js";
+import { ui } from "../../../../environment/userInteraction.js";
 import { getHeaderValueAsString } from "../../http-utils.js";
 import { recordSuppressedVersion } from "../suppressedVersionsState.js";
 

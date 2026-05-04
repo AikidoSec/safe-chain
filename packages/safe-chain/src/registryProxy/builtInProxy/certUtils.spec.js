@@ -6,7 +6,7 @@ describe("certUtils", () => {
 
   beforeEach(() => {
     installedSafeChainDir = undefined;
-    mock.module("../config/safeChainDir.js", {
+    mock.module("../../config/safeChainDir.js", {
       namedExports: {
         getSafeChainBaseDir: () => installedSafeChainDir ?? "/home/test/.safe-chain",
         getCertsDir: () => `${installedSafeChainDir ?? "/home/test/.safe-chain"}/certs`,

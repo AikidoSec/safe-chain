@@ -7,7 +7,7 @@ let customRegistries = [];
 let newlyReleasedPackages = new Set();
 let skipMinimumPackageAgeSetting = false;
 
-mock.module("../../../scanning/audit/index.js", {
+mock.module("../../../../scanning/audit/index.js", {
   namedExports: {
     isMalwarePackage: async (packageName, version) => {
       lastPackage = { packageName, version };
@@ -16,7 +16,7 @@ mock.module("../../../scanning/audit/index.js", {
   },
 });
 
-mock.module("../../../config/settings.js", {
+mock.module("../../../../config/settings.js", {
   namedExports: {
     LOGGING_SILENT: "silent",
     LOGGING_NORMAL: "normal",
@@ -32,7 +32,7 @@ mock.module("../../../config/settings.js", {
     skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
   },
 });
-mock.module("../../../scanning/newPackagesListCache.js", {
+mock.module("../../../../scanning/newPackagesListCache.js", {
   namedExports: {
     openNewPackagesDatabase: async () => ({
       isNewlyReleasedPackage: (name, version) =>

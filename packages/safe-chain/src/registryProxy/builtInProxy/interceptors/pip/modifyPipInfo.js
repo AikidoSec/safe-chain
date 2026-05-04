@@ -1,6 +1,6 @@
-import { ui } from "../../../environment/userInteraction.js";
+import { ui } from "../../../../environment/userInteraction.js";
 import { clearCachingHeaders } from "../../http-utils.js";
-import { normalizePipPackageName } from "../../../scanning/packageNameVariants.js";
+import { normalizePipPackageName } from "../../../../scanning/packageNameVariants.js";
 import { parsePipPackageFromUrl } from "./parsePipPackageUrl.js";
 export { parsePipMetadataUrl, isPipPackageInfoUrl } from "./parsePipPackageUrl.js";
 import { getPipMetadataContentType, logSuppressedVersion } from "./pipMetadataResponseUtils.js";

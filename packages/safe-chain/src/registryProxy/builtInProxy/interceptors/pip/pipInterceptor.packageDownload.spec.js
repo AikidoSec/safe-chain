@@ -5,7 +5,7 @@ describe("pipInterceptor", async () => {
   let scannedPackages;
   let malwareResponse = false;
 
-  mock.module("../../../scanning/audit/index.js", {
+  mock.module("../../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
         scannedPackages.push({ packageName, version });
@@ -14,7 +14,7 @@ describe("pipInterceptor", async () => {
     },
   });
 
-  mock.module("../../../scanning/newPackagesListCache.js", {
+  mock.module("../../../../scanning/newPackagesListCache.js", {
     namedExports: {
       openNewPackagesDatabase: async () => ({
         isNewlyReleasedPackage: () => false,
@@ -22,7 +22,7 @@ describe("pipInterceptor", async () => {
     },
   });
 
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",

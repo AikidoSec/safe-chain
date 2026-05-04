@@ -1,8 +1,8 @@
 import {
   getNpmCustomRegistries,
   skipMinimumPackageAge,
-} from "../../../config/settings.js";
-import { isMalwarePackage } from "../../../scanning/audit/index.js";
+} from "../../../../config/settings.js";
+import { isMalwarePackage } from "../../../../scanning/audit/index.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import {
   getPackageNameFromMetadataResponse,
@@ -11,7 +11,7 @@ import {
   modifyNpmInfoResponse,
 } from "./modifyNpmInfo.js";
 import { parseNpmPackageUrl } from "./parseNpmPackageUrl.js";
-import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
+import { openNewPackagesDatabase } from "../../../../scanning/newPackagesListCache.js";
 import {
   isExcludedFromMinimumPackageAge,
 } from "../minimumPackageAgeExclusions.js";

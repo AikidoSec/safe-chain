@@ -38,6 +38,12 @@ describe("runPipXCommand", () => {
           mergeCalls.push(env);
           return { ...env, ...mergedEnvReturn };
         },
+        getProxySettings: () => {
+          return {
+            proxyUrl: "",
+            caCertBundlePath: "/tmp/test-combined-ca.pem",
+          };
+        },
       },
     });
 
