@@ -9,7 +9,6 @@ import { readFileSync } from "fs";
 import EventEmitter from "events";
 import { modifyResponseEventEmitter } from "./interceptors/npm/modifyNpmInfo.js";
 import { cleanupCertBundle } from "../certBundle.js";
-import { getHasSuppressedVersions } from "./interceptors/suppressedVersionsState.js";
 
 /** *
  * @returns {import("../registryProxy.js").SafeChainProxy} */

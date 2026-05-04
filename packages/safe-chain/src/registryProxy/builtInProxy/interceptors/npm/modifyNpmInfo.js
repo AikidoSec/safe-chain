@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 import {
+  getMinimumPackageAgeExclusions,
   getMinimumPackageAgeHours,
-  getNpmMinimumPackageAgeExclusions,
 } from "../../../../config/settings.js";
 import { ui } from "../../../../environment/userInteraction.js";
 import { clearCachingHeaders, getHeaderValueAsString } from "../../http-utils.js";
@@ -70,7 +70,7 @@ export function modifyNpmInfoResponse(body, headers) {
 
     // Check if this package is excluded from minimum age filtering
     const packageName = bodyJson.name;
-    const exclusions = getNpmMinimumPackageAgeExclusions();
+    const exclusions = getMinimumPackageAgeExclusions();
     if (
       packageName &&
       exclusions.some((pattern) =>
