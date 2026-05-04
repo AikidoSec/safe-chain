@@ -4,10 +4,11 @@ import { mitmConnect } from "./mitmRequestHandler.js";
 import { handleHttpProxyRequest } from "./plainHttpProxy.js";
 import { ui } from "../../environment/userInteraction.js";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
-import { getHasSuppressedVersions } from "./interceptors/npm/modifyNpmInfo.js";
 import { getCaCertPath } from "./certUtils.js";
 import { readFileSync } from "fs";
 import EventEmitter from "events";
+import { cleanupCertBundle } from "../certBundle.js";
+import { getHasSuppressedVersions } from "./interceptors/suppressedVersionsState.js";
 
 /** *
  * @returns {import("../registryProxy.js").SafeChainProxy} */
@@ -73,12 +74,16 @@ export function createBuiltInProxyServer() {
     return new Promise((resolve) => {
       try {
         server.close(() => {
+          cleanupCertBundle();
           resolve();
         });
       } catch {
         resolve();
       }
-      setTimeout(() => resolve(), SERVER_STOP_TIMEOUT_MS);
+      setTimeout(() => {
+        cleanupCertBundle();
+        resolve();
+      }, SERVER_STOP_TIMEOUT_MS);
     });
   }
 
@@ -104,7 +109,19 @@ export function createBuiltInProxyServer() {
         ) => {
           emitter.emit("malwareBlocked", {
             packageName: event.packageName,
-            packageVersion: event.version
+            packageVersion: event.version,
+          });
+        },
+      );
+
+      interceptor.on(
+        "minimumAgeRequestBlocked",
+        (
+          /** @type {import("./interceptors/interceptorBuilder.js").MinimumAgeRequestBlockedEvent} */ event,
+        ) => {
+          emitter.emit("minimumAgeRequestBlocked", {
+            packageName: event.packageName,
+            packageVersion: event.version,
           });
         },
       );

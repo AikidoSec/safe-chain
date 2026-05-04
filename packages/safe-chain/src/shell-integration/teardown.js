@@ -1,7 +1,8 @@
 import chalk from "chalk";
 import { ui } from "../environment/userInteraction.js";
 import { detectShells } from "./shellDetection.js";
-import { knownAikidoTools, getPackageManagerList, getShimsDir, getScriptsDir } from "./helpers.js";
+import { knownAikidoTools, getPackageManagerList } from "./helpers.js";
+import { getShimsDir, getScriptsDir } from "../config/safeChainDir.js";
 import fs from "fs";
 
 /**
@@ -47,8 +48,14 @@ export async function teardown() {
         ui.writeError(
           `${chalk.bold("- " + shell.name + ":")} ${chalk.red(
             "Teardown failed"
-          )}. Please check your ${shell.name} configuration.`
+          )}`
         );
+        ui.emptyLine();
+        ui.writeInformation(`  ${chalk.bold("To tear down manually:")}`);
+        for (const instruction of shell.getManualTeardownInstructions()) {
+          ui.writeInformation(`    ${instruction}`);
+        }
+        ui.emptyLine();
       }
     }
 
@@ -103,4 +110,5 @@ export async function teardownDirectories() {
       );
     }
   }
+
 }

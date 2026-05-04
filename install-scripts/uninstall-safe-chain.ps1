@@ -4,7 +4,6 @@
 
 # Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
 $HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
-$InstallDir = Join-Path $HomeDir ".safe-chain/bin"
 
 # Helper functions
 function Write-Info {
@@ -21,6 +20,146 @@ function Write-Error-Custom {
     param([string]$Message)
     Write-Host "[ERROR] $Message" -ForegroundColor Red
     exit 1
+}
+
+# Derives the safe-chain base install directory from a resolved binary path.
+# Rejects wrapper scripts and paths that do not match the packaged bin layout.
+function Get-InstallDirFromBinaryPath {
+    param([string]$BinaryPath)
+
+    if ([string]::IsNullOrWhiteSpace($BinaryPath)) {
+        return $null
+    }
+
+    try {
+        $resolvedPath = (Resolve-Path -LiteralPath $BinaryPath -ErrorAction Stop).Path
+    }
+    catch {
+        $resolvedPath = [System.IO.Path]::GetFullPath($BinaryPath)
+    }
+
+    $fileName = [System.IO.Path]::GetFileName($resolvedPath)
+    if (($fileName -ne "safe-chain") -and ($fileName -ne "safe-chain.exe")) {
+        return $null
+    }
+
+    if ($resolvedPath -match '\.(js|cjs|mjs|cmd|ps1)$') {
+        return $null
+    }
+
+    $binDir = Split-Path -Parent $resolvedPath
+    if ((Split-Path -Leaf $binDir) -ne "bin") {
+        return $null
+    }
+
+    return (Split-Path -Parent $binDir)
+}
+
+# Returns the first safe-chain command found on PATH, if any.
+# Used as the starting point for install-dir discovery.
+function Get-SafeChainCommand {
+    return Get-Command safe-chain -ErrorAction SilentlyContinue | Select-Object -First 1
+}
+
+# Returns the safe-chain command path only when it points to a valid packaged binary install.
+# Prevents teardown from invoking arbitrary wrappers or scripts from PATH.
+function Get-ValidatedSafeChainCommandPath {
+    $command = Get-SafeChainCommand
+    if (-not $command -or [string]::IsNullOrWhiteSpace($command.Path)) {
+        return $null
+    }
+
+    $installDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path
+    if (-not $installDir) {
+        return $null
+    }
+
+    return $command.Path
+}
+
+# Invokes the validated safe-chain binary with get-install-dir and returns the reported base directory.
+# Safely returns $null when the command is unavailable or the lookup fails.
+function Get-ReportedInstallDir {
+    $safeChainPath = Get-ValidatedSafeChainCommandPath
+    if (-not $safeChainPath) {
+        return $null
+    }
+
+    try {
+        $reportedInstallDir = & $safeChainPath get-install-dir 2>$null | Select-Object -First 1
+        if ($reportedInstallDir) {
+            $reportedInstallDir = $reportedInstallDir.Trim()
+        }
+        if ($reportedInstallDir) {
+            return $reportedInstallDir
+        }
+    }
+    catch {
+        return $null
+    }
+
+    return $null
+}
+
+# Determines the safe-chain base install directory for uninstall.
+# Prefers the binary-reported location, then derives it from PATH, then falls back to the default home-dir layout.
+function Get-SafeChainInstallDir {
+    $reportedInstallDir = Get-ReportedInstallDir
+    if ($reportedInstallDir) {
+        return $reportedInstallDir
+    }
+
+    $command = Get-SafeChainCommand
+    if ($command -and $command.Path) {
+        $discoveredInstallDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path
+        if ($discoveredInstallDir) {
+            return $discoveredInstallDir
+        }
+    }
+
+    return (Join-Path $HomeDir ".safe-chain")
+}
+
+# Finds the installed safe-chain binary inside the resolved install directory.
+# Falls back to a validated safe-chain command when the expected file is missing.
+function Find-SafeChainBinary {
+    param([string]$DotSafeChain)
+
+    $safeChainExe = Join-Path $DotSafeChain "bin/safe-chain.exe"
+    $safeChainBin = Join-Path $DotSafeChain "bin/safe-chain"
+
+    if (Test-Path $safeChainExe) {
+        return $safeChainExe
+    }
+
+    if (Test-Path $safeChainBin) {
+        return $safeChainBin
+    }
+
+    return Get-ValidatedSafeChainCommandPath
+}
+
+# Runs safe-chain teardown before removing the installation directory.
+# Converts teardown failures into warnings so uninstall can still complete.
+function Invoke-SafeChainTeardown {
+    param([string]$SafeChainPath)
+
+    if (-not $SafeChainPath) {
+        Write-Warn "safe-chain command not found. Proceeding with uninstallation."
+        return
+    }
+
+    Write-Info "Running safe-chain teardown..."
+    try {
+        & $SafeChainPath teardown
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warn "safe-chain teardown encountered issues, continuing with uninstallation..."
+        }
+    }
+    catch {
+        Write-Warn "safe-chain teardown encountered issues: $_"
+        Write-Warn "Continuing with uninstallation..."
+    }
 }
 
 # Check and uninstall npm global package if present
@@ -75,82 +214,27 @@ function Remove-VoltaInstallation {
 # Main uninstallation
 function Uninstall-SafeChain {
     Write-Info "Uninstalling safe-chain..."
-
-    # Run teardown if safe-chain is available
-    # Check for both safe-chain.exe (Windows) and safe-chain (Unix) since PowerShell Core runs on all platforms
-    $safeChainExe = Join-Path $InstallDir "safe-chain.exe"
-    $safeChainBin = Join-Path $InstallDir "safe-chain"
-
-    $safeChainPath = $null
-    if (Test-Path $safeChainExe) {
-        $safeChainPath = $safeChainExe
-    }
-    elseif (Test-Path $safeChainBin) {
-        $safeChainPath = $safeChainBin
-    }
-
-    if ($safeChainPath) {
-        Write-Info "Running safe-chain teardown..."
-        try {
-            & $safeChainPath teardown
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-            }
-        }
-        catch {
-            Write-Warn "safe-chain teardown encountered issues: $_"
-            Write-Warn "Continuing with uninstallation..."
-        }
-    }
-    elseif (Get-Command safe-chain -ErrorAction SilentlyContinue) {
-        Write-Info "Running safe-chain teardown..."
-        try {
-            safe-chain teardown
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warn "safe-chain teardown encountered issues, continuing with uninstallation..."
-            }
-        }
-        catch {
-            Write-Warn "safe-chain teardown encountered issues: $_"
-            Write-Warn "Continuing with uninstallation..."
-        }
-    }
-    else {
-        Write-Warn "safe-chain command not found. Proceeding with uninstallation."
-    }
+    $DotSafeChain = Get-SafeChainInstallDir
+    $safeChainPath = Find-SafeChainBinary -DotSafeChain $DotSafeChain
+    Invoke-SafeChainTeardown -SafeChainPath $safeChainPath
 
     # Remove npm and Volta installations
     Remove-NpmInstallation
     Remove-VoltaInstallation
 
-    # Remove installation directory
-    if (Test-Path $InstallDir) {
-        Write-Info "Removing installation directory: $InstallDir"
+    # Remove .safe-chain directory
+    if (Test-Path $DotSafeChain) {
+        Write-Info "Removing installation directory: $DotSafeChain"
         try {
-            Remove-Item -Path $InstallDir -Recurse -Force
+            Remove-Item -Path $DotSafeChain -Recurse -Force
             Write-Info "Successfully removed installation directory"
         }
         catch {
-            Write-Error-Custom "Failed to remove $InstallDir : $_"
+            Write-Error-Custom "Failed to remove $DotSafeChain : $_"
         }
     }
     else {
-        Write-Info "Installation directory $InstallDir does not exist. Nothing to remove."
-    }
-
-    # Also try to remove the parent .safe-chain directory if it's empty
-    $parentDir = Split-Path $InstallDir -Parent
-    if (Test-Path $parentDir) {
-        $items = Get-ChildItem -Path $parentDir -Force
-        if ($items.Count -eq 0) {
-            Write-Info "Removing empty parent directory: $parentDir"
-            try {
-                Remove-Item -Path $parentDir -Force
-            }
-            catch {
-                Write-Warn "Could not remove empty parent directory: $_"
-            }
-        }
+        Write-Info "Installation directory $DotSafeChain does not exist. Nothing to remove."
     }
 
     Write-Info "safe-chain has been uninstalled successfully!"

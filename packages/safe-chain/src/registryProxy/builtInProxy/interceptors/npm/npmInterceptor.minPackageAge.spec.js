@@ -5,13 +5,25 @@ describe("npmInterceptor minimum package age", async () => {
   let minimumPackageAgeSettings = 48;
   let skipMinimumPackageAgeSetting = false;
   let minimumPackageAgeExclusionsSetting = [];
+  let newlyReleasedPackages = new Set();
 
   mock.module("../../../../config/settings.js", {
     namedExports: {
+      ECOSYSTEM_JS: "js",
+      ECOSYSTEM_PY: "py",
       getMinimumPackageAgeHours: () => minimumPackageAgeSettings,
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
       getNpmCustomRegistries: () => [],
-      getNpmMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
+      getMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
+      getEcoSystem: () => "js",
+    },
+  });
+  mock.module("../../../../scanning/newPackagesListCache.js", {
+    namedExports: {
+      openNewPackagesDatabase: async () => ({
+        isNewlyReleasedPackage: (name, version) =>
+          newlyReleasedPackages.has(`${name}@${version}`),
+      }),
     },
   });
 
@@ -359,6 +371,67 @@ describe("npmInterceptor minimum package age", async () => {
     assert.equal(modifiedJson["dist-tags"]["latest"], "2.0.0");
   });
 
+  it("Should suppress too-young versions on metadata requests without directly blocking the request", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const interceptor = npmInterceptorForUrl(packageUrl);
+    const requestHandler = await interceptor.handleRequest(packageUrl);
+
+    assert.equal(requestHandler.blockResponse, undefined);
+    assert.equal(requestHandler.modifiesResponse(), true);
+  });
+
+  it("Should directly block tarball requests when the new packages list marks them as too young", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    newlyReleasedPackages = new Set(["lodash@4.17.21"]);
+    const packageUrl =
+      "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz?integrity=sha512-abc123";
+
+    const interceptor = npmInterceptorForUrl(packageUrl);
+    const requestHandler = await interceptor.handleRequest(packageUrl);
+
+    assert.ok(requestHandler.blockResponse);
+    assert.equal(requestHandler.modifiesResponse(), false);
+    assert.equal(requestHandler.blockResponse.statusCode, 403);
+    assert.equal(
+      requestHandler.blockResponse.message,
+      "Forbidden - blocked by safe-chain direct download minimum package age (lodash@4.17.21)"
+    );
+  });
+
+  it("Should not block tarball requests when skipMinimumPackageAge is enabled", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = true;
+    minimumPackageAgeExclusionsSetting = [];
+    newlyReleasedPackages = new Set(["lodash@4.17.21"]);
+    const packageUrl =
+      "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz";
+
+    const interceptor = npmInterceptorForUrl(packageUrl);
+    const requestHandler = await interceptor.handleRequest(packageUrl);
+
+    assert.equal(requestHandler.blockResponse, undefined);
+    assert.equal(requestHandler.modifiesResponse(), false);
+  });
+
+  it("Should not block tarball requests when the package is excluded from minimum age", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = ["lodash"];
+    newlyReleasedPackages = new Set(["lodash@4.17.21"]);
+    const packageUrl =
+      "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz";
+
+    const interceptor = npmInterceptorForUrl(packageUrl);
+    const requestHandler = await interceptor.handleRequest(packageUrl);
+
+    assert.equal(requestHandler.blockResponse, undefined);
+    assert.equal(requestHandler.modifiesResponse(), false);
+  });
+
   it("Should not filter packages when package is in exclusion list", async () => {
     minimumPackageAgeSettings = 5;
     skipMinimumPackageAgeSetting = false;
@@ -540,6 +613,7 @@ describe("npmInterceptor minimum package age", async () => {
     minimumPackageAgeSettings = 5;
     skipMinimumPackageAgeSetting = false;
     minimumPackageAgeExclusionsSetting = []; // Reset to empty
+    newlyReleasedPackages = new Set();
 
     const packageUrl = "https://registry.npmjs.org/lodash";
 

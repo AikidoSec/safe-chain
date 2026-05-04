@@ -1,13 +1,7 @@
-import {
-  getMinimumPackageAgeHours,
-  getNpmMinimumPackageAgeExclusions,
-} from "../../../../config/settings.js";
+import { getMinimumPackageAgeHours } from "../../../../config/settings.js";
 import { ui } from "../../../../environment/userInteraction.js";
-import { getHeaderValueAsString } from "../../http-utils.js";
-
-const state = {
-  hasSuppressedVersions: false,
-};
+import { clearCachingHeaders, getHeaderValueAsString } from "../../http-utils.js";
+import { recordSuppressedVersion } from "../suppressedVersionsState.js";
 
 /**
  * @param {NodeJS.Dict<string | string[]>} headers
@@ -68,16 +62,6 @@ export function modifyNpmInfoResponse(body, headers) {
       return body;
     }
 
-    // Check if this package is excluded from minimum age filtering
-    const packageName = bodyJson.name;
-    const exclusions = getNpmMinimumPackageAgeExclusions();
-    if (packageName && exclusions.some((pattern) => matchesExclusionPattern(packageName, pattern))) {
-      ui.writeVerbose(
-        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`
-      );
-      return body;
-    }
-
     const cutOff = new Date(
       new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
     );
@@ -95,15 +79,7 @@ export function modifyNpmInfoResponse(body, headers) {
       const timestampValue = new Date(timestamp);
       if (timestampValue > cutOff) {
         deleteVersionFromJson(bodyJson, version);
-        if (headers) {
-          // When modifying the response, the etag and last-modified headers
-          // no longer match the content so they needs to be removed before sending the response.
-          delete headers["etag"];
-          delete headers["last-modified"];
-          // Removing the cache-control header will prevent the package manager from caching
-          // the modified response.
-          delete headers["cache-control"];
-        }
+        clearCachingHeaders(headers);
       }
     }
 
@@ -127,7 +103,7 @@ export function modifyNpmInfoResponse(body, headers) {
  * @param {string} version
  */
 function deleteVersionFromJson(json, version) {
-  state.hasSuppressedVersions = true;
+  recordSuppressedVersion();
 
   const packageName = typeof json?.name === "string" ? json.name : "(unknown)";
 
@@ -185,22 +161,20 @@ function getMostRecentTag(tagList) {
 }
 
 /**
- * @returns {boolean}
+ * @param {Buffer} body
+ * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @returns {string | undefined}
  */
-export function getHasSuppressedVersions() {
-  return state.hasSuppressedVersions;
-}
+export function getPackageNameFromMetadataResponse(body, headers) {
+  try {
+    const contentType = getHeaderValueAsString(headers, "content-type");
+    if (!contentType?.toLowerCase().includes("application/json")) {
+      return undefined;
+    }
 
-/**
- * Checks if a package name matches an exclusion pattern.
- * Supports trailing wildcard (*) for prefix matching.
- * @param {string} packageName
- * @param {string} pattern
- * @returns {boolean}
- */
-function matchesExclusionPattern(packageName, pattern) {
-  if (pattern.endsWith("/*")) {
-    return packageName.startsWith(pattern.slice(0, -1));
+    const bodyJson = JSON.parse(body.toString("utf8"));
+    return typeof bodyJson.name === "string" ? bodyJson.name : undefined;
+  } catch {
+    return undefined;
   }
-  return packageName === pattern;
 }

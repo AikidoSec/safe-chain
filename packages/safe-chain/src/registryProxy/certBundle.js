@@ -7,6 +7,9 @@ import tls from "node:tls";
 import { X509Certificate } from "node:crypto";
 import { ui } from "../environment/userInteraction.js";
 
+/** @type {string | null} */
+let bundlePath = null;
+
 /**
  * Check if a PEM string contains only parsable cert blocks.
  * @param {string} pem - PEM-encoded certificate string
@@ -54,6 +57,11 @@ function isParsable(pem) {
  * @returns {string} Path to the combined CA bundle PEM file
  */
 export function getCombinedCaBundlePath(proxyCaCert) {
+  if (bundlePath)
+  {
+    return bundlePath;
+  }
+
   // 1) Safe Chain CA (for MITM'd registries)
   const parts = [];
   if (proxyCaCert && isParsable(proxyCaCert)) parts.push(proxyCaCert.trim());
@@ -92,9 +100,23 @@ export function getCombinedCaBundlePath(proxyCaCert) {
   }
 
   const combined = parts.filter(Boolean).join("\n");
-  const target = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
-  fs.writeFileSync(target, combined, { encoding: "utf8" });
-  return target;
+  bundlePath = path.join(os.tmpdir(), `safe-chain-ca-bundle-${Date.now()}.pem`);
+  fs.writeFileSync(bundlePath, combined, { encoding: "utf8" });
+  return bundlePath;
+}
+
+/**
+ * Remove the generated CA bundle file from disk.
+ */
+export function cleanupCertBundle() {
+  if (bundlePath) {
+    try {
+      fs.unlinkSync(bundlePath);
+    } catch (err) {
+      ui.writeVerbose(`Failed to cleanup the create bundle at ${bundlePath}`, err)
+    }
+    bundlePath = null;
+  }
 }
 
 /**

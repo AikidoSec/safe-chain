@@ -3,6 +3,7 @@ import assert from "node:assert";
 
 describe("aikido API", async () => {
   const mockFetch = mock.fn();
+  let ecosystem = "js";
 
   mock.module("make-fetch-happen", {
     defaultExport: mockFetch,
@@ -18,17 +19,23 @@ describe("aikido API", async () => {
 
   mock.module("../config/settings.js", {
     namedExports: {
-      getEcoSystem: () => "js",
+      getEcoSystem: () => ecosystem,
       ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
+      getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
     },
   });
 
-  const { fetchMalwareDatabase, fetchMalwareDatabaseVersion } =
-    await import("./aikido.js");
+  const {
+    fetchMalwareDatabase,
+    fetchMalwareDatabaseVersion,
+    fetchNewPackagesList,
+    fetchNewPackagesListVersion,
+  } = await import("./aikido.js");
 
   beforeEach(() => {
     mockFetch.mock.resetCalls();
+    ecosystem = "js";
   });
 
   describe("fetchMalwareDatabase", () => {
@@ -128,6 +135,97 @@ describe("aikido API", async () => {
 
       assert.strictEqual(mockFetch.mock.calls.length, 4);
       assert.strictEqual(result, '"final-etag"');
+    });
+  });
+
+  describe("fetchNewPackagesList", () => {
+    it("should succeed immediately when fetch succeeds on first try", async () => {
+      const releases = [
+        {
+          package_name: "fresh-pkg",
+          version: "1.0.0",
+          released_on: 123,
+        },
+      ];
+      mockFetch.mock.mockImplementationOnce(() => ({
+        ok: true,
+        json: async () => releases,
+        headers: { get: () => '"etag-new-packages"' },
+      }));
+
+      const result = await fetchNewPackagesList();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 1);
+      assert.strictEqual(
+        mockFetch.mock.calls[0].arguments[0],
+        "https://malware-list.aikido.dev/releases/npm.json"
+      );
+      assert.deepStrictEqual(result.newPackagesList, releases);
+      assert.strictEqual(result.version, '"etag-new-packages"');
+    });
+
+    it("should throw error after exhausting all retries", async () => {
+      mockFetch.mock.mockImplementation(() => {
+        throw new Error("Network error");
+      });
+
+      await assert.rejects(() => fetchNewPackagesList(), {
+        message: "Network error",
+      });
+
+      assert.strictEqual(mockFetch.mock.calls.length, 4);
+    });
+
+    it("should return an empty list without fetching for unsupported ecosystems", async () => {
+      ecosystem = "ruby";
+
+      const result = await fetchNewPackagesList();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 0);
+      assert.deepStrictEqual(result.newPackagesList, []);
+      assert.strictEqual(result.version, undefined);
+    });
+
+    it("should return undefined version without fetching for unsupported ecosystems", async () => {
+      ecosystem = "ruby";
+
+      const result = await fetchNewPackagesListVersion();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 0);
+      assert.strictEqual(result, undefined);
+    });
+  });
+
+  describe("fetchNewPackagesListVersion", () => {
+    it("should succeed immediately when fetch succeeds on first try", async () => {
+      mockFetch.mock.mockImplementationOnce(() => ({
+        ok: true,
+        headers: { get: () => '"new-packages-etag"' },
+      }));
+
+      const result = await fetchNewPackagesListVersion();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 1);
+      assert.strictEqual(
+        mockFetch.mock.calls[0].arguments[0],
+        "https://malware-list.aikido.dev/releases/npm.json"
+      );
+      assert.deepStrictEqual(mockFetch.mock.calls[0].arguments[1], {
+        method: "HEAD",
+      });
+      assert.strictEqual(result, '"new-packages-etag"');
+    });
+
+    it("should throw error after exhausting all retries", async () => {
+      mockFetch.mock.mockImplementation(() => {
+        throw new Error("Connection refused");
+      });
+
+      await assert.rejects(() => fetchNewPackagesListVersion(), {
+        message: "Connection refused",
+      });
+
+      assert.strictEqual(mockFetch.mock.calls.length, 4);
     });
   });
 });

@@ -70,7 +70,7 @@ describe("E2E: poetry coverage", () => {
     await shell.runCommand("cd /tmp/test-poetry-malware && poetry init --no-interaction");
     
     const result = await shell.runCommand(
-      "cd /tmp/test-poetry-malware && poetry add safe-chain-pi-test"
+      "cd /tmp/test-poetry-malware && poetry add numpy==2.4.4"
     );
 
     assert.ok(
@@ -300,7 +300,7 @@ describe("E2E: poetry coverage", () => {
     
     // Add malware package - this will create lock file and attempt download
     const result = await shell.runCommand(
-      "cd /tmp/test-poetry-install-malware && poetry add safe-chain-pi-test 2>&1"
+      "cd /tmp/test-poetry-install-malware && poetry add numpy==2.4.4 2>&1"
     );
 
     assert.ok(
@@ -324,7 +324,7 @@ describe("E2E: poetry coverage", () => {
     
     // Now try to add malware via add command
     const result = await shell.runCommand(
-      "cd /tmp/test-poetry-update-add && poetry add safe-chain-pi-test 2>&1"
+      "cd /tmp/test-poetry-update-add && poetry add numpy==2.4.4 2>&1"
     );
 
     assert.ok(
@@ -345,7 +345,7 @@ describe("E2E: poetry coverage", () => {
     
     // Try to add malware directly - this is the primary vector
     const result = await shell.runCommand(
-      "cd /tmp/test-poetry-req-malware && poetry add safe-chain-pi-test requests 2>&1"
+      "cd /tmp/test-poetry-req-malware && poetry add numpy==2.4.4 requests 2>&1"
     );
 
     assert.ok(

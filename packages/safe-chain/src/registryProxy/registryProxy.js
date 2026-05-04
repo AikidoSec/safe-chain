@@ -4,12 +4,12 @@ import { createBuiltInProxyServer } from "./builtInProxy/createBuiltInProxyServe
 import { getCombinedCaBundlePath } from "./certBundle.js";
 
 /**
- * @typedef {Object} MalwareBlockedEvent
+ * @typedef {Object} PackageBlockedEvent
  * @prop {string} packageName
  * @prop {string} packageVersion
- * 
- * @typedef {{ malwareBlocked: [MalwareBlockedEvent] }} ProxyServerEvents
- * 
+ *
+ * @typedef {{ malwareBlocked: [PackageBlockedEvent], minimumAgeRequestBlocked: [PackageBlockedEvent] }} ProxyServerEvents
+ *
  * @import { EventEmitter } from "node:stream"
  * @typedef {EventEmitter<ProxyServerEvents> & {
  *   startServer: () => Promise<void>

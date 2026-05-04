@@ -7,8 +7,16 @@
 
 - ✅ **Block malware on developer laptops and CI/CD**
 - ✅ **Supports npm and PyPI** more package managers coming
-- ✅ **Blocks packages newer than 24 hours** without breaking your build
+- ✅ **Blocks packages newer than 48 hours** without breaking your build
 - ✅ **Tokenless, free, no build data shared**
+
+## Need protection beyond npm & PyPI?
+
+[Aikido Endpoint](https://www.aikido.dev/protect/endpoint-protection?utm_source=github.com&utm_medium=referral&utm_campaign=safechain) builds on Safe Chain, extending package and extension security across more ecosystems: **npm**, **PyPI**, **Maven**, **NuGet**, **VS Code**, **Open VSX** - (Cursor, Windsurf, Kiro, Vs Codium, ...), **Chrome extensions**, **Skills.sh AI skills** and more.
+
+Get centralized policy management, request-and-approval workflows, and visibility across every developer workstation in your org. Powered by the same Aikido Intel feed. Deploy it manually or manage it through your MDM tool (Jamf, Fleet, or Iru).
+
+---
 
 Aikido Safe Chain supports the following package managers:
 
@@ -23,6 +31,7 @@ Aikido Safe Chain supports the following package managers:
 - 📦 **pip3**
 - 📦 **uv**
 - 📦 **poetry**
+- 📦 **uvx**
 - 📦 **pipx**
 
 # Usage
@@ -66,7 +75,7 @@ You can find all available versions on the [releases page](https://github.com/Ai
 ### Verify the installation
 
 1. **❗Restart your terminal** to start using the Aikido Safe Chain.
-   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
+   - This step is crucial as it ensures that the shell aliases for npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, poetry, uv, uvx and pipx are loaded correctly. If you do not restart your terminal, the aliases will not be available.
 
 2. **Verify the installation** by running the verification command:
 
@@ -97,7 +106,7 @@ You can find all available versions on the [releases page](https://github.com/Ai
 
    - The output should show that Aikido Safe Chain is blocking the installation of these test packages as they are flagged as malware.
 
-When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `poetry` and `pipx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
+When running `npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `uvx`, `poetry` and `pipx` commands, the Aikido Safe Chain will automatically check for malware in the packages you are trying to install. It also intercepts Python module invocations for pip when available (e.g., `python -m pip install ...`, `python3 -m pip download ...`). If any malware is detected, it will prompt you to exit the command.
 
 You can check the installed version by running:
 
@@ -109,17 +118,26 @@ safe-chain --version
 
 ### Malware Blocking
 
-The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, uv, poetry or pipx commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
+The Aikido Safe Chain works by running a lightweight proxy server that intercepts package downloads from the npm registry and PyPI. When you run npm, npx, yarn, pnpm, pnpx, bun, bunx, pip, pip3, uv, uvx, poetry or pipx commands, all package downloads are routed through this local proxy, which verifies packages in real-time against **[Aikido Intel - Open Sources Threat Intelligence](https://intel.aikido.dev/?tab=malware)**. If malware is detected in any package (including deep dependencies), the proxy blocks the download before the malicious code reaches your machine.
 
-### Minimum package age (npm only)
+### Minimum package age
 
-For npm packages, Safe Chain temporarily suppresses packages published within the last 24 hours (by default) until they have been validated against malware. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
+Safe Chain applies minimum package age checks to supported ecosystems.
 
-⚠️ This feature **only applies to npm-based package managers** (npm, npx, yarn, pnpm, pnpx, bun, bunx) and does not apply to Python package managers (uv, pip, pip3, poetry, pipx).
+Current enforcement differs by ecosystem:
+
+- npm-based package managers:
+  - during normal package resolution, Safe Chain suppresses versions that are newer than the configured minimum age from the package metadata returned by the registry
+  - for direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages
+- Python package managers:
+  - during package resolution, Safe Chain suppresses too-young files and releases from PyPI metadata responses
+  - for direct package download requests that bypass that metadata flow, Safe Chain can block the request itself using a cached list of newly released packages
+
+By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
 ### Shell Integration
 
-The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, bun, bunx, and Python package managers (pip, uv, poetry, pipx). It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:
+The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, bun, bunx, and Python package managers (pip, uv, uvx, poetry, pipx). It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:
 
 - ✅ **Bash**
 - ✅ **Zsh**
@@ -183,7 +201,17 @@ You can set the logging level through multiple sources (in order of priority):
 
 ## Minimum Package Age
 
-You can configure how long packages must exist before Safe Chain allows their installation. By default, packages must be at least 24 hours old before they can be installed through npm-based package managers.
+You can configure how long packages must exist before Safe Chain allows their installation. By default, packages must be at least 48 hours old before they can be installed.
+
+For npm-based package managers, this check currently has two enforcement modes:
+
+- Safe Chain suppresses too-young versions from package metadata during normal dependency resolution.
+- Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
+
+For Python package managers, this check currently has two enforcement modes:
+
+- Safe Chain suppresses too-young files and releases from PyPI metadata during dependency resolution.
+- Safe Chain blocks direct package download requests when they are matched against the cached newly released packages list.
 
 ### Configuration Options
 
@@ -202,7 +230,7 @@ You can set the minimum package age through multiple sources (in order of priori
    npm install express
    ```
 
-3. **Config File** (`~/.aikido/config.json`):
+3. **Config File** (`~/.safe-chain/config.json`):
 
    ```json
    {
@@ -215,13 +243,16 @@ You can set the minimum package age through multiple sources (in order of priori
 Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged). Use `@scope/*` to trust all packages from an organization:
 
 ```shell
-export SAFE_CHAIN_NPM_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
+export SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
 ```
 
 ```json
 {
   "npm": {
     "minimumPackageAgeExclusions": ["@aikidosec/*"]
+  },
+  "pip": {
+    "minimumPackageAgeExclusions": ["requests"]
   }
 }
 ```
@@ -246,7 +277,7 @@ You can set custom registries through environment variable or config file. Both 
    export SAFE_CHAIN_PIP_CUSTOM_REGISTRIES="pip.company.com,registry.internal.net"
    ```
 
-2. **Config File** (`~/.aikido/config.json`):
+2. **Config File** (`~/.safe-chain/config.json`):
 
    ```json
    {
@@ -258,6 +289,59 @@ You can set custom registries through environment variable or config file. Both 
      }
    }
    ```
+
+## Malware List Base URL
+
+Configure Safe Chain to fetch malware databases and new packages lists from a custom mirror URL. This allows you to host your own copy of the Aikido malware database.
+
+### Configuration Options
+
+You can set the malware list base URL through multiple sources (in order of priority):
+
+1. **CLI Argument** (highest priority):
+
+   ```shell
+   npm install express --safe-chain-malware-list-base-url=https://your-mirror.com
+   ```
+
+2. **Environment Variable**:
+
+   ```shell
+   export SAFE_CHAIN_MALWARE_LIST_BASE_URL=https://your-mirror.com
+   npm install express
+   ```
+
+3. **Config File** (`~/.safe-chain/config.json`):
+
+   ```json
+   {
+     "malwareListBaseUrl": "https://your-mirror.com"
+   }
+   ```
+
+The base URL should point to a server that mirrors the structure of `https://malware-list.aikido.dev/`, including the following paths:
+- `/malware_predictions.json` (JavaScript ecosystem malware database)
+- `/malware_pypi.json` (Python ecosystem malware database)
+- `/releases/npm.json` (JavaScript new packages list)
+- `/releases/pypi.json` (Python new packages list)
+
+## Custom Install Directory
+
+By default, Safe Chain installs itself into `~/.safe-chain`. You can change this by passing an explicit install directory to the installer. This is useful for system-wide installations (e.g. inside a Docker image) or when you need to avoid conflicts with other tools.
+
+When set, all Safe Chain data (binary, shims, scripts, config) is placed under the custom directory instead of `~/.safe-chain`.
+
+### Unix/Linux/macOS
+
+```shell
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --install-dir /usr/local/.safe-chain
+```
+
+### Windows
+
+```powershell
+iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -InstallDir 'C:\ProgramData\safe-chain'"
+```
 
 # Usage in CI/CD
 
@@ -349,6 +433,7 @@ pipeline {
   environment {
     // Jenkins does not automatically persist PATH updates from setup-ci,
     // so add the shims + binary directory explicitly for all stages.
+    // If you installed into a custom directory, replace ~/.safe-chain with that path here.
     PATH = "${env.HOME}/.safe-chain/shims:${env.HOME}/.safe-chain/bin:${env.PATH}"
   }
 
@@ -386,7 +471,7 @@ steps:
       name: Install
       script:
         - curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
-        - export PATH=~/.safe-chain/shims:$PATH
+        - export PATH=~/.safe-chain/shims:~/.safe-chain/bin:$PATH
         - npm ci
 ```
 
@@ -404,7 +489,7 @@ To add safe-chain in GitLab pipelines, you need to install it in the image runni
    # Install safe-chain
    RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
 
-   # Add safe-chain to PATH
+   # Add safe-chain to PATH (update paths if you used a custom install dir)
    ENV PATH="/root/.safe-chain/shims:/root/.safe-chain/bin:${PATH}"
    ```
 

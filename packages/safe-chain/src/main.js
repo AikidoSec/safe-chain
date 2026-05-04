@@ -20,12 +20,17 @@ export async function main(args) {
   process.on("SIGINT", handleProcessTermination);
   process.on("SIGTERM", handleProcessTermination);
 
-  /** @type {import("./registryProxy/registryProxy.js").MalwareBlockedEvent[]} */
+  /** @type {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} */
   let malwareBlockedEvents = [];
+  /** @type {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} */
+  let minPackageAgeBlocks = [];
 
   const proxy = createSafeChainProxy();
   await proxy.startServer();
   proxy.addListener("malwareBlocked", (ev) => malwareBlockedEvents.push(ev));
+  proxy.addListener("minimumAgeRequestBlocked", (ev) =>
+    minPackageAgeBlocks.push(ev),
+  );
 
   // Global error handlers to log unhandled errors
   process.on("uncaughtException", (error) => {
@@ -73,6 +78,11 @@ export async function main(args) {
       return 1;
     }
 
+    if (minPackageAgeBlocks.length > 0) {
+      printMinPackageAgeBlocks(minPackageAgeBlocks);
+      return 1;
+    }
+
     const auditStats = getAuditStats();
     if (auditStats.totalPackages > 0) {
       ui.writeVerbose(
@@ -86,7 +96,7 @@ export async function main(args) {
       ui.writeInformation(
         `${chalk.yellow(
           "ℹ",
-        )} Safe-chain: Some package versions were suppressed due to minimum age requirement.`,
+        )} Safe-chain: Some package versions were suppressed during package metadata resolution due to minimum package age.`,
       );
       ui.writeInformation(
         `  To disable this check, use: ${chalk.cyan(
@@ -124,8 +134,8 @@ function isSafeChainVerify(args) {
 }
 
 /**
- * 
- * @param {import("./registryProxy/registryProxy.js").MalwareBlockedEvent[]} malwareBlockedEvents 
+ *
+ * @param {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} malwareBlockedEvents
  */
 function printBlockedMalware(malwareBlockedEvents) {
   ui.emptyLine();
@@ -142,5 +152,35 @@ function printBlockedMalware(malwareBlockedEvents) {
 
   ui.emptyLine();
   ui.writeExitWithoutInstallingMaliciousPackages();
+  ui.emptyLine();
+}
+
+/**
+ *
+ * @param {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} minPackageAgeBlocks
+ */
+function printMinPackageAgeBlocks(minPackageAgeBlocks) {
+  ui.emptyLine();
+
+  ui.writeInformation(
+    `Safe-chain: ${chalk.bold(
+      `blocked ${minPackageAgeBlocks.length} direct package download request(s) due to minimum package age`,
+    )}:`,
+  );
+
+  for (const req of minPackageAgeBlocks) {
+    ui.writeInformation(` - ${req.packageName}@${req.packageVersion}`);
+  }
+
+  ui.writeInformation(
+    `  To disable this check, use: ${chalk.cyan(
+      "--safe-chain-skip-minimum-package-age",
+    )}`,
+  );
+
+  ui.emptyLine();
+  ui.writeError(
+    "Safe-chain: Exiting without installing packages blocked by the direct download minimum package age check.",
+  );
   ui.emptyLine();
 }

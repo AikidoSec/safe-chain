@@ -3,13 +3,21 @@ import {
   getEcoSystem,
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
+  getMalwareListBaseUrl,
 } from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 
-const malwareDatabaseUrls = {
-  [ECOSYSTEM_JS]: "https://malware-list.aikido.dev/malware_predictions.json",
-  [ECOSYSTEM_PY]: "https://malware-list.aikido.dev/malware_pypi.json",
+const malwareDatabasePaths = {
+  [ECOSYSTEM_JS]: "malware_predictions.json",
+  [ECOSYSTEM_PY]: "malware_pypi.json",
 };
+
+const newPackagesListPaths = {
+  [ECOSYSTEM_JS]: "releases/npm.json",
+  [ECOSYSTEM_PY]: "releases/pypi.json",
+};
+
+const DEFAULT_FETCH_RETRY_ATTEMPTS = 4;
 
 /**
  * @typedef {Object} MalwarePackage
@@ -19,17 +27,25 @@ const malwareDatabaseUrls = {
  */
 
 /**
+ * @typedef {Object} NewPackageEntry
+ * @property {string} [source]
+ * @property {string} package_name
+ * @property {string} version
+ * @property {number} released_on  - Unix timestamp (seconds)
+ * @property {number} scraped_on   - Unix timestamp (seconds)
+ */
+
+/**
  * @returns {Promise<{malwareDatabase: MalwarePackage[], version: string | undefined}>}
  */
 export async function fetchMalwareDatabase() {
-  const numberOfAttempts = 4;
-
   return retry(async () => {
     const ecosystem = getEcoSystem();
-    const malwareDatabaseUrl =
-      malwareDatabaseUrls[
-        /** @type {keyof typeof malwareDatabaseUrls} */ (ecosystem)
-      ];
+    const baseUrl = getMalwareListBaseUrl();
+    const path = malwareDatabasePaths[
+      /** @type {keyof typeof malwareDatabasePaths} */ (ecosystem)
+    ];
+    const malwareDatabaseUrl = `${baseUrl}/${path}`;
     const response = await fetch(malwareDatabaseUrl);
     if (!response.ok) {
       throw new Error(
@@ -46,21 +62,20 @@ export async function fetchMalwareDatabase() {
     } catch (/** @type {any} */ error) {
       throw new Error(`Error parsing malware database: ${error.message}`);
     }
-  }, numberOfAttempts);
+  }, DEFAULT_FETCH_RETRY_ATTEMPTS);
 }
 
 /**
  * @returns {Promise<string | undefined>}
  */
 export async function fetchMalwareDatabaseVersion() {
-  const numberOfAttempts = 4;
-
   return retry(async () => {
     const ecosystem = getEcoSystem();
-    const malwareDatabaseUrl =
-      malwareDatabaseUrls[
-        /** @type {keyof typeof malwareDatabaseUrls} */ (ecosystem)
-      ];
+    const baseUrl = getMalwareListBaseUrl();
+    const path = malwareDatabasePaths[
+      /** @type {keyof typeof malwareDatabasePaths} */ (ecosystem)
+    ];
+    const malwareDatabaseUrl = `${baseUrl}/${path}`;
     const response = await fetch(malwareDatabaseUrl, {
       method: "HEAD",
     });
@@ -71,7 +86,67 @@ export async function fetchMalwareDatabaseVersion() {
       );
     }
     return response.headers.get("etag") || undefined;
-  }, numberOfAttempts);
+  }, DEFAULT_FETCH_RETRY_ATTEMPTS);
+}
+
+/**
+ * @returns {Promise<{newPackagesList: NewPackageEntry[], version: string | undefined}>}
+ */
+export async function fetchNewPackagesList() {
+  return retry(async () => {
+    const ecosystem = getEcoSystem();
+    const baseUrl = getMalwareListBaseUrl();
+    const path = newPackagesListPaths[/** @type {keyof typeof newPackagesListPaths} */ (ecosystem)];
+
+    if (!path) {
+      return { newPackagesList: [], version: undefined };
+    }
+
+    const url = `${baseUrl}/${path}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(
+        `Error fetching ${ecosystem} new packages list: ${response.statusText}`
+      );
+    }
+
+    try {
+      const newPackagesList = await response.json();
+      return {
+        newPackagesList,
+        version: response.headers.get("etag") || undefined,
+      };
+    } catch (/** @type {any} */ error) {
+      throw new Error(`Error parsing new packages list: ${error.message}`);
+    }
+  }, DEFAULT_FETCH_RETRY_ATTEMPTS);
+}
+
+/**
+ * @returns {Promise<string | undefined>}
+ */
+export async function fetchNewPackagesListVersion() {
+  return retry(async () => {
+    const ecosystem = getEcoSystem();
+    const baseUrl = getMalwareListBaseUrl();
+    const path = newPackagesListPaths[/** @type {keyof typeof newPackagesListPaths} */ (ecosystem)];
+
+    if (!path) {
+      return undefined;
+    }
+
+    const url = `${baseUrl}/${path}`;
+
+    const response = await fetch(url, { method: "HEAD" });
+    if (!response.ok) {
+      throw new Error(
+        `Error fetching ${ecosystem} new packages list version: ${response.statusText}`
+      );
+    }
+
+    return response.headers.get("etag") || undefined;
+  }, DEFAULT_FETCH_RETRY_ATTEMPTS);
 }
 
 /**
@@ -91,7 +166,7 @@ async function retry(func, attempts) {
       return await func();
     } catch (error) {
       ui.writeVerbose(
-        "An error occurred while trying to download the Aikido Malware database",
+        "An error occurred while trying to download Aikido data",
         error
       );
       lastError = error;

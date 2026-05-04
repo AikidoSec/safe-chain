@@ -78,7 +78,10 @@ jobs:
 
       - name: Set the version in safe-chain package
         if: inputs.version != ''
-        run: npm --no-git-tag-version version ${{ inputs.version }} --workspace=packages/safe-chain --ignore-scripts
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: npm --no-git-tag-version version $VERSION --workspace=packages/safe-chain --ignore-scripts
 
       - name: Create binary
         run: |

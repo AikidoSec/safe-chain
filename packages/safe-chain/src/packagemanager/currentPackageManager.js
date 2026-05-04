@@ -13,6 +13,7 @@ import { createPipPackageManager } from "./pip/createPackageManager.js";
 import { createUvPackageManager } from "./uv/createUvPackageManager.js";
 import { createPoetryPackageManager } from "./poetry/createPoetryPackageManager.js";
 import { createPipXPackageManager } from "./pipx/createPipXPackageManager.js";
+import { createUvxPackageManager } from "./uvx/createUvxPackageManager.js";
 
 /**
  * @type {{packageManagerName: PackageManager | null}}
@@ -60,6 +61,8 @@ export function initializePackageManager(packageManagerName, context) {
     state.packageManagerName = createPipPackageManager(context);
   } else if (packageManagerName === "uv") {
     state.packageManagerName = createUvPackageManager();
+  } else if (packageManagerName === "uvx") {
+    state.packageManagerName = createUvxPackageManager();
   } else if (packageManagerName === "poetry") {
     state.packageManagerName = createPoetryPackageManager();
   } else if (packageManagerName === "pipx") {
