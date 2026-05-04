@@ -75,6 +75,10 @@ function pipx {
     Invoke-WrappedCommand "pipx" $args $MyInvocation.Line $MyInvocation.OffsetInLine
 }
 
+function pdm {
+    Invoke-WrappedCommand "pdm" $args $MyInvocation.Line $MyInvocation.OffsetInLine
+}
+
 function Write-SafeChainWarning {
     param([string]$Command)
     

@@ -3130,6 +3130,7 @@
         "aikido-bunx": "bin/aikido-bunx.js",
         "aikido-npm": "bin/aikido-npm.js",
         "aikido-npx": "bin/aikido-npx.js",
+        "aikido-pdm": "bin/aikido-pdm.js",
         "aikido-pip": "bin/aikido-pip.js",
         "aikido-pip3": "bin/aikido-pip3.js",
         "aikido-pipx": "bin/aikido-pipx.js",

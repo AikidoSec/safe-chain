@@ -108,6 +108,12 @@ export const knownAikidoTools = [
     ecoSystem: ECOSYSTEM_PY,
     internalPackageManagerName: "pipx",
   },
+  {
+    tool: "pdm",
+    aikidoCommand: "aikido-pdm",
+    ecoSystem: ECOSYSTEM_PY,
+    internalPackageManagerName: "pdm",
+  },
   // When adding a new tool here, also update the documentation for the new tool in the README.md
 ];
 

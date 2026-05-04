@@ -76,6 +76,10 @@ function pipx
     wrapSafeChainCommand "pipx" $argv
 end
 
+function pdm
+    wrapSafeChainCommand "pdm" $argv
+end
+
 function printSafeChainWarning
     set original_cmd $argv[1]
 
