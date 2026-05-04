@@ -60,12 +60,43 @@ jobs:
           mv binaries/safe-chain-win-x64/safe-chain.exe release-artifacts/safe-chain-win-x64.exe
           mv binaries/safe-chain-win-arm64/safe-chain.exe release-artifacts/safe-chain-win-arm64.exe
 
-      - name: Move install scripts and hard-code version
+      - name: Move install scripts and hard-code version and checksums
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
         run: |
-          sed "s/\$(fetch_latest_version)/${VERSION}/" install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
-          sed "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
+          SHA_MACOS_X64=$(sha256sum release-artifacts/safe-chain-macos-x64         | awk '{print $1}')
+          SHA_MACOS_ARM64=$(sha256sum release-artifacts/safe-chain-macos-arm64     | awk '{print $1}')
+          SHA_LINUX_X64=$(sha256sum release-artifacts/safe-chain-linux-x64         | awk '{print $1}')
+          SHA_LINUX_ARM64=$(sha256sum release-artifacts/safe-chain-linux-arm64     | awk '{print $1}')
+          SHA_LINUXSTATIC_X64=$(sha256sum release-artifacts/safe-chain-linuxstatic-x64     | awk '{print $1}')
+          SHA_LINUXSTATIC_ARM64=$(sha256sum release-artifacts/safe-chain-linuxstatic-arm64 | awk '{print $1}')
+          SHA_WIN_X64=$(sha256sum release-artifacts/safe-chain-win-x64.exe         | awk '{print $1}')
+          SHA_WIN_ARM64=$(sha256sum release-artifacts/safe-chain-win-arm64.exe     | awk '{print $1}')
+
+          sed \
+            -e "s/\$(fetch_latest_version)/${VERSION}/" \
+            -e "s|^SHA256_MACOS_X64=\"\"|SHA256_MACOS_X64=\"${SHA_MACOS_X64}\"|" \
+            -e "s|^SHA256_MACOS_ARM64=\"\"|SHA256_MACOS_ARM64=\"${SHA_MACOS_ARM64}\"|" \
+            -e "s|^SHA256_LINUX_X64=\"\"|SHA256_LINUX_X64=\"${SHA_LINUX_X64}\"|" \
+            -e "s|^SHA256_LINUX_ARM64=\"\"|SHA256_LINUX_ARM64=\"${SHA_LINUX_ARM64}\"|" \
+            -e "s|^SHA256_LINUXSTATIC_X64=\"\"|SHA256_LINUXSTATIC_X64=\"${SHA_LINUXSTATIC_X64}\"|" \
+            -e "s|^SHA256_LINUXSTATIC_ARM64=\"\"|SHA256_LINUXSTATIC_ARM64=\"${SHA_LINUXSTATIC_ARM64}\"|" \
+            -e "s|^SHA256_WIN_X64=\"\"|SHA256_WIN_X64=\"${SHA_WIN_X64}\"|" \
+            -e "s|^SHA256_WIN_ARM64=\"\"|SHA256_WIN_ARM64=\"${SHA_WIN_ARM64}\"|" \
+            install-scripts/install-safe-chain.sh > release-artifacts/install-safe-chain.sh
+
+          sed \
+            -e "s/\$Version = Get-LatestVersion/\$Version = \"${VERSION}\"/" \
+            -e "s|^\$SHA256_MACOS_X64 = \"\"|\$SHA256_MACOS_X64 = \"${SHA_MACOS_X64}\"|" \
+            -e "s|^\$SHA256_MACOS_ARM64 = \"\"|\$SHA256_MACOS_ARM64 = \"${SHA_MACOS_ARM64}\"|" \
+            -e "s|^\$SHA256_LINUX_X64 = \"\"|\$SHA256_LINUX_X64 = \"${SHA_LINUX_X64}\"|" \
+            -e "s|^\$SHA256_LINUX_ARM64 = \"\"|\$SHA256_LINUX_ARM64 = \"${SHA_LINUX_ARM64}\"|" \
+            -e "s|^\$SHA256_LINUXSTATIC_X64 = \"\"|\$SHA256_LINUXSTATIC_X64 = \"${SHA_LINUXSTATIC_X64}\"|" \
+            -e "s|^\$SHA256_LINUXSTATIC_ARM64 = \"\"|\$SHA256_LINUXSTATIC_ARM64 = \"${SHA_LINUXSTATIC_ARM64}\"|" \
+            -e "s|^\$SHA256_WIN_X64 = \"\"|\$SHA256_WIN_X64 = \"${SHA_WIN_X64}\"|" \
+            -e "s|^\$SHA256_WIN_ARM64 = \"\"|\$SHA256_WIN_ARM64 = \"${SHA_WIN_ARM64}\"|" \
+            install-scripts/install-safe-chain.ps1 > release-artifacts/install-safe-chain.ps1
+
           cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
           cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
           cp install-scripts/install-endpoint-mac.sh release-artifacts/install-endpoint-mac.sh

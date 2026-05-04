@@ -55,7 +55,7 @@ export function getProxySettings() {
     };
   }
 
-  const proxyUrl = `http://localhost:${server.getServerPort()}`;
+  const proxyUrl = `http://127.0.0.1:${server.getServerPort()}`;
   const caCert = server.getCaCert();
   const caCertBundlePath = getCombinedCaBundlePath(caCert);
 

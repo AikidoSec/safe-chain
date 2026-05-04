@@ -48,8 +48,11 @@ export function createBuiltInProxyServer() {
    */
   function startServer(server) {
     return new Promise((resolve, reject) => {
-      // Passing port 0 makes the OS assign an available port
-      server.listen(0, () => {
+      // Bind to loopback only. Without an explicit host, Node listens on every
+      // interface, turning the proxy into an unauthenticated forward proxy that
+      // anyone reachable on the network can use to hit the victim's localhost,
+      // intranet, or cloud metadata endpoints. Port 0 lets the OS pick a port.
+      server.listen(0, "127.0.0.1", () => {
         const address = server.address();
         if (address && typeof address === "object") {
           state.port = address.port;
