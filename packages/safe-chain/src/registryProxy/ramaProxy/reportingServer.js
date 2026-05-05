@@ -7,6 +7,7 @@ const SERVER_STOP_TIMEOUT_MS = 1000;
  * @typedef {Object} BlockEvent
  * @property {number} ts_ms
  * @property {{ product: string, identifier: string, version: string }} artifact
+ * @property {string} block_reason
  */
 
 /**
