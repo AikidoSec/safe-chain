@@ -8,6 +8,7 @@ import { getCaCertPath } from "./certUtils.js";
 import { readFileSync } from "fs";
 import EventEmitter from "events";
 import { modifyResponseEventEmitter } from "./interceptors/npm/modifyNpmInfo.js";
+import { modifyPipResponseEventEmitter } from "./interceptors/pip/modifyPipInfo.js";
 import { cleanupCertBundle } from "../certBundle.js";
 
 /** *
@@ -24,6 +25,10 @@ export function createBuiltInProxyServer() {
   const emitter = new EventEmitter();
 
   modifyResponseEventEmitter.addListener("versionsRemoved", (ev) => {
+    emitter.emit("minPackageAgeVersionsSuppressed", ev);
+  });
+
+  modifyPipResponseEventEmitter.addListener("versionsRemoved", (ev) => {
     emitter.emit("minPackageAgeVersionsSuppressed", ev);
   });
 

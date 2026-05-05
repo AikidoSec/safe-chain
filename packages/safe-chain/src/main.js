@@ -24,7 +24,6 @@ export async function main(args) {
   let malwareBlockedEvents = [];
   /** @type {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} */
   let minPackageAgeBlocks = [];
-
   /** @type {import("./registryProxy/registryProxy.js").MinPackageAgeSuppressionEvent[]} */
   let suppressedVersionEvents = [];
 
