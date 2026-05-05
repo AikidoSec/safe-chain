@@ -180,20 +180,6 @@ function getMostRecentTag(tagList) {
 }
 
 /**
- * Checks if a package name matches an exclusion pattern.
- * Supports trailing wildcard (*) for prefix matching.
- * @param {string} packageName
- * @param {string} pattern
- * @returns {boolean}
- */
-function matchesExclusionPattern(packageName, pattern) {
-  if (pattern.endsWith("/*")) {
-    return packageName.startsWith(pattern.slice(0, -1));
-  }
-  return packageName === pattern;
-}
-
-/**
  * @param {Buffer} body
  * @param {NodeJS.Dict<string | string[]> | undefined} headers
  * @returns {string | undefined}
