@@ -1,10 +1,10 @@
 import { EventEmitter } from "events";
-import {
-  getMinimumPackageAgeExclusions,
-  getMinimumPackageAgeHours,
-} from "../../../../config/settings.js";
+import { getMinimumPackageAgeHours } from "../../../../config/settings.js";
 import { ui } from "../../../../environment/userInteraction.js";
-import { clearCachingHeaders, getHeaderValueAsString } from "../../http-utils.js";
+import {
+  clearCachingHeaders,
+  getHeaderValueAsString,
+} from "../../http-utils.js";
 
 /** @type {EventEmitter<{ versionsRemoved: [{packageName: string, packageVersions: string[]}] }>} */
 export const modifyResponseEventEmitter = new EventEmitter();
@@ -65,21 +65,6 @@ export function modifyNpmInfoResponse(body, headers) {
 
     if (!bodyJson.time || !bodyJson["dist-tags"] || !bodyJson.versions) {
       // Just return the current body if the format is not
-      return body;
-    }
-
-    // Check if this package is excluded from minimum age filtering
-    const packageName = bodyJson.name;
-    const exclusions = getMinimumPackageAgeExclusions();
-    if (
-      packageName &&
-      exclusions.some((pattern) =>
-        matchesExclusionPattern(packageName, pattern),
-      )
-    ) {
-      ui.writeVerbose(
-        `Safe-chain: ${packageName} is excluded from minimum package age filtering (minimumPackageAgeExclusions setting).`,
-      );
       return body;
     }
 
