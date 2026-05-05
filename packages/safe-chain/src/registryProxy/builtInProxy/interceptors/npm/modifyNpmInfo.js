@@ -68,6 +68,8 @@ export function modifyNpmInfoResponse(body, headers) {
       return body;
     }
 
+    const packageName = bodyJson.name;
+
     const cutOff = new Date(
       new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000,
     );
