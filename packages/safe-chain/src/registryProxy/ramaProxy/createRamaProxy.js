@@ -48,10 +48,24 @@ export function createRamaProxy(ramaPath) {
   return Object.assign(emitter, {
     startServer: async () => {
       await reportingServer.start();
-      reportingServer.addListener("blockReceived", (ev) =>
-        emitter.emit("malwareBlocked", {
+      reportingServer.addListener("blockReceived", (ev) => {
+        if (ev.block_reason === "new_package") {
+          emitter.emit("minimumAgeRequestBlocked", {
+            packageName: ev.artifact.identifier,
+            packageVersion: ev.artifact.version,
+          });
+        }
+        else {
+          emitter.emit("malwareBlocked", {
+            packageName: ev.artifact.identifier,
+            packageVersion: ev.artifact.version,
+          });
+        }
+      });
+      reportingServer.addListener("minPackageAgeSuppressionReceived", (ev) =>
+        emitter.emit("minPackageAgeVersionsSuppressed", {
           packageName: ev.artifact.identifier,
-          packageVersion: ev.artifact.version,
+          packageVersions: ev.suppressed_versions,
         }),
       );
       ui.writeVerbose(

@@ -1,3 +1,4 @@
+import { EventEmitter } from "events";
 import { ui } from "../../../../environment/userInteraction.js";
 import { clearCachingHeaders } from "../../http-utils.js";
 import { normalizePipPackageName } from "../../../../scanning/packageNameVariants.js";
@@ -5,6 +6,9 @@ import { parsePipPackageFromUrl } from "./parsePipPackageUrl.js";
 export { parsePipMetadataUrl, isPipPackageInfoUrl } from "./parsePipPackageUrl.js";
 import { getPipMetadataContentType, logSuppressedVersion } from "./pipMetadataResponseUtils.js";
 import { modifyPipJsonResponse } from "./modifyPipJsonResponse.js";
+
+/** @type {EventEmitter<{ versionsRemoved: [{packageName: string, packageVersions: string[]}] }>} */
+export const modifyPipResponseEventEmitter = new EventEmitter();
 
 /**
  * Strip conditional GET headers so PyPI always returns a full 200 response
@@ -50,33 +54,42 @@ export function modifyPipInfoResponse(
       return body;
     }
 
+    /** @type {{ buffer: Buffer, suppressedVersions: string[] } | undefined} */
+    let result;
     if (
       contentType.includes("html") ||
       contentType.includes("application/vnd.pypi.simple.v1+html")
     ) {
-      return modifyHtmlSimpleResponse(
+      result = modifyHtmlSimpleResponse(
         body,
         headers,
         metadataUrl,
         isNewlyReleasedPackage,
         packageName
       );
-    }
-
-    if (
+    } else if (
       contentType.includes("json") ||
       contentType.includes("application/vnd.pypi.simple.v1+json")
     ) {
-      return modifyJsonResponse(
+      result = modifyJsonResponse(
         body,
         headers,
         metadataUrl,
         isNewlyReleasedPackage,
         packageName
       );
+    } else {
+      return body;
     }
 
-    return body;
+    if (result.suppressedVersions.length > 0) {
+      modifyPipResponseEventEmitter.emit("versionsRemoved", {
+        packageName,
+        packageVersions: result.suppressedVersions,
+      });
+    }
+
+    return result.buffer;
   } catch (/** @type {any} */ err) {
     ui.writeVerbose(
       `Safe-chain: PyPI package metadata not in expected format - bypassing modification. Error: ${err.message}`
@@ -91,7 +104,7 @@ export function modifyPipInfoResponse(
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
- * @returns {Buffer}
+ * @returns {{ buffer: Buffer, suppressedVersions: string[] }}
  */
 function modifyHtmlSimpleResponse(
   body,
@@ -101,35 +114,35 @@ function modifyHtmlSimpleResponse(
   packageName
 ) {
   const html = body.toString("utf8");
-  let modified = false;
+  const suppressedVersions = /** @type {string[]} */ ([]);
   const rewriteHtmlAnchor = createHtmlAnchorRewriter(
     metadataUrl,
     isNewlyReleasedPackage,
     packageName,
-    () => {
-      modified = true;
+    (version) => {
+      suppressedVersions.push(version);
     }
   );
   const updatedHtml = html.replace(HTML_ANCHOR_HREF_RE, rewriteHtmlAnchor);
 
-  if (!modified) return body;
+  if (suppressedVersions.length === 0) return { buffer: body, suppressedVersions: [] };
   const modifiedBuffer = Buffer.from(updatedHtml);
   clearCachingHeaders(headers);
-  return modifiedBuffer;
+  return { buffer: modifiedBuffer, suppressedVersions: [...new Set(suppressedVersions)] };
 }
 
 /**
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
- * @param {() => void} onModified
+ * @param {(version: string) => void} onVersionSuppressed
  * @returns {(anchor: string, quote: string, href: string) => string}
  */
 function createHtmlAnchorRewriter(
   metadataUrl,
   isNewlyReleasedPackage,
   packageName,
-  onModified
+  onVersionSuppressed
 ) {
   return (anchor, _quote, href) => {
     const resolvedHref = new URL(href, metadataUrl).toString();
@@ -145,8 +158,8 @@ function createHtmlAnchorRewriter(
       version &&
       isNewlyReleasedPackage(packageName, version)
     ) {
-      onModified();
       logSuppressedVersion(packageName, version);
+      onVersionSuppressed(version);
       return "";
     }
 
@@ -160,7 +173,7 @@ function createHtmlAnchorRewriter(
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
- * @returns {Buffer}
+ * @returns {{ buffer: Buffer, suppressedVersions: string[] }}
  */
 function modifyJsonResponse(
   body,
@@ -170,15 +183,15 @@ function modifyJsonResponse(
   packageName
 ) {
   const json = JSON.parse(body.toString("utf8"));
-  const modified = modifyPipJsonResponse(
+  const { suppressedVersions, wasModified } = modifyPipJsonResponse(
     json,
     metadataUrl,
     isNewlyReleasedPackage,
     packageName
   );
 
-  if (!modified) return body;
+  if (!wasModified) return { buffer: body, suppressedVersions: [] };
   const modifiedBuffer = Buffer.from(JSON.stringify(json));
   clearCachingHeaders(headers);
-  return modifiedBuffer;
+  return { buffer: modifiedBuffer, suppressedVersions };
 }

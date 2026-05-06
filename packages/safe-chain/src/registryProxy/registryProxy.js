@@ -8,7 +8,15 @@ import { getCombinedCaBundlePath } from "./certBundle.js";
  * @prop {string} packageName
  * @prop {string} packageVersion
  *
- * @typedef {{ malwareBlocked: [PackageBlockedEvent], minimumAgeRequestBlocked: [PackageBlockedEvent] }} ProxyServerEvents
+ * @typedef {Object} MinPackageAgeSuppressionEvent
+ * @prop {string} packageName
+ * @prop {string[]} packageVersions
+ *
+ * @typedef {{ 
+ *    malwareBlocked: [PackageBlockedEvent], 
+ *    minimumAgeRequestBlocked: [PackageBlockedEvent]
+ *    minPackageAgeVersionsSuppressed: [MinPackageAgeSuppressionEvent]
+ * }} ProxyServerEvents
  *
  * @import { EventEmitter } from "node:stream"
  * @typedef {EventEmitter<ProxyServerEvents> & {
@@ -16,7 +24,6 @@ import { getCombinedCaBundlePath } from "./certBundle.js";
  *   stopServer: () => Promise<void>
  *   getServerPort: () => Number | null
  *   getCaCert: () => string | null
- *   hasSuppressedVersions: () => boolean
  * }} SafeChainProxy
  *
  * @typedef {Object} ProxySettings

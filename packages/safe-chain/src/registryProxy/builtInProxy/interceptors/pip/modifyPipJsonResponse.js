@@ -10,7 +10,7 @@ import { logSuppressedVersion } from "./pipMetadataResponseUtils.js";
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
- * @returns {boolean}
+ * @returns {{ suppressedVersions: string[], wasModified: boolean }}
  */
 export function modifyPipJsonResponse(
   json,
@@ -18,18 +18,18 @@ export function modifyPipJsonResponse(
   isNewlyReleasedPackage,
   packageName
 ) {
-  const filesModified = filterJsonMetadataFiles(
+  const filesSuppressed = filterJsonMetadataFiles(
     json,
     metadataUrl,
     isNewlyReleasedPackage,
     packageName
   );
-  const releasesModified = removeJsonMetadataReleases(
+  const releasesSuppressed = removeJsonMetadataReleases(
     json,
     isNewlyReleasedPackage,
     packageName
   );
-  const urlsModified = filterJsonMetadataUrls(
+  const urlsSuppressed = filterJsonMetadataUrls(
     json,
     metadataUrl,
     isNewlyReleasedPackage,
@@ -37,7 +37,11 @@ export function modifyPipJsonResponse(
   );
   const versionModified = updateJsonInfoVersion(json, metadataUrl);
 
-  return filesModified || releasesModified || urlsModified || versionModified;
+  const suppressedVersions = [
+    ...new Set([...filesSuppressed, ...releasesSuppressed, ...urlsSuppressed]),
+  ];
+
+  return { suppressedVersions, wasModified: suppressedVersions.length > 0 || versionModified };
 }
 
 /**
@@ -45,7 +49,7 @@ export function modifyPipJsonResponse(
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
- * @returns {boolean}
+ * @returns {string[]}
  */
 function filterJsonMetadataFiles(
   json,
@@ -54,19 +58,17 @@ function filterJsonMetadataFiles(
   packageName
 ) {
   if (!Array.isArray(json.files)) {
-    return false;
+    return [];
   }
 
-  let modified = false;
-  const loggedVersions = new Set();
+  const suppressed = new Set();
   json.files = json.files.filter((/** @type {any} */ file) => {
     const version = getPackageVersionFromMetadataFile(file, metadataUrl);
 
     if (version && isNewlyReleasedPackage(packageName, version)) {
-      modified = true;
-      if (!loggedVersions.has(version)) {
+      if (!suppressed.has(version)) {
         logSuppressedVersion(packageName, version);
-        loggedVersions.add(version);
+        suppressed.add(version);
       }
       return false;
     }
@@ -74,21 +76,21 @@ function filterJsonMetadataFiles(
     return true;
   });
 
-  return modified;
+  return [...suppressed];
 }
 
 /**
  * @param {any} json
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
- * @returns {boolean}
+ * @returns {string[]}
  */
 function removeJsonMetadataReleases(json, isNewlyReleasedPackage, packageName) {
   if (!json.releases || typeof json.releases !== "object") {
-    return false;
+    return [];
   }
 
-  let modified = false;
+  const suppressed = [];
 
   for (const [version, files] of Object.entries(json.releases)) {
     if (
@@ -96,12 +98,12 @@ function removeJsonMetadataReleases(json, isNewlyReleasedPackage, packageName) {
       isNewlyReleasedPackage(packageName, version)
     ) {
       delete json.releases[version];
-      modified = true;
       logSuppressedVersion(packageName, version);
+      suppressed.push(version);
     }
   }
 
-  return modified;
+  return suppressed;
 }
 
 /**
@@ -109,7 +111,7 @@ function removeJsonMetadataReleases(json, isNewlyReleasedPackage, packageName) {
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
- * @returns {boolean}
+ * @returns {string[]}
  */
 function filterJsonMetadataUrls(
   json,
@@ -118,19 +120,17 @@ function filterJsonMetadataUrls(
   packageName
 ) {
   if (!Array.isArray(json.urls)) {
-    return false;
+    return [];
   }
 
-  let modified = false;
-  const loggedVersions = new Set();
+  const suppressed = new Set();
   json.urls = json.urls.filter((/** @type {any} */ file) => {
     const version = getPackageVersionFromMetadataFile(file, metadataUrl);
 
     if (version && isNewlyReleasedPackage(packageName, version)) {
-      modified = true;
-      if (!loggedVersions.has(version)) {
+      if (!suppressed.has(version)) {
         logSuppressedVersion(packageName, version);
-        loggedVersions.add(version);
+        suppressed.add(version);
       }
       return false;
     }
@@ -138,7 +138,7 @@ function filterJsonMetadataUrls(
     return true;
   });
 
-  return modified;
+  return [...suppressed];
 }
 
 /**

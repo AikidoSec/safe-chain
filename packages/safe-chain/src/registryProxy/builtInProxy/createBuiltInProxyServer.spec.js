@@ -7,7 +7,7 @@ const mockMitmConnect = mock.fn();
 const mockTunnelRequest = mock.fn();
 const mockUi = { writeVerbose: mock.fn() };
 const mockGetCaCertPath = mock.fn(() => "/fake/cert/path");
-const mockGetHasSuppressedVersions = mock.fn(() => false);
+const mockModifyResponseEventEmitter = new EventEmitter();
 
 /** @type {import("./interceptors/interceptorBuilder.js").Interceptor | undefined} */
 let mockInterceptor;
@@ -30,7 +30,7 @@ mock.module("./interceptors/createInterceptorForEcoSystem.js", {
   },
 });
 mock.module("./interceptors/npm/modifyNpmInfo.js", {
-  namedExports: { getHasSuppressedVersions: mockGetHasSuppressedVersions },
+  namedExports: { modifyResponseEventEmitter: mockModifyResponseEventEmitter },
 });
 mock.module("./certUtils.js", {
   namedExports: { getCaCertPath: mockGetCaCertPath },

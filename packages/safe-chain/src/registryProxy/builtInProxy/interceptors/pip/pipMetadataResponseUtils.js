@@ -1,7 +1,6 @@
 import { getMinimumPackageAgeHours } from "../../../../config/settings.js";
 import { ui } from "../../../../environment/userInteraction.js";
 import { getHeaderValueAsString } from "../../http-utils.js";
-import { recordSuppressedVersion } from "../suppressedVersionsState.js";
 
 /**
  * @param {NodeJS.Dict<string | string[]> | undefined} headers
@@ -20,7 +19,6 @@ export function getPipMetadataContentType(headers) {
  * @returns {void}
  */
 export function logSuppressedVersion(packageName, version) {
-  recordSuppressedVersion();
   ui.writeVerbose(
     `Safe-chain: ${packageName}@${version} is newer than ${getMinimumPackageAgeHours()} hours and was removed (minimumPackageAgeInHours setting).`
   );
