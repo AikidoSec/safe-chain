@@ -11,6 +11,9 @@
         "packages/*",
         "test/e2e"
       ],
+      "dependencies": {
+        "maninos": "^1.3.0"
+      },
       "devDependencies": {
         "@yao-pkg/pkg": "6.10.1",
         "esbuild": "^0.27.0",
@@ -1956,6 +1959,12 @@
         "node": "^20.17.0 || >=22.9.0"
       }
     },
+    "node_modules/maninos": {
+      "version": "1.3.0",
+      "resolved": "https://registry.npmjs.org/maninos/-/maninos-1.3.0.tgz",
+      "integrity": "sha512-fJSRRsMJotyXEaqRLkzs67XKGcAC0bULWKWr4O7Ji4hLCxlcgLAZ9BDQd+XjoEhFDFjquJqPcpQt9Uee3y6Eog==",
+      "hasInstallScript": true
+    },
     "node_modules/math-intrinsics": {
       "version": "1.1.0",
       "resolved": "https://registry.npmjs.org/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
@@ -2417,7 +2426,6 @@
       "integrity": "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==",
       "dev": true,
       "license": "MIT",
-      "peer": true,
       "engines": {
         "node": ">=12"
       },
