@@ -24,6 +24,7 @@ mock.module("node:child_process", {
 });
 
 const mockExistsSync = mock.fn(() => true);
+const mockWriteFile = mock.fn(() => {});
 const mockMkdtempSync = mock.fn(() => "/tmp/safe-chain-proxy-abc");
 const mockReadFile = mock.fn(
   (/** @type {string} */ path, /** @type {string} */ _encoding, /** @type {Function} */ cb) => {
@@ -42,6 +43,7 @@ mock.module("node:fs", {
     existsSync: mockExistsSync,
     mkdtempSync: mockMkdtempSync,
     readFile: mockReadFile,
+    writeFile: mockWriteFile,
   },
 });
 
@@ -55,6 +57,12 @@ mock.module("../../config/settings.js", {
     LOGGING_VERBOSE: "verbose",
   },
 });
+
+mock.module("./createAikidoEndpointConfigFile.js", {
+  namedExports: {
+    createAikidoEndpointConfigFile: () => "/path/to/config-file.json"
+  }
+})
 
 const mockFetch = mock.method(globalThis, "fetch", async () => ({
   text: async () => "MOCK_CA_CERT_PEM",

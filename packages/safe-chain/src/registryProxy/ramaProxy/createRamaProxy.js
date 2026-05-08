@@ -8,6 +8,7 @@ import { ui } from "../../environment/userInteraction.js";
 import { getLoggingLevel, LOGGING_VERBOSE } from "../../config/settings.js";
 import { getReportingServer } from "./reportingServer.js";
 import EventEmitter from "node:events";
+import { createAikidoEndpointConfigFile } from "./createAikidoEndpointConfigFile.js";
 
 const readFilePromise = promisify(readFile);
 
@@ -104,7 +105,7 @@ export function createRamaProxy(ramaPath) {
  * @returns {Promise<RamaProxyInstance>}
  */
 async function startRama(ramaPath, dataFolder, reportingUrl) {
-  const startTime = Date.now();  
+  const startTime = Date.now();
   const args = [
     "--secrets",
     "memory",
@@ -113,6 +114,12 @@ async function startRama(ramaPath, dataFolder, reportingUrl) {
     "--reporting-endpoint",
     reportingUrl,
   ];
+
+  const configFile = await createAikidoEndpointConfigFile(dataFolder);
+  if (configFile) {
+    args.push("--config-file", configFile);
+  }
+
   const stdio = getLoggingLevel() === LOGGING_VERBOSE ? "inherit" : "pipe";
   const process = spawn(ramaPath, args, { stdio: stdio });
 
