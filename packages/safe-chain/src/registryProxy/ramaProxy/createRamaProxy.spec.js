@@ -55,10 +55,14 @@ mock.module("../../config/settings.js", {
   namedExports: {
     getLoggingLevel: mock.fn(() => "default"),
     LOGGING_VERBOSE: "verbose",
-    getMinimumPackageAgeHours: () => 48,
-    skipMinimumPackageAge: () => false,
   },
 });
+
+mock.module("./createAikidoEndpointConfigFile.js", {
+  namedExports: {
+    createAikidoEndpointConfigFile: () => "/path/to/config-file.json"
+  }
+})
 
 const mockFetch = mock.method(globalThis, "fetch", async () => ({
   text: async () => "MOCK_CA_CERT_PEM",

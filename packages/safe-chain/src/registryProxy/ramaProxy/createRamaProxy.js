@@ -99,9 +99,13 @@ async function startRama(ramaPath, dataFolder, reportingUrl) {
     dataFolder,
     "--reporting-endpoint",
     reportingUrl,
-    "--config-file",
-    await createAikidoEndpointConfigFile(dataFolder),
   ];
+
+  const configFile = await createAikidoEndpointConfigFile(dataFolder);
+  if (configFile) {
+    args.push("--config-file", configFile);
+  }
+
   const stdio = getLoggingLevel() === LOGGING_VERBOSE ? "inherit" : "pipe";
   const process = spawn(ramaPath, args, { stdio: stdio });
 
