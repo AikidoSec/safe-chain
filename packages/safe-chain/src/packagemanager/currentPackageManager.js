@@ -16,6 +16,7 @@ import { createPipXPackageManager } from "./pipx/createPipXPackageManager.js";
 import { createRushPackageManager } from "./rush/createRushPackageManager.js";
 import { createRushxPackageManager } from "./rushx/createRushxPackageManager.js";
 import { createUvxPackageManager } from "./uvx/createUvxPackageManager.js";
+import { setPackageManagerName } from "../config/packageManagerName.js";
 
 /**
  * @type {{packageManagerName: PackageManager | null}}
@@ -45,6 +46,7 @@ const state = {
  * @return {PackageManager}
  */
 export function initializePackageManager(packageManagerName, context) {
+  setPackageManagerName(packageManagerName);
   if (packageManagerName === "npm") {
     state.packageManagerName = createNpmPackageManager();
   } else if (packageManagerName === "npx") {

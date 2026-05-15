@@ -1,6 +1,8 @@
 import * as cliArguments from "./cliArguments.js";
 import * as configFile from "./configFile.js";
 import * as environmentVariables from "./environmentVariables.js";
+import * as pnpmWorkspaceConfig from "./pnpmWorkspaceConfig.js";
+import { getPackageManagerName } from "./packageManagerName.js";
 import { ui } from "../environment/userInteraction.js";
 
 export const LOGGING_SILENT = "silent";
@@ -71,7 +73,20 @@ export function getMinimumPackageAgeHours() {
     return configValue;
   }
 
+  // Priority 4: pnpm-workspace.yaml / package.json#pnpm (only under the pnpm shim)
+  if (isPnpmShim()) {
+    const pnpmValue = pnpmWorkspaceConfig.getMinimumReleaseAgeHours();
+    if (pnpmValue !== undefined) {
+      return pnpmValue;
+    }
+  }
+
   return defaultMinimumPackageAge;
+}
+
+function isPnpmShim() {
+  const name = getPackageManagerName();
+  return name === "pnpm" || name === "pnpx";
 }
 
 /**
@@ -194,9 +209,12 @@ export function getMinimumPackageAgeExclusions() {
     environmentVariables.getMinimumPackageAgeExclusions()
   );
   const configExclusions = configFile.getMinimumPackageAgeExclusions();
+  const pnpmExclusions = isPnpmShim()
+    ? pnpmWorkspaceConfig.getMinimumReleaseAgeExclusions()
+    : [];
 
-  // Merge both sources and remove duplicates
-  const allExclusions = [...envExclusions, ...configExclusions];
+  // Merge all sources and remove duplicates
+  const allExclusions = [...envExclusions, ...configExclusions, ...pnpmExclusions];
   return [...new Set(allExclusions)];
 }
 
