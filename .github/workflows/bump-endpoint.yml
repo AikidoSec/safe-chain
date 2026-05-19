@@ -63,9 +63,8 @@ jobs:
           OLD="${{ steps.current.outputs.version }}"
           BRANCH="bump/endpoint-${NEW}"
 
-          # Skip if a PR for this version already exists
-          if gh pr list --head "$BRANCH" --json number --jq '.[0].number' | grep -q '[0-9]'; then
-            echo "PR for $NEW already open, skipping."
+          if git ls-remote --exit-code --heads origin "$BRANCH" &>/dev/null; then
+            echo "Branch $BRANCH already exists, skipping."
             exit 0
           fi
 
