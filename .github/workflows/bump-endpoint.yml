@@ -1,9 +1,6 @@
 name: Bump Device Protection Automatically
 
 on:
-  push:
-    branches:
-      - create-bump-endpoint-workflow
   schedule:
     - cron: '0 * * * *' # every hour
   workflow_dispatch:
