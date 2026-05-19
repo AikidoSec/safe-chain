@@ -78,11 +78,7 @@ jobs:
           git add install-scripts/install-endpoint-mac.sh install-scripts/install-endpoint-windows.ps1
           git commit -m "Bump Endpoint to ${NEW}"
           git push origin "$BRANCH"
-          PR_URL=$(gh pr create \
-            --title "Bump Endpoint to ${NEW}" \
-            --body "Automated bump of safechain-internals endpoint from \`${OLD}\` to \`${NEW}\`." \
-            --head "$BRANCH" \
-            --base main)
+          PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
 
           curl -s -X POST "https://hooks.slack.com/triggers/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" \
             -H "Content-Type: application/json" \
