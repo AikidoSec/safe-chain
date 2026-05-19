@@ -1,0 +1,81 @@
+name: Bump Device Protection Automatically
+
+on:
+  schedule:
+    - cron: '0 * * * *' # every hour
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-endpoint:
+    runs-on: open-source-releaser
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest safechain-internals release
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(gh api repos/AikidoSec/safechain-internals/releases/latest --jq '.tag_name')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get current version from install script
+        id: current
+        run: |
+          CURRENT=$(grep -oP '(?<=releases/download/)[^/]+(?=/EndpointProtection\.pkg)' install-scripts/install-endpoint-mac.sh)
+          echo "version=$CURRENT" >> $GITHUB_OUTPUT
+
+      - name: Download assets and compute checksums
+        if: steps.latest.outputs.version != steps.current.outputs.version
+        id: checksums
+        run: |
+          VERSION="${{ steps.latest.outputs.version }}"
+          BASE="https://github.com/AikidoSec/safechain-internals/releases/download/${VERSION}"
+          curl -fsSL "${BASE}/EndpointProtection.pkg" -o /tmp/EndpointProtection.pkg
+          curl -fsSL "${BASE}/EndpointProtection.msi" -o /tmp/EndpointProtection.msi
+          echo "mac=$(sha256sum /tmp/EndpointProtection.pkg | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          echo "win=$(sha256sum /tmp/EndpointProtection.msi | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Update install scripts
+        if: steps.latest.outputs.version != steps.current.outputs.version
+        run: |
+          NEW="${{ steps.latest.outputs.version }}"
+          OLD="${{ steps.current.outputs.version }}"
+          MAC_SHA="${{ steps.checksums.outputs.mac }}"
+          WIN_SHA="${{ steps.checksums.outputs.win }}"
+
+          sed -i "s|${OLD}/EndpointProtection.pkg|${NEW}/EndpointProtection.pkg|" install-scripts/install-endpoint-mac.sh
+          sed -i "s|^DOWNLOAD_SHA256=\"[^\"]*\"|DOWNLOAD_SHA256=\"${MAC_SHA}\"|" install-scripts/install-endpoint-mac.sh
+
+          sed -i "s|${OLD}/EndpointProtection.msi|${NEW}/EndpointProtection.msi|" install-scripts/install-endpoint-windows.ps1
+          sed -i 's|^\$DownloadSha256 = "[^"]*"|\$DownloadSha256 = "'"${WIN_SHA}"'"|' install-scripts/install-endpoint-windows.ps1
+
+      - name: Open PR
+        if: steps.latest.outputs.version != steps.current.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW="${{ steps.latest.outputs.version }}"
+          OLD="${{ steps.current.outputs.version }}"
+          BRANCH="bump/endpoint-${NEW}"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" &>/dev/null; then
+            echo "Branch $BRANCH already exists, skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add install-scripts/install-endpoint-mac.sh install-scripts/install-endpoint-windows.ps1
+          git commit -m "Bump Endpoint to ${NEW}"
+          git push origin "$BRANCH"
+          PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
+
+          curl -s -X POST "https://hooks.slack.com/triggers/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" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"update to ${NEW} - ${PR_URL}\"}"
