@@ -1,4 +1,4 @@
-name: Bump safechain-internals endpoint
+name: Bump Device Protection Automatically
 
 on:
   schedule:
