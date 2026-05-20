@@ -58,6 +58,7 @@ jobs:
         if: steps.latest.outputs.version != steps.current.outputs.version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           NEW="${{ steps.latest.outputs.version }}"
           OLD="${{ steps.current.outputs.version }}"
@@ -76,6 +77,6 @@ jobs:
           git push origin "$BRANCH"
           PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
 
-          curl -s -X POST "https://hooks.slack.com/triggers/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" \
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{\"text\": \"update to ${NEW} - ${PR_URL}\"}"
