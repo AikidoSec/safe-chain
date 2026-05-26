@@ -6,13 +6,13 @@ describe("pipInterceptor minimum package age", async () => {
   let newlyReleasedPackageResponse = false;
   let minimumPackageAgeExclusionsSetting = [];
 
-  mock.module("../../../scanning/audit/index.js", {
+  mock.module("../../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async () => false,
     },
   });
 
-  mock.module("../../../scanning/newPackagesListCache.js", {
+  mock.module("../../../../scanning/newPackagesListCache.js", {
     namedExports: {
       openNewPackagesDatabase: async () => ({
         isNewlyReleasedPackage: (packageName, version) => {
@@ -26,7 +26,7 @@ describe("pipInterceptor minimum package age", async () => {
     },
   });
 
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",

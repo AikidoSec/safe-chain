@@ -45,6 +45,12 @@ describe("runPipCommand environment variable handling", () => {
           HTTPS_PROXY: "http://localhost:8080",
           HTTP_PROXY: "",
         }),
+        getProxySettings: () => {
+          return {
+            proxyUrl: "http://localhost:8080",
+            caCertBundlePath: "/tmp/test-combined-ca.pem",
+          };
+        },
       },
     });
 

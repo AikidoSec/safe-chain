@@ -20,8 +20,22 @@ export async function main(args) {
   process.on("SIGINT", handleProcessTermination);
   process.on("SIGTERM", handleProcessTermination);
 
+  /** @type {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} */
+  let malwareBlockedEvents = [];
+  /** @type {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} */
+  let minPackageAgeBlocks = [];
+  /** @type {import("./registryProxy/registryProxy.js").MinPackageAgeSuppressionEvent[]} */
+  let suppressedVersionEvents = [];
+
   const proxy = createSafeChainProxy();
   await proxy.startServer();
+  proxy.addListener("malwareBlocked", (ev) => malwareBlockedEvents.push(ev));
+  proxy.addListener("minPackageAgeVersionsSuppressed", (ev) =>
+    suppressedVersionEvents.push(ev),
+  );
+  proxy.addListener("minimumAgeRequestBlocked", (ev) =>
+    minPackageAgeBlocks.push(ev),
+  );
 
   // Global error handlers to log unhandled errors
   process.on("uncaughtException", (error) => {
@@ -64,11 +78,13 @@ export async function main(args) {
     // Write all buffered logs
     ui.writeBufferedLogsAndStopBuffering();
 
-    if (proxy.hasBlockedMaliciousPackages()) {
+    if (malwareBlockedEvents.length > 0) {
+      printBlockedMalware(malwareBlockedEvents);
       return 1;
     }
 
-    if (proxy.hasBlockedMinimumAgeRequests()) {
+    if (minPackageAgeBlocks.length > 0) {
+      printMinPackageAgeBlocks(minPackageAgeBlocks);
       return 1;
     }
 
@@ -81,17 +97,8 @@ export async function main(args) {
       );
     }
 
-    if (proxy.hasSuppressedVersions()) {
-      ui.writeInformation(
-        `${chalk.yellow(
-          "ℹ",
-        )} Safe-chain: Some package versions were suppressed during package metadata resolution due to minimum package age.`,
-      );
-      ui.writeInformation(
-        `  To disable this check, use: ${chalk.cyan(
-          "--safe-chain-skip-minimum-package-age",
-        )}`,
-      );
+    if (suppressedVersionEvents.length > 0) {
+      printSuppressedVersions(suppressedVersionEvents);
     }
 
     // Returning the exit code back to the caller allows the promise
@@ -120,4 +127,78 @@ function isSafeChainVerify(args) {
     ui.writeInformation("OK: Safe-chain works!");
     return true;
   }
+}
+
+/**
+ *
+ * @param {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} malwareBlockedEvents
+ */
+function printBlockedMalware(malwareBlockedEvents) {
+  ui.emptyLine();
+
+  ui.writeInformation(
+    `Safe-chain: ${chalk.bold(
+      `blocked ${malwareBlockedEvents.length} malicious package downloads`,
+    )}:`,
+  );
+
+  for (const ev of malwareBlockedEvents) {
+    ui.writeInformation(` - ${ev.packageName}@${ev.packageVersion}`);
+  }
+
+  ui.emptyLine();
+  ui.writeExitWithoutInstallingMaliciousPackages();
+  ui.emptyLine();
+}
+
+/**
+ *
+ * @param {import("./registryProxy/registryProxy.js").PackageBlockedEvent[]} minPackageAgeBlocks
+ */
+function printMinPackageAgeBlocks(minPackageAgeBlocks) {
+  ui.emptyLine();
+
+  ui.writeInformation(
+    `Safe-chain: ${chalk.bold(
+      `blocked ${minPackageAgeBlocks.length} direct package download request(s) due to minimum package age`,
+    )}:`,
+  );
+
+  for (const req of minPackageAgeBlocks) {
+    ui.writeInformation(` - ${req.packageName}@${req.packageVersion}`);
+  }
+
+  ui.writeInformation(
+    `  To disable this check, use: ${chalk.cyan(
+      "--safe-chain-skip-minimum-package-age",
+    )}`,
+  );
+
+  ui.emptyLine();
+  ui.writeError(
+    "Safe-chain: Exiting without installing packages blocked by the direct download minimum package age check.",
+  );
+  ui.emptyLine();
+}
+
+/**
+ *
+ * @param {import("./registryProxy/registryProxy.js").MinPackageAgeSuppressionEvent[]} minPackageAgeSuppressionEvents
+ */
+function printSuppressedVersions(minPackageAgeSuppressionEvents) {
+  ui.writeVerbose(
+    `${chalk.yellow(
+      "ℹ",
+    )} Safe-chain: Some package versions were suppressed during package metadata resolution due to minimum package age:`,
+  );
+
+  for (const ev of minPackageAgeSuppressionEvents) {
+    ui.writeVerbose(`   - ${ev.packageName} (${ev.packageVersions.join(", ")})`);
+  }
+
+  ui.writeVerbose(
+    `  To disable this check, use: ${chalk.cyan(
+      "--safe-chain-skip-minimum-package-age",
+    )}`,
+  );
 }

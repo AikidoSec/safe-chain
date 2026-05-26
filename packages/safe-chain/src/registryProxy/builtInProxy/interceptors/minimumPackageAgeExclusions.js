@@ -1,5 +1,5 @@
-import { getMinimumPackageAgeExclusions, getEcoSystem } from "../../config/settings.js";
-import { getEquivalentPackageNames } from "../../scanning/packageNameVariants.js";
+import { getMinimumPackageAgeExclusions, getEcoSystem } from "../../../config/settings.js";
+import { getEquivalentPackageNames } from "../../../scanning/packageNameVariants.js";
 
 /**
  * Checks if a package name matches an exclusion pattern.

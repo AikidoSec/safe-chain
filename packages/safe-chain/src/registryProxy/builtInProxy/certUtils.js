@@ -1,7 +1,7 @@
 import forge from "node-forge";
 import path from "path";
 import fs from "fs";
-import { getCertsDir } from "../config/safeChainDir.js";
+import { getCertsDir } from "../../config/safeChainDir.js";
 
 const ca = loadCa();
 

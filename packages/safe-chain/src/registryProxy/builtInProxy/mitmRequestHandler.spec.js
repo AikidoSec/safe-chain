@@ -62,7 +62,7 @@ describe("mitmRequestHandler", async () => {
     },
   });
 
-  mock.module("../environment/userInteraction.js", {
+  mock.module("../../environment/userInteraction.js", {
     namedExports: {
       ui: {
         writeVerbose: () => {},

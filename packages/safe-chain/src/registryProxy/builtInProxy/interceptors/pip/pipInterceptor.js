@@ -2,10 +2,10 @@ import {
   ECOSYSTEM_PY,
   getPipCustomRegistries,
   skipMinimumPackageAge,
-} from "../../../config/settings.js";
-import { isMalwarePackage } from "../../../scanning/audit/index.js";
-import { getEquivalentPackageNames } from "../../../scanning/packageNameVariants.js";
-import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
+} from "../../../../config/settings.js";
+import { isMalwarePackage } from "../../../../scanning/audit/index.js";
+import { getEquivalentPackageNames } from "../../../../scanning/packageNameVariants.js";
+import { openNewPackagesDatabase } from "../../../../scanning/newPackagesListCache.js";
 import { interceptRequests } from "../interceptorBuilder.js";
 import { isExcludedFromMinimumPackageAge } from "../minimumPackageAgeExclusions.js";
 import {

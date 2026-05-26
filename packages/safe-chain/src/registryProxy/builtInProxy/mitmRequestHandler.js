@@ -1,7 +1,7 @@
 import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
-import { ui } from "../environment/userInteraction.js";
+import { ui } from "../../environment/userInteraction.js";
 import { gunzipSync } from "zlib";
 import { omitHeaders } from "./http-utils.js";
 

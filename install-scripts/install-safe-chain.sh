@@ -429,6 +429,9 @@ parse_arguments() {
             --include-python)
                 warn "--include-python is deprecated and ignored. Python ecosystem is now included by default."
                 ;;
+            --experimental-rama-proxy)
+                USE_RAMA_PROXY=true
+                ;;
             *)
                 error "Unknown argument: $1"
                 ;;
@@ -444,6 +447,7 @@ parse_arguments() {
 main() {
     # Initialize argument flags
     USE_CI_SETUP=false
+    USE_RAMA_PROXY=false
 
     # Parse command-line arguments
     parse_arguments "$@"
@@ -502,6 +506,33 @@ main() {
     fi
 
     info "Binary installed to: $FINAL_FILE"
+
+    # Download safechain-proxy
+    if [ "$USE_RAMA_PROXY" = "true" ] && { [ "$OS" = "macos" ] || [ "$OS" = "linux" ] || [ "$OS" = "linuxstatic" ]; }; then
+        info "Downloading safechain-proxy..."
+
+        if [ "$OS" = "macos" ]; then
+            if [ "$ARCH" = "arm64" ]; then
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.0.0/safechain-proxy-darwin-arm64"
+            else
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.0.0/safechain-proxy-darwin-amd64"
+            fi
+        else
+            # Linux (both linux and linuxstatic)
+            if [ "$ARCH" = "x64" ]; then
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.0.0/safechain-proxy-linux-amd64"
+            else
+                PROXY_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.0.0/safechain-proxy-linux-arm64"
+            fi
+        fi
+
+        if [ -n "$PROXY_URL" ]; then
+            PROXY_FILE="${INSTALL_DIR}/safechain-proxy"
+            download "$PROXY_URL" "$PROXY_FILE"
+            chmod +x "$PROXY_FILE" || error "Failed to make proxy executable"
+            info "Proxy installed to: $PROXY_FILE"
+        fi
+    fi
 
     run_setup_command "$FINAL_FILE"
 }

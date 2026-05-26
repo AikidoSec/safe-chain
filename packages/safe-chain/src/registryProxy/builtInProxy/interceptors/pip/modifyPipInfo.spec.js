@@ -2,14 +2,14 @@ import { describe, it, mock } from "node:test";
 import assert from "node:assert";
 
 describe("modifyPipInfo", async () => {
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
       getMinimumPackageAgeHours: () => 48,
       ECOSYSTEM_PY: "py",
     },
   });
 
-  mock.module("../../../environment/userInteraction.js", {
+  mock.module("../../../../environment/userInteraction.js", {
     namedExports: {
       ui: {
         writeVerbose: () => {},

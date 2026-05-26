@@ -6,7 +6,7 @@ describe("pipInterceptor custom registries", async () => {
   let malwareResponse = false;
   let customRegistries = [];
 
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",
@@ -20,7 +20,7 @@ describe("pipInterceptor custom registries", async () => {
     },
   });
 
-  mock.module("../../../scanning/newPackagesListCache.js", {
+  mock.module("../../../../scanning/newPackagesListCache.js", {
     namedExports: {
       openNewPackagesDatabase: async () => ({
         isNewlyReleasedPackage: () => false,
@@ -28,7 +28,7 @@ describe("pipInterceptor custom registries", async () => {
     },
   });
 
-  mock.module("../../../scanning/audit/index.js", {
+  mock.module("../../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async (packageName, version) => {
         scannedPackages.push({ packageName, version });

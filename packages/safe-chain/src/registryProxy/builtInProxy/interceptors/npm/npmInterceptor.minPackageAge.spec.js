@@ -7,7 +7,7 @@ describe("npmInterceptor minimum package age", async () => {
   let minimumPackageAgeExclusionsSetting = [];
   let newlyReleasedPackages = new Set();
 
-  mock.module("../../../config/settings.js", {
+  mock.module("../../../../config/settings.js", {
     namedExports: {
       ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
@@ -18,7 +18,7 @@ describe("npmInterceptor minimum package age", async () => {
       getEcoSystem: () => "js",
     },
   });
-  mock.module("../../../scanning/newPackagesListCache.js", {
+  mock.module("../../../../scanning/newPackagesListCache.js", {
     namedExports: {
       openNewPackagesDatabase: async () => ({
         isNewlyReleasedPackage: (name, version) =>
@@ -27,14 +27,14 @@ describe("npmInterceptor minimum package age", async () => {
     },
   });
 
-  mock.module("../../../scanning/audit/index.js", {
+  mock.module("../../../../scanning/audit/index.js", {
     namedExports: {
       isMalwarePackage: async () => {
         return false;
       },
     },
   });
-  mock.module("../../../environment/userInteraction.js", {
+  mock.module("../../../../environment/userInteraction.js", {
     namedExports: {
       ui: {
         startProcess: () => {},

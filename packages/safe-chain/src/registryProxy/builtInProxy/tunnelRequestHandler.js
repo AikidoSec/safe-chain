@@ -1,5 +1,5 @@
 import * as net from "net";
-import { ui } from "../environment/userInteraction.js";
+import { ui } from "../../environment/userInteraction.js";
 import { isImdsEndpoint } from "./isImdsEndpoint.js";
 import { getConnectTimeout } from "./getConnectTimeout.js";
 
@@ -210,4 +210,3 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
     }
   });
 }
-
