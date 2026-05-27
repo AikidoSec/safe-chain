@@ -4,9 +4,15 @@ import { scanCommand, shouldScanCommand } from "./scanning/index.js";
 import { ui } from "./environment/userInteraction.js";
 import { getPackageManager } from "./packagemanager/currentPackageManager.js";
 import { initializeCliArguments } from "./config/cliArguments.js";
+import { getLogFile } from "./config/settings.js";
 import { createSafeChainProxy } from "./registryProxy/registryProxy.js";
 import chalk from "chalk";
 import { getAuditStats } from "./scanning/audit/index.js";
+import {
+  initializeFileLogger,
+  closeFileLogger,
+  closeFileLoggerSync,
+} from "./environment/fileLogger.js";
 
 /**
  * @param {string[]} args
@@ -28,6 +34,7 @@ export async function main(args) {
     ui.writeError(`Safe-chain: Uncaught exception: ${error.message}`);
     ui.writeVerbose(`Stack trace: ${error.stack}`);
     ui.writeBufferedLogsAndStopBuffering();
+    closeFileLoggerSync();
     process.exit(1);
   });
 
@@ -37,12 +44,21 @@ export async function main(args) {
       ui.writeVerbose(`Stack trace: ${reason.stack}`);
     }
     ui.writeBufferedLogsAndStopBuffering();
+    closeFileLoggerSync();
     process.exit(1);
   });
 
   try {
     // This parses all the --safe-chain arguments and removes them from the args array
     args = initializeCliArguments(args);
+
+    const logFile = getLogFile();
+    if (logFile) {
+      // Use the console-only warning sink: ui.writeWarning would re-enter
+      // writeToLogFile, creating a cycle whenever the logger needs to
+      // report its own failure.
+      initializeFileLogger(logFile, ui.writeWarningToConsole);
+    }
 
     if (shouldScanCommand(args)) {
       const commandScanResult = await scanCommand(args);
@@ -105,12 +121,16 @@ export async function main(args) {
     //  to be awaited in the bin files and return the correct exit code
     return 1;
   } finally {
-    await proxy.stopServer();
+    // Both must run even if one throws. Losing the session-end entry
+    // because stopServer() rejected (or vice versa) defeats the point of
+    // having a log on failure paths.
+    await Promise.allSettled([proxy.stopServer(), closeFileLogger()]);
   }
 }
 
 function handleProcessTermination() {
   ui.writeBufferedLogsAndStopBuffering();
+  closeFileLoggerSync();
 }
 
 /** @param {string[]} args  */

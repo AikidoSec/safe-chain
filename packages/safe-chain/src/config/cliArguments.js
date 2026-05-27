@@ -1,13 +1,16 @@
 import { ui } from "../environment/userInteraction.js";
 
 /**
- * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined, malwareListBaseUrl: string | undefined}}
+ * @type {{loggingLevel: string | undefined, skipMinimumPackageAge: boolean | undefined, minimumPackageAgeHours: string | undefined, malwareListBaseUrl: string | undefined, logFile: string | undefined, logFileFormat: string | undefined, logFileVerbosity: string | undefined}}
  */
 const state = {
   loggingLevel: undefined,
   skipMinimumPackageAge: undefined,
   minimumPackageAgeHours: undefined,
   malwareListBaseUrl: undefined,
+  logFile: undefined,
+  logFileFormat: undefined,
+  logFileVerbosity: undefined,
 };
 
 const SAFE_CHAIN_ARG_PREFIX = "--safe-chain-";
@@ -22,6 +25,9 @@ export function initializeCliArguments(args) {
   state.skipMinimumPackageAge = undefined;
   state.minimumPackageAgeHours = undefined;
   state.malwareListBaseUrl = undefined;
+  state.logFile = undefined;
+  state.logFileFormat = undefined;
+  state.logFileVerbosity = undefined;
 
   const safeChainArgs = [];
   const remainingArgs = [];
@@ -38,6 +44,9 @@ export function initializeCliArguments(args) {
   setSkipMinimumPackageAge(safeChainArgs);
   setMinimumPackageAgeHours(safeChainArgs);
   setMalwareListBaseUrl(safeChainArgs);
+  setLogFile(safeChainArgs);
+  setLogFileFormat(safeChainArgs);
+  setLogFileVerbosity(safeChainArgs);
   checkDeprecatedPythonFlag(args);
   return remainingArgs;
 }
@@ -130,6 +139,66 @@ function setMalwareListBaseUrl(args) {
  */
 export function getMalwareListBaseUrl() {
   return state.malwareListBaseUrl;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setLogFile(args) {
+  const argName = SAFE_CHAIN_ARG_PREFIX + "log-file=";
+
+  const value = getLastArgEqualsValue(args, argName);
+  if (value) {
+    state.logFile = value;
+  }
+}
+
+/**
+ * @returns {string | undefined}
+ */
+export function getLogFile() {
+  return state.logFile;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setLogFileFormat(args) {
+  const argName = SAFE_CHAIN_ARG_PREFIX + "log-file-format=";
+
+  const value = getLastArgEqualsValue(args, argName);
+  if (value) {
+    state.logFileFormat = value.toLowerCase();
+  }
+}
+
+/**
+ * @returns {string | undefined}
+ */
+export function getLogFileFormat() {
+  return state.logFileFormat;
+}
+
+/**
+ * @param {string[]} args
+ * @returns {void}
+ */
+function setLogFileVerbosity(args) {
+  const argName = SAFE_CHAIN_ARG_PREFIX + "log-file-verbosity=";
+
+  const value = getLastArgEqualsValue(args, argName);
+  if (value) {
+    state.logFileVerbosity = value.toLowerCase();
+  }
+}
+
+/**
+ * @returns {string | undefined}
+ */
+export function getLogFileVerbosity() {
+  return state.logFileVerbosity;
 }
 
 /**

@@ -23,6 +23,11 @@ const {
   LOGGING_SILENT,
   LOGGING_NORMAL,
   LOGGING_VERBOSE,
+  getLogFile,
+  getLogFileFormat,
+  getLogFileVerbosity,
+  LOG_FILE_FORMAT_PLAIN,
+  LOG_FILE_FORMAT_JSON,
 } = await import("./settings.js");
 const { initializeCliArguments } = await import("./cliArguments.js");
 
@@ -643,5 +648,272 @@ describe("getMalwareListBaseUrl", () => {
     const url = getMalwareListBaseUrl();
 
     assert.strictEqual(url, "https://cli-mirror.com");
+  });
+});
+
+describe("getLogFile", () => {
+  let originalEnv;
+  const envVarName = "SAFE_CHAIN_LOG_FILE";
+
+  beforeEach(() => {
+    originalEnv = process.env[envVarName];
+    delete process.env[envVarName];
+    initializeCliArguments([]);
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env[envVarName] = originalEnv;
+    } else {
+      delete process.env[envVarName];
+    }
+    configFileContent = undefined;
+  });
+
+  it("should return undefined when nothing is configured", () => {
+    assert.strictEqual(getLogFile(), undefined);
+  });
+
+  it("should return CLI argument value with highest priority", () => {
+    initializeCliArguments(["--safe-chain-log-file=/tmp/cli.log"]);
+
+    assert.strictEqual(getLogFile(), "/tmp/cli.log");
+  });
+
+  it("should return environment variable when no CLI argument", () => {
+    process.env[envVarName] = "/tmp/env.log";
+
+    assert.strictEqual(getLogFile(), "/tmp/env.log");
+  });
+
+  it("should return config file value when no CLI or env", () => {
+    configFileContent = JSON.stringify({ logFile: "/tmp/config.log" });
+
+    assert.strictEqual(getLogFile(), "/tmp/config.log");
+  });
+
+  it("should prioritize CLI over environment variable", () => {
+    process.env[envVarName] = "/tmp/env.log";
+    initializeCliArguments(["--safe-chain-log-file=/tmp/cli.log"]);
+
+    assert.strictEqual(getLogFile(), "/tmp/cli.log");
+  });
+
+  it("should prioritize environment variable over config file", () => {
+    process.env[envVarName] = "/tmp/env.log";
+    configFileContent = JSON.stringify({ logFile: "/tmp/config.log" });
+
+    assert.strictEqual(getLogFile(), "/tmp/env.log");
+  });
+
+  it("should prioritize CLI over config file", () => {
+    initializeCliArguments(["--safe-chain-log-file=/tmp/cli.log"]);
+    configFileContent = JSON.stringify({ logFile: "/tmp/config.log" });
+
+    assert.strictEqual(getLogFile(), "/tmp/cli.log");
+  });
+
+  it("should expand a leading ~/ to the user's home directory", async () => {
+    const os = await import("os");
+    const path = await import("path");
+    process.env[envVarName] = "~/safe-chain.log";
+
+    // Shells don't expand ~ after `=` and never expand env vars, so the
+    // logger has to do it.
+    assert.strictEqual(
+      getLogFile(),
+      path.join(os.default.homedir(), "safe-chain.log")
+    );
+  });
+
+  it("should expand a bare ~ to the user's home directory", async () => {
+    const os = await import("os");
+    process.env[envVarName] = "~";
+
+    assert.strictEqual(getLogFile(), os.default.homedir());
+  });
+
+  it("should leave non-tilde paths untouched", () => {
+    process.env[envVarName] = "/var/log/safe-chain.log";
+
+    assert.strictEqual(getLogFile(), "/var/log/safe-chain.log");
+  });
+
+  it("should not expand mid-path ~ characters", () => {
+    process.env[envVarName] = "/tmp/~weird/path.log";
+
+    assert.strictEqual(getLogFile(), "/tmp/~weird/path.log");
+  });
+});
+
+describe("getLogFileFormat", () => {
+  let originalEnv;
+  const envVarName = "SAFE_CHAIN_LOG_FILE_FORMAT";
+
+  beforeEach(() => {
+    originalEnv = process.env[envVarName];
+    delete process.env[envVarName];
+    initializeCliArguments([]);
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env[envVarName] = originalEnv;
+    } else {
+      delete process.env[envVarName];
+    }
+    configFileContent = undefined;
+  });
+
+  it("should return json by default when nothing is configured", () => {
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should return json from CLI argument", () => {
+    initializeCliArguments(["--safe-chain-log-file-format=json"]);
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should return plain from CLI argument", () => {
+    initializeCliArguments(["--safe-chain-log-file-format=plain"]);
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_PLAIN);
+  });
+
+  it("should return json from environment variable", () => {
+    process.env[envVarName] = "json";
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should handle uppercase environment variable values", () => {
+    process.env[envVarName] = "JSON";
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should fall back to default for invalid environment variable values", () => {
+    process.env[envVarName] = "xml";
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should return json from config file", () => {
+    configFileContent = JSON.stringify({ logFileFormat: "json" });
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should prioritize CLI over environment variable", () => {
+    process.env[envVarName] = "json";
+    initializeCliArguments(["--safe-chain-log-file-format=plain"]);
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_PLAIN);
+  });
+
+  it("should prioritize environment variable over config file", () => {
+    process.env[envVarName] = "json";
+    configFileContent = JSON.stringify({ logFileFormat: "plain" });
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should prioritize CLI over config file", () => {
+    initializeCliArguments(["--safe-chain-log-file-format=json"]);
+    configFileContent = JSON.stringify({ logFileFormat: "plain" });
+
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+
+  it("should fall back to default for invalid CLI value even if env var is set", () => {
+    process.env[envVarName] = "plain";
+    initializeCliArguments(["--safe-chain-log-file-format=xml"]);
+
+    // Set-but-invalid CLI short-circuits to default (mirrors getLoggingLevel).
+    // An explicit CLI override should not silently fall through to env.
+    assert.strictEqual(getLogFileFormat(), LOG_FILE_FORMAT_JSON);
+  });
+});
+
+describe("getLogFileVerbosity", () => {
+  let originalEnv;
+  const envVarName = "SAFE_CHAIN_LOG_FILE_VERBOSITY";
+
+  beforeEach(() => {
+    originalEnv = process.env[envVarName];
+    delete process.env[envVarName];
+    initializeCliArguments([]);
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env[envVarName] = originalEnv;
+    } else {
+      delete process.env[envVarName];
+    }
+    configFileContent = undefined;
+  });
+
+  it("should default to verbose (maximum) when nothing is configured", () => {
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_VERBOSE);
+  });
+
+  it("should accept verbose, normal, and silent from CLI", () => {
+    initializeCliArguments(["--safe-chain-log-file-verbosity=silent"]);
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_SILENT);
+
+    initializeCliArguments(["--safe-chain-log-file-verbosity=normal"]);
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_NORMAL);
+
+    initializeCliArguments(["--safe-chain-log-file-verbosity=verbose"]);
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_VERBOSE);
+  });
+
+  it("should read from environment variable", () => {
+    process.env[envVarName] = "silent";
+
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_SILENT);
+  });
+
+  it("should handle uppercase environment variable values", () => {
+    process.env[envVarName] = "NORMAL";
+
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_NORMAL);
+  });
+
+  it("should read from config file", () => {
+    configFileContent = JSON.stringify({ logFileVerbosity: "normal" });
+
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_NORMAL);
+  });
+
+  it("should prioritize CLI over environment variable", () => {
+    process.env[envVarName] = "silent";
+    initializeCliArguments(["--safe-chain-log-file-verbosity=verbose"]);
+
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_VERBOSE);
+  });
+
+  it("should prioritize environment variable over config file", () => {
+    process.env[envVarName] = "silent";
+    configFileContent = JSON.stringify({ logFileVerbosity: "normal" });
+
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_SILENT);
+  });
+
+  it("should fall back to default when env value is invalid", () => {
+    process.env[envVarName] = "loud";
+
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_VERBOSE);
+  });
+
+  it("should fall back to default when CLI value is invalid even if env is set", () => {
+    process.env[envVarName] = "silent";
+    initializeCliArguments(["--safe-chain-log-file-verbosity=loud"]);
+
+    // Mirrors getLoggingLevel: an explicit but invalid CLI override goes to
+    // default rather than silently falling through to env.
+    assert.strictEqual(getLogFileVerbosity(), LOGGING_VERBOSE);
   });
 });

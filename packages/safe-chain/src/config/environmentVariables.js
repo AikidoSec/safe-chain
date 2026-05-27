@@ -55,3 +55,30 @@ export function getMinimumPackageAgeExclusions() {
 export function getMalwareListBaseUrl() {
   return process.env.SAFE_CHAIN_MALWARE_LIST_BASE_URL;
 }
+
+/**
+ * Gets the log file path from environment variable
+ * When set, all output (including verbose) is written to this file
+ * @returns {string | undefined}
+ */
+export function getLogFile() {
+  return process.env.SAFE_CHAIN_LOG_FILE;
+}
+
+/**
+ * Gets the log file format from environment variable
+ * Valid values: "plain", "json"
+ * @returns {string | undefined}
+ */
+export function getLogFileFormat() {
+  return process.env.SAFE_CHAIN_LOG_FILE_FORMAT;
+}
+
+/**
+ * Gets the log file verbosity from environment variable
+ * Valid values: "silent", "normal", "verbose". Default is "verbose".
+ * @returns {string | undefined}
+ */
+export function getLogFileVerbosity() {
+  return process.env.SAFE_CHAIN_LOG_FILE_VERBOSITY;
+}

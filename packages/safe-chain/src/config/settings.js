@@ -1,3 +1,5 @@
+import os from "os";
+import path from "path";
 import * as cliArguments from "./cliArguments.js";
 import * as configFile from "./configFile.js";
 import * as environmentVariables from "./environmentVariables.js";
@@ -10,7 +12,7 @@ export const LOGGING_VERBOSE = "verbose";
 export function getLoggingLevel() {
   // Priority 1: CLI argument
   const cliLevel = cliArguments.getLoggingLevel();
-  if (cliLevel === LOGGING_SILENT || cliLevel === LOGGING_VERBOSE) {
+  if (isValidVerbosity(cliLevel)) {
     return cliLevel;
   }
   if (cliLevel) {
@@ -20,11 +22,131 @@ export function getLoggingLevel() {
 
   // Priority 2: Environment variable
   const envLevel = environmentVariables.getLoggingLevel()?.toLowerCase();
-  if (envLevel === LOGGING_SILENT || envLevel === LOGGING_VERBOSE) {
+  if (isValidVerbosity(envLevel)) {
     return envLevel;
   }
 
   return LOGGING_NORMAL;
+}
+
+/**
+ * Gets the log file path with priority: CLI argument > environment variable > config file > undefined
+ * @returns {string | undefined}
+ */
+export function getLogFile() {
+  // Priority 1: CLI argument
+  const cliValue = cliArguments.getLogFile();
+  if (cliValue) {
+    return expandTilde(cliValue);
+  }
+
+  // Priority 2: Environment variable
+  const envValue = environmentVariables.getLogFile();
+  if (envValue) {
+    return expandTilde(envValue);
+  }
+
+  // Priority 3: Config file
+  const configValue = configFile.getLogFile();
+  if (configValue) {
+    return expandTilde(configValue);
+  }
+
+  return undefined;
+}
+
+/**
+ * Expands a leading "~/" or bare "~" to the user's home directory. Shells
+ * don't expand tilde after "=" (e.g. --safe-chain-log-file=~/foo.log) and
+ * env vars are never shell-expanded, so we do it here.
+ *
+ * @param {string} filePath
+ * @returns {string}
+ */
+function expandTilde(filePath) {
+  if (filePath === "~") return os.homedir();
+  if (filePath.startsWith("~/")) return path.join(os.homedir(), filePath.slice(2));
+  return filePath;
+}
+
+export const LOG_FILE_FORMAT_PLAIN = "plain";
+export const LOG_FILE_FORMAT_JSON = "json";
+
+/**
+ * Gets the log file format with priority: CLI argument > environment variable > config file > "json"
+ * @returns {string}
+ */
+export function getLogFileFormat() {
+  // Priority 1: CLI argument
+  const cliValue = cliArguments.getLogFileFormat();
+  if (cliValue === LOG_FILE_FORMAT_PLAIN || cliValue === LOG_FILE_FORMAT_JSON) {
+    return cliValue;
+  }
+  if (cliValue) {
+    // CLI arg was set but invalid, default to json. Mirrors getLoggingLevel.
+    return LOG_FILE_FORMAT_JSON;
+  }
+
+  // Priority 2: Environment variable
+  const envValue = environmentVariables.getLogFileFormat()?.toLowerCase();
+  if (envValue === LOG_FILE_FORMAT_PLAIN || envValue === LOG_FILE_FORMAT_JSON) {
+    return envValue;
+  }
+
+  // Priority 3: Config file
+  const configValue = configFile.getLogFileFormat()?.toLowerCase();
+  if (configValue === LOG_FILE_FORMAT_PLAIN || configValue === LOG_FILE_FORMAT_JSON) {
+    return configValue;
+  }
+
+  return LOG_FILE_FORMAT_JSON;
+}
+
+/**
+ * Gets the log file verbosity with priority: CLI argument > environment
+ * variable > config file > LOGGING_VERBOSE. Default is verbose because the
+ * file is meant to be the diagnostic record; users opt down explicitly.
+ * Reuses the LOGGING_* enum since the levels mean the same thing as for
+ * console output.
+ *
+ * @returns {string}
+ */
+export function getLogFileVerbosity() {
+  // Priority 1: CLI argument
+  const cliValue = cliArguments.getLogFileVerbosity();
+  if (isValidVerbosity(cliValue)) {
+    return cliValue;
+  }
+  if (cliValue) {
+    // CLI arg was set but invalid, default to verbose. Mirrors getLoggingLevel.
+    return LOGGING_VERBOSE;
+  }
+
+  // Priority 2: Environment variable
+  const envValue = environmentVariables.getLogFileVerbosity()?.toLowerCase();
+  if (isValidVerbosity(envValue)) {
+    return envValue;
+  }
+
+  // Priority 3: Config file
+  const configValue = configFile.getLogFileVerbosity()?.toLowerCase();
+  if (isValidVerbosity(configValue)) {
+    return configValue;
+  }
+
+  return LOGGING_VERBOSE;
+}
+
+/**
+ * @param {string | undefined} value
+ * @returns {value is "silent" | "normal" | "verbose"}
+ */
+function isValidVerbosity(value) {
+  return (
+    value === LOGGING_SILENT ||
+    value === LOGGING_NORMAL ||
+    value === LOGGING_VERBOSE
+  );
 }
 
 export const ECOSYSTEM_JS = "js";
