@@ -52,11 +52,6 @@ function getSafeChainProxyEnvironmentVariables() {
   };
 }
 
-/**
- * @param {Record<string, string | undefined>} env
- *
- * @returns {Record<string, string>}
- */
 // Proxy-related env var names (checked case-insensitively).
 // When the proxy is not started we drop inherited loopback proxy vars — those
 // were set by an outer safe-chain invocation and must not leak into lifecycle-
@@ -78,6 +73,11 @@ function isLoopbackProxy(proxyUrl) {
   }
 }
 
+/**
+ * @param {Record<string, string | undefined>} env
+ *
+ * @returns {Record<string, string>}
+ */
 export function mergeSafeChainProxyEnvironmentVariables(env) {
   const proxyEnv = getSafeChainProxyEnvironmentVariables();
   const proxyStarted = Object.keys(proxyEnv).length > 0;

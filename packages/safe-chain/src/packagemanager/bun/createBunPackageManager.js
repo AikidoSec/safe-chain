@@ -2,11 +2,12 @@ import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
+// bun commands that only execute scripts; they never download packages.
+const BUN_LIFECYCLE_COMMANDS = new Set(["run", "test"]);
+
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
  */
-// bun commands that only execute scripts; they never download packages.
-const BUN_LIFECYCLE_COMMANDS = new Set(["run", "test"]);
 
 export function createBunPackageManager() {
   return {

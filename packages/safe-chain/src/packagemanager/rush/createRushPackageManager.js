@@ -2,12 +2,13 @@ import { runRushCommand } from "./runRushCommand.js";
 import { resolvePackageVersion } from "../../api/npmApi.js";
 import { parsePackagesFromRushAddArgs } from "./parsing/parsePackagesFromRushAddArgs.js";
 
-/**
- * @returns {import("../currentPackageManager.js").PackageManager}
- */
 // Rush commands that download packages. Everything else (build, test, list, etc.)
 // only executes scripts and should not get HTTPS_PROXY.
 const RUSH_DOWNLOAD_COMMANDS = new Set(["install", "update", "add", "update-autoinstaller"]);
+
+/**
+ * @returns {import("../currentPackageManager.js").PackageManager}
+ */
 
 export function createRushPackageManager() {
   return {
