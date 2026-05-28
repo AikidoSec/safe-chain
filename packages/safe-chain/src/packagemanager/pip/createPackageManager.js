@@ -20,6 +20,7 @@ export function createPipPackageManager(context) {
     // For pip, rely solely on MITM proxy to detect/deny downloads from known registries.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }
 

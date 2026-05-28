@@ -8,6 +8,11 @@ import {
   npmExecCommand,
 } from "./utils/npmCommands.js";
 
+// These npm commands only execute lifecycle scripts; they never download packages
+// themselves. Nested npm install/ci/etc. calls within those scripts are
+// re-intercepted by the shims in PATH.
+const NPM_LIFECYCLE_COMMANDS = new Set(["run", "start", "stop", "restart", "test"]);
+
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
  */
@@ -42,6 +47,10 @@ export function createNpmPackageManager() {
     runCommand: runNpm,
     isSupportedCommand,
     getDependencyUpdatesForCommand,
+    commandNeedsProxy(args) {
+      const command = getNpmCommandForArgs(args);
+      return command === null || !NPM_LIFECYCLE_COMMANDS.has(command);
+    },
   };
 }
 

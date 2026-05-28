@@ -2,6 +2,10 @@ import { matchesCommand } from "../_shared/matchesCommand.js";
 import { commandArgumentScanner } from "./dependencyScanner/commandArgumentScanner.js";
 import { runPnpmCommand } from "./runPnpmCommand.js";
 
+// pnpm commands that only execute scripts and never download packages.
+// `exec` runs a pre-installed binary in project context; `node` runs Node.js.
+const PNPM_LIFECYCLE_COMMANDS = new Set(["run", "exec", "node", "test", "start", "stop", "restart"]);
+
 const scanner = commandArgumentScanner();
 
 /**
@@ -23,6 +27,10 @@ export function createPnpmPackageManager() {
       args.includes("dlx"),
     getDependencyUpdatesForCommand: (args) =>
       getDependencyUpdatesForCommand(args, false),
+    commandNeedsProxy(args) {
+      const command = args[0]?.toLowerCase();
+      return !command || !PNPM_LIFECYCLE_COMMANDS.has(command);
+    },
   };
 }
 
@@ -33,6 +41,7 @@ export function createPnpxPackageManager() {
   return {
     runCommand: (args) => runPnpmCommand(args, "pnpx"),
     isSupportedCommand: () => true,
+    commandNeedsProxy: () => true,
     getDependencyUpdatesForCommand: (args) =>
       getDependencyUpdatesForCommand(args, true),
   };

@@ -11,8 +11,10 @@ export function createRushxPackageManager() {
     runCommand: (args) => {
       return runRushCommand("rushx", args);
     },
-    // For rushx, rely solely on MITM.
+    // rushx only runs lifecycle scripts (equivalent to npm run for Rush monorepos).
+    // It never downloads packages, so the proxy is never needed.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => false,
   };
 }

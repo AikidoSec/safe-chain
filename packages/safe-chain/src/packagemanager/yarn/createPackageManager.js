@@ -1,6 +1,9 @@
 import { commandArgumentScanner } from "./dependencyScanner/commandArgumentScanner.js";
 import { runYarnCommand } from "./runYarnCommand.js";
 
+// yarn commands that only execute scripts and never download packages.
+const YARN_LIFECYCLE_COMMANDS = new Set(["run", "node"]);
+
 const scanner = commandArgumentScanner();
 
 /**
@@ -18,6 +21,10 @@ export function createYarnPackageManager() {
       matchesCommand(args, "global", "upgrade") ||
       matchesCommand(args, "dlx"),
     getDependencyUpdatesForCommand: (args) => scanner.scan(args),
+    commandNeedsProxy(args) {
+      const command = args[0]?.toLowerCase();
+      return !command || !YARN_LIFECYCLE_COMMANDS.has(command);
+    },
   };
 }
 

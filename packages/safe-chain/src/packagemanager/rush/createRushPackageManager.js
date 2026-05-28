@@ -5,12 +5,20 @@ import { parsePackagesFromRushAddArgs } from "./parsing/parsePackagesFromRushAdd
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
  */
+// Rush commands that download packages. Everything else (build, test, list, etc.)
+// only executes scripts and should not get HTTPS_PROXY.
+const RUSH_DOWNLOAD_COMMANDS = new Set(["install", "update", "add", "update-autoinstaller"]);
+
 export function createRushPackageManager() {
   return {
     runCommand: (args) => runRushCommand("rush", args),
     // We pre-scan rush add commands and rely on MITM for install/update flows.
     isSupportedCommand: (args) => getRushCommand(args) === "add",
     getDependencyUpdatesForCommand: scanRushAddCommand,
+    commandNeedsProxy(args) {
+      const command = getRushCommand(args);
+      return command !== undefined && RUSH_DOWNLOAD_COMMANDS.has(command);
+    },
   };
 }
 

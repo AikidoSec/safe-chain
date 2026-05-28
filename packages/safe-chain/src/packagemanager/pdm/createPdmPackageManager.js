@@ -14,6 +14,7 @@ export function createPdmPackageManager() {
     // MITM only approach for PDM
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }
 

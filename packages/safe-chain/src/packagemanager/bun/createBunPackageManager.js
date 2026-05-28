@@ -5,6 +5,9 @@ import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
  */
+// bun commands that only execute scripts; they never download packages.
+const BUN_LIFECYCLE_COMMANDS = new Set(["run", "test"]);
+
 export function createBunPackageManager() {
   return {
     runCommand: (args) => runBunCommand("bun", args),
@@ -13,6 +16,10 @@ export function createBunPackageManager() {
     // so we don't need to analyze commands.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy(args) {
+      const command = args[0]?.toLowerCase();
+      return !command || !BUN_LIFECYCLE_COMMANDS.has(command);
+    },
   };
 }
 
@@ -27,6 +34,7 @@ export function createBunxPackageManager() {
     // so we don't need to analyze commands.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }
 
