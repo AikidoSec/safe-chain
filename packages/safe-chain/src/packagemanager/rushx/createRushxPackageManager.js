@@ -11,10 +11,12 @@ export function createRushxPackageManager() {
     runCommand: (args) => {
       return runRushCommand("rushx", args);
     },
-    // rushx only runs lifecycle scripts (equivalent to npm run for Rush monorepos).
-    // It never downloads packages, so the proxy is never needed.
+    // rushx runs scripts that can invoke npm/pnpm without going through the
+    // safe-chain shim (Rush uses sh subshells that don't source the zsh function
+    // wrappers). The proxy must be started so HTTPS_PROXY is set as a fallback
+    // protection for those inner package-manager calls.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
-    commandNeedsProxy: () => false,
+    commandNeedsProxy: () => true,
   };
 }

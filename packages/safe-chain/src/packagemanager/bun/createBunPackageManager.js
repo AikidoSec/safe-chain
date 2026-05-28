@@ -18,7 +18,7 @@ export function createBunPackageManager() {
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
     commandNeedsProxy(args) {
-      const command = args[0]?.toLowerCase();
+      const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
       return !command || !BUN_LIFECYCLE_COMMANDS.has(command);
     },
   };

@@ -22,7 +22,7 @@ export function createYarnPackageManager() {
       matchesCommand(args, "dlx"),
     getDependencyUpdatesForCommand: (args) => scanner.scan(args),
     commandNeedsProxy(args) {
-      const command = args[0]?.toLowerCase();
+      const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
       return !command || !YARN_LIFECYCLE_COMMANDS.has(command);
     },
   };

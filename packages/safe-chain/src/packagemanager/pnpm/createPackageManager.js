@@ -28,7 +28,7 @@ export function createPnpmPackageManager() {
     getDependencyUpdatesForCommand: (args) =>
       getDependencyUpdatesForCommand(args, false),
     commandNeedsProxy(args) {
-      const command = args[0]?.toLowerCase();
+      const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
       return !command || !PNPM_LIFECYCLE_COMMANDS.has(command);
     },
   };
