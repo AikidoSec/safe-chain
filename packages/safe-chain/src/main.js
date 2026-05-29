@@ -27,7 +27,6 @@ export async function main(args) {
   process.on("SIGTERM", handleProcessTermination);
 
   const proxy = createSafeChainProxy();
-  await proxy.startServer();
 
   // Global error handlers to log unhandled errors
   process.on("uncaughtException", (error) => {
@@ -51,6 +50,15 @@ export async function main(args) {
   try {
     // This parses all the --safe-chain arguments and removes them from the args array
     args = initializeCliArguments(args);
+
+    // Only start the proxy for commands that actually download packages.
+    // Lifecycle-script commands (run, test, start, etc.) don't download packages
+    // themselves — nested installs inside those scripts are re-intercepted by the
+    // shims in PATH. Not starting the proxy prevents HTTPS_PROXY from leaking
+    // into lifecycle-script child processes (vitest, native binaries, nock, etc.).
+    if (getPackageManager().commandNeedsProxy(args)) {
+      await proxy.startServer();
+    }
 
     const logFile = getLogFile();
     if (logFile) {

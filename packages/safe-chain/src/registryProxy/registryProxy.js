@@ -52,6 +52,27 @@ function getSafeChainProxyEnvironmentVariables() {
   };
 }
 
+// Proxy-related env var names (checked case-insensitively).
+// When the proxy is not started we drop inherited loopback proxy vars — those
+// were set by an outer safe-chain invocation and must not leak into lifecycle-
+// script child processes (vitest, native binaries, nock tests, etc.).
+// Non-loopback values (corporate proxies) are preserved so users' network
+// configuration is not disturbed.
+const PROXY_VAR_NAMES = new Set(["HTTPS_PROXY", "HTTP_PROXY", "GLOBAL_AGENT_HTTP_PROXY"]);
+
+/**
+ * @param {string} proxyUrl
+ * @returns {boolean}
+ */
+function isLoopbackProxy(proxyUrl) {
+  try {
+    const { hostname } = new URL(proxyUrl);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * @param {Record<string, string | undefined>} env
  *
@@ -59,6 +80,7 @@ function getSafeChainProxyEnvironmentVariables() {
  */
 export function mergeSafeChainProxyEnvironmentVariables(env) {
   const proxyEnv = getSafeChainProxyEnvironmentVariables();
+  const proxyStarted = Object.keys(proxyEnv).length > 0;
 
   for (const key of Object.keys(env)) {
     // If we were to simply copy all env variables, we might overwrite
@@ -67,6 +89,12 @@ export function mergeSafeChainProxyEnvironmentVariables(env) {
     const upperKey = key.toUpperCase();
 
     if (!proxyEnv[upperKey] && env[key]) {
+      // When the proxy is not running, drop any loopback proxy vars inherited
+      // from an outer safe-chain invocation. Only loopback addresses are safe to
+      // strip — corporate/upstream proxies must be preserved.
+      if (!proxyStarted && PROXY_VAR_NAMES.has(upperKey) && isLoopbackProxy(env[key])) {
+        continue;
+      }
       proxyEnv[key] = env[key];
     }
   }

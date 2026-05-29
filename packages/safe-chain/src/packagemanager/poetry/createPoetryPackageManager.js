@@ -14,6 +14,7 @@ export function createPoetryPackageManager() {
     // MITM only approach for Poetry
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }
 

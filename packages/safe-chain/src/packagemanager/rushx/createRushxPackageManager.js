@@ -11,8 +11,12 @@ export function createRushxPackageManager() {
     runCommand: (args) => {
       return runRushCommand("rushx", args);
     },
-    // For rushx, rely solely on MITM.
+    // rushx runs scripts that can invoke npm/pnpm without going through the
+    // safe-chain shim (Rush uses sh subshells that don't source the zsh function
+    // wrappers). The proxy must be started so HTTPS_PROXY is set as a fallback
+    // protection for those inner package-manager calls.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }

@@ -11,5 +11,6 @@ export function createNpxPackageManager() {
     runCommand: runNpx,
     isSupportedCommand: (args) => scanner.shouldScan(args),
     getDependencyUpdatesForCommand: (args) => scanner.scan(args),
+    commandNeedsProxy: () => true,
   };
 }

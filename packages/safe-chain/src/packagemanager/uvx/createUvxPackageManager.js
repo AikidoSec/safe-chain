@@ -14,5 +14,6 @@ export function createUvxPackageManager() {
     // For uvx, rely solely on MITM
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }
