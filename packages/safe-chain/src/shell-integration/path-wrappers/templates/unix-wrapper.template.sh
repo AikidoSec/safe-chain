@@ -4,7 +4,7 @@
 
 # Function to remove shim from PATH (POSIX-compliant)
 remove_shim_from_path() {
-    _safe_chain_phys=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd -P)
+    _safe_chain_phys=$(CDPATH= cd -- "$(dirname -- "$0")" >/dev/null 2>/dev/null && pwd -P)
     if [ -z "$_safe_chain_phys" ]; then
         echo "$PATH"
         return
