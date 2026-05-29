@@ -280,9 +280,20 @@ You can set the minimum package age through multiple sources (in order of priori
    }
    ```
 
+4. **pnpm workspace config** (only when invoked as the `pnpm` or `pnpx` shim):
+
+   Safe Chain reads `minimumReleaseAge` (in minutes — see [pnpm settings](https://pnpm.io/settings#minimumreleaseage)) from the nearest `pnpm-workspace.yaml`, falling back to a `pnpm` field in `package.json`. Any of the higher-priority sources above override it.
+
+   ```yaml
+   # pnpm-workspace.yaml
+   minimumReleaseAge: 1440 # 24 hours
+   minimumReleaseAgeExclude:
+     - "@aikidosec/*"
+   ```
+
 ### Excluding Packages
 
-Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged). Use `@scope/*` to trust all packages from an organization:
+Exclude trusted packages from minimum age filtering via environment variable or config file (both are merged). When invoked as `pnpm`/`pnpx`, `minimumReleaseAgeExclude` from `pnpm-workspace.yaml` is also merged in. Use `@scope/*` to trust all packages from an organization:
 
 ```shell
 export SAFE_CHAIN_MINIMUM_PACKAGE_AGE_EXCLUSIONS="@aikidosec/*"
