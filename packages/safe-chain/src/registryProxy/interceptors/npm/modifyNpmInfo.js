@@ -75,13 +75,27 @@ export function modifyNpmInfoResponse(body, headers) {
       }))
       .filter((x) => x.version !== "created" && x.version !== "modified");
 
-    for (const { version, timestamp } of versions) {
-      const timestampValue = new Date(timestamp);
-      if (timestampValue > cutOff) {
-        deleteVersionFromJson(bodyJson, version);
-        clearCachingHeaders(headers);
-      }
+    const versionsToRemove = versions.filter(
+      ({ timestamp }) => new Date(timestamp) > cutOff
+    );
+
+    if (versionsToRemove.length === 0) {
+      // Nothing is newer than the cutoff, so the metadata is returned unchanged.
+      // Hand back the original buffer (and leave the caching headers in place) so
+      // npm and the registry can keep serving this response from cache instead of
+      // issuing a fresh read on every install. This is the common case, since most
+      // packages have no version published within the minimum-age window.
+      return body;
     }
+
+    for (const { version } of versionsToRemove) {
+      deleteVersionFromJson(bodyJson, version);
+    }
+
+    // The body changed, so the upstream validators (etag/last-modified) no longer
+    // describe it. Drop them so the client revalidates against the registry rather
+    // than trusting a cache entry that no longer matches what we served.
+    clearCachingHeaders(headers);
 
     if (hasLatestTag && !bodyJson["dist-tags"]["latest"]) {
       // The latest tag was removed because it contained a package younger than the treshold.

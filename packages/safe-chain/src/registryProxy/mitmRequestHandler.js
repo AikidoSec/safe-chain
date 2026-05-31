@@ -208,13 +208,24 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
 
       proxyRes.on("end", () => {
         /** @type {Buffer} */
-        let buffer = Buffer.concat(chunks);
+        const originalBuffer = Buffer.concat(chunks);
+        let decodedBuffer = originalBuffer;
 
         if (proxyRes.headers["content-encoding"] === "gzip") {
-          buffer = gunzipSync(buffer);
+          decodedBuffer = gunzipSync(originalBuffer);
         }
 
-        buffer = requestHandler.modifyBody(buffer, headers);
+        const modifiedBuffer = requestHandler.modifyBody(decodedBuffer, headers);
+
+        if (modifiedBuffer === decodedBuffer) {
+          // The interceptor left the body unchanged, so forward the upstream
+          // response verbatim. Keeping the original encoding and caching headers
+          // (etag/cache-control) intact lets npm and the registry serve it from
+          // cache on later installs instead of issuing a fresh read.
+          res.writeHead(statusCode, headers);
+          res.end(originalBuffer);
+          return;
+        }
 
         // For rewritten responses, send the final body uncompressed.
         // This avoids mismatches between upstream compression metadata and the
@@ -224,9 +235,9 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
           ["content-length", "transfer-encoding", "content-encoding"],
           { caseInsensitive: true }
         ) || {};
-        rewrittenHeaders["content-length"] = String(buffer.byteLength);
+        rewrittenHeaders["content-length"] = String(modifiedBuffer.byteLength);
         res.writeHead(statusCode, rewrittenHeaders);
-        res.end(buffer);
+        res.end(modifiedBuffer);
       });
     } else {
       // If the response is not being modified, we can
