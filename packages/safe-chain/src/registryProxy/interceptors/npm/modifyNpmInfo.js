@@ -80,11 +80,14 @@ export function modifyNpmInfoResponse(body, headers) {
     );
 
     if (versionsToRemove.length === 0) {
-      // Nothing is newer than the cutoff, so the metadata is returned unchanged.
-      // Hand back the original buffer (and leave the caching headers in place) so
-      // npm and the registry can keep serving this response from cache instead of
-      // issuing a fresh read on every install. This is the common case, since most
-      // packages have no version published within the minimum-age window.
+      // Nothing is newer than the cutoff, so the body is unchanged. Return the
+      // SAME buffer reference we were given (instead of re-serializing the parsed
+      // JSON). The proxy uses reference equality to detect "unchanged" and then
+      // forwards the upstream response verbatim, keeping its original encoding and
+      // caching headers (etag/cache-control) so npm and the registry can serve it
+      // from cache on later installs instead of issuing a fresh read. This is the
+      // common case, since most packages have no version published within the
+      // minimum-age window.
       return body;
     }
 
