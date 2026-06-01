@@ -75,13 +75,30 @@ export function modifyNpmInfoResponse(body, headers) {
       }))
       .filter((x) => x.version !== "created" && x.version !== "modified");
 
-    for (const { version, timestamp } of versions) {
-      const timestampValue = new Date(timestamp);
-      if (timestampValue > cutOff) {
-        deleteVersionFromJson(bodyJson, version);
-        clearCachingHeaders(headers);
-      }
+    const versionsToRemove = versions.filter(
+      ({ timestamp }) => new Date(timestamp) > cutOff
+    );
+
+    if (versionsToRemove.length === 0) {
+      // Nothing is newer than the cutoff, so the body is unchanged. Return the
+      // SAME buffer reference we were given (instead of re-serializing the parsed
+      // JSON). The proxy uses reference equality to detect "unchanged" and then
+      // forwards the upstream response verbatim, keeping its original encoding and
+      // caching headers (etag/cache-control) so npm and the registry can serve it
+      // from cache on later installs instead of issuing a fresh read. This is the
+      // common case, since most packages have no version published within the
+      // minimum-age window.
+      return body;
     }
+
+    for (const { version } of versionsToRemove) {
+      deleteVersionFromJson(bodyJson, version);
+    }
+
+    // The body changed, so the upstream validators (etag/last-modified) no longer
+    // describe it. Drop them so the client revalidates against the registry rather
+    // than trusting a cache entry that no longer matches what we served.
+    clearCachingHeaders(headers);
 
     if (hasLatestTag && !bodyJson["dist-tags"]["latest"]) {
       // The latest tag was removed because it contained a package younger than the treshold.

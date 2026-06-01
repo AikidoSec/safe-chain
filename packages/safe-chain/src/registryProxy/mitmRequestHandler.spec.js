@@ -135,4 +135,69 @@ describe("mitmRequestHandler", async () => {
       String(resState.body.byteLength)
     );
   });
+
+  it("forwards the upstream response verbatim when the interceptor leaves the body unchanged", async () => {
+    const interceptor = {
+      handleRequest: async () => ({
+        blockResponse: undefined,
+        modifyRequestHeaders: (headers) => headers,
+        modifiesResponse: () => true,
+        // Return the same buffer reference we were given (no modification).
+        modifyBody: (body) => body,
+      }),
+    };
+
+    const req = {
+      url: "registry.npmjs.org:443",
+    };
+
+    const clientSocket = {
+      on: () => {},
+      write: () => {},
+      headersSent: false,
+      writable: true,
+      end: () => {},
+    };
+
+    mitmConnect(req, clientSocket, interceptor);
+
+    const resState = {
+      statusCode: undefined,
+      headers: undefined,
+      body: undefined,
+    };
+
+    const res = {
+      headersSent: false,
+      writeHead: (statusCode, headers) => {
+        resState.statusCode = statusCode;
+        resState.headers = headers;
+      },
+      end: (body) => {
+        resState.body = body;
+      },
+    };
+
+    const request = {
+      url: "/lodash",
+      headers: {},
+      method: "GET",
+      on: (event, handler) => {
+        if (event === "end") {
+          handler();
+        }
+      },
+    };
+
+    await capturedHandler(request, res);
+
+    // Caching/encoding headers are preserved so npm and the registry can keep
+    // serving the response from cache instead of re-reading on the next install.
+    assert.equal(resState.statusCode, 200);
+    assert.equal(resState.headers["content-encoding"], "gzip");
+    assert.equal(resState.headers["content-length"], "999");
+    assert.equal(resState.headers["transfer-encoding"], "chunked");
+    // The body is forwarded still-compressed, exactly as received from upstream.
+    assert.deepEqual(resState.body, zlib.gzipSync(Buffer.from("rewritten body")));
+  });
 });

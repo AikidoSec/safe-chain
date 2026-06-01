@@ -179,6 +179,37 @@ describe("npmInterceptor minimum package age", async () => {
     assert.ok(!Object.keys(modifiedJson.versions).includes("3.0.0"));
   });
 
+  it("Should return the original body buffer unchanged when no version is too young", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = [];
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const originalBuffer = Buffer.from(
+      JSON.stringify({
+        name: "lodash",
+        ["dist-tags"]: { latest: "2.0.0" },
+        versions: { ["1.0.0"]: {}, ["2.0.0"]: {} },
+        time: {
+          created: getDate(-365 * 24),
+          modified: getDate(-100),
+          ["1.0.0"]: getDate(-200),
+          ["2.0.0"]: getDate(-100), // well past the cutoff
+        },
+      })
+    );
+
+    const interceptor = npmInterceptorForUrl(packageUrl);
+    const requestHandler = await interceptor.handleRequest(packageUrl);
+    const result = requestHandler.modifyBody(originalBuffer, {
+      ["content-type"]: "application/json",
+    });
+
+    // The exact same buffer reference must be returned so the proxy can forward
+    // the upstream response verbatim and keep its caching headers intact.
+    assert.strictEqual(result, originalBuffer);
+  });
+
   it("Should set the package to the new latest non-preview release", async () => {
     minimumPackageAgeSettings = 5;
     const packageUrl = "https://registry.npmjs.org/lodash";
