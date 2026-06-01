@@ -144,6 +144,10 @@ jobs:
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org/"
+      
+      - name: Upgrade npm for staged publishing
+        # npm stage publish requires npm 11.15.0+
+        run: npm i -g npm@11.15.0
 
       - name: Setup safe-chain
         run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
