@@ -14,5 +14,6 @@ export function createUvPackageManager() {
     // For uv, rely solely on MITM
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }

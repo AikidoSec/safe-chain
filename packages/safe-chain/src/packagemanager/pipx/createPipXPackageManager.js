@@ -14,5 +14,6 @@ export function createPipXPackageManager() {
     // MITM only
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }

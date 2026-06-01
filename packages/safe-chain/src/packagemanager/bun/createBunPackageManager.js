@@ -2,9 +2,13 @@ import { safeSpawn } from "../../utils/safeSpawn.js";
 import { mergeSafeChainProxyEnvironmentVariables } from "../../registryProxy/registryProxy.js";
 import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
+// bun commands that only execute scripts; they never download packages.
+const BUN_LIFECYCLE_COMMANDS = new Set(["run", "test"]);
+
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
  */
+
 export function createBunPackageManager() {
   return {
     runCommand: (args) => runBunCommand("bun", args),
@@ -13,6 +17,10 @@ export function createBunPackageManager() {
     // so we don't need to analyze commands.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy(args) {
+      const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
+      return !command || !BUN_LIFECYCLE_COMMANDS.has(command);
+    },
   };
 }
 
@@ -27,6 +35,7 @@ export function createBunxPackageManager() {
     // so we don't need to analyze commands.
     isSupportedCommand: () => false,
     getDependencyUpdatesForCommand: () => [],
+    commandNeedsProxy: () => true,
   };
 }
 
