@@ -170,7 +170,7 @@ jobs:
           echo "Publishing version $VERSION to NPM"
           if [[ "$VERSION" == *"-"* ]]; then
             PRERELEASE_TAG=$(echo "$VERSION" | sed 's/.*-\([^-]*\)$/\1/')
-            npm publish --workspace=packages/safe-chain --access public --provenance --tag "$PRERELEASE_TAG"
+            npm stage publish --workspace=packages/safe-chain --access public --provenance --tag "$PRERELEASE_TAG"
           else
-            npm publish --workspace=packages/safe-chain --access public --provenance
+            npm stage publish --workspace=packages/safe-chain --access public --provenance
           fi
