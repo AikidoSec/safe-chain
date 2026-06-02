@@ -9,6 +9,31 @@ import { ui } from "../environment/userInteraction.js";
  * @returns {void}
  */
 export function handleHttpProxyRequest(req, res) {
+  try {
+    handleRequest(req, res);
+  } catch (err) {
+    // This is a synchronous 'request' listener, so an uncaught throw (e.g. a
+    // malformed URL passed to `new URL`) propagates out of emit('request') as
+    // an uncaughtException, which can crash the process and leaves the client
+    // socket hanging. Contain it and respond instead.
+    const message = err instanceof Error ? err.message : String(err);
+    ui.writeError(
+      `Safe-chain: Unhandled error handling request to ${req.url}: ${message}`
+    );
+    if (!res.headersSent) {
+      res.writeHead(500);
+    }
+    res.end("Internal Server Error");
+  }
+}
+
+/**
+ * @param {import("http").IncomingMessage} req
+ * @param {import("http").ServerResponse} res
+ *
+ * @returns {void}
+ */
+function handleRequest(req, res) {
   if (!req.url) {
     ui.writeError("Safe-chain: Request missing URL");
     res.writeHead(400, "Bad Request");
