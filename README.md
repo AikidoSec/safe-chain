@@ -590,7 +590,7 @@ npm-ci:
 
 # Troubleshooting
 
-Having issues? See the [Troubleshooting Guide](./docs/troubleshooting) for help with common problems.
+Having issues? See the [Troubleshooting Guide](./docs/troubleshooting.md) for help with common problems.
 
 # Report Issues
 
