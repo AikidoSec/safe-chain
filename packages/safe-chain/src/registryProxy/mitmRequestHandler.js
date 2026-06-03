@@ -61,28 +61,43 @@ function createHttpsServer(hostname, port, interceptor) {
    * @returns {Promise<void>}
    */
   async function handleRequest(req, res) {
-    if (!req.url) {
-      ui.writeError("Safe-chain: Request missing URL");
-      res.writeHead(400, "Bad Request");
-      res.end("Bad Request: Missing URL");
-      return;
+    try {
+      if (!req.url) {
+        ui.writeError("Safe-chain: Request missing URL");
+        res.writeHead(400, "Bad Request");
+        res.end("Bad Request: Missing URL");
+        return;
+      }
+
+      const pathAndQuery = getRequestPathAndQuery(req.url);
+      const targetUrl = `https://${hostname}${pathAndQuery}`;
+
+      const requestInterceptor = await interceptor.handleRequest(targetUrl);
+      const blockResponse = requestInterceptor.blockResponse;
+
+      if (blockResponse) {
+        ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);
+        res.writeHead(blockResponse.statusCode, blockResponse.message);
+        res.end(blockResponse.message);
+        return;
+      }
+
+      // Collect request body
+      forwardRequest(req, hostname, port, res, requestInterceptor);
+    } catch (err) {
+      // The 'request' listener's returned promise is not awaited by Node, so an
+      // uncaught rejection here surfaces as an unhandledRejection (and can crash
+      // the process) while leaving the client socket hanging. Contain it and
+      // respond instead.
+      const message = err instanceof Error ? err.message : String(err);
+      ui.writeError(
+        `Safe-chain: Unhandled error handling request to ${req.url} for ${hostname}: ${message}`
+      );
+      if (!res.headersSent) {
+        res.writeHead(500);
+      }
+      res.end("Internal Server Error");
     }
-
-    const pathAndQuery = getRequestPathAndQuery(req.url);
-    const targetUrl = `https://${hostname}${pathAndQuery}`;
-
-    const requestInterceptor = await interceptor.handleRequest(targetUrl);
-    const blockResponse = requestInterceptor.blockResponse;
-
-    if (blockResponse) {
-      ui.writeVerbose(`Safe-chain: Blocking request to ${targetUrl}`);
-      res.writeHead(blockResponse.statusCode, blockResponse.message);
-      res.end(blockResponse.message);
-      return;
-    }
-
-    // Collect request body
-    forwardRequest(req, hostname, port, res, requestInterceptor);
   }
 
   const server = https.createServer(
