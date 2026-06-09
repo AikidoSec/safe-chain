@@ -22,5 +22,10 @@
     "oxlint": "^1.22.0",
     "esbuild": "^0.27.0",
     "@yao-pkg/pkg": "6.10.1"
+  },
+  "overrides": {
+    "node-forge@<=1.4.0": "1.4.0",
+    "@isaacs/brace-expansion@<=5.0.1": "5.0.1",
+    "minimatch@<=10.2.3": "10.2.3"
   }
 }
