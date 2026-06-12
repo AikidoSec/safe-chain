@@ -1,9 +1,10 @@
 # Downloads and installs Aikido Endpoint Protection on Windows
 #
-# Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } -token <TOKEN>"
+# Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } -token <TOKEN> [-is-mdm]"
 
 param(
-    [string]$token
+    [string]$token,
+    [switch]${is-mdm}
 )
 
 # Configuration
@@ -76,7 +77,11 @@ function Install-Endpoint {
 
         # 3. Install the package with token passed as MSI property
         Write-Info "Installing Aikido Endpoint Protection..."
-        $process = Start-Process -FilePath "msiexec" -ArgumentList "/i", "`"$msiFile`"", "/qn", "/norestart", "AIKIDO_TOKEN=$token" -Wait -PassThru
+        $msiArgs = @("/i", "`"$msiFile`"", "/qn", "/norestart", "AIKIDO_TOKEN=$token")
+        if (${is-mdm}) {
+            $msiArgs += "IS_MDM=1"
+        }
+        $process = Start-Process -FilePath "msiexec" -ArgumentList $msiArgs -Wait -PassThru
         if ($process.ExitCode -ne 0) {
             Write-Error-Custom "MSI installer failed (exit code: $($process.ExitCode))."
         }
