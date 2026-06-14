@@ -82,6 +82,14 @@ function createHttpsServer(hostname, port, interceptor) {
         return;
       }
 
+      const syntheticResponse = requestInterceptor.syntheticResponse;
+      if (syntheticResponse) {
+        ui.writeVerbose(`Safe-chain: Serving synthetic response for ${targetUrl}`);
+        res.writeHead(syntheticResponse.statusCode, syntheticResponse.headers);
+        res.end(syntheticResponse.body);
+        return;
+      }
+
       // Collect request body
       forwardRequest(req, hostname, port, res, requestInterceptor);
     } catch (err) {
