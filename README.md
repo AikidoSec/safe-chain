@@ -77,31 +77,28 @@ You can find all available versions on the [releases page](https://github.com/Ai
 
 ### Verify download integrity
 
-To verify the SHA256 checksum of a downloaded binary against the latest release:
+Before running the installer, you can verify its SHA256 checksum against the values for the latest release:
 
-**Unix/Linux:**
+**Unix/Linux/macOS:**
 ```shell
-sha256sum safe-chain-linux-x64
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh -o install-safe-chain.sh
+sha256sum install-safe-chain.sh   # Linux
+shasum -a 256 install-safe-chain.sh  # macOS
 ```
 
-**macOS:**
-```shell
-shasum -a 256 safe-chain-macos-arm64
+**Windows (PowerShell):**
+```powershell
+Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1" -OutFile install-safe-chain.ps1
+Get-FileHash install-safe-chain.ps1 -Algorithm SHA256
 ```
 
 Expected checksums for the latest release:
 
 <!-- SHASUM_START -->
-| Binary | SHA256 |
-|--------|--------|
-| `safe-chain-macos-x64` | `` |
-| `safe-chain-macos-arm64` | `` |
-| `safe-chain-linux-x64` | `` |
-| `safe-chain-linux-arm64` | `` |
-| `safe-chain-linuxstatic-x64` | `` |
-| `safe-chain-linuxstatic-arm64` | `` |
-| `safe-chain-win-x64.exe` | `` |
-| `safe-chain-win-arm64.exe` | `` |
+| File | SHA256 |
+|------|--------|
+| `install-safe-chain.sh` | `` |
+| `install-safe-chain.ps1` | `` |
 <!-- SHASUM_END -->
 
 ### Verify the installation

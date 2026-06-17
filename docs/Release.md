@@ -15,7 +15,11 @@ This triggers the build pipeline, which compiles binaries for all platforms and 
 
 Monitor the [Actions tab](https://github.com/AikidoSec/safe-chain/actions) until the `Create Release` workflow completes.
 
-### 3. Publish the GitHub release
+### 3. Merge the checksums PR
+
+Once the workflow finishes, it opens a `bump/safe-chain-<version>` PR that updates the SHA256 checksums in `README.md`. Merge this PR before publishing the release — the npm publish job reads `README.md` from `main`, so merging first ensures both the GitHub and npm READMEs show the correct checksums.
+
+### 4. Publish the GitHub release
 
 1. Go to the [Releases page](https://github.com/AikidoSec/safe-chain/releases)
 2. Open the draft release created for your tag

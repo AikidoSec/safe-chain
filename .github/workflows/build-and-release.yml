@@ -109,6 +109,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.set-version.outputs.version }}
         run: |
+          SHA_SH=$(sha256sum release-artifacts/install-safe-chain.sh  | awk '{print $1}')
+          SHA_PS1=$(sha256sum release-artifacts/install-safe-chain.ps1 | awk '{print $1}')
+
           if ! gh release view "$VERSION" &>/dev/null; then
             gh release create "$VERSION" --draft --title "$VERSION" --generate-notes
           fi
@@ -130,20 +133,43 @@ jobs:
             release-artifacts/uninstall-endpoint-mac.sh \
             release-artifacts/uninstall-endpoint-windows.ps1
 
+          gh release view "$VERSION" --json body -q .body > /tmp/current_notes.md
+
+          python3 - "$SHA_SH" "$SHA_PS1" << 'PYEOF'
+import sys
+
+sha_sh, sha_ps1 = sys.argv[1], sys.argv[2]
+current = open('/tmp/current_notes.md').read()
+
+notes = f"""## Verify install scripts
+
+**Unix/Linux/macOS (`install-safe-chain.sh`):**
+
+```sh
+echo "{sha_sh}  install-safe-chain.sh" | sha256sum -c
+```
+
+**Windows PowerShell (`install-safe-chain.ps1`):**
+
+```powershell
+(Get-FileHash .\\install-safe-chain.ps1 -Algorithm SHA256).Hash -ieq '{sha_ps1}'
+```
+
+{current}"""
+
+open('/tmp/release_notes.md', 'w').write(notes)
+PYEOF
+
+          gh release edit "$VERSION" --notes-file /tmp/release_notes.md
+
       - name: Update README checksums
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          SHA_MACOS_X64=$(sha256sum release-artifacts/safe-chain-macos-x64         | awk '{print $1}')
-          SHA_MACOS_ARM64=$(sha256sum release-artifacts/safe-chain-macos-arm64     | awk '{print $1}')
-          SHA_LINUX_X64=$(sha256sum release-artifacts/safe-chain-linux-x64         | awk '{print $1}')
-          SHA_LINUX_ARM64=$(sha256sum release-artifacts/safe-chain-linux-arm64     | awk '{print $1}')
-          SHA_LINUXSTATIC_X64=$(sha256sum release-artifacts/safe-chain-linuxstatic-x64     | awk '{print $1}')
-          SHA_LINUXSTATIC_ARM64=$(sha256sum release-artifacts/safe-chain-linuxstatic-arm64 | awk '{print $1}')
-          SHA_WIN_X64=$(sha256sum release-artifacts/safe-chain-win-x64.exe         | awk '{print $1}')
-          SHA_WIN_ARM64=$(sha256sum release-artifacts/safe-chain-win-arm64.exe     | awk '{print $1}')
+          SHA_SH=$(sha256sum release-artifacts/install-safe-chain.sh   | awk '{print $1}')
+          SHA_PS1=$(sha256sum release-artifacts/install-safe-chain.ps1  | awk '{print $1}')
 
           BRANCH="bump/safe-chain-${VERSION}"
 
@@ -155,16 +181,16 @@ jobs:
           cat > /tmp/update_readme.py << 'PYEOF'
 import re, sys
 
-readme_path = sys.argv[1]
-names = ['macos-x64', 'macos-arm64', 'linux-x64', 'linux-arm64', 'linuxstatic-x64', 'linuxstatic-arm64', 'win-x64', 'win-arm64']
-exts = {'win-x64': '.exe', 'win-arm64': '.exe'}
-shas = sys.argv[2:]
+readme_path, sha_sh, sha_ps1 = sys.argv[1], sys.argv[2], sys.argv[3]
 
-rows = '\n'.join(
-    f'| `safe-chain-{name}{exts.get(name, "")}` | `{sha}` |'
-    for name, sha in zip(names, shas)
+new_block = (
+    f'<!-- SHASUM_START -->\n'
+    f'| File | SHA256 |\n'
+    f'|------|--------|\n'
+    f'| `install-safe-chain.sh` | `{sha_sh}` |\n'
+    f'| `install-safe-chain.ps1` | `{sha_ps1}` |\n'
+    f'<!-- SHASUM_END -->'
 )
-new_block = f'<!-- SHASUM_START -->\n| Binary | SHA256 |\n|--------|--------|\n{rows}\n<!-- SHASUM_END -->'
 
 content = open(readme_path).read()
 content = re.sub(r'<!-- SHASUM_START -->.*?<!-- SHASUM_END -->', new_block, content, flags=re.DOTALL)
@@ -176,11 +202,7 @@ PYEOF
           git fetch origin main
           git checkout -b "$BRANCH" origin/main
 
-          python3 /tmp/update_readme.py README.md \
-            "$SHA_MACOS_X64" "$SHA_MACOS_ARM64" \
-            "$SHA_LINUX_X64" "$SHA_LINUX_ARM64" \
-            "$SHA_LINUXSTATIC_X64" "$SHA_LINUXSTATIC_ARM64" \
-            "$SHA_WIN_X64" "$SHA_WIN_ARM64"
+          python3 /tmp/update_readme.py README.md "$SHA_SH" "$SHA_PS1"
 
           git add README.md
           git commit -m "Update checksums in README for ${VERSION}"
