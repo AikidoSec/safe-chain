@@ -48,58 +48,20 @@ Installing the Aikido Safe Chain is easy with our one-line installer.
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1" -UseBasicParsing)
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.ps1" -UseBasicParsing)
 ```
 
-### Pinning to a specific version
+The install commands above always reference a specific release. To install a different version, replace `1.5.7` with your desired version number. All available versions are on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
 
-To install a specific version instead of the latest, replace `latest` with the version number in the URL (available from version 1.3.2 onwards):
+### Download integrity
 
-**Unix/Linux/macOS:**
-
-```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.sh | sh
-```
-
-**Windows (PowerShell):**
-
-```powershell
-iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/install-safe-chain.ps1" -UseBasicParsing)
-```
-
-You can find all available versions on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
-
-### Verify download integrity
-
-Before running the installer, you can verify its SHA256 checksum against the values for the latest release:
-
-**Unix/Linux/macOS:**
-```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh -o install-safe-chain.sh
-sha256sum install-safe-chain.sh   # Linux
-shasum -a 256 install-safe-chain.sh  # macOS
-```
-
-**Windows (PowerShell):**
-```powershell
-Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1" -OutFile install-safe-chain.ps1
-Get-FileHash install-safe-chain.ps1 -Algorithm SHA256
-```
-
-Expected checksums for the latest release:
-
-<!-- SHASUM_START -->
-| File | SHA256 |
-|------|--------|
-| `install-safe-chain.sh` | `` |
-| `install-safe-chain.ps1` | `` |
-<!-- SHASUM_END -->
+The install scripts are served from a versioned release URL (`releases/download/1.5.7/...`). GitHub releases are immutable — once an artifact is published at a versioned URL it cannot be modified or replaced, so the file you download is guaranteed to be exactly what was released.
 
 ### Verify the installation
 
@@ -183,13 +145,13 @@ To uninstall the Aikido Safe Chain, use our one-line uninstaller:
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/uninstall-safe-chain.sh | sh
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/uninstall-safe-chain.sh | sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-iex (iwr "https://github.com/AikidoSec/safe-chain/releases/latest/download/uninstall-safe-chain.ps1" -UseBasicParsing)
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/uninstall-safe-chain.ps1" -UseBasicParsing)
 ```
 
 **❗Restart your terminal** after uninstalling to ensure all aliases are removed.
@@ -408,13 +370,13 @@ When set, all Safe Chain data (binary, shims, scripts, config) is placed under t
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --install-dir /usr/local/.safe-chain
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh -s -- --install-dir /usr/local/.safe-chain
 ```
 
 ### Windows
 
 ```powershell
-iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -InstallDir 'C:\ProgramData\safe-chain'"
+iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.ps1' -UseBasicParsing) } -InstallDir 'C:\ProgramData\safe-chain'"
 ```
 
 # Usage in CI/CD

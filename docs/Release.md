@@ -15,9 +15,9 @@ This triggers the build pipeline, which compiles binaries for all platforms and 
 
 Monitor the [Actions tab](https://github.com/AikidoSec/safe-chain/actions) until the `Create Release` workflow completes.
 
-### 3. Merge the checksums PR
+### 3. Merge the version bump PR
 
-Once the workflow finishes, it opens a `bump/safe-chain-<version>` PR that updates the SHA256 checksums in `README.md`. Merge this PR before publishing the release — the npm publish job reads `README.md` from `main`, so merging first ensures both the GitHub and npm READMEs show the correct checksums.
+Once the workflow finishes, it opens a `bump/safe-chain-<version>` PR that updates the pinned version number in all `README.md` install/uninstall URLs. Merge this PR before publishing the release — the npm publish job reads `README.md` from `main`, so merging first ensures both the GitHub and npm READMEs reference the correct version.
 
 ### 4. Publish the GitHub release
 

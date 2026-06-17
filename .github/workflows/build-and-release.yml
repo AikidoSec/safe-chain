@@ -109,9 +109,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.set-version.outputs.version }}
         run: |
-          SHA_SH=$(sha256sum release-artifacts/install-safe-chain.sh  | awk '{print $1}')
-          SHA_PS1=$(sha256sum release-artifacts/install-safe-chain.ps1 | awk '{print $1}')
-
           if ! gh release view "$VERSION" &>/dev/null; then
             gh release create "$VERSION" --draft --title "$VERSION" --generate-notes
           fi
@@ -133,44 +130,12 @@ jobs:
             release-artifacts/uninstall-endpoint-mac.sh \
             release-artifacts/uninstall-endpoint-windows.ps1
 
-          gh release view "$VERSION" --json body -q .body > /tmp/current_notes.md
-
-          python3 - "$SHA_SH" "$SHA_PS1" << 'PYEOF'
-import sys
-
-sha_sh, sha_ps1 = sys.argv[1], sys.argv[2]
-current = open('/tmp/current_notes.md').read()
-
-notes = f"""## Verify install scripts
-
-**Unix/Linux/macOS (`install-safe-chain.sh`):**
-
-```sh
-echo "{sha_sh}  install-safe-chain.sh" | sha256sum -c
-```
-
-**Windows PowerShell (`install-safe-chain.ps1`):**
-
-```powershell
-(Get-FileHash .\\install-safe-chain.ps1 -Algorithm SHA256).Hash -ieq '{sha_ps1}'
-```
-
-{current}"""
-
-open('/tmp/release_notes.md', 'w').write(notes)
-PYEOF
-
-          gh release edit "$VERSION" --notes-file /tmp/release_notes.md
-
-      - name: Update README checksums
+      - name: Update README version
         env:
           VERSION: ${{ needs.set-version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          SHA_SH=$(sha256sum release-artifacts/install-safe-chain.sh   | awk '{print $1}')
-          SHA_PS1=$(sha256sum release-artifacts/install-safe-chain.ps1  | awk '{print $1}')
-
           BRANCH="bump/safe-chain-${VERSION}"
 
           if git ls-remote --exit-code --heads origin "$BRANCH" &>/dev/null; then
@@ -178,34 +143,15 @@ PYEOF
             exit 0
           fi
 
-          cat > /tmp/update_readme.py << 'PYEOF'
-import re, sys
-
-readme_path, sha_sh, sha_ps1 = sys.argv[1], sys.argv[2], sys.argv[3]
-
-new_block = (
-    f'<!-- SHASUM_START -->\n'
-    f'| File | SHA256 |\n'
-    f'|------|--------|\n'
-    f'| `install-safe-chain.sh` | `{sha_sh}` |\n'
-    f'| `install-safe-chain.ps1` | `{sha_ps1}` |\n'
-    f'<!-- SHASUM_END -->'
-)
-
-content = open(readme_path).read()
-content = re.sub(r'<!-- SHASUM_START -->.*?<!-- SHASUM_END -->', new_block, content, flags=re.DOTALL)
-open(readme_path, 'w').write(content)
-PYEOF
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git checkout -b "$BRANCH" origin/main
 
-          python3 /tmp/update_readme.py README.md "$SHA_SH" "$SHA_PS1"
+          sed -i "s|releases/download/[^/]*/|releases/download/${VERSION}/|g" README.md
 
           git add README.md
-          git commit -m "Update checksums in README for ${VERSION}"
+          git commit -m "Bump safe-chain to ${VERSION} in README"
           git push origin "$BRANCH"
 
           PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
