@@ -390,13 +390,13 @@ Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD envir
 ### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh -s -- --ci
 ```
 
 ### Windows (Azure Pipelines, etc.)
 
 ```powershell
-iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.ps1' -UseBasicParsing) } -ci"
+iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.ps1' -UseBasicParsing) } -ci"
 ```
 
 ## Supported Platforms
@@ -418,7 +418,7 @@ iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download
     cache: "npm"
 
 - name: Install safe-chain
-  run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+  run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh -s -- --ci
 
 - name: Install dependencies
   run: npm ci
@@ -432,7 +432,7 @@ iex "& { $(iwr 'https://github.com/AikidoSec/safe-chain/releases/latest/download
     versionSpec: "22.x"
   displayName: "Install Node.js"
 
-- script: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+- script: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh -s -- --ci
   displayName: "Install safe-chain"
 
 - script: npm ci
@@ -480,7 +480,7 @@ pipeline {
           set -euo pipefail
 
           # Install Safe Chain for CI
-          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh -s -- --ci
         '''
       }
     }
@@ -506,7 +506,7 @@ steps:
   - step:
       name: Install
       script:
-        - curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+        - curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh -s -- --ci
         - export PATH=~/.safe-chain/shims:~/.safe-chain/bin:$PATH
         - npm ci
 ```
@@ -523,7 +523,7 @@ To add safe-chain in GitLab pipelines, you need to install it in the image runni
    FROM node:lts
 
    # Install safe-chain
-   RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+   RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.7/install-safe-chain.sh | sh -s -- --ci
 
    # Add safe-chain to PATH (update paths if you used a custom install dir)
    ENV PATH="/root/.safe-chain/shims:/root/.safe-chain/bin:${PATH}"
