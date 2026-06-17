@@ -57,7 +57,7 @@ curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.8/insta
 iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/1.5.8/install-safe-chain.ps1" -UseBasicParsing)
 ```
 
-The install commands above always reference a specific release. To install a different version, replace `1.5.7` with your desired version number. All available versions are on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
+The install commands above always reference a specific release. To install a different version, replace the version with your desired version number. All available versions are on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
 
 ### Download integrity
 
