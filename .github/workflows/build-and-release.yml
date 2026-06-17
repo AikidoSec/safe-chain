@@ -130,6 +130,35 @@ jobs:
             release-artifacts/uninstall-endpoint-mac.sh \
             release-artifacts/uninstall-endpoint-windows.ps1
 
+      - name: Update README version
+        env:
+          VERSION: ${{ needs.set-version.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          BRANCH="bump/safe-chain-${VERSION}"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" &>/dev/null; then
+            echo "Branch $BRANCH already exists, skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -b "$BRANCH" origin/main
+
+          sed -i "s|releases/download/[^/]*/|releases/download/${VERSION}/|g" README.md
+
+          git add README.md
+          git commit -m "Bump safe-chain to ${VERSION} in README"
+          git push origin "$BRANCH"
+
+          PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"safe-chain ${VERSION} released - ${PR_URL}\"}"
+
   publish-npm:
     name: Publish to npm
     if: github.event_name == 'release'
@@ -163,6 +192,8 @@ jobs:
 
       - name: Copy documentation files to package
         run: |
+          git fetch origin main
+          git checkout origin/main -- README.md
           cp README.md packages/safe-chain/
           cp LICENSE packages/safe-chain/
           cp -r docs packages/safe-chain/
