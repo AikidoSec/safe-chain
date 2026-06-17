@@ -75,6 +75,35 @@ iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/x.x.x/instal
 
 You can find all available versions on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
 
+### Verify download integrity
+
+To verify the SHA256 checksum of a downloaded binary against the latest release:
+
+**Unix/Linux:**
+```shell
+sha256sum safe-chain-linux-x64
+```
+
+**macOS:**
+```shell
+shasum -a 256 safe-chain-macos-arm64
+```
+
+Expected checksums for the latest release:
+
+<!-- SHASUM_START -->
+| Binary | SHA256 |
+|--------|--------|
+| `safe-chain-macos-x64` | `` |
+| `safe-chain-macos-arm64` | `` |
+| `safe-chain-linux-x64` | `` |
+| `safe-chain-linux-arm64` | `` |
+| `safe-chain-linuxstatic-x64` | `` |
+| `safe-chain-linuxstatic-arm64` | `` |
+| `safe-chain-win-x64.exe` | `` |
+| `safe-chain-win-arm64.exe` | `` |
+<!-- SHASUM_END -->
+
 ### Verify the installation
 
 1. **❗Restart your terminal** to start using the Aikido Safe Chain.

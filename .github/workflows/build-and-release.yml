@@ -130,6 +130,67 @@ jobs:
             release-artifacts/uninstall-endpoint-mac.sh \
             release-artifacts/uninstall-endpoint-windows.ps1
 
+      - name: Update README checksums
+        env:
+          VERSION: ${{ needs.set-version.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          SHA_MACOS_X64=$(sha256sum release-artifacts/safe-chain-macos-x64         | awk '{print $1}')
+          SHA_MACOS_ARM64=$(sha256sum release-artifacts/safe-chain-macos-arm64     | awk '{print $1}')
+          SHA_LINUX_X64=$(sha256sum release-artifacts/safe-chain-linux-x64         | awk '{print $1}')
+          SHA_LINUX_ARM64=$(sha256sum release-artifacts/safe-chain-linux-arm64     | awk '{print $1}')
+          SHA_LINUXSTATIC_X64=$(sha256sum release-artifacts/safe-chain-linuxstatic-x64     | awk '{print $1}')
+          SHA_LINUXSTATIC_ARM64=$(sha256sum release-artifacts/safe-chain-linuxstatic-arm64 | awk '{print $1}')
+          SHA_WIN_X64=$(sha256sum release-artifacts/safe-chain-win-x64.exe         | awk '{print $1}')
+          SHA_WIN_ARM64=$(sha256sum release-artifacts/safe-chain-win-arm64.exe     | awk '{print $1}')
+
+          BRANCH="bump/safe-chain-${VERSION}"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" &>/dev/null; then
+            echo "Branch $BRANCH already exists, skipping."
+            exit 0
+          fi
+
+          cat > /tmp/update_readme.py << 'PYEOF'
+import re, sys
+
+readme_path = sys.argv[1]
+names = ['macos-x64', 'macos-arm64', 'linux-x64', 'linux-arm64', 'linuxstatic-x64', 'linuxstatic-arm64', 'win-x64', 'win-arm64']
+exts = {'win-x64': '.exe', 'win-arm64': '.exe'}
+shas = sys.argv[2:]
+
+rows = '\n'.join(
+    f'| `safe-chain-{name}{exts.get(name, "")}` | `{sha}` |'
+    for name, sha in zip(names, shas)
+)
+new_block = f'<!-- SHASUM_START -->\n| Binary | SHA256 |\n|--------|--------|\n{rows}\n<!-- SHASUM_END -->'
+
+content = open(readme_path).read()
+content = re.sub(r'<!-- SHASUM_START -->.*?<!-- SHASUM_END -->', new_block, content, flags=re.DOTALL)
+open(readme_path, 'w').write(content)
+PYEOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -b "$BRANCH" origin/main
+
+          python3 /tmp/update_readme.py README.md \
+            "$SHA_MACOS_X64" "$SHA_MACOS_ARM64" \
+            "$SHA_LINUX_X64" "$SHA_LINUX_ARM64" \
+            "$SHA_LINUXSTATIC_X64" "$SHA_LINUXSTATIC_ARM64" \
+            "$SHA_WIN_X64" "$SHA_WIN_ARM64"
+
+          git add README.md
+          git commit -m "Update checksums in README for ${VERSION}"
+          git push origin "$BRANCH"
+
+          PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"safe-chain ${VERSION} released - ${PR_URL}\"}"
+
   publish-npm:
     name: Publish to npm
     if: github.event_name == 'release'
@@ -163,6 +224,8 @@ jobs:
 
       - name: Copy documentation files to package
         run: |
+          git fetch origin main
+          git checkout origin/main -- README.md
           cp README.md packages/safe-chain/
           cp LICENSE packages/safe-chain/
           cp -r docs packages/safe-chain/
