@@ -213,7 +213,7 @@ describe("Zsh shell integration", () => {
       const initialContent = [
         "#!/bin/zsh",
         "alias npm='old-npm'",
-        "source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script",
+        "source /Users/some-very-long-user-name/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script",
         "alias ls='ls --color=auto'",
       ].join("\n");
 
@@ -224,7 +224,7 @@ describe("Zsh shell integration", () => {
       const content = fs.readFileSync(mockStartupFile, "utf-8");
       assert.ok(!content.includes("alias npm="));
       assert.ok(
-        !content.includes("source /test-home/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script")
+        !content.includes("source /Users/some-very-long-user-name/.safe-chain/scripts/init-posix.sh # Safe-chain Zsh initialization script")
       );
       assert.ok(content.includes("alias ls="));
     });

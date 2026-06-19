@@ -180,7 +180,7 @@ export function removeLinesMatchingPattern(filePath, pattern, eol) {
   fs.writeFileSync(filePath, updatedLines.join(eol), "utf-8");
 }
 
-const maxLineLength = 100;
+const maxLineLength = 200;
 
 /**
  * @param {string} line
