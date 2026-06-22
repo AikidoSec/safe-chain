@@ -121,7 +121,12 @@ function Get-SafeChainInstallDir {
 }
 
 # Finds the installed safe-chain binary inside the resolved install directory.
-# Falls back to a validated safe-chain command when the expected file is missing.
+# Falls back to the safe-chain on PATH when the expected file is missing. The
+# PATH fallback is intentionally not restricted to the packaged-binary layout:
+# npm, nvm, volta, pnpm and bun all expose safe-chain through differently-shaped
+# shims (.cmd/.ps1/.exe), and teardown must run for all of them. (Install-dir
+# derivation, which feeds Remove-Item, stays strict and is handled separately by
+# Get-ReportedInstallDir / Get-InstallDirFromBinaryPath.)
 function Find-SafeChainBinary {
     param([string]$DotSafeChain)
 
@@ -136,7 +141,12 @@ function Find-SafeChainBinary {
         return $safeChainBin
     }
 
-    return Get-ValidatedSafeChainCommandPath
+    $command = Get-SafeChainCommand
+    if ($command -and -not [string]::IsNullOrWhiteSpace($command.Path)) {
+        return $command.Path
+    }
+
+    return $null
 }
 
 # Runs safe-chain teardown before removing the installation directory.

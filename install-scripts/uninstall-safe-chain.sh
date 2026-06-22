@@ -153,7 +153,12 @@ get_reported_install_dir() {
 }
 
 # Locates the installed safe-chain binary to use for teardown.
-# Checks the discovered install dir first, then falls back to a validated PATH entry.
+# Prefers the binary inside the discovered install dir, then falls back to the
+# safe-chain on PATH. The PATH fallback is intentionally not restricted to the
+# packaged-binary layout: npm, nvm, volta, pnpm and bun all expose safe-chain
+# through differently-shaped shims, and teardown must run for all of them.
+# (Install-dir derivation, which feeds the rm -rf, stays strict and is handled
+# separately by get_reported_install_dir / derive_install_dir_from_binary.)
 find_installed_safe_chain_binary() {
     dot_safe_chain="$1"
 
@@ -163,7 +168,7 @@ find_installed_safe_chain_binary() {
         return 0
     fi
 
-    command_path=$(get_validated_safe_chain_command_path || true)
+    command_path=$(get_safe_chain_command_path || true)
     if [ -n "$command_path" ]; then
         printf '%s\n' "$command_path"
         return 0
