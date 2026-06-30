@@ -13,11 +13,13 @@ import { EventEmitter } from "events";
  * @property {(packageName: string, version: string, message: string) => void} blockMinimumAgeRequest
  * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => NodeJS.Dict<string | string[]>) => void} modifyRequestHeaders
  * @property {(modificationFunc: (body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer) => void} modifyBody
+ * @property {(response: {statusCode: number, headers: NodeJS.Dict<string>, body: Buffer}) => void} setSyntheticResponse
  * @property {() => RequestInterceptionHandler} build
  *
  *
  * @typedef {Object} RequestInterceptionHandler
  * @property {{statusCode: number, message: string} | undefined} blockResponse
+ * @property {{statusCode: number, headers: NodeJS.Dict<string>, body: Buffer} | undefined} syntheticResponse
  * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => NodeJS.Dict<string | string[]> | undefined} modifyRequestHeaders
  * @property {() => boolean} modifiesResponse
  * @property {(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer} modifyBody
@@ -78,6 +80,8 @@ function buildInterceptor(requestHandlers) {
 function createRequestContext(targetUrl, eventEmitter) {
   /** @type {{statusCode: number, message: string} | undefined}  */
   let blockResponse = undefined;
+  /** @type {{statusCode: number, headers: NodeJS.Dict<string>, body: Buffer} | undefined} */
+  let syntheticResponse = undefined;
   /** @type {Array<(headers: NodeJS.Dict<string | string[]>) => NodeJS.Dict<string | string[]>>} */
   let reqheaderModificationFuncs = [];
   /** @type {Array<(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer>} */
@@ -161,6 +165,7 @@ function createRequestContext(targetUrl, eventEmitter) {
     // These functions are invoked in the proxy, allowing to apply the configured modifications
     return {
       blockResponse,
+      syntheticResponse,
       modifyRequestHeaders: modifyRequestHeaders,
       modifiesResponse: () => modifyBodyFuncs.length > 0,
       modifyBody,
@@ -174,6 +179,7 @@ function createRequestContext(targetUrl, eventEmitter) {
     blockMinimumAgeRequest: blockMinimumAgeRequestSetup,
     modifyRequestHeaders: (func) => reqheaderModificationFuncs.push(func),
     modifyBody: (func) => modifyBodyFuncs.push(func),
+    setSyntheticResponse: (response) => { syntheticResponse = response; },
     build,
   };
 }
