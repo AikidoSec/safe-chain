@@ -13,6 +13,10 @@ import {
   modifyPipInfoResponse,
   parsePipMetadataUrl,
 } from "./modifyPipInfo.js";
+import {
+  getTestPackageCanonicalName,
+  synthesizePipSimpleResponse,
+} from "./pipTestPackages.js";
 import { parsePipPackageFromUrl } from "./parsePipPackageUrl.js";
 
 const knownPipRegistries = [
@@ -55,6 +59,14 @@ function createPipRequestHandler(registry) {
     const minimumAgeChecksEnabled = !skipMinimumPackageAge();
     const metadataInfo = parsePipMetadataUrl(reqContext.targetUrl);
     const metadataPackageName = metadataInfo.packageName;
+
+    if (metadataPackageName) {
+      const canonical = getTestPackageCanonicalName(metadataPackageName);
+      if (canonical) {
+        reqContext.setSyntheticResponse(synthesizePipSimpleResponse(canonical));
+        return;
+      }
+    }
 
     if (
       minimumAgeChecksEnabled &&
