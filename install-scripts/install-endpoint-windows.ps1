@@ -1,10 +1,11 @@
 # Downloads and installs Aikido Endpoint Protection on Windows
 #
-# Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } -token <TOKEN> [-is-mdm]"
+# Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } -token <TOKEN> [-is-mdm] [-debug]"
 
 param(
     [string]$token,
-    [switch]${is-mdm}
+    [switch]${is-mdm},
+    [switch]$debug
 )
 
 # Configuration
@@ -55,6 +56,7 @@ function Install-Endpoint {
 
     # 2. Download the .msi
     $msiFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).msi"
+    $logFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).log"
 
     Write-Info "Downloading Aikido Endpoint Protection..."
     try {
@@ -81,7 +83,22 @@ function Install-Endpoint {
         if (${is-mdm}) {
             $msiArgs += "IS_MDM=1"
         }
+        if ($debug) {
+            Write-Info "Debug logging enabled. MSI log: $logFile"
+            $msiArgs += @("/L*V", "`"$logFile`"")
+        }
         $process = Start-Process -FilePath "msiexec" -ArgumentList $msiArgs -Wait -PassThru
+
+        if ($debug) {
+            Write-Info "MSI installer log output:"
+            if (Test-Path $logFile) {
+                Get-Content -Path $logFile | Write-Host
+            }
+            else {
+                Write-Host "[WARN] No log file was produced at $logFile" -ForegroundColor Yellow
+            }
+        }
+
         if ($process.ExitCode -ne 0) {
             Write-Error-Custom "MSI installer failed (exit code: $($process.ExitCode))."
         }
@@ -92,6 +109,9 @@ function Install-Endpoint {
         # Cleanup
         if (Test-Path $msiFile) {
             Remove-Item -Path $msiFile -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path $logFile) {
+            Remove-Item -Path $logFile -Force -ErrorAction SilentlyContinue
         }
     }
 }
