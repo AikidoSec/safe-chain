@@ -5,16 +5,8 @@
 param(
     [string]$token,
     [switch]${is-mdm},
-    [switch]$debug,
-    [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]]$RemainingArgs
+    [switch]$debug
 )
-
-# PowerShell only binds single-dash switches (e.g. -debug); accept a stray
-# "--debug" too, since it's a common typo/convention from other CLIs.
-if ($RemainingArgs -contains '--debug' -or $RemainingArgs -contains '-debug') {
-    $debug = $true
-}
 
 # Configuration
 $InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.7.17/EndpointProtection.msi"
