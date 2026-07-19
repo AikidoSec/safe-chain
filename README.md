@@ -57,6 +57,17 @@ curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.13/inst
 iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/1.5.13/install-safe-chain.ps1" -UseBasicParsing)
 ```
 
+### macOS / Linux (Homebrew)
+
+If you'd prefer a package manager over piping a script from the internet, install Safe Chain via our [Homebrew tap](https://github.com/AikidoSec/homebrew-tap):
+
+```shell
+brew install AikidoSec/tap/safe-chain
+safe-chain setup
+```
+
+After running `safe-chain setup`, restart your shell to pick up the new aliases. For CI/non-interactive environments use `safe-chain setup-ci` instead.
+
 The install commands above always reference a specific release. To install a different version, replace the version with your desired version number. All available versions are on the [releases page](https://github.com/AikidoSec/safe-chain/releases).
 
 ### Download integrity
