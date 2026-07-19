@@ -7,7 +7,7 @@ elif [ -n "${ZSH_VERSION:-}" ]; then
 else
     _sc_script_path="$0"
 fi
-_sc_scripts_dir=$(CDPATH= cd -- "$(dirname -- "$_sc_script_path")" 2>/dev/null && pwd -P)
+_sc_scripts_dir=$(CDPATH= cd -- "$(dirname -- "$_sc_script_path")" >/dev/null 2>/dev/null && pwd -P)
 _sc_base=$(dirname -- "$_sc_scripts_dir")
 export PATH="$PATH:${_sc_base}/bin"
 unset _sc_base _sc_script_path _sc_scripts_dir
