@@ -1,6 +1,10 @@
 # Uninstalls Aikido Endpoint Protection endpoint on Windows
 #
-# Usage: iex (iwr '<url>' -UseBasicParsing)
+# Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } [-debug]"
+
+param(
+    [switch]$debug
+)
 
 # Configuration
 $AppName = "Aikido Endpoint Protection"
@@ -40,14 +44,39 @@ function Uninstall-Endpoint {
     }
 
     $productCode = $app.IdentifyingNumber
+    $logFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).log"
 
-    Write-Info "Uninstalling Aikido Endpoint Protection..."
-    $process = Start-Process -FilePath "msiexec" -ArgumentList "/x", $productCode, "/qn", "/norestart" -Wait -PassThru
-    if ($process.ExitCode -ne 0) {
-        Write-Error-Custom "Uninstall failed (exit code: $($process.ExitCode))."
+    try {
+        Write-Info "Uninstalling Aikido Endpoint Protection..."
+        $msiArgs = @("/x", $productCode, "/qn", "/norestart")
+        if ($debug) {
+            Write-Info "Debug logging enabled. MSI log: $logFile"
+            $msiArgs += @("/L*V", "`"$logFile`"")
+        }
+        $process = Start-Process -FilePath "msiexec" -ArgumentList $msiArgs -Wait -PassThru
+
+        if ($debug) {
+            Write-Info "MSI uninstaller log output:"
+            if (Test-Path $logFile) {
+                Get-Content -Path $logFile | Write-Host
+            }
+            else {
+                Write-Host "[WARN] No log file was produced at $logFile" -ForegroundColor Yellow
+            }
+        }
+
+        if ($process.ExitCode -ne 0) {
+            Write-Error-Custom "Uninstall failed (exit code: $($process.ExitCode))."
+        }
+
+        Write-Info "Aikido Endpoint Protection uninstalled successfully!"
     }
-
-    Write-Info "Aikido Endpoint Protection uninstalled successfully!"
+    finally {
+        # Cleanup
+        if (Test-Path $logFile) {
+            Remove-Item -Path $logFile -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 # Run uninstallation
