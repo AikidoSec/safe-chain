@@ -154,6 +154,62 @@ describe("buildNewPackagesDatabase", () => {
 
       ecosystem = "js";
     });
+  });
 
+  describe("scan cost", () => {
+    function makeCountingFeed(size, counter) {
+      return Array.from({ length: size }, (_, i) => {
+        const packageName = `filler-package-${i}`;
+        return {
+          version: "9.9.9",
+          released_on: hoursAgo(1000),
+          get package_name() {
+            counter.reads++;
+            return packageName;
+          },
+        };
+      });
+    }
+
+    it("reads the feed once, not once per lookup", () => {
+      const feedSize = 50;
+      const lookups = 10;
+      const counter = { reads: 0 };
+      const db = buildNewPackagesDatabase(makeCountingFeed(feedSize, counter));
+
+      for (let i = 0; i < lookups; i++) {
+        db.isNewlyReleasedPackage("example", "1.82.1");
+      }
+
+      assert.ok(
+        counter.reads <= feedSize + lookups,
+        `read feed entries ${counter.reads} times for ${lookups} lookups ` +
+          `against a ${feedSize}-entry feed; expected at most ${feedSize + lookups}`,
+      );
+    });
+
+    it("lookup cost does not grow with feed size", () => {
+      const lookups = 10;
+      const readsDuringLookups = (feedSize) => {
+        const counter = { reads: 0 };
+        const db = buildNewPackagesDatabase(
+          makeCountingFeed(feedSize, counter),
+        );
+        const afterBuild = counter.reads;
+        for (let i = 0; i < lookups; i++) {
+          db.isNewlyReleasedPackage("example", `1.${i}.0`);
+        }
+        return counter.reads - afterBuild;
+      };
+
+      const small = readsDuringLookups(20);
+      const large = readsDuringLookups(80);
+
+      assert.ok(
+        large <= small + lookups * 2,
+        `lookups read the feed ${small} times at 20 entries and ${large} at 80; ` +
+          `per-lookup cost scales with feed size`,
+      );
+    });
   });
 });

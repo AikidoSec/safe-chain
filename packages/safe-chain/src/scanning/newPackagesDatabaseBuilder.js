@@ -35,6 +35,19 @@ function getCurrentFeedSource() {
  */
 export function buildNewPackagesDatabase(newPackagesList) {
   const ecosystem = getEcoSystem();
+  const expectedSource = getCurrentFeedSource();
+
+  /** @type {Map<string, import("../api/aikido.js").NewPackageEntry>} */
+  const entriesByNameAndVersion = new Map();
+  for (const pkg of newPackagesList) {
+    if (pkg.source && pkg.source.toLowerCase() !== expectedSource) {
+      continue;
+    }
+    const key = `${pkg.package_name} ${pkg.version}`;
+    if (!entriesByNameAndVersion.has(key)) {
+      entriesByNameAndVersion.set(key, pkg);
+    }
+  }
 
   /**
    * @param {string | undefined} name
@@ -49,22 +62,15 @@ export function buildNewPackagesDatabase(newPackagesList) {
     const cutOff = new Date(
       new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
     );
-    const expectedSource = getCurrentFeedSource();
-    const candidateNames = getEquivalentPackageNames(name, ecosystem);
 
-    const entry = newPackagesList.find(
-      (pkg) =>
-        (!pkg.source || pkg.source.toLowerCase() === expectedSource) &&
-        candidateNames.includes(pkg.package_name) &&
-        pkg.version === version
-    );
-
-    if (!entry) {
-      return false;
+    for (const candidateName of getEquivalentPackageNames(name, ecosystem)) {
+      const entry = entriesByNameAndVersion.get(`${candidateName} ${version}`);
+      if (entry) {
+        return new Date(entry.released_on * 1000) > cutOff;
+      }
     }
 
-    const releasedOn = new Date(entry.released_on * 1000);
-    return releasedOn > cutOff;
+    return false;
   }
 
   return { isNewlyReleasedPackage };
