@@ -85,7 +85,7 @@ jobs:
             pnpm_version: "9.0.0"
           # Backward compatibility testing
           - node_version: "18"
-            npm_version: "latest"
+            npm_version: "10.2.0"
             yarn_version: "latest"
             pnpm_version: "10.0.0"
           # Future compatibility (becomes LTS October 2025)
