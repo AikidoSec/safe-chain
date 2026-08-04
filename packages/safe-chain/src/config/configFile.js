@@ -279,18 +279,75 @@ function readConfigFile() {
     },
   };
 
-  const configFilePath = getConfigFilePath();
+  const homeConfig = readConfigContentAt(getConfigFilePath(), emptyConfig);
 
-  if (!fs.existsSync(configFilePath)) {
-    return emptyConfig;
+  const projectConfigPath = findProjectConfigFilePath();
+  if (!projectConfigPath) {
+    return homeConfig;
+  }
+
+  const projectConfig = readConfigContentAt(projectConfigPath, null);
+  if (!projectConfig) {
+    return homeConfig;
+  }
+
+  return deepMergeConfig(homeConfig, projectConfig);
+}
+
+/**
+ * Reads and JSON-parses the file at `filePath`, returning `fallback` if the file doesn't
+ * exist or fails to parse.
+ * @template T
+ * @param {string} filePath
+ * @param {T} fallback
+ * @returns {SafeChainConfig | T}
+ */
+function readConfigContentAt(filePath, fallback) {
+  if (!fs.existsSync(filePath)) {
+    return fallback;
   }
 
   try {
-    const data = fs.readFileSync(configFilePath, "utf8");
+    const data = fs.readFileSync(filePath, "utf8");
     return JSON.parse(data);
   } catch {
-    return emptyConfig;
+    return fallback;
   }
+}
+
+/**
+ * Deep-merges `override` on top of `base`. Nested plain objects are merged key-by-key
+ * recursively. Arrays (e.g. customRegistries, minimumPackageAgeExclusions) are unioned
+ * (deduplicated) rather than one replacing the other, since these are additive
+ * allow/exclude lists - a project config should be able to add to the home config's
+ * list without silently dropping entries the project didn't repeat. Scalar values in
+ * `override` replace the corresponding `base` value.
+ * @param {any} base
+ * @param {any} override
+ * @returns {any}
+ */
+function deepMergeConfig(base, override) {
+  if (Array.isArray(base) && Array.isArray(override)) {
+    return Array.from(new Set([...base, ...override]));
+  }
+
+  if (isPlainObject(base) && isPlainObject(override)) {
+    const merged = { ...base };
+    for (const key of Object.keys(override)) {
+      merged[key] = deepMergeConfig(base[key], override[key]);
+    }
+    return merged;
+  }
+
+  return override !== undefined ? override : base;
+}
+
+/**
+ * @param {any} value
+ * @returns {boolean}
+ */
+function isPlainObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -341,6 +398,43 @@ function getConfigFilePath() {
   }
 
   return primaryPath;
+}
+
+/**
+ * Walks up from process.cwd() looking for a project-local `.safe-chain/config.json`.
+ * Stops (without finding anything further) at whichever boundary is hit first:
+ *  - the current directory equals os.homedir() (that file is already covered by the
+ *    home-tier lookup in getConfigFilePath(); must not check/merge it twice)
+ *  - a `.git` entry (file or directory) exists in the current directory (repo root) —
+ *    that directory's own config is still checked before stopping
+ *  - the filesystem root is reached (path.dirname(dir) === dir)
+ * @returns {string | undefined}
+ */
+function findProjectConfigFilePath() {
+  const homeDir = path.resolve(os.homedir());
+  let dir = path.resolve(process.cwd());
+
+  while (true) {
+    if (dir === homeDir) {
+      return undefined;
+    }
+
+    const candidatePath = path.join(dir, ".safe-chain", "config.json");
+    if (fs.existsSync(candidatePath)) {
+      return candidatePath;
+    }
+
+    if (fs.existsSync(path.join(dir, ".git"))) {
+      return undefined;
+    }
+
+    const parentDir = path.dirname(dir);
+    if (parentDir === dir) {
+      return undefined;
+    }
+
+    dir = parentDir;
+  }
 }
 
 /**

@@ -22,6 +22,14 @@ mock.module("fs", {
   },
 });
 
+// Default fake cwd for describes that don't exercise project-config walk-up. Placed one
+// level under the real home directory so the walk-up in findProjectConfigFilePath hits the
+// home-dir stop condition on its very first check, without ever touching the real
+// filesystem (fs is fully mocked above) or picking up a real .git/.safe-chain from the dev
+// machine or CI checkout.
+let currentCwd = path.join(os.homedir(), "safe-chain-test-default-cwd");
+mock.method(process, "cwd", () => currentCwd);
+
 /**
  * Helper to set config content at the primary (~/.safe-chain/) location.
  * @param {string} content
@@ -502,5 +510,142 @@ describe("config file location fallback", async () => {
 
   it("should return default when neither config file exists", () => {
     assert.strictEqual(getScanTimeout(), 10000);
+  });
+});
+
+describe("project-local config", async () => {
+  const { getScanTimeout, getNpmCustomRegistries, getMinimumPackageAgeExclusions } =
+    await import("./configFile.js");
+
+  const defaultCwd = currentCwd;
+
+  afterEach(() => {
+    mockFiles.clear();
+    currentCwd = defaultCwd;
+  });
+
+  /**
+   * @param {string} dir
+   * @returns {string}
+   */
+  function projectConfigPathAt(dir) {
+    return path.join(dir, ".safe-chain", "config.json");
+  }
+
+  it("finds a project config at cwd itself", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    mockFiles.set(projectConfigPathAt(cwd), JSON.stringify({ scanTimeout: 1111 }));
+
+    assert.strictEqual(getScanTimeout(), 1111);
+  });
+
+  it("finds a project config several directories up with no .git in between", () => {
+    const repoRoot = path.join(os.homedir(), "repo");
+    currentCwd = path.join(repoRoot, "packages", "foo", "src");
+    mockFiles.set(projectConfigPathAt(repoRoot), JSON.stringify({ scanTimeout: 2222 }));
+
+    assert.strictEqual(getScanTimeout(), 2222);
+  });
+
+  it("checks a directory containing .git before stopping the walk", () => {
+    const repoRoot = path.join(os.homedir(), "repo");
+    currentCwd = path.join(repoRoot, "src");
+    mockFiles.set(path.join(repoRoot, ".git"), "");
+    mockFiles.set(projectConfigPathAt(repoRoot), JSON.stringify({ scanTimeout: 3333 }));
+
+    assert.strictEqual(getScanTimeout(), 3333);
+  });
+
+  it("stops at the repo root (.git) and does not search above it", () => {
+    const aboveRepo = path.join(os.homedir(), "workspace");
+    const repoRoot = path.join(aboveRepo, "repo");
+    currentCwd = path.join(repoRoot, "src");
+    mockFiles.set(path.join(repoRoot, ".git"), "");
+    // No config at repoRoot itself; one exists further up above the repo boundary -
+    // it must not be found.
+    mockFiles.set(projectConfigPathAt(aboveRepo), JSON.stringify({ scanTimeout: 4444 }));
+
+    assert.strictEqual(getScanTimeout(), 10000);
+  });
+
+  it("stops at the home directory and does not search above it", () => {
+    currentCwd = path.join(os.homedir(), "repo", "src");
+    // "Poison" config placed above the home directory - must never be reached.
+    const aboveHome = path.dirname(path.resolve(os.homedir()));
+    mockFiles.set(projectConfigPathAt(aboveHome), JSON.stringify({ scanTimeout: 5555 }));
+
+    assert.strictEqual(getScanTimeout(), 10000);
+  });
+
+  it("falls back to home/default config when no project config exists anywhere", () => {
+    currentCwd = path.join(os.homedir(), "repo", "deep", "nested", "dir");
+
+    assert.strictEqual(getScanTimeout(), 10000);
+  });
+
+  it("overrides a scalar value from the project config over the home config", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ scanTimeout: 9000 }));
+    mockFiles.set(projectConfigPathAt(cwd), JSON.stringify({ scanTimeout: 1234 }));
+
+    assert.strictEqual(getScanTimeout(), 1234);
+  });
+
+  it("deep-merges nested npm config: project overrides one key, home's sibling key is kept", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(
+      JSON.stringify({
+        npm: {
+          customRegistries: ["home.registry.com"],
+          minimumPackageAgeExclusions: ["home-pkg"],
+        },
+      })
+    );
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({ npm: { minimumPackageAgeExclusions: ["left-pad"] } })
+    );
+
+    assert.deepStrictEqual(getNpmCustomRegistries(), ["home.registry.com"]);
+    assert.deepStrictEqual(getMinimumPackageAgeExclusions(), ["home-pkg", "left-pad"]);
+  });
+
+  it("unions arrays instead of one replacing the other", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(
+      JSON.stringify({ npm: { customRegistries: ["a.registry.com", "b.registry.com"] } })
+    );
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({ npm: { customRegistries: ["b.registry.com", "c.registry.com"] } })
+    );
+
+    assert.deepStrictEqual(getNpmCustomRegistries(), [
+      "a.registry.com",
+      "b.registry.com",
+      "c.registry.com",
+    ]);
+  });
+
+  it("falls back to the home value for keys the project config omits", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ scanTimeout: 7000 }));
+    mockFiles.set(projectConfigPathAt(cwd), JSON.stringify({ logFileFormat: "json" }));
+
+    assert.strictEqual(getScanTimeout(), 7000);
+  });
+
+  it("treats a malformed project config file as absent, leaving home config unaffected", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ scanTimeout: 6000 }));
+    mockFiles.set(projectConfigPathAt(cwd), "{ invalid json");
+
+    assert.strictEqual(getScanTimeout(), 6000);
   });
 });
