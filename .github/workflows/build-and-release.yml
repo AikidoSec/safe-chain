@@ -137,6 +137,8 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           BRANCH="bump/safe-chain-${VERSION}"
+          SHA256_SH_INSTALL=$(sha256sum release-artifacts/install-safe-chain.sh | awk '{print $1}')
+          SHA256_PS1_INSTALL=$(sha256sum release-artifacts/install-safe-chain.ps1 | awk '{print toupper($1)}')
 
           if git ls-remote --exit-code --heads origin "$BRANCH" &>/dev/null; then
             echo "Branch $BRANCH already exists, skipping."
@@ -149,6 +151,8 @@ jobs:
           git checkout -b "$BRANCH" origin/main
 
           sed -i "s|releases/download/[^/]*/|releases/download/${VERSION}/|g" README.md
+          sed -i -E "s|[0-9a-f]{64}(  /tmp/install-safe-chain\.sh)|${SHA256_SH_INSTALL}\1|g" README.md
+          sed -i -E 's|\$expectedHash = "[0-9A-F]{64}"|\$expectedHash = "'"${SHA256_PS1_INSTALL}"'"|g' README.md
 
           git add README.md
           git commit -m "Bump safe-chain to ${VERSION} in README"
