@@ -291,7 +291,62 @@ function readConfigFile() {
     return homeConfig;
   }
 
-  return deepMergeConfig(homeConfig, projectConfig);
+  return deepMergeConfig(homeConfig, pickAllowedProjectConfigFields(projectConfig));
+}
+
+/**
+ * Only these settings may be set by a project-local config file. Everything else
+ * (malwareListBaseUrl, logFile*, scanTimeout, etc.) must come from the home-tier config -
+ * a project config living in a repo could otherwise be used to point safe-chain at a
+ * malicious malware database, or modify local logging files.
+ * @param {any} projectConfig
+ * @returns {Partial<SafeChainConfig>}
+ */
+function pickAllowedProjectConfigFields(projectConfig) {
+  if (!isPlainObject(projectConfig)) {
+    return {};
+  }
+
+  /** @type {Partial<SafeChainConfig>} */
+  const allowed = {};
+
+  if (projectConfig.minimumPackageAgeHours !== undefined) {
+    allowed.minimumPackageAgeHours = projectConfig.minimumPackageAgeHours;
+  }
+
+  const npmFields = pickRegistryConfigFields(projectConfig.npm);
+  if (npmFields) {
+    allowed.npm = npmFields;
+  }
+
+  const pipFields = pickRegistryConfigFields(projectConfig.pip);
+  if (pipFields) {
+    allowed.pip = pipFields;
+  }
+
+  return allowed;
+}
+
+/**
+ * @param {any} registryConfig
+ * @returns {SafeChainRegistryConfiguration | undefined}
+ */
+function pickRegistryConfigFields(registryConfig) {
+  if (!isPlainObject(registryConfig)) {
+    return undefined;
+  }
+
+  /** @type {SafeChainRegistryConfiguration} */
+  const picked = {};
+
+  if (registryConfig.customRegistries !== undefined) {
+    picked.customRegistries = registryConfig.customRegistries;
+  }
+  if (registryConfig.minimumPackageAgeExclusions !== undefined) {
+    picked.minimumPackageAgeExclusions = registryConfig.minimumPackageAgeExclusions;
+  }
+
+  return Object.keys(picked).length > 0 ? picked : undefined;
 }
 
 /**

@@ -514,8 +514,13 @@ describe("config file location fallback", async () => {
 });
 
 describe("project-local config", async () => {
-  const { getScanTimeout, getNpmCustomRegistries, getMinimumPackageAgeExclusions } =
-    await import("./configFile.js");
+  const {
+    getScanTimeout,
+    getMinimumPackageAgeHours,
+    getMalwareListBaseUrl,
+    getNpmCustomRegistries,
+    getMinimumPackageAgeExclusions,
+  } = await import("./configFile.js");
 
   const defaultCwd = currentCwd;
 
@@ -535,26 +540,35 @@ describe("project-local config", async () => {
   it("finds a project config at cwd itself", () => {
     const cwd = path.join(os.homedir(), "repo");
     currentCwd = cwd;
-    mockFiles.set(projectConfigPathAt(cwd), JSON.stringify({ scanTimeout: 1111 }));
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({ minimumPackageAgeHours: 11 })
+    );
 
-    assert.strictEqual(getScanTimeout(), 1111);
+    assert.strictEqual(getMinimumPackageAgeHours(), 11);
   });
 
   it("finds a project config several directories up with no .git in between", () => {
     const repoRoot = path.join(os.homedir(), "repo");
     currentCwd = path.join(repoRoot, "packages", "foo", "src");
-    mockFiles.set(projectConfigPathAt(repoRoot), JSON.stringify({ scanTimeout: 2222 }));
+    mockFiles.set(
+      projectConfigPathAt(repoRoot),
+      JSON.stringify({ minimumPackageAgeHours: 22 })
+    );
 
-    assert.strictEqual(getScanTimeout(), 2222);
+    assert.strictEqual(getMinimumPackageAgeHours(), 22);
   });
 
   it("checks a directory containing .git before stopping the walk", () => {
     const repoRoot = path.join(os.homedir(), "repo");
     currentCwd = path.join(repoRoot, "src");
     mockFiles.set(path.join(repoRoot, ".git"), "");
-    mockFiles.set(projectConfigPathAt(repoRoot), JSON.stringify({ scanTimeout: 3333 }));
+    mockFiles.set(
+      projectConfigPathAt(repoRoot),
+      JSON.stringify({ minimumPackageAgeHours: 33 })
+    );
 
-    assert.strictEqual(getScanTimeout(), 3333);
+    assert.strictEqual(getMinimumPackageAgeHours(), 33);
   });
 
   it("stops at the repo root (.git) and does not search above it", () => {
@@ -564,33 +578,42 @@ describe("project-local config", async () => {
     mockFiles.set(path.join(repoRoot, ".git"), "");
     // No config at repoRoot itself; one exists further up above the repo boundary -
     // it must not be found.
-    mockFiles.set(projectConfigPathAt(aboveRepo), JSON.stringify({ scanTimeout: 4444 }));
+    mockFiles.set(
+      projectConfigPathAt(aboveRepo),
+      JSON.stringify({ minimumPackageAgeHours: 44 })
+    );
 
-    assert.strictEqual(getScanTimeout(), 10000);
+    assert.strictEqual(getMinimumPackageAgeHours(), undefined);
   });
 
   it("stops at the home directory and does not search above it", () => {
     currentCwd = path.join(os.homedir(), "repo", "src");
     // "Poison" config placed above the home directory - must never be reached.
     const aboveHome = path.dirname(path.resolve(os.homedir()));
-    mockFiles.set(projectConfigPathAt(aboveHome), JSON.stringify({ scanTimeout: 5555 }));
+    mockFiles.set(
+      projectConfigPathAt(aboveHome),
+      JSON.stringify({ minimumPackageAgeHours: 55 })
+    );
 
-    assert.strictEqual(getScanTimeout(), 10000);
+    assert.strictEqual(getMinimumPackageAgeHours(), undefined);
   });
 
   it("falls back to home/default config when no project config exists anywhere", () => {
     currentCwd = path.join(os.homedir(), "repo", "deep", "nested", "dir");
 
-    assert.strictEqual(getScanTimeout(), 10000);
+    assert.strictEqual(getMinimumPackageAgeHours(), undefined);
   });
 
-  it("overrides a scalar value from the project config over the home config", () => {
+  it("overrides minimumPackageAgeHours from the project config over the home config", () => {
     const cwd = path.join(os.homedir(), "repo");
     currentCwd = cwd;
-    setConfigContent(JSON.stringify({ scanTimeout: 9000 }));
-    mockFiles.set(projectConfigPathAt(cwd), JSON.stringify({ scanTimeout: 1234 }));
+    setConfigContent(JSON.stringify({ minimumPackageAgeHours: 90 }));
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({ minimumPackageAgeHours: 12 })
+    );
 
-    assert.strictEqual(getScanTimeout(), 1234);
+    assert.strictEqual(getMinimumPackageAgeHours(), 12);
   });
 
   it("deep-merges nested npm config: project overrides one key, home's sibling key is kept", () => {
@@ -634,18 +657,72 @@ describe("project-local config", async () => {
   it("falls back to the home value for keys the project config omits", () => {
     const cwd = path.join(os.homedir(), "repo");
     currentCwd = cwd;
-    setConfigContent(JSON.stringify({ scanTimeout: 7000 }));
-    mockFiles.set(projectConfigPathAt(cwd), JSON.stringify({ logFileFormat: "json" }));
+    setConfigContent(JSON.stringify({ minimumPackageAgeHours: 70 }));
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({ npm: { customRegistries: ["x.registry.com"] } })
+    );
 
-    assert.strictEqual(getScanTimeout(), 7000);
+    assert.strictEqual(getMinimumPackageAgeHours(), 70);
   });
 
   it("treats a malformed project config file as absent, leaving home config unaffected", () => {
     const cwd = path.join(os.homedir(), "repo");
     currentCwd = cwd;
-    setConfigContent(JSON.stringify({ scanTimeout: 6000 }));
+    setConfigContent(JSON.stringify({ minimumPackageAgeHours: 60 }));
     mockFiles.set(projectConfigPathAt(cwd), "{ invalid json");
 
-    assert.strictEqual(getScanTimeout(), 6000);
+    assert.strictEqual(getMinimumPackageAgeHours(), 60);
+  });
+
+  it("does not allow a project config to override scanTimeout", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ scanTimeout: 9000 }));
+    mockFiles.set(projectConfigPathAt(cwd), JSON.stringify({ scanTimeout: 1234 }));
+
+    assert.strictEqual(getScanTimeout(), 9000);
+  });
+
+  it("does not allow a project config to override malwareListBaseUrl", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(
+      JSON.stringify({ malwareListBaseUrl: "https://home.example.com" })
+    );
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({ malwareListBaseUrl: "https://malicious.example.com" })
+    );
+
+    assert.strictEqual(getMalwareListBaseUrl(), "https://home.example.com");
+  });
+
+  it("does not allow a project config to set malwareListBaseUrl when home has none set", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({ malwareListBaseUrl: "https://malicious.example.com" })
+    );
+
+    assert.strictEqual(getMalwareListBaseUrl(), undefined);
+  });
+
+  it("ignores disallowed keys in a project config while still applying allowed ones", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    mockFiles.set(
+      projectConfigPathAt(cwd),
+      JSON.stringify({
+        scanTimeout: 1,
+        malwareListBaseUrl: "https://malicious.example.com",
+        minimumPackageAgeHours: 15,
+      })
+    );
+
+    assert.strictEqual(getScanTimeout(), 10000);
+    assert.strictEqual(getMalwareListBaseUrl(), undefined);
+    assert.strictEqual(getMinimumPackageAgeHours(), 15);
   });
 });
