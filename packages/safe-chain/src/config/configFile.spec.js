@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert";
 import os from "os";
 import path from "path";
+import { stringify as stringifyYaml } from "yaml";
 
 const safeChainConfigPath = path.join(os.homedir(), ".safe-chain", "config.json");
 const aikidoConfigPath = path.join(os.homedir(), ".aikido", "config.json");
@@ -21,6 +22,14 @@ mock.module("fs", {
     mkdirSync: () => {},
   },
 });
+
+// Default fake cwd for describes that don't exercise the repo config (.aikido) walk-up.
+// Placed one level under the real home directory so the walk-up in findAikidoFilePath hits
+// the home-dir stop condition on its very first check, without ever touching the real
+// filesystem (fs is fully mocked above) or picking up a real .git/.aikido from the dev
+// machine or CI checkout.
+let currentCwd = path.join(os.homedir(), "safe-chain-test-default-cwd");
+mock.method(process, "cwd", () => currentCwd);
 
 /**
  * Helper to set config content at the primary (~/.safe-chain/) location.
@@ -502,5 +511,214 @@ describe("config file location fallback", async () => {
 
   it("should return default when neither config file exists", () => {
     assert.strictEqual(getScanTimeout(), 10000);
+  });
+});
+
+describe("repo config", async () => {
+  const {
+    getScanTimeout,
+    getMinimumPackageAgeHours,
+    getMalwareListBaseUrl,
+    getNpmCustomRegistries,
+    getMinimumPackageAgeExclusions,
+  } = await import("./configFile.js");
+
+  const defaultCwd = currentCwd;
+
+  afterEach(() => {
+    mockFiles.clear();
+    currentCwd = defaultCwd;
+  });
+
+  /**
+   * @param {string} dir
+   * @returns {string}
+   */
+  function aikidoPathAt(dir) {
+    return path.join(dir, ".aikido");
+  }
+
+  /**
+   * @param {string} dir
+   * @param {any} safeChainSection
+   */
+  function setAikidoSafeChainSection(dir, safeChainSection) {
+    mockFiles.set(
+      aikidoPathAt(dir),
+      stringifyYaml({ "safe-chain": safeChainSection })
+    );
+  }
+
+  it("finds a repo config at cwd itself", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setAikidoSafeChainSection(cwd, { minimumPackageAgeHours: 11 });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 11);
+  });
+
+  it("finds a repo config several directories up with no .git in between", () => {
+    const repoRoot = path.join(os.homedir(), "repo");
+    currentCwd = path.join(repoRoot, "packages", "foo", "src");
+    setAikidoSafeChainSection(repoRoot, { minimumPackageAgeHours: 22 });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 22);
+  });
+
+  it("checks a directory containing .git before stopping the walk", () => {
+    const repoRoot = path.join(os.homedir(), "repo");
+    currentCwd = path.join(repoRoot, "src");
+    mockFiles.set(path.join(repoRoot, ".git"), "");
+    setAikidoSafeChainSection(repoRoot, { minimumPackageAgeHours: 33 });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 33);
+  });
+
+  it("stops at the repo root (.git) and does not search above it", () => {
+    const aboveRepo = path.join(os.homedir(), "workspace");
+    const repoRoot = path.join(aboveRepo, "repo");
+    currentCwd = path.join(repoRoot, "src");
+    mockFiles.set(path.join(repoRoot, ".git"), "");
+    // No .aikido at repoRoot itself; one exists further up above the repo boundary -
+    // it must not be found.
+    setAikidoSafeChainSection(aboveRepo, { minimumPackageAgeHours: 44 });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), undefined);
+  });
+
+  it("stops at the home directory and does not search above it", () => {
+    currentCwd = path.join(os.homedir(), "repo", "src");
+    // "Poison" config placed above the home directory - must never be reached.
+    const aboveHome = path.dirname(path.resolve(os.homedir()));
+    setAikidoSafeChainSection(aboveHome, { minimumPackageAgeHours: 55 });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), undefined);
+  });
+
+  it("falls back to home/default config when no .aikido file exists anywhere", () => {
+    currentCwd = path.join(os.homedir(), "repo", "deep", "nested", "dir");
+
+    assert.strictEqual(getMinimumPackageAgeHours(), undefined);
+  });
+
+  it("ignores an .aikido file with no safe-chain: section (e.g. written for another Aikido tool)", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ minimumPackageAgeHours: 70 }));
+    mockFiles.set(
+      aikidoPathAt(cwd),
+      stringifyYaml({ exclude: { paths: ["benchmarks/", "docs/"] } })
+    );
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 70);
+  });
+
+  it("overrides minimumPackageAgeHours from the repo config over the home config", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ minimumPackageAgeHours: 90 }));
+    setAikidoSafeChainSection(cwd, { minimumPackageAgeHours: 12 });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 12);
+  });
+
+  it("deep-merges nested npm config: repo overrides one key, home's sibling key is kept", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(
+      JSON.stringify({
+        npm: {
+          customRegistries: ["home.registry.com"],
+          minimumPackageAgeExclusions: ["home-pkg"],
+        },
+      })
+    );
+    setAikidoSafeChainSection(cwd, {
+      npm: { minimumPackageAgeExclusions: ["left-pad"] },
+    });
+
+    assert.deepStrictEqual(getNpmCustomRegistries(), ["home.registry.com"]);
+    assert.deepStrictEqual(getMinimumPackageAgeExclusions(), ["home-pkg", "left-pad"]);
+  });
+
+  it("unions arrays instead of one replacing the other", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(
+      JSON.stringify({ npm: { customRegistries: ["a.registry.com", "b.registry.com"] } })
+    );
+    setAikidoSafeChainSection(cwd, {
+      npm: { customRegistries: ["b.registry.com", "c.registry.com"] },
+    });
+
+    assert.deepStrictEqual(getNpmCustomRegistries(), [
+      "a.registry.com",
+      "b.registry.com",
+      "c.registry.com",
+    ]);
+  });
+
+  it("falls back to the home value for keys the repo config omits", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ minimumPackageAgeHours: 70 }));
+    setAikidoSafeChainSection(cwd, { npm: { customRegistries: ["x.registry.com"] } });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 70);
+  });
+
+  it("treats a malformed .aikido file as absent, leaving home config unaffected", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ minimumPackageAgeHours: 60 }));
+    mockFiles.set(aikidoPathAt(cwd), "safe-chain: [this is not: valid: yaml");
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 60);
+  });
+
+  it("does not allow a repo config to override scanTimeout", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(JSON.stringify({ scanTimeout: 9000 }));
+    setAikidoSafeChainSection(cwd, { scanTimeout: 1234 });
+
+    assert.strictEqual(getScanTimeout(), 9000);
+  });
+
+  it("does not allow a repo config to override malwareListBaseUrl", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setConfigContent(
+      JSON.stringify({ malwareListBaseUrl: "https://home.example.com" })
+    );
+    setAikidoSafeChainSection(cwd, {
+      malwareListBaseUrl: "https://malicious.example.com",
+    });
+
+    assert.strictEqual(getMalwareListBaseUrl(), "https://home.example.com");
+  });
+
+  it("does not allow a repo config to set malwareListBaseUrl when home has none set", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setAikidoSafeChainSection(cwd, {
+      malwareListBaseUrl: "https://malicious.example.com",
+    });
+
+    assert.strictEqual(getMalwareListBaseUrl(), undefined);
+  });
+
+  it("ignores disallowed keys in a repo config while still applying allowed ones", () => {
+    const cwd = path.join(os.homedir(), "repo");
+    currentCwd = cwd;
+    setAikidoSafeChainSection(cwd, {
+      scanTimeout: 1,
+      malwareListBaseUrl: "https://malicious.example.com",
+      minimumPackageAgeHours: 15,
+    });
+
+    assert.strictEqual(getScanTimeout(), 10000);
+    assert.strictEqual(getMalwareListBaseUrl(), undefined);
+    assert.strictEqual(getMinimumPackageAgeHours(), 15);
   });
 });

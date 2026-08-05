@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { parse as parseYaml } from "yaml";
 import { ui } from "../environment/userInteraction.js";
 import { getEcoSystem } from "./settings.js";
 import { getSafeChainBaseDir } from "./safeChainDir.js";
@@ -279,18 +280,153 @@ function readConfigFile() {
     },
   };
 
-  const configFilePath = getConfigFilePath();
+  const homeConfig = readConfigContentAt(getConfigFilePath(), emptyConfig);
 
-  if (!fs.existsSync(configFilePath)) {
-    return emptyConfig;
+  const aikidoFilePath = findAikidoFilePath();
+  if (!aikidoFilePath) {
+    return homeConfig;
+  }
+
+  const aikidoDocument = readYamlFileAt(aikidoFilePath);
+  if (!isPlainObject(aikidoDocument)) {
+    return homeConfig;
+  }
+
+  return deepMergeConfig(
+    homeConfig,
+    pickAllowedRepoConfigFields(aikidoDocument["safe-chain"])
+  );
+}
+
+/**
+ * Only these settings may be set by the repo's `.aikido` file, under its `safe-chain:`
+ * section. Everything else (malwareListBaseUrl, logFile*, scanTimeout, etc.) must come
+ * from the home-tier config - a repo config could otherwise be used to point safe-chain
+ * at a malicious malware database, or modify local logging files. Any other top-level
+ * keys in `.aikido` (e.g. `exclude:`, used by other Aikido tools) are ignored entirely.
+ * @param {any} safeChainSection
+ * @returns {Partial<SafeChainConfig>}
+ */
+function pickAllowedRepoConfigFields(safeChainSection) {
+  if (!isPlainObject(safeChainSection)) {
+    return {};
+  }
+
+  /** @type {Partial<SafeChainConfig>} */
+  const allowed = {};
+
+  if (safeChainSection.minimumPackageAgeHours !== undefined) {
+    allowed.minimumPackageAgeHours = safeChainSection.minimumPackageAgeHours;
+  }
+
+  const npmFields = pickRegistryConfigFields(safeChainSection.npm);
+  if (npmFields) {
+    allowed.npm = npmFields;
+  }
+
+  const pipFields = pickRegistryConfigFields(safeChainSection.pip);
+  if (pipFields) {
+    allowed.pip = pipFields;
+  }
+
+  return allowed;
+}
+
+/**
+ * @param {any} registryConfig
+ * @returns {SafeChainRegistryConfiguration | undefined}
+ */
+function pickRegistryConfigFields(registryConfig) {
+  if (!isPlainObject(registryConfig)) {
+    return undefined;
+  }
+
+  /** @type {SafeChainRegistryConfiguration} */
+  const picked = {};
+
+  if (registryConfig.customRegistries !== undefined) {
+    picked.customRegistries = registryConfig.customRegistries;
+  }
+  if (registryConfig.minimumPackageAgeExclusions !== undefined) {
+    picked.minimumPackageAgeExclusions = registryConfig.minimumPackageAgeExclusions;
+  }
+
+  return Object.keys(picked).length > 0 ? picked : undefined;
+}
+
+/**
+ * Reads and JSON-parses the file at `filePath`, returning `fallback` if the file doesn't
+ * exist or fails to parse.
+ * @template T
+ * @param {string} filePath
+ * @param {T} fallback
+ * @returns {SafeChainConfig | T}
+ */
+function readConfigContentAt(filePath, fallback) {
+  if (!fs.existsSync(filePath)) {
+    return fallback;
   }
 
   try {
-    const data = fs.readFileSync(configFilePath, "utf8");
+    const data = fs.readFileSync(filePath, "utf8");
     return JSON.parse(data);
   } catch {
-    return emptyConfig;
+    return fallback;
   }
+}
+
+/**
+ * Reads and YAML-parses the file at `filePath`, returning `null` if the file doesn't
+ * exist or fails to parse.
+ * @param {string} filePath
+ * @returns {any | null}
+ */
+function readYamlFileAt(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    const data = fs.readFileSync(filePath, "utf8");
+    return parseYaml(data);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Deep-merges `override` on top of `base`. Nested plain objects are merged key-by-key
+ * recursively. Arrays (e.g. customRegistries, minimumPackageAgeExclusions) are unioned
+ * (deduplicated) rather than one replacing the other, since these are additive
+ * allow/exclude lists - a project config should be able to add to the home config's
+ * list without silently dropping entries the project didn't repeat. Scalar values in
+ * `override` replace the corresponding `base` value.
+ * @param {any} base
+ * @param {any} override
+ * @returns {any}
+ */
+function deepMergeConfig(base, override) {
+  if (Array.isArray(base) && Array.isArray(override)) {
+    return Array.from(new Set([...base, ...override]));
+  }
+
+  if (isPlainObject(base) && isPlainObject(override)) {
+    const merged = { ...base };
+    for (const key of Object.keys(override)) {
+      merged[key] = deepMergeConfig(base[key], override[key]);
+    }
+    return merged;
+  }
+
+  return override !== undefined ? override : base;
+}
+
+/**
+ * @param {any} value
+ * @returns {boolean}
+ */
+function isPlainObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -341,6 +477,42 @@ function getConfigFilePath() {
   }
 
   return primaryPath;
+}
+
+/**
+ * Walks up from process.cwd() looking for a repo-root `.aikido` file. 
+ * Stops (without finding anything further) at whichever boundary is hit first:
+ *  - the current directory equals os.homedir()
+ *  - a `.git` entry (file or directory) exists in the current directory (repo root) —
+ *    that directory's own `.aikido` is still checked before stopping
+ *  - the filesystem root is reached (path.dirname(dir) === dir)
+ * @returns {string | undefined}
+ */
+function findAikidoFilePath() {
+  const homeDir = path.resolve(os.homedir());
+  let dir = path.resolve(process.cwd());
+
+  while (true) {
+    if (dir === homeDir) {
+      return undefined;
+    }
+
+    const candidatePath = path.join(dir, ".aikido");
+    if (fs.existsSync(candidatePath)) {
+      return candidatePath;
+    }
+
+    if (fs.existsSync(path.join(dir, ".git"))) {
+      return undefined;
+    }
+
+    const parentDir = path.dirname(dir);
+    if (parentDir === dir) {
+      return undefined;
+    }
+
+    dir = parentDir;
+  }
 }
 
 /**

@@ -372,6 +372,31 @@ The base URL should point to a server that mirrors the structure of `https://mal
 - `/releases/npm.json` (JavaScript new packages list)
 - `/releases/pypi.json` (Python new packages list)
 
+## Project Config File
+
+In addition to the home-directory config file (`~/.safe-chain/config.json`), Safe Chain supports a project config file so that settings can be checked into a repository and shared across a team, instead of being configured per-machine.
+
+Add a `safe-chain:` section to the `.aikido` file at the root of your repository (the same file used by other Aikido tools, Safe Chain only reads its own `safe-chain:` section and ignores the rest). When found, its settings are merged on top of your home-directory config file: values set in the project config take priority, and arrays (such as `customRegistries`) are combined from both files rather than one replacing the other.
+
+Only the following settings can be set from a project config file:
+
+```yaml
+safe-chain:
+  minimumPackageAgeHours: 48
+  npm:
+    customRegistries:
+      - npm.company.com
+    minimumPackageAgeExclusions:
+      - "@aikidosec/*"
+  pip:
+    customRegistries:
+      - pip.company.com
+    minimumPackageAgeExclusions:
+      - requests
+```
+
+Settings like `scanTimeout`, `malwareListBaseUrl`, and the `logFile*` options cannot be set from a project config file - they can only come from your home-directory config, CLI arguments, or environment variables.
+
 ## Custom Install Directory
 
 By default, Safe Chain installs itself into `~/.safe-chain`. You can change this by passing an explicit install directory to the installer. This is useful for system-wide installations (e.g. inside a Docker image) or when you need to avoid conflicts with other tools.
