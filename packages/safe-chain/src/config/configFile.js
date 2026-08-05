@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { parse as parseYaml } from "yaml";
 import { ui } from "../environment/userInteraction.js";
 import { getEcoSystem } from "./settings.js";
 import { getSafeChainBaseDir } from "./safeChainDir.js";
@@ -281,45 +282,49 @@ function readConfigFile() {
 
   const homeConfig = readConfigContentAt(getConfigFilePath(), emptyConfig);
 
-  const projectConfigPath = findProjectConfigFilePath();
-  if (!projectConfigPath) {
+  const aikidoFilePath = findAikidoFilePath();
+  if (!aikidoFilePath) {
     return homeConfig;
   }
 
-  const projectConfig = readConfigContentAt(projectConfigPath, null);
-  if (!projectConfig) {
+  const aikidoDocument = readYamlFileAt(aikidoFilePath);
+  if (!isPlainObject(aikidoDocument)) {
     return homeConfig;
   }
 
-  return deepMergeConfig(homeConfig, pickAllowedProjectConfigFields(projectConfig));
+  return deepMergeConfig(
+    homeConfig,
+    pickAllowedRepoConfigFields(aikidoDocument["safe-chain"])
+  );
 }
 
 /**
- * Only these settings may be set by a project-local config file. Everything else
- * (malwareListBaseUrl, logFile*, scanTimeout, etc.) must come from the home-tier config -
- * a project config living in a repo could otherwise be used to point safe-chain at a
- * malicious malware database, or modify local logging files.
- * @param {any} projectConfig
+ * Only these settings may be set by the repo's `.aikido` file, under its `safe-chain:`
+ * section. Everything else (malwareListBaseUrl, logFile*, scanTimeout, etc.) must come
+ * from the home-tier config - a repo config could otherwise be used to point safe-chain
+ * at a malicious malware database, or modify local logging files. Any other top-level
+ * keys in `.aikido` (e.g. `exclude:`, used by other Aikido tools) are ignored entirely.
+ * @param {any} safeChainSection
  * @returns {Partial<SafeChainConfig>}
  */
-function pickAllowedProjectConfigFields(projectConfig) {
-  if (!isPlainObject(projectConfig)) {
+function pickAllowedRepoConfigFields(safeChainSection) {
+  if (!isPlainObject(safeChainSection)) {
     return {};
   }
 
   /** @type {Partial<SafeChainConfig>} */
   const allowed = {};
 
-  if (projectConfig.minimumPackageAgeHours !== undefined) {
-    allowed.minimumPackageAgeHours = projectConfig.minimumPackageAgeHours;
+  if (safeChainSection.minimumPackageAgeHours !== undefined) {
+    allowed.minimumPackageAgeHours = safeChainSection.minimumPackageAgeHours;
   }
 
-  const npmFields = pickRegistryConfigFields(projectConfig.npm);
+  const npmFields = pickRegistryConfigFields(safeChainSection.npm);
   if (npmFields) {
     allowed.npm = npmFields;
   }
 
-  const pipFields = pickRegistryConfigFields(projectConfig.pip);
+  const pipFields = pickRegistryConfigFields(safeChainSection.pip);
   if (pipFields) {
     allowed.pip = pipFields;
   }
@@ -367,6 +372,25 @@ function readConfigContentAt(filePath, fallback) {
     return JSON.parse(data);
   } catch {
     return fallback;
+  }
+}
+
+/**
+ * Reads and YAML-parses the file at `filePath`, returning `null` if the file doesn't
+ * exist or fails to parse.
+ * @param {string} filePath
+ * @returns {any | null}
+ */
+function readYamlFileAt(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    const data = fs.readFileSync(filePath, "utf8");
+    return parseYaml(data);
+  } catch {
+    return null;
   }
 }
 
@@ -456,16 +480,15 @@ function getConfigFilePath() {
 }
 
 /**
- * Walks up from process.cwd() looking for a project-local `.safe-chain/config.json`.
+ * Walks up from process.cwd() looking for a repo-root `.aikido` file. 
  * Stops (without finding anything further) at whichever boundary is hit first:
- *  - the current directory equals os.homedir() (that file is already covered by the
- *    home-tier lookup in getConfigFilePath(); must not check/merge it twice)
+ *  - the current directory equals os.homedir()
  *  - a `.git` entry (file or directory) exists in the current directory (repo root) —
- *    that directory's own config is still checked before stopping
+ *    that directory's own `.aikido` is still checked before stopping
  *  - the filesystem root is reached (path.dirname(dir) === dir)
  * @returns {string | undefined}
  */
-function findProjectConfigFilePath() {
+function findAikidoFilePath() {
   const homeDir = path.resolve(os.homedir());
   let dir = path.resolve(process.cwd());
 
@@ -474,7 +497,7 @@ function findProjectConfigFilePath() {
       return undefined;
     }
 
-    const candidatePath = path.join(dir, ".safe-chain", "config.json");
+    const candidatePath = path.join(dir, ".aikido");
     if (fs.existsSync(candidatePath)) {
       return candidatePath;
     }
