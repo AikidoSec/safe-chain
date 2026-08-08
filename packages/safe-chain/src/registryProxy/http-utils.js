@@ -54,11 +54,11 @@ export function omitHeaders(headers, headerNames, options = {}) {
  * Remove headers that become stale when the response body is modified.
  *
  * @param {NodeJS.Dict<string | string[]> | undefined} headers
- * @returns {void}
+ * @returns {NodeJS.Dict<string | string[]> | undefined}
  */
 export function clearCachingHeaders(headers) {
   if (!headers) {
-    return;
+    return headers;
   }
 
   const filteredHeaders = omitHeaders(headers, [
@@ -68,13 +68,5 @@ export function clearCachingHeaders(headers) {
     "content-length",
   ]);
 
-  if (!filteredHeaders) {
-    return;
-  }
-
-  for (const key of Object.keys(headers)) {
-    delete headers[key];
-  }
-
-  Object.assign(headers, filteredHeaders);
+  return filteredHeaders;
 }
