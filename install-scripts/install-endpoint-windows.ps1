@@ -37,7 +37,7 @@ function Write-Warn {
 
 # msiexec records the token in the verbose log in several places (the command
 # line, the PROPERTY CHANGE entry, the property dump and the StoreToken custom
-# action's CustomActionData). Strip it before the log is printed or handed to
+# action's CustomActionData). Clip it before the log is printed or handed to
 # support. Encoding is preserved: MSI writes UTF-16LE logs on most systems.
 function Protect-MsiLog {
     param(
@@ -55,14 +55,15 @@ function Protect-MsiLog {
         finally {
             $reader.Dispose()
         }
+        $clipped = if ($Token.Length -gt 4) { "***" + $Token.Substring($Token.Length - 4) } else { "***" }
         if ($text.Contains($Token)) {
-            [System.IO.File]::WriteAllText($LogFile, $text.Replace($Token, "<token redacted>"), $encoding)
+            [System.IO.File]::WriteAllText($LogFile, $text.Replace($Token, $clipped), $encoding)
         }
     }
     catch {
-        # Never let redaction failure mask the install error we are reporting.
+        # Never let a clipping failure mask the install error we are reporting.
         Remove-Item -Path $LogFile -Force -ErrorAction SilentlyContinue
-        Write-Warn "Could not redact the token from the MSI log, so it was deleted instead: $_"
+        Write-Warn "Could not clip the token from the MSI log, so it was deleted instead: $_"
     }
 }
 
