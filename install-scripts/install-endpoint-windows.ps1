@@ -35,6 +35,37 @@ function Write-Warn {
     Write-Host "[WARN] $Message" -ForegroundColor Yellow
 }
 
+# msiexec records the token in the verbose log in several places (the command
+# line, the PROPERTY CHANGE entry, the property dump and the StoreToken custom
+# action's CustomActionData). Strip it before the log is printed or handed to
+# support. Encoding is preserved: MSI writes UTF-16LE logs on most systems.
+function Protect-MsiLog {
+    param(
+        [string]$LogFile,
+        [string]$Token
+    )
+    if ([string]::IsNullOrWhiteSpace($Token)) { return }
+    if (-not (Test-Path $LogFile)) { return }
+    try {
+        $reader = New-Object System.IO.StreamReader($LogFile, [System.Text.Encoding]::UTF8, $true)
+        try {
+            $text = $reader.ReadToEnd()
+            $encoding = $reader.CurrentEncoding
+        }
+        finally {
+            $reader.Dispose()
+        }
+        if ($text.Contains($Token)) {
+            [System.IO.File]::WriteAllText($LogFile, $text.Replace($Token, "<token redacted>"), $encoding)
+        }
+    }
+    catch {
+        # Never let redaction failure mask the install error we are reporting.
+        Remove-Item -Path $LogFile -Force -ErrorAction SilentlyContinue
+        Write-Warn "Could not redact the token from the MSI log, so it was deleted instead: $_"
+    }
+}
+
 # Common msiexec exit codes, so the failure output is actionable on its own
 $MsiExitCodeHints = @{
     "1601" = "The Windows Installer service could not be accessed."
@@ -132,6 +163,9 @@ function Install-Endpoint {
             $msiArgs += @("/L*V", "`"$logFile`"")
         }
         $process = Start-Process -FilePath "msiexec" -ArgumentList $msiArgs -Wait -PassThru
+
+        # Before the log is echoed below or kept for support by Write-MsiFailure.
+        Protect-MsiLog -LogFile $logFile -Token $token
 
         if ($debug) {
             Write-Info "MSI installer log output:"
