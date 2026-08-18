@@ -40,6 +40,19 @@ jobs:
           echo "mac=$(sha256sum /tmp/EndpointProtection.pkg | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           echo "win=$(sha256sum /tmp/EndpointProtection.msi | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
+          for entry in \
+            "linux_amd64_deb:EndpointProtection-amd64.deb" \
+            "linux_arm64_deb:EndpointProtection-arm64.deb" \
+            "linux_amd64_el9_rpm:EndpointProtection-amd64.el9.rpm" \
+            "linux_arm64_el9_rpm:EndpointProtection-arm64.el9.rpm" \
+            "linux_amd64_el10_rpm:EndpointProtection-amd64.el10.rpm" \
+            "linux_arm64_el10_rpm:EndpointProtection-arm64.el10.rpm"; do
+            KEY="${entry%%:*}"
+            ASSET="${entry#*:}"
+            curl -fsSL "${BASE}/${ASSET}" -o "/tmp/${ASSET}"
+            echo "${KEY}=$(sha256sum "/tmp/${ASSET}" | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          done
+
       - name: Update install scripts
         if: steps.latest.outputs.version != steps.current.outputs.version
         run: |
@@ -53,6 +66,14 @@ jobs:
 
           sed -i "s|${OLD}/EndpointProtection.msi|${NEW}/EndpointProtection.msi|" install-scripts/install-endpoint-windows.ps1
           sed -i 's|^\$DownloadSha256 = "[^"]*"|\$DownloadSha256 = "'"${WIN_SHA}"'"|' install-scripts/install-endpoint-windows.ps1
+
+          sed -i "s|releases/download/${OLD}|releases/download/${NEW}|" install-scripts/install-endpoint-linux.sh
+          sed -i "s|^SHA256_AMD64_DEB=\"[^\"]*\"|SHA256_AMD64_DEB=\"${{ steps.checksums.outputs.linux_amd64_deb }}\"|" install-scripts/install-endpoint-linux.sh
+          sed -i "s|^SHA256_ARM64_DEB=\"[^\"]*\"|SHA256_ARM64_DEB=\"${{ steps.checksums.outputs.linux_arm64_deb }}\"|" install-scripts/install-endpoint-linux.sh
+          sed -i "s|^SHA256_AMD64_EL9_RPM=\"[^\"]*\"|SHA256_AMD64_EL9_RPM=\"${{ steps.checksums.outputs.linux_amd64_el9_rpm }}\"|" install-scripts/install-endpoint-linux.sh
+          sed -i "s|^SHA256_ARM64_EL9_RPM=\"[^\"]*\"|SHA256_ARM64_EL9_RPM=\"${{ steps.checksums.outputs.linux_arm64_el9_rpm }}\"|" install-scripts/install-endpoint-linux.sh
+          sed -i "s|^SHA256_AMD64_EL10_RPM=\"[^\"]*\"|SHA256_AMD64_EL10_RPM=\"${{ steps.checksums.outputs.linux_amd64_el10_rpm }}\"|" install-scripts/install-endpoint-linux.sh
+          sed -i "s|^SHA256_ARM64_EL10_RPM=\"[^\"]*\"|SHA256_ARM64_EL10_RPM=\"${{ steps.checksums.outputs.linux_arm64_el10_rpm }}\"|" install-scripts/install-endpoint-linux.sh
 
       - name: Open PR
         if: steps.latest.outputs.version != steps.current.outputs.version
@@ -72,7 +93,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add install-scripts/install-endpoint-mac.sh install-scripts/install-endpoint-windows.ps1
+          git add install-scripts/install-endpoint-mac.sh install-scripts/install-endpoint-windows.ps1 install-scripts/install-endpoint-linux.sh
           git commit -m "Bump Endpoint to ${NEW}"
           git push origin "$BRANCH"
           PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
