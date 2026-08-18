@@ -7,7 +7,7 @@
 set -e  # Exit on error
 
 # Configuration
-BASE_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.7.30"
+BASE_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.8.0"
 
 # Checksums per artifact, keyed by asset name
 SHA256_AMD64_DEB="d363f4aca445bf473582cbd73314ed1450127fe3f6b5c8bc677d61c63cc5b5e0"
