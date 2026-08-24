@@ -70,7 +70,7 @@ verify_checksum() {
 
 # Cleanup temporary files
 cleanup() {
-    if [ -n "${PKG_FILE:-}" ] && [ -f "$PKG_FILE" ]; then
+    if [ "${PKG_FILE_OWNED:-}" = "1" ] && [ -n "${PKG_FILE:-}" ] && [ -f "$PKG_FILE" ]; then
         rm -f "$PKG_FILE"
     fi
 }
@@ -313,15 +313,41 @@ main() {
     detect_package
     info "Detected ${OS_ID:-unknown} ${OS_VERSION_ID:-unknown} ($ARCH), using $ASSET"
 
-    # 3. Download and verify checksum
-    PKG_FILE=$(mktemp "/tmp/AikidoEndpoint.XXXXXX.${ASSET##*.}")
-    trap cleanup EXIT
+    if [ -n "${AIKIDO_PACKAGE_FILE:-}" ]; then
+        case "$AIKIDO_PACKAGE_FILE" in
+            *://*)
+                error "AIKIDO_PACKAGE_FILE must be a local file, not a URL."
+                ;;
+        esac
+        if [ ! -f "$AIKIDO_PACKAGE_FILE" ] || [ ! -r "$AIKIDO_PACKAGE_FILE" ]; then
+            error "Package file not found or not readable: $AIKIDO_PACKAGE_FILE"
+        fi
+        case "$AIKIDO_PACKAGE_FILE" in
+            *.deb)
+                [ "$PKG_TYPE" = "deb" ] || error "AIKIDO_PACKAGE_FILE is a .deb but this system needs an RPM ($ASSET)."
+                ;;
+            *.rpm)
+                [ "$PKG_TYPE" = "rpm" ] || error "AIKIDO_PACKAGE_FILE is an RPM but this system needs a .deb ($ASSET)."
+                ;;
+            *)
+                error "AIKIDO_PACKAGE_FILE must be a .deb or .rpm (got: $AIKIDO_PACKAGE_FILE)"
+                ;;
+        esac
+        PKG_FILE="$AIKIDO_PACKAGE_FILE"
+        PKG_FILE_OWNED=0
+        info "Using local package $PKG_FILE (checksum skipped)"
+    else
+        # 3. Download and verify checksum
+        PKG_FILE=$(mktemp "/tmp/AikidoEndpoint.XXXXXX.${ASSET##*.}")
+        PKG_FILE_OWNED=1
+        trap cleanup EXIT
 
-    info "Downloading Aikido Endpoint Protection..."
-    download "${BASE_URL}/${ASSET}" "$PKG_FILE"
+        info "Downloading Aikido Endpoint Protection..."
+        download "${BASE_URL}/${ASSET}" "$PKG_FILE"
 
-    info "Verifying checksum..."
-    verify_checksum "$PKG_FILE" "$EXPECTED_SHA256"
+        info "Verifying checksum..."
+        verify_checksum "$PKG_FILE" "$EXPECTED_SHA256"
+    fi
 
     # 4. Install the package
     info "Installing Aikido Endpoint Protection..."
