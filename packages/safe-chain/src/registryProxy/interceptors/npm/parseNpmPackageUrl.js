@@ -13,7 +13,9 @@ export function parseNpmPackageUrl(url, registry) {
     return { packageName, version };
   }
 
-  const pathname = parsedUrl.pathname;
+  // Decode the pathname so percent-encoded characters (e.g. %2e for ".")
+  // cannot be used to evade the extension and separator checks below.
+  const pathname = safeDecode(parsedUrl.pathname);
 
   if (!registry || !pathname.endsWith(".tgz")) {
     return { packageName, version };
@@ -25,9 +27,7 @@ export function parseNpmPackageUrl(url, registry) {
     return { packageName, version };
   }
 
-  const afterRegistry = decodeURIComponent(
-    urlAfterProtocol.substring(registryPrefix.length)
-  );
+  const afterRegistry = urlAfterProtocol.substring(registryPrefix.length);
 
   const separatorIndex = afterRegistry.indexOf("/-/");
   if (separatorIndex === -1) {
@@ -57,4 +57,17 @@ export function parseNpmPackageUrl(url, registry) {
   }
 
   return { packageName, version };
+}
+
+/**
+ * Decode a URL component, tolerating malformed input.
+ * @param {string} value
+ * @returns {string}
+ */
+function safeDecode(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
