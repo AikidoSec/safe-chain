@@ -236,13 +236,15 @@ install_deb() {
         return
     fi
 
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+
     # --reinstall so re-running for the same version still applies the token
     set -- apt-get install -y --reinstall
     if [ -n "$CI_CD" ]; then
         set -- "$@" --no-install-recommends
     fi
 
-    export DEBIAN_FRONTEND=noninteractive
     run_installer "$@" "$PKG_FILE"
 }
 
