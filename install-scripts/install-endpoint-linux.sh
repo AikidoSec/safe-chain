@@ -237,7 +237,9 @@ install_deb() {
     fi
 
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update
+    if ! apt-get update; then
+        info "Could not refresh package lists. Continuing with cached lists."
+    fi
 
     # --reinstall so re-running for the same version still applies the token
     set -- apt-get install -y --reinstall
