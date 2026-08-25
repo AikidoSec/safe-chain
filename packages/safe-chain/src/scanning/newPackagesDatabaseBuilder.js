@@ -55,37 +55,15 @@ export function buildNewPackagesDatabase(newPackagesList) {
 
   /** @type {Map<string, import("../api/aikido.js").NewPackageEntry>} */
   const entriesByNameAndVersion = new Map();
-  let caseFoldedCount = 0; // TEMP-CASE-FIX
-  let separatorOnlyCount = 0; // TEMP-CASE-FIX
   for (const pkg of newPackagesList) {
     if (pkg.source && pkg.source.toLowerCase() !== expectedSource) {
       continue;
     }
-    const rawName = pkg.package_name;
-    const normalizedName = toLookupKey(rawName);
-    // TEMP-CASE-FIX: separator-only folds were ALREADY handled before this fix
-    // (via getEquivalentPackageNames); only the case folds were unreachable.
-    if (normalizedName !== rawName) {
-      if (rawName === rawName.toLowerCase()) {
-        separatorOnlyCount++;
-      } else {
-        caseFoldedCount++;
-      }
-    }
-    const key = `${normalizedName} ${pkg.version}`;
+    const key = `${toLookupKey(pkg.package_name)} ${pkg.version}`;
     if (!entriesByNameAndVersion.has(key)) {
       entriesByNameAndVersion.set(key, pkg);
     }
   }
-
-  // TEMP-CASE-FIX: remove before merge.
-  // oxlint-disable-next-line no-console
-  console.warn(
-    `[TEMP-CASE-FIX] indexed ${entriesByNameAndVersion.size} feed entries ` +
-      `(ecosystem=${ecosystem}, keying=${ecosystem === ECOSYSTEM_PY ? "PEP503-normalized" : "verbatim"}); ` +
-      `${caseFoldedCount} name(s) needed CASE folding (unreachable before this fix), ` +
-      `${separatorOnlyCount} needed separator-only folding (already worked before)`
-  );
 
   /**
    * @param {string | undefined} name
@@ -101,18 +79,9 @@ export function buildNewPackagesDatabase(newPackagesList) {
       new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
     );
 
-    const lookupKey = toLookupKey(name);
-    const entry = entriesByNameAndVersion.get(`${lookupKey} ${version}`);
+    const entry = entriesByNameAndVersion.get(`${toLookupKey(name)} ${version}`);
     if (entry) {
-      const isTooYoung = new Date(entry.released_on * 1000) > cutOff;
-      // TEMP-CASE-FIX: remove before merge.
-      // oxlint-disable-next-line no-console
-      console.warn(
-        `[TEMP-CASE-FIX] MATCH requested="${name}@${version}" -> key="${lookupKey}" ` +
-          `matched feed entry "${entry.package_name}@${entry.version}" ` +
-          `(tooYoung=${isTooYoung}${name !== entry.package_name ? ", CASE/SEPARATOR FOLD APPLIED" : ""})`
-      );
-      return isTooYoung;
+      return new Date(entry.released_on * 1000) > cutOff;
     }
 
     return false;
