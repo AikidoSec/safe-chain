@@ -189,6 +189,37 @@ describe("buildNewPackagesDatabase", () => {
       }
     });
 
+    // getEquivalentPackageNames replaced every separator with ONE separator
+    // uniformly, so it could never produce a mixed-separator name like
+    // `aws-cdk.aws-bedrock-alpha`. PEP 503 normalization handles these; the
+    // variant approach could not, regardless of casing.
+    it("matches python names that mix separators", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          {
+            source: "pypi",
+            package_name: "aws-cdk.aws-bedrock-alpha",
+            version: "2.0.0",
+            released_on: hoursAgo(1),
+          },
+        ]);
+
+        // what pip actually puts on the wire
+        assert.strictEqual(
+          db.isNewlyReleasedPackage("aws-cdk-aws-bedrock-alpha", "2.0.0"),
+          true
+        );
+        assert.strictEqual(
+          db.isNewlyReleasedPackage("aws_cdk.aws_bedrock_alpha", "2.0.0"),
+          true
+        );
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
     // A malformed record must not abort construction. buildNewPackagesDatabase
     // runs inside openNewPackagesDatabase's `.then`, so a throw is swallowed
     // into an always-false database, disabling the check for every package.
