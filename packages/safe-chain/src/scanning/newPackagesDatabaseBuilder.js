@@ -4,7 +4,7 @@ import {
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
 } from "../config/settings.js";
-import { getEquivalentPackageNames } from "./packageNameVariants.js";
+import { normalizePipPackageName } from "./packageNameVariants.js";
 
 /**
  * @typedef {Object} NewPackagesDatabase
@@ -37,13 +37,29 @@ export function buildNewPackagesDatabase(newPackagesList) {
   const ecosystem = getEcoSystem();
   const expectedSource = getCurrentFeedSource();
 
+  /**
+   * Python only. The PyPI feed carries display names (`ImkGreet`,
+   * `Flask-First`), but pip only ever requests the PEP 503 normalised form
+   * (`imkgreet`, `flask-first`), so both sides are folded to the same key.
+   * This also subsumes the `-`/`_`/`.` separator variants PEP 503 collapses.
+   *
+   * npm names are case-sensitive and are used verbatim, leaving the JS
+   * ecosystem's behaviour unchanged.
+   *
+   * @param {string} name
+   * @returns {string}
+   */
+  function toLookupKey(name) {
+    return ecosystem === ECOSYSTEM_PY ? normalizePipPackageName(name) : name;
+  }
+
   /** @type {Map<string, import("../api/aikido.js").NewPackageEntry>} */
   const entriesByNameAndVersion = new Map();
   for (const pkg of newPackagesList) {
     if (pkg.source && pkg.source.toLowerCase() !== expectedSource) {
       continue;
     }
-    const key = `${pkg.package_name} ${pkg.version}`;
+    const key = `${toLookupKey(pkg.package_name)} ${pkg.version}`;
     if (!entriesByNameAndVersion.has(key)) {
       entriesByNameAndVersion.set(key, pkg);
     }
@@ -63,11 +79,9 @@ export function buildNewPackagesDatabase(newPackagesList) {
       new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
     );
 
-    for (const candidateName of getEquivalentPackageNames(name, ecosystem)) {
-      const entry = entriesByNameAndVersion.get(`${candidateName} ${version}`);
-      if (entry) {
-        return new Date(entry.released_on * 1000) > cutOff;
-      }
+    const entry = entriesByNameAndVersion.get(`${toLookupKey(name)} ${version}`);
+    if (entry) {
+      return new Date(entry.released_on * 1000) > cutOff;
     }
 
     return false;

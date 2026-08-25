@@ -154,6 +154,51 @@ describe("buildNewPackagesDatabase", () => {
 
       ecosystem = "js";
     });
+
+    // The PyPI feed carries display names ("ImkGreet"), but pip only ever asks
+    // for the PEP 503 normalised form ("imkgreet"), so a capitalised feed entry
+    // must still match the lowercase request.
+    it("matches lowercase request names against capitalised feed names for python", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          { source: "pypi", package_name: "ImkGreet", version: "1.0.1", released_on: hoursAgo(1) },
+        ]);
+
+        assert.strictEqual(db.isNewlyReleasedPackage("imkgreet", "1.0.1"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("ImkGreet", "1.0.1"), true);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    it("matches capitalised feed names with separator differences for python", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          { source: "pypi", package_name: "Flask-First", version: "0.90.0", released_on: hoursAgo(1) },
+        ]);
+
+        assert.strictEqual(db.isNewlyReleasedPackage("flask-first", "0.90.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("flask_first", "0.90.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("FLASK.FIRST", "0.90.0"), true);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    it("keeps npm name matching case-sensitive", () => {
+      ecosystem = "js";
+
+      const db = buildNewPackagesDatabase([
+        { source: "npm", package_name: "Base64", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage("Base64", "1.0.0"), true);
+      assert.strictEqual(db.isNewlyReleasedPackage("base64", "1.0.0"), false);
+    });
   });
 
   describe("scan cost", () => {
