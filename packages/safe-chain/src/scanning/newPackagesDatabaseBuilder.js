@@ -56,10 +56,14 @@ export function buildNewPackagesDatabase(newPackagesList) {
   /** @type {Map<string, import("../api/aikido.js").NewPackageEntry>} */
   const entriesByNameAndVersion = new Map();
   for (const pkg of newPackagesList) {
+    const packageName = pkg && pkg.package_name;
+    if (typeof packageName !== "string" || typeof pkg.version !== "string") {
+      continue;
+    }
     if (pkg.source && pkg.source.toLowerCase() !== expectedSource) {
       continue;
     }
-    const key = `${toLookupKey(pkg.package_name)} ${pkg.version}`;
+    const key = `${toLookupKey(packageName)} ${pkg.version}`;
     if (!entriesByNameAndVersion.has(key)) {
       entriesByNameAndVersion.set(key, pkg);
     }

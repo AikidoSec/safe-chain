@@ -189,6 +189,39 @@ describe("buildNewPackagesDatabase", () => {
       }
     });
 
+    // A malformed record must not abort construction. buildNewPackagesDatabase
+    // runs inside openNewPackagesDatabase's `.then`, so a throw is swallowed
+    // into an always-false database, disabling the check for every package.
+    it("skips malformed python entries and keeps checking valid ones", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          { source: "pypi", version: "1.0.0", released_on: hoursAgo(1) },
+          { source: "pypi", package_name: 42, version: "1.0.0", released_on: hoursAgo(1) },
+          { source: "pypi", package_name: "ok-pkg", version: 7, released_on: hoursAgo(1) },
+          null,
+          { source: "pypi", package_name: "Good-Pkg", version: "2.0.0", released_on: hoursAgo(1) },
+        ]);
+
+        assert.strictEqual(db.isNewlyReleasedPackage("good-pkg", "2.0.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("ok-pkg", "7"), false);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    it("does not throw when the python feed is entirely malformed", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([null, undefined, {}, { package_name: null }]);
+        assert.strictEqual(db.isNewlyReleasedPackage("anything", "1.0.0"), false);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
     it("keeps npm name matching case-sensitive", () => {
       ecosystem = "js";
 
