@@ -154,6 +154,115 @@ describe("buildNewPackagesDatabase", () => {
 
       ecosystem = "js";
     });
+
+    // The PyPI feed carries display names ("ImkGreet"), but pip only ever asks
+    // for the PEP 503 normalised form ("imkgreet"), so a capitalised feed entry
+    // must still match the lowercase request.
+    it("matches lowercase request names against capitalised feed names for python", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          { source: "pypi", package_name: "ImkGreet", version: "1.0.1", released_on: hoursAgo(1) },
+        ]);
+
+        assert.strictEqual(db.isNewlyReleasedPackage("imkgreet", "1.0.1"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("ImkGreet", "1.0.1"), true);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    it("matches capitalised feed names with separator differences for python", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          { source: "pypi", package_name: "Flask-First", version: "0.90.0", released_on: hoursAgo(1) },
+        ]);
+
+        assert.strictEqual(db.isNewlyReleasedPackage("flask-first", "0.90.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("flask_first", "0.90.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("FLASK.FIRST", "0.90.0"), true);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    // getEquivalentPackageNames replaced every separator with ONE separator
+    // uniformly, so it could never produce a mixed-separator name like
+    // `aws-cdk.aws-bedrock-alpha`. PEP 503 normalization handles these; the
+    // variant approach could not, regardless of casing.
+    it("matches python names that mix separators", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          {
+            source: "pypi",
+            package_name: "aws-cdk.aws-bedrock-alpha",
+            version: "2.0.0",
+            released_on: hoursAgo(1),
+          },
+        ]);
+
+        // what pip actually puts on the wire
+        assert.strictEqual(
+          db.isNewlyReleasedPackage("aws-cdk-aws-bedrock-alpha", "2.0.0"),
+          true
+        );
+        assert.strictEqual(
+          db.isNewlyReleasedPackage("aws_cdk.aws_bedrock_alpha", "2.0.0"),
+          true
+        );
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    // A malformed record must not abort construction. buildNewPackagesDatabase
+    // runs inside openNewPackagesDatabase's `.then`, so a throw is swallowed
+    // into an always-false database, disabling the check for every package.
+    it("skips malformed python entries and keeps checking valid ones", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          { source: "pypi", version: "1.0.0", released_on: hoursAgo(1) },
+          { source: "pypi", package_name: 42, version: "1.0.0", released_on: hoursAgo(1) },
+          { source: "pypi", package_name: "ok-pkg", version: 7, released_on: hoursAgo(1) },
+          null,
+          { source: "pypi", package_name: "Good-Pkg", version: "2.0.0", released_on: hoursAgo(1) },
+        ]);
+
+        assert.strictEqual(db.isNewlyReleasedPackage("good-pkg", "2.0.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("ok-pkg", "7"), false);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    it("does not throw when the python feed is entirely malformed", () => {
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([null, undefined, {}, { package_name: null }]);
+        assert.strictEqual(db.isNewlyReleasedPackage("anything", "1.0.0"), false);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    it("keeps npm name matching case-sensitive", () => {
+      ecosystem = "js";
+
+      const db = buildNewPackagesDatabase([
+        { source: "npm", package_name: "Base64", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage("Base64", "1.0.0"), true);
+      assert.strictEqual(db.isNewlyReleasedPackage("base64", "1.0.0"), false);
+    });
   });
 
   describe("scan cost", () => {

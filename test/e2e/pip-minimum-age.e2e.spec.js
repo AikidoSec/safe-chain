@@ -64,6 +64,37 @@ describe("E2E: pip minimum package age", () => {
     );
   });
 
+  // The PyPI release feed carries display names ("Django", "ImkGreet"), while pip
+  // only ever requests the PEP 503 normalised form ("django"). Matching those
+  // case-sensitively let every capitalised package straight through the cooldown.
+  it("suppresses too-young versions when the feed name is capitalised", async () => {
+    const shell = await container.openShell("zsh");
+    const latestVersion = await getLatestPackageVersion(shell, "django");
+    const tooYoungTimestamps = getTooYoungReleaseTimestamps();
+
+    await startFeedServer(container, [
+      {
+        source: "pypi",
+        package_name: "Django", // PyPI display name, as the real feed publishes it
+        version: latestVersion,
+        ...tooYoungTimestamps,
+      },
+    ]);
+
+    const installResult = await shell.runCommand(
+      `SAFE_CHAIN_MALWARE_LIST_BASE_URL=http://127.0.0.1:8123 pip3 install --break-system-packages django==${latestVersion} --safe-chain-logging=verbose`
+    );
+
+    assert.ok(
+      installResult.output.includes(`is newer than 48 hours and was removed`),
+      `Expected Safe Chain to suppress the capitalised-feed-name version. Output was:\n${installResult.output}`
+    );
+    assert.ok(
+      !installResult.output.includes("Successfully installed"),
+      `Expected pip install to fail for a suppressed version. Output was:\n${installResult.output}`
+    );
+  });
+
   it("fails cleanly for exact pinned too-young PyPI versions", async () => {
     const shell = await container.openShell("zsh");
     const latestVersion = await getLatestPackageVersion(shell, "openai");
@@ -100,7 +131,9 @@ describe("E2E: pip minimum package age", () => {
 
 async function getLatestPackageVersion(shell, packageName) {
   const result = await shell.runCommand(`/usr/bin/pip3 index versions ${packageName}`);
-  const version = result.output.match(new RegExp(`${packageName} \\(([^)]+)\\)`))?.[1];
+  const version = result.output.match(
+    new RegExp(`${packageName} \\(([^)]+)\\)`, "i")
+  )?.[1];
 
   assert.ok(
     version,
