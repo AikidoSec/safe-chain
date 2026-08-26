@@ -346,6 +346,7 @@ main() {
 
         info "Downloading Aikido Endpoint Protection..."
         download "${BASE_URL}/${ASSET}" "$PKG_FILE"
+        chmod 644 "$PKG_FILE"
 
         info "Verifying checksum..."
         verify_checksum "$PKG_FILE" "$EXPECTED_SHA256"
