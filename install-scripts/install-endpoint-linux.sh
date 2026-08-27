@@ -87,6 +87,11 @@ parse_arguments() {
                 if [ -z "${2:-}" ]; then
                     error "--token requires a value"
                 fi
+                case "$2" in
+                    --*)
+                        error "--token requires a value"
+                        ;;
+                esac
                 TOKEN="$2"
                 shift 2
                 ;;
