@@ -2,7 +2,7 @@
 
 # Downloads and installs Aikido Endpoint Protection on Linux
 #
-# Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--ci-cd]
+# Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--headless] [--ci-cd]
 
 set -e  # Exit on error
 
@@ -79,6 +79,7 @@ cleanup() {
 parse_arguments() {
     TOKEN=""
     CI_CD=""
+    HEADLESS=""
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -91,6 +92,10 @@ parse_arguments() {
                 ;;
             --ci-cd)
                 CI_CD="1"
+                shift
+                ;;
+            --headless)
+                HEADLESS="1"
                 shift
                 ;;
             *)
@@ -219,17 +224,21 @@ detect_package() {
     fi
 }
 
-# Run the package manager with the settings the installer reads from the environment
+# Run the package manager with the settings the installer reads from the environment.
+# CI/CD wins if both flags are set: do not also export AIKIDO_HEADLESS.
 run_installer() {
     if [ -n "$CI_CD" ]; then
         AIKIDO_TOKEN="$TOKEN" AIKIDO_CI_CD="$CI_CD" "$@"
+    elif [ -n "$HEADLESS" ]; then
+        AIKIDO_TOKEN="$TOKEN" AIKIDO_HEADLESS="$HEADLESS" "$@"
     else
         AIKIDO_TOKEN="$TOKEN" "$@"
     fi
 }
 
 # Install the .deb through apt-get so hard dependencies get resolved. apt is the
-# only step here that pulls Recommends, so that is what CI/CD runs opt out of.
+# only step here that pulls Recommends, so that is what headless and CI/CD
+# runs opt out of.
 install_deb() {
     if ! command -v apt-get >/dev/null 2>&1; then
         run_installer dpkg -i "$PKG_FILE"
@@ -243,7 +252,7 @@ install_deb() {
 
     # --reinstall so re-running for the same version still applies the token
     set -- apt-get install -y --reinstall
-    if [ -n "$CI_CD" ]; then
+    if [ -n "$CI_CD" ] || [ -n "$HEADLESS" ]; then
         set -- "$@" --no-install-recommends
     fi
 
@@ -258,7 +267,7 @@ rpm_already_installed() {
 }
 
 # Install the .rpm through dnf/yum so hard dependencies get resolved. Weak
-# dependencies are dnf's doing, so CI/CD runs turn them off.
+# dependencies are dnf's doing, so headless and CI/CD runs turn them off.
 install_rpm() {
     if command -v dnf >/dev/null 2>&1; then
         set -- dnf
@@ -278,7 +287,7 @@ install_rpm() {
         set -- "$@" install -y
     fi
 
-    if [ -n "$CI_CD" ]; then
+    if [ -n "$CI_CD" ] || [ -n "$HEADLESS" ]; then
         set -- "$@" --setopt=install_weak_deps=False
     fi
 
