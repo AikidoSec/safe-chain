@@ -2,12 +2,12 @@
 
 # Downloads and installs Aikido Endpoint Protection on Linux
 #
-# Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--headless] [--container]
+# Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--headless] [--container|--ci-cd]
 #
 #   --headless   server/VM: no tray, skip GTK/WebKit Recommends, still L4, reboot required
 #   --container  run *inside* a container: no tray, skip Recommends, L7, ephemeral secrets, no reboot
 #                not for Docker/Jenkins hosts; those use --headless
-#   --ci-cd      deprecated alias for --container
+#   --ci-cd      same flavor as --container (kept so current scripts keep working)
 
 set -e  # Exit on error
 
@@ -105,7 +105,6 @@ parse_arguments() {
                 shift
                 ;;
             --ci-cd)
-                # Deprecated alias for --container
                 CONTAINER="1"
                 shift
                 ;;
@@ -240,10 +239,12 @@ detect_package() {
 }
 
 # Run the package manager with the settings the installer reads from the environment.
-# --container wins if both flags are set: do not also export AIKIDO_HEADLESS.
+# --container/--ci-cd wins if headless is also set: do not also export AIKIDO_HEADLESS.
+# Export both env names so this script works against today's v1.8.1 package
+# (AIKIDO_CI_CD only) and the next package (AIKIDO_CONTAINER, alias AIKIDO_CI_CD).
 run_installer() {
     if [ -n "$CONTAINER" ]; then
-        AIKIDO_TOKEN="$TOKEN" AIKIDO_CONTAINER="$CONTAINER" "$@"
+        AIKIDO_TOKEN="$TOKEN" AIKIDO_CONTAINER="$CONTAINER" AIKIDO_CI_CD="$CONTAINER" "$@"
     elif [ -n "$HEADLESS" ]; then
         AIKIDO_TOKEN="$TOKEN" AIKIDO_HEADLESS="$HEADLESS" "$@"
     else
