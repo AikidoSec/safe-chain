@@ -243,7 +243,9 @@ detect_package() {
 # --container/--ci-cd wins if headless is also set: do not also export AIKIDO_HEADLESS.
 # Export both env names so this script works against today's v1.8.1 package
 # (AIKIDO_CI_CD only) and the next package (AIKIDO_CONTAINER, alias AIKIDO_CI_CD).
+# Drop inherited mode vars first so sudo -E / ambient env cannot override the CLI.
 run_installer() {
+    unset AIKIDO_CONTAINER AIKIDO_HEADLESS AIKIDO_CI_CD
     if [ -n "$CONTAINER" ]; then
         AIKIDO_TOKEN="$TOKEN" AIKIDO_CONTAINER="$CONTAINER" AIKIDO_CI_CD="$CONTAINER" "$@"
     elif [ -n "$HEADLESS" ]; then
