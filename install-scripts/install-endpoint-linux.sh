@@ -2,7 +2,12 @@
 
 # Downloads and installs Aikido Endpoint Protection on Linux
 #
-# Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--ci-cd]
+# Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--headless] [--container|--ci-cd]
+#
+#   --headless   server/VM: no tray, skip GTK/WebKit Recommends, still L4, reboot required
+#   --container  run *inside* a container: no tray, skip Recommends, L7, ephemeral secrets, no reboot
+#                not for Docker/Jenkins hosts; those use --headless
+#   --ci-cd      deprecated alias for --container
 
 set -e  # Exit on error
 
@@ -78,7 +83,8 @@ cleanup() {
 # Parse command-line arguments
 parse_arguments() {
     TOKEN=""
-    CI_CD=""
+    CONTAINER=""
+    HEADLESS=""
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -86,15 +92,29 @@ parse_arguments() {
                 if [ -z "${2:-}" ]; then
                     error "--token requires a value"
                 fi
+                case "$2" in
+                    --*)
+                        error "--token requires a value"
+                        ;;
+                esac
                 TOKEN="$2"
                 shift 2
                 ;;
+            --container)
+                CONTAINER="1"
+                shift
+                ;;
             --ci-cd)
-                CI_CD="1"
+                # Deprecated alias for --container
+                CONTAINER="1"
+                shift
+                ;;
+            --headless)
+                HEADLESS="1"
                 shift
                 ;;
             *)
-                error "Unknown argument: $1"
+                error "Unknown argument: $1. This installer stops so it does not install the wrong flavor."
                 ;;
         esac
     done
@@ -219,17 +239,25 @@ detect_package() {
     fi
 }
 
-# Run the package manager with the settings the installer reads from the environment
+# Run the package manager with the settings the installer reads from the environment.
+# --container/--ci-cd wins if headless is also set: do not also export AIKIDO_HEADLESS.
+# Export both env names so this script works against today's v1.8.1 package
+# (AIKIDO_CI_CD only) and the next package (AIKIDO_CONTAINER, alias AIKIDO_CI_CD).
+# Drop inherited mode vars first so sudo -E / ambient env cannot override the CLI.
 run_installer() {
-    if [ -n "$CI_CD" ]; then
-        AIKIDO_TOKEN="$TOKEN" AIKIDO_CI_CD="$CI_CD" "$@"
+    unset AIKIDO_CONTAINER AIKIDO_HEADLESS AIKIDO_CI_CD
+    if [ -n "$CONTAINER" ]; then
+        AIKIDO_TOKEN="$TOKEN" AIKIDO_CONTAINER="$CONTAINER" AIKIDO_CI_CD="$CONTAINER" "$@"
+    elif [ -n "$HEADLESS" ]; then
+        AIKIDO_TOKEN="$TOKEN" AIKIDO_HEADLESS="$HEADLESS" "$@"
     else
         AIKIDO_TOKEN="$TOKEN" "$@"
     fi
 }
 
 # Install the .deb through apt-get so hard dependencies get resolved. apt is the
-# only step here that pulls Recommends, so that is what CI/CD runs opt out of.
+# only step here that pulls Recommends, so that is what headless and container
+# runs opt out of.
 install_deb() {
     if ! command -v apt-get >/dev/null 2>&1; then
         run_installer dpkg -i "$PKG_FILE"
@@ -243,7 +271,7 @@ install_deb() {
 
     # --reinstall so re-running for the same version still applies the token
     set -- apt-get install -y --reinstall
-    if [ -n "$CI_CD" ]; then
+    if [ -n "$CONTAINER" ] || [ -n "$HEADLESS" ]; then
         set -- "$@" --no-install-recommends
     fi
 
@@ -258,7 +286,7 @@ rpm_already_installed() {
 }
 
 # Install the .rpm through dnf/yum so hard dependencies get resolved. Weak
-# dependencies are dnf's doing, so CI/CD runs turn them off.
+# dependencies are dnf's doing, so headless and container runs turn them off.
 install_rpm() {
     if command -v dnf >/dev/null 2>&1; then
         set -- dnf
@@ -278,7 +306,7 @@ install_rpm() {
         set -- "$@" install -y
     fi
 
-    if [ -n "$CI_CD" ]; then
+    if [ -n "$CONTAINER" ] || [ -n "$HEADLESS" ]; then
         set -- "$@" --setopt=install_weak_deps=False
     fi
 
