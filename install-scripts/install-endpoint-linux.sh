@@ -7,7 +7,7 @@
 #   --headless   server/VM: no tray, skip GTK/WebKit Recommends, still L4, reboot required
 #   --container  run *inside* a container: no tray, skip Recommends, L7, ephemeral secrets, no reboot
 #                not for Docker/Jenkins hosts; those use --headless
-#   --ci-cd      same flavor as --container (kept so current scripts keep working)
+#   --ci-cd      deprecated alias for --container
 
 set -e  # Exit on error
 
@@ -105,6 +105,7 @@ parse_arguments() {
                 shift
                 ;;
             --ci-cd)
+                # Deprecated alias for --container
                 CONTAINER="1"
                 shift
                 ;;
