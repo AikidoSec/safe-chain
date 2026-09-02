@@ -24,9 +24,20 @@ describe("audit/index", async () => {
     },
   });
 
+  // Mock ecosystem settings - defaults to js, overridden per-test
+  let ecosystem = "js";
+  mock.module("../../config/settings.js", {
+    namedExports: {
+      getEcoSystem: () => ecosystem,
+      ECOSYSTEM_PY: "py",
+      ECOSYSTEM_JS: "js",
+    },
+  });
+
   const { auditChanges, getAuditStats } = await import("./index.js");
 
   beforeEach(() => {
+    ecosystem = "js";
     mockWriteVerbose.mock.resetCalls();
     mockIsMalware.mock.resetCalls();
   });
@@ -183,6 +194,34 @@ describe("audit/index", async () => {
 
       const statsAfter = getAuditStats();
       assert.equal(statsAfter.totalPackages, initialCount + 2);
+    });
+
+    it("passes a PEP 440-equivalence comparator to isMalware for the py ecosystem", async () => {
+      ecosystem = "py";
+      mockIsMalware.mock.mockImplementation(() => false);
+
+      await auditChanges([{ name: "numpy", version: "1.0.0", type: "add" }]);
+
+      assert.equal(mockIsMalware.mock.calls.length, 1);
+      const versionsEqual = mockIsMalware.mock.calls[0].arguments[2];
+      assert.equal(typeof versionsEqual, "function");
+      // malware DB entry "1.0" should be considered equal to requested "1.0.0"
+      assert.equal(versionsEqual("1.0", "1.0.0"), true);
+      assert.equal(versionsEqual("1.0", "2.0"), false);
+    });
+
+    it("passes a strict-equality comparator to isMalware for the js ecosystem", async () => {
+      ecosystem = "js";
+      mockIsMalware.mock.mockImplementation(() => false);
+
+      await auditChanges([{ name: "lodash", version: "1.0.0", type: "add" }]);
+
+      assert.equal(mockIsMalware.mock.calls.length, 1);
+      const versionsEqual = mockIsMalware.mock.calls[0].arguments[2];
+      assert.equal(typeof versionsEqual, "function");
+      // npm behavior must stay untouched: "1.0" must NOT match "1.0.0"
+      assert.equal(versionsEqual("1.0", "1.0.0"), false);
+      assert.equal(versionsEqual("1.0.0", "1.0.0"), true);
     });
   });
 });
