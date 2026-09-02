@@ -108,5 +108,51 @@ describe("pep440VersionEquality", () => {
       assert.equal(pep440VersionsEqual("01!1.0", "1!1.0"), true);
       assert.equal(pep440VersionsEqual("1.01", "1.1"), true);
     });
+
+    it("treats leading zero pre/post/dev numbers as numerically equal", () => {
+      assert.equal(pep440VersionsEqual("1.0a05", "1.0a5"), true);
+      assert.equal(pep440VersionsEqual("1.0.post007", "1.0.post7"), true);
+      assert.equal(pep440VersionsEqual("1.1.dev09000", "1.1.dev9000"), true);
+    });
+
+    it("treats explicit zero epoch as equal to implicit epoch", () => {
+      assert.equal(pep440VersionsEqual("0!1.0", "1.0"), true);
+    });
+
+    it("normalizes local version segments separated by underscores", () => {
+      assert.equal(pep440VersionsEqual("1.0+abc_1", "1.0+abc.1"), true);
+    });
+
+    it("falls back to string equality for malformed local versions", () => {
+      assert.equal(pep440VersionsEqual("1.0+a+", "1.0+a+"), true);
+      assert.equal(pep440VersionsEqual("1.0++", "1.0++"), true);
+      assert.equal(pep440VersionsEqual("1.0+_foobar", "1.0+_foobar"), true);
+      assert.equal(pep440VersionsEqual("1.0+foo&asd", "1.0+foo&asd"), true);
+      assert.equal(pep440VersionsEqual("1.0+1+1", "1.0+1+1"), true);
+      assert.equal(pep440VersionsEqual("1.0+a+", "1.0"), false);
+    });
+
+    it("falls back to string equality for a double epoch marker", () => {
+      assert.equal(pep440VersionsEqual("1!2!1.0", "1!2!1.0"), true);
+      assert.equal(pep440VersionsEqual("1!2!1.0", "2!1.0"), false);
+    });
+
+    it("normalizes every segment type at once in a single comparison", () => {
+      assert.equal(
+        pep440VersionsEqual(
+          "1.0a1.post2.dev3+local.4",
+          "1.0-alpha1-post2.dev3+LOCAL.04"
+        ),
+        true
+      );
+    });
+
+    it("does not conflate a dev-only release with an implicit post-release", () => {
+      assert.equal(pep440VersionsEqual("1.0.dev", "1.0-1"), false);
+    });
+
+    it("trims surrounding whitespace including tabs and newlines", () => {
+      assert.equal(pep440VersionsEqual("  \tv1.0\n", "1.0"), true);
+    });
   });
 });
