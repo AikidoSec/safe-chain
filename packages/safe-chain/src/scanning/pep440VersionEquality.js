@@ -85,23 +85,63 @@ function parseVersion(version) {
   return {
     epoch: BigInt(g.epoch ?? "0"),
     release: g.release,
-    pre: g.preLetter
-      ? {
-          letter: PRE_LETTER_ALIASES[g.preLetter.toLowerCase()],
-          number: BigInt(g.preNumber ?? "0"),
-        }
-      : null,
-    post:
-      g.postNumberImplicit !== undefined
-        ? { number: BigInt(g.postNumberImplicit) }
-        : g.postLetter
-          ? { number: BigInt(g.postNumber ?? "0") }
-          : null,
-    dev: g.devLetter ? { number: BigInt(g.devNumber ?? "0") } : null,
-    local: g.local
-      ? g.local.toLowerCase().split(/[-_.]/)
-      : null,
+    pre: parsePre(g),
+    post: parsePost(g),
+    dev: parseDev(g),
+    local: parseLocal(g),
   };
+}
+
+/**
+ * @param {Record<string, string | undefined>} g
+ * @returns {{letter: string, number: bigint} | null}
+ */
+function parsePre(g) {
+  if (!g.preLetter) {
+    return null;
+  }
+  return {
+    letter: PRE_LETTER_ALIASES[g.preLetter.toLowerCase()],
+    number: BigInt(g.preNumber ?? "0"),
+  };
+}
+
+/**
+ * A post-release can be written as an explicit "post"/"rev"/"r" letter, or
+ * as a bare "-N" directly after the release segment (implicit post-release).
+ * @param {Record<string, string | undefined>} g
+ * @returns {{number: bigint} | null}
+ */
+function parsePost(g) {
+  if (g.postNumberImplicit !== undefined) {
+    return { number: BigInt(g.postNumberImplicit) };
+  }
+  if (!g.postLetter) {
+    return null;
+  }
+  return { number: BigInt(g.postNumber ?? "0") };
+}
+
+/**
+ * @param {Record<string, string | undefined>} g
+ * @returns {{number: bigint} | null}
+ */
+function parseDev(g) {
+  if (!g.devLetter) {
+    return null;
+  }
+  return { number: BigInt(g.devNumber ?? "0") };
+}
+
+/**
+ * @param {Record<string, string | undefined>} g
+ * @returns {string[] | null}
+ */
+function parseLocal(g) {
+  if (!g.local) {
+    return null;
+  }
+  return g.local.toLowerCase().split(/[-_.]/);
 }
 
 /**
