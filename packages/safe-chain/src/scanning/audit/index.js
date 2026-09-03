@@ -1,8 +1,10 @@
 import { ui } from "../../environment/userInteraction.js";
+import { getEcoSystem, ECOSYSTEM_PY } from "../../config/settings.js";
 import {
   MALWARE_STATUS_MALWARE,
   openMalwareDatabase,
 } from "../malwareDatabase.js";
+import { pep440VersionsEqual } from "../pep440VersionEquality.js";
 
 /**
  * @typedef {Object} PackageChange
@@ -113,10 +115,11 @@ async function getPackagesWithMalware(changes) {
   }
 
   const malwareDb = await openMalwareDatabase();
+  const versionsEqual = getVersionsEqual();
   let allVulnerablePackages = [];
 
   for (const change of changes) {
-    if (malwareDb.isMalware(change.name, change.version)) {
+    if (malwareDb.isMalware(change.name, change.version, versionsEqual)) {
       allVulnerablePackages.push({
         name: change.name,
         version: change.version,
@@ -126,4 +129,17 @@ async function getPackagesWithMalware(changes) {
   }
 
   return allVulnerablePackages;
+}
+
+/**
+ * Picks the version-equality comparator to use when matching against the
+ * malware database, based on the current ecosystem. Python packages follow
+ * PEP 440 versioning (where e.g. "1.0" and "1.0.0" are the same release),
+ * while other ecosystems fall back to exact string equality.
+ * @returns {(a: string, b: string) => boolean}
+ */
+function getVersionsEqual() {
+  return getEcoSystem() === ECOSYSTEM_PY
+    ? pep440VersionsEqual
+    : (a, b) => a === b;
 }
