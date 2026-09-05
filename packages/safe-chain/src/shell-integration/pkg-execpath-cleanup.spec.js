@@ -30,8 +30,21 @@ describe("PKG_EXECPATH cleanup", () => {
     // Scoped subshell so we don't mutate the user's interactive env.
     assert.match(
       content,
-      /\(unset PKG_EXECPATH;\s*safe-chain "\$@"\)/,
+      /\(unset PKG_EXECPATH;\s*PATH="\$\(removeSafeChainShimFromPath\)"\s*safe-chain "\$@"\)/,
       "init-posix.sh must invoke safe-chain in a subshell that unsets PKG_EXECPATH",
+    );
+  });
+
+  it("posix shell function removes safe-chain shims before invoking safe-chain", () => {
+    const file = path.join(
+      repoRoot,
+      "src/shell-integration/startup-scripts/init-posix.sh",
+    );
+    const content = fs.readFileSync(file, "utf-8");
+    assert.match(
+      content,
+      /_sc_shims_dir="\$\{_sc_base\}\/shims"[\s\S]*function removeSafeChainShimFromPath\(\)[\s\S]*\$_sc_shims_dir/,
+      "init-posix.sh must remove the shims directory derived from the installed safe-chain base",
     );
   });
 
@@ -43,8 +56,21 @@ describe("PKG_EXECPATH cleanup", () => {
     const content = fs.readFileSync(file, "utf-8");
     assert.match(
       content,
-      /env -u PKG_EXECPATH safe-chain/,
+      /env -u PKG_EXECPATH PATH=\(removeSafeChainShimFromPath\) safe-chain/,
       "init-fish.fish must invoke safe-chain via `env -u PKG_EXECPATH`",
+    );
+  });
+
+  it("fish shell function removes safe-chain shims before invoking safe-chain", () => {
+    const file = path.join(
+      repoRoot,
+      "src/shell-integration/startup-scripts/init-fish.fish",
+    );
+    const content = fs.readFileSync(file, "utf-8");
+    assert.match(
+      content,
+      /set -g _sc_shims_dir "\$safe_chain_base\/shims"[\s\S]*function removeSafeChainShimFromPath[\s\S]*\$_sc_shims_dir/,
+      "init-fish.fish must remove the shims directory derived from the installed safe-chain base",
     );
   });
 
