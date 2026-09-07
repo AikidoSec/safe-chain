@@ -3127,7 +3127,7 @@
     },
     "packages/safe-chain": {
       "name": "@aikidosec/safe-chain",
-      "version": "1.5.7",
+      "version": "1.0.0",
       "license": "AGPL-3.0-or-later",
       "dependencies": {
         "certifi": "14.5.15",
