@@ -119,6 +119,7 @@ Check that your startup file sources safe-chain scripts from `~/.safe-chain/scri
 * Zsh: `~/.zshrc`
 * Fish: `~/.config/fish/config.fish`
 * PowerShell: `$PROFILE`
+
 ### AI Agent or Non-Interactive Install Is Not Protected
 
 **Symptom:** Safe Chain works in your terminal, but an install started by Claude Code, Codex, Cursor, a CI job, or another subprocess does not show Safe Chain output.
