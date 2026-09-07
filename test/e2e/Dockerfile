@@ -25,7 +25,8 @@ ARG NODE_VERSION=latest
 ARG NPM_VERSION=latest
 ARG YARN_VERSION=latest
 ARG PNPM_VERSION=latest
-ARG RUSH_VERSION=latest
+# pinned: rush 5.179.0 depends on unpublished @rushstack/node-core-library@5.24.1
+ARG RUSH_VERSION=5.178.1
 ARG PYTHON_VERSION=3
 
 SHELL ["/bin/bash", "-c"]
@@ -44,9 +45,10 @@ RUN apt-get install -y fish && \
 # Install Volta and Node.js
 RUN curl -fsSL https://get.volta.sh | bash
 RUN volta install node@${NODE_VERSION}
-RUN volta install npm@${NPM_VERSION}
 RUN volta install yarn@${YARN_VERSION}
+# pnpm >=12.3.2 gets its native binary from an install script that npm 12 skips; install it under node's bundled npm
 RUN volta install pnpm@${PNPM_VERSION}
+RUN volta install npm@${NPM_VERSION}
 RUN volta install @microsoft/rush@${RUSH_VERSION}
 
 # Install Bun
