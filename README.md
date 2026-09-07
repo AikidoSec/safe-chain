@@ -175,7 +175,6 @@ Safe Chain starts a local proxy on `127.0.0.1` using an ephemeral port when a pa
 > [!IMPORTANT]
 > Agents must invoke package managers by name, such as `npm`, `uv`, or `pip`. Absolute paths such as `/usr/bin/npm` bypass both shell functions and `PATH` shims.
 
-
 ## Uninstallation
 
 To uninstall the Aikido Safe Chain, use our one-line uninstaller:
