@@ -17,12 +17,17 @@ describe("aikido API", async () => {
     },
   });
 
+  const mockMinimumPackageAgeSetting = mock.fn();
+  mockMinimumPackageAgeSetting.mock.mockImplementation(() => 48);
+
   mock.module("../config/settings.js", {
     namedExports: {
       getEcoSystem: () => ecosystem,
       ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
       getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
+      defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
+      getMinimumPackageAgeHours: mockMinimumPackageAgeSetting,
     },
   });
 
@@ -158,6 +163,32 @@ describe("aikido API", async () => {
       assert.strictEqual(mockFetch.mock.calls.length, 1);
       assert.strictEqual(
         mockFetch.mock.calls[0].arguments[0],
+        "https://malware-list.aikido.dev/releases/npm_48h.json"
+      );
+      assert.deepStrictEqual(result.newPackagesList, releases);
+      assert.strictEqual(result.version, '"etag-new-packages"');
+    });
+
+    it("should fetch the full list when min package age > 48h", async () => {
+      const releases = [
+        {
+          package_name: "fresh-pkg",
+          version: "1.0.0",
+          released_on: 123,
+        },
+      ];
+      mockFetch.mock.mockImplementationOnce(() => ({
+        ok: true,
+        json: async () => releases,
+        headers: { get: () => '"etag-new-packages"' },
+      }));
+      mockMinimumPackageAgeSetting.mock.mockImplementationOnce(() => 72);
+
+      const result = await fetchNewPackagesList();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 1);
+      assert.strictEqual(
+        mockFetch.mock.calls[0].arguments[0],
         "https://malware-list.aikido.dev/releases/npm.json"
       );
       assert.deepStrictEqual(result.newPackagesList, releases);
@@ -208,7 +239,7 @@ describe("aikido API", async () => {
       assert.strictEqual(mockFetch.mock.calls.length, 1);
       assert.strictEqual(
         mockFetch.mock.calls[0].arguments[0],
-        "https://malware-list.aikido.dev/releases/npm.json"
+        "https://malware-list.aikido.dev/releases/npm_48h.json"
       );
       assert.deepStrictEqual(mockFetch.mock.calls[0].arguments[1], {
         method: "HEAD",
