@@ -4,6 +4,7 @@ import {
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
 } from "../config/settings.js";
+import { getVersionsEqual } from "./audit/getVersionsEqual.js";
 import { normalizePipPackageName } from "./packageNameVariants.js";
 
 /**
@@ -36,6 +37,7 @@ function getCurrentFeedSource() {
 export function buildNewPackagesDatabase(newPackagesList) {
   const ecosystem = getEcoSystem();
   const expectedSource = getCurrentFeedSource();
+  const versionsEqual = getVersionsEqual();
 
   /**
    * Python only. The PyPI feed carries display names (`Foo-Bar`),
@@ -53,8 +55,8 @@ export function buildNewPackagesDatabase(newPackagesList) {
     return ecosystem === ECOSYSTEM_PY ? normalizePipPackageName(name) : name;
   }
 
-  /** @type {Map<string, import("../api/aikido.js").NewPackageEntry>} */
-  const entriesByNameAndVersion = new Map();
+  /** @type {Map<string, import("../api/aikido.js").NewPackageEntry[]>} */
+  const entriesByName = new Map();
   for (const pkg of newPackagesList) {
     const packageName = pkg && pkg.package_name;
     if (typeof packageName !== "string" || typeof pkg.version !== "string") {
@@ -63,9 +65,11 @@ export function buildNewPackagesDatabase(newPackagesList) {
     if (pkg.source && pkg.source.toLowerCase() !== expectedSource) {
       continue;
     }
-    const key = `${toLookupKey(packageName)} ${pkg.version}`;
-    if (!entriesByNameAndVersion.has(key)) {
-      entriesByNameAndVersion.set(key, pkg);
+    const key = toLookupKey(packageName);
+    if (entriesByName.has(key)) {
+      entriesByName.get(key)?.push(pkg);
+    } else {
+      entriesByName.set(key, [pkg]);
     }
   }
 
@@ -80,12 +84,16 @@ export function buildNewPackagesDatabase(newPackagesList) {
     }
 
     const cutOff = new Date(
-      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
+      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000,
     );
 
-    const entry = entriesByNameAndVersion.get(`${toLookupKey(name)} ${version}`);
-    if (entry) {
-      return new Date(entry.released_on * 1000) > cutOff;
+    const entries = entriesByName.get(toLookupKey(name));
+    if (entries) {
+      return entries.some(
+        (item) =>
+          versionsEqual(item.version, version) &&
+          new Date(item.released_on * 1000) > cutOff,
+      );
     }
 
     return false;
