@@ -209,7 +209,13 @@ function getNewPackagesListPaths() {
     const baseUrl = getMalwareListBaseUrl();
     const isDefaultMalwareList = baseUrl === defaultMalwareListBaseUrl;
 
-    if (getMinimumPackageAgeHours() > 48 && isDefaultMalwareList) {
+    if (!isDefaultMalwareList) {
+      // This uses the default npm.json and pypi.json
+      // And not the newer npm_48h.json and pypi_48h.json, as it would break compatibility with mirrors.
+      return newPackagesListPathsDefault;
+    }
+
+    if (getMinimumPackageAgeHours() > 48) {
       return newPackagesListPathsLongDuration;
     }
 
