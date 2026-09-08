@@ -5,6 +5,7 @@ import {
   ECOSYSTEM_PY,
   getMalwareListBaseUrl,
   getMinimumPackageAgeHours,
+  defaultMalwareListBaseUrl,
 } from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 
@@ -191,10 +192,7 @@ async function retry(func, attempts) {
 function getNewPackagesListUrl() {
     const ecosystem = getEcoSystem();
     const baseUrl = getMalwareListBaseUrl();
-    const newPackagesListPaths =
-      getMinimumPackageAgeHours() > 48
-        ? newPackagesListPathsLongDuration
-        : newPackagesListPathsDefault;
+    const newPackagesListPaths = getNewPackagesListPaths();
     const path =
       newPackagesListPaths[
         /** @type {keyof typeof newPackagesListPaths} */ (ecosystem)
@@ -205,4 +203,15 @@ function getNewPackagesListUrl() {
     }
 
     return `${baseUrl}/${path}`;
+}
+
+function getNewPackagesListPaths() {
+    const baseUrl = getMalwareListBaseUrl();
+    const isDefaultMalwareList = baseUrl === defaultMalwareListBaseUrl;
+
+    if (getMinimumPackageAgeHours() > 48 && isDefaultMalwareList) {
+      return newPackagesListPathsLongDuration;
+    }
+
+    return newPackagesListPathsDefault;
 }

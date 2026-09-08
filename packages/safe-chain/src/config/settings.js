@@ -352,8 +352,10 @@ export function getMalwareListBaseUrl() {
   }
 
   // Default
-  return removeTrailingSlashes("https://malware-list.aikido.dev");
+  return removeTrailingSlashes(defaultMalwareListBaseUrl);
 }
+
+export const defaultMalwareListBaseUrl = "https://malware-list.aikido.dev";
 
 /**
  * Removes trailing slashes from a URL-like string.
