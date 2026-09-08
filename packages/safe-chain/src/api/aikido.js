@@ -212,7 +212,7 @@ function getNewPackagesListPaths() {
     if (!isDefaultMalwareList) {
       // This uses the default npm.json and pypi.json
       // And not the newer npm_48h.json and pypi_48h.json, as it would break compatibility with mirrors.
-      return newPackagesListPathsDefault;
+      return newPackagesListPathsLongDuration;
     }
 
     if (getMinimumPackageAgeHours() > 48) {
