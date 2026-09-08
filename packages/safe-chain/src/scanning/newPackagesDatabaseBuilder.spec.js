@@ -263,6 +263,35 @@ describe("buildNewPackagesDatabase", () => {
       assert.strictEqual(db.isNewlyReleasedPackage("Base64", "1.0.0"), true);
       assert.strictEqual(db.isNewlyReleasedPackage("base64", "1.0.0"), false);
     });
+
+    it("pypi matches PEP440 versioning", () => {
+      // More extensive tests on the version matching can be found in: packages/safe-chain/src/scanning/pep440VersionEquality.spec.js
+
+      ecosystem = "py";
+
+      try {
+        const db = buildNewPackagesDatabase([
+          { source: "pypi", package_name: "foo", version: "1.0.0", released_on: hoursAgo(1) },
+          { source: "pypi", package_name: "bar", version: "1.0", released_on: hoursAgo(1) },
+        ]);
+
+        assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("bar", "1.0.0"), true);
+        assert.strictEqual(db.isNewlyReleasedPackage("bar", "1.0"), true);
+      } finally {
+        ecosystem = "js";
+      }
+    });
+
+    it("js doesn't match PEP440 versioning", () => {
+      const db = buildNewPackagesDatabase([
+        { source: "npm", package_name: "foo", version: "1.0.0", released_on: hoursAgo(1) },
+      ]);
+
+      assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), true);
+      assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0"), false);
+    });
   });
 
   describe("scan cost", () => {
