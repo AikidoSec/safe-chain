@@ -85,6 +85,10 @@ RUN apt-get update && apt-get install -y pipx && \
 RUN pipx install pdm && \
     ln -sf /root/.local/bin/pdm /usr/local/bin/pdm
 
+# Install pyenv (not activated globally; individual tests opt in by putting
+# its shims on PATH to test the interplay with safe-chain's shims)
+RUN git clone --depth 1 https://github.com/pyenv/pyenv.git /root/.pyenv
+
 # Copy and install Safe chain
 COPY --from=builder /app/*.tgz /pkgs/
 RUN npm install -g /pkgs/*.tgz
