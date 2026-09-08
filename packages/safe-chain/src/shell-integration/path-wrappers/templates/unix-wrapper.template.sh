@@ -4,19 +4,34 @@
 
 # Function to remove shim from PATH (POSIX-compliant)
 remove_shim_from_path() {
-    _safe_chain_phys=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd -P)
-    if [ -z "$_safe_chain_phys" ]; then
-        echo "$PATH"
-        return
-    fi
-    _path=$(echo "$PATH" | sed "s|${_safe_chain_phys}:||g")
-    # Also remove via dirname of $0 directly — on macOS /tmp is a symlink to /private/tmp,
-    # so pwd -P resolves to /private/tmp/… but PATH may still contain /tmp/….
-    _dir=$(dirname -- "$0")
-    case "$_dir" in
-        /*) [ "$_dir" != "$_safe_chain_phys" ] && _path=$(echo "$_path" | sed "s|${_dir}:||g") ;;
+    # Derive the shim directory from $0 with parameter expansion instead of
+    # dirname(1) so this keeps working even when PATH is missing system dirs
+    case "$0" in
+        */*) _dir=${0%/*} ;;
+        *) _dir=. ;;
     esac
-    echo "$_path"
+    # Physical path — on macOS /tmp is a symlink to /private/tmp, so pwd -P
+    # resolves to /private/tmp/… but PATH may still contain /tmp/….
+    _safe_chain_phys=$(CDPATH= cd -- "$_dir" 2>/dev/null && pwd -P)
+    _newpath=""
+    _rest="$PATH:"
+    while [ -n "$_rest" ]; do
+        _entry=${_rest%%:*}
+        _rest=${_rest#*:}
+        # Compare with trailing slashes trimmed so "/dir/" still matches "/dir"
+        _trimmed=$_entry
+        while [ "${_trimmed%/}" != "$_trimmed" ] && [ "$_trimmed" != "/" ]; do
+            _trimmed=${_trimmed%/}
+        done
+        if [ -n "$_safe_chain_phys" ] && [ "$_trimmed" = "$_safe_chain_phys" ]; then
+            continue
+        fi
+        case "$_dir" in
+            /*) [ "$_trimmed" = "$_dir" ] && continue ;;
+        esac
+        _newpath="${_newpath}${_entry}:"
+    done
+    echo "${_newpath%:}"
 }
 
 if command -v safe-chain >/dev/null 2>&1; then
