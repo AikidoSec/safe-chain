@@ -153,19 +153,32 @@ export const ECOSYSTEM_JS = "js";
 export const ECOSYSTEM_PY = "py";
 
 // Default to JavaScript ecosystem
-const ecosystemSettings = {
+const settingsState = {
   ecoSystem: ECOSYSTEM_JS,
+  version: "0.0.0",
 };
 
 /** @returns {string} - The current ecosystem setting (ECOSYSTEM_JS or ECOSYSTEM_PY) */
 export function getEcoSystem() {
-  return ecosystemSettings.ecoSystem;
+  return settingsState.ecoSystem;
 }
 /**
  * @param {string} setting - The ecosystem to set (ECOSYSTEM_JS or ECOSYSTEM_PY)
  */
 export function setEcoSystem(setting) {
-  ecosystemSettings.ecoSystem = setting;
+  settingsState.ecoSystem = setting;
+}
+
+/**
+ * Sets the version of safe-chain
+ * @param {string} version 
+ */
+export function setVersion(version) {
+  settingsState.version = version;
+}
+
+export function getVersion(){
+  return settingsState.version;
 }
 
 const defaultMinimumPackageAge = 48;
@@ -352,8 +365,10 @@ export function getMalwareListBaseUrl() {
   }
 
   // Default
-  return removeTrailingSlashes("https://malware-list.aikido.dev");
+  return removeTrailingSlashes(defaultMalwareListBaseUrl);
 }
+
+export const defaultMalwareListBaseUrl = "https://malware-list.aikido.dev";
 
 /**
  * Removes trailing slashes from a URL-like string.
