@@ -2,6 +2,14 @@
 # Generated wrapper for {{PACKAGE_MANAGER}} by safe-chain
 # This wrapper intercepts {{PACKAGE_MANAGER}} calls for non-interactive environments
 
+# Trim trailing slashes; result in $_rtrim_out ("/" stays "/")
+_rtrim_slashes() {
+    _rtrim_out=$1
+    while [ "$_rtrim_out" != "/" ] && [ "${_rtrim_out%/}" != "$_rtrim_out" ]; do
+        _rtrim_out=${_rtrim_out%/}
+    done
+}
+
 # Function to remove shim from PATH (POSIX-compliant)
 remove_shim_from_path() {
     # Derive the shim directory from $0 with parameter expansion instead of
@@ -13,21 +21,21 @@ remove_shim_from_path() {
     # Physical path — on macOS /tmp is a symlink to /private/tmp, so pwd -P
     # resolves to /private/tmp/… but PATH may still contain /tmp/….
     _safe_chain_phys=$(CDPATH= cd -- "$_dir" 2>/dev/null && pwd -P)
+    _rtrim_slashes "$_dir"
+    _dir_trimmed=$_rtrim_out
     _newpath=""
     _rest="$PATH:"
     while [ -n "$_rest" ]; do
         _entry=${_rest%%:*}
         _rest=${_rest#*:}
         # Compare with trailing slashes trimmed so "/dir/" still matches "/dir"
-        _trimmed=$_entry
-        while [ "${_trimmed%/}" != "$_trimmed" ] && [ "$_trimmed" != "/" ]; do
-            _trimmed=${_trimmed%/}
-        done
+        _rtrim_slashes "$_entry"
+        _trimmed=$_rtrim_out
         if [ -n "$_safe_chain_phys" ] && [ "$_trimmed" = "$_safe_chain_phys" ]; then
             continue
         fi
-        case "$_dir" in
-            /*) [ "$_trimmed" = "$_dir" ] && continue ;;
+        case "$_dir_trimmed" in
+            /*) [ "$_trimmed" = "$_dir_trimmed" ] && continue ;;
         esac
         _newpath="${_newpath}${_entry}:"
     done
