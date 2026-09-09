@@ -232,35 +232,47 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
       proxyRes.on("end", () => {
         /** @type {Buffer} */
         const originalBuffer = Buffer.concat(chunks);
-        let decodedBuffer = originalBuffer;
 
-        if (proxyRes.headers["content-encoding"] === "gzip") {
-          decodedBuffer = gunzipSync(originalBuffer);
-        }
+        try {
+          let decodedBuffer = originalBuffer;
 
-        const modifiedBuffer = requestHandler.modifyBody(decodedBuffer, headers);
+          if (proxyRes.headers["content-encoding"] === "gzip") {
+            decodedBuffer = gunzipSync(originalBuffer);
+          }
 
-        if (modifiedBuffer === decodedBuffer) {
-          // The interceptor left the body unchanged, so forward the upstream
-          // response verbatim. Keeping the original encoding and caching headers
-          // (etag/cache-control) intact lets npm and the registry serve it from
-          // cache on later installs instead of issuing a fresh read.
-          res.writeHead(statusCode, headers);
+          const modifiedBuffer = requestHandler.modifyBody(decodedBuffer, headers);
+
+          if (modifiedBuffer === decodedBuffer) {
+            // The interceptor left the body unchanged, so forward the upstream
+            // response verbatim. Keeping the original encoding and caching headers
+            // (etag/cache-control) intact lets npm and the registry serve it from
+            // cache on later installs instead of issuing a fresh read.
+            res.writeHead(statusCode, headers);
+            res.end(originalBuffer);
+            return;
+          }
+
+          // For rewritten responses, send the final body uncompressed.
+          // This avoids mismatches between upstream compression metadata and the
+          // rewritten payload on the wire.
+          const rewrittenHeaders = omitHeaders(
+            headers,
+            ["content-length", "transfer-encoding", "content-encoding"],
+            { caseInsensitive: true }
+          ) || {};
+          rewrittenHeaders["content-length"] = String(modifiedBuffer.byteLength);
+          res.writeHead(statusCode, rewrittenHeaders);
+          res.end(modifiedBuffer);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          ui.writeError(
+            `Safe-chain: Failed to process response body for ${req.url} for ${hostname}, forwarding it unmodified: ${message}`
+          );
+          if (!res.headersSent) {
+            res.writeHead(statusCode, headers);
+          }
           res.end(originalBuffer);
-          return;
         }
-
-        // For rewritten responses, send the final body uncompressed.
-        // This avoids mismatches between upstream compression metadata and the
-        // rewritten payload on the wire.
-        const rewrittenHeaders = omitHeaders(
-          headers,
-          ["content-length", "transfer-encoding", "content-encoding"],
-          { caseInsensitive: true }
-        ) || {};
-        rewrittenHeaders["content-length"] = String(modifiedBuffer.byteLength);
-        res.writeHead(statusCode, rewrittenHeaders);
-        res.end(modifiedBuffer);
       });
     } else {
       // If the response is not being modified, we can
