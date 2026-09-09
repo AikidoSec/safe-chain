@@ -28,6 +28,7 @@ describe("aikido API", async () => {
       getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
       defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
       getMinimumPackageAgeHours: mockMinimumPackageAgeSetting,
+      getVersion: () => "0.0.0",
     },
   });
 
@@ -243,6 +244,9 @@ describe("aikido API", async () => {
       );
       assert.deepStrictEqual(mockFetch.mock.calls[0].arguments[1], {
         method: "HEAD",
+        headers: {
+          Referer: 'https://safe-chain.0.0.0.aikido.dev',
+        }
       });
       assert.strictEqual(result, '"new-packages-etag"');
     });
