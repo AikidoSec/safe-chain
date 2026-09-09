@@ -15,7 +15,7 @@ import {
 } from "../src/shell-integration/teardown.js";
 import { setupCi } from "../src/shell-integration/setup-ci.js";
 import { initializeCliArguments } from "../src/config/cliArguments.js";
-import { setEcoSystem } from "../src/config/settings.js";
+import { getVersion, setEcoSystem, setVersion } from "../src/config/settings.js";
 import { initializePackageManager } from "../src/packagemanager/currentPackageManager.js";
 import { main } from "../src/main.js";
 import path from "path";
@@ -36,6 +36,13 @@ if (import.meta.url) {
   dirname = path.dirname(filename);
 } else {
   dirname = __dirname;
+}
+
+const packageJsonPath = path.join(dirname, "..", "package.json");
+const data = fs.readFileSync(packageJsonPath);
+const json = JSON.parse(data.toString("utf8"));
+if (json && json.version) {
+  setVersion(json.version);
 }
 
 if (process.argv.length < 3) {
@@ -87,7 +94,7 @@ if (tool) {
   process.exit(0);
 } else if (command === "--version" || command === "-v" || command === "-v") {
   (async () => {
-    ui.writeInformation(`Current safe-chain version: ${await getVersion()}`);
+    ui.writeInformation(`Current safe-chain version: ${getVersion()}`);
   })();
 } else {
   ui.writeError(`Unknown command: ${command}.`);
@@ -137,17 +144,4 @@ function writeHelp() {
     )}): Display the current version of safe-chain.`,
   );
   ui.emptyLine();
-}
-
-async function getVersion() {
-  const packageJsonPath = path.join(dirname, "..", "package.json");
-
-  const data = await fs.promises.readFile(packageJsonPath);
-  const json = JSON.parse(data.toString("utf8"));
-
-  if (json && json.version) {
-    return json.version;
-  }
-
-  return "0.0.0";
 }

@@ -6,6 +6,7 @@ import {
   getMalwareListBaseUrl,
   getMinimumPackageAgeHours,
   defaultMalwareListBaseUrl,
+  getVersion,
 } from "../config/settings.js";
 import { ui } from "../environment/userInteraction.js";
 
@@ -54,7 +55,9 @@ export async function fetchMalwareDatabase() {
         /** @type {keyof typeof malwareDatabasePaths} */ (ecosystem)
       ];
     const malwareDatabaseUrl = `${baseUrl}/${path}`;
-    const response = await fetch(malwareDatabaseUrl);
+    const response = await fetch(malwareDatabaseUrl, {
+      headers: { Referer: getRefererHeader() },
+    });
     if (!response.ok) {
       throw new Error(
         `Error fetching ${ecosystem} malware database: ${response.statusText}`,
@@ -87,6 +90,7 @@ export async function fetchMalwareDatabaseVersion() {
     const malwareDatabaseUrl = `${baseUrl}/${path}`;
     const response = await fetch(malwareDatabaseUrl, {
       method: "HEAD",
+      headers: { Referer: getRefererHeader() },
     });
 
     if (!response.ok) {
@@ -110,7 +114,9 @@ export async function fetchNewPackagesList() {
       return { newPackagesList: [], version: undefined };
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: { Referer: getRefererHeader() },
+    });
     if (!response.ok) {
       throw new Error(
         `Error fetching ${ecosystem} new packages list: ${response.statusText}`,
@@ -141,7 +147,10 @@ export async function fetchNewPackagesListVersion() {
       return undefined;
     }
 
-    const response = await fetch(url, { method: "HEAD" });
+    const response = await fetch(url, {
+      method: "HEAD",
+      headers: { Referer: getRefererHeader() },
+    });
     if (!response.ok) {
       throw new Error(
         `Error fetching ${ecosystem} new packages list version: ${response.statusText}`,
@@ -190,34 +199,39 @@ async function retry(func, attempts) {
 }
 
 function getNewPackagesListUrl() {
-    const ecosystem = getEcoSystem();
-    const baseUrl = getMalwareListBaseUrl();
-    const newPackagesListPaths = getNewPackagesListPaths();
-    const path =
-      newPackagesListPaths[
-        /** @type {keyof typeof newPackagesListPaths} */ (ecosystem)
-      ];
+  const ecosystem = getEcoSystem();
+  const baseUrl = getMalwareListBaseUrl();
+  const newPackagesListPaths = getNewPackagesListPaths();
+  const path =
+    newPackagesListPaths[
+      /** @type {keyof typeof newPackagesListPaths} */ (ecosystem)
+    ];
 
-    if (!path) {
-      return undefined;
-    }
+  if (!path) {
+    return undefined;
+  }
 
-    return `${baseUrl}/${path}`;
+  return `${baseUrl}/${path}`;
 }
 
 function getNewPackagesListPaths() {
-    const baseUrl = getMalwareListBaseUrl();
-    const isDefaultMalwareList = baseUrl === defaultMalwareListBaseUrl;
+  const baseUrl = getMalwareListBaseUrl();
+  const isDefaultMalwareList = baseUrl === defaultMalwareListBaseUrl;
 
-    if (!isDefaultMalwareList) {
-      // This uses the default npm.json and pypi.json
-      // And not the newer npm_48h.json and pypi_48h.json, as it would break compatibility with mirrors.
-      return newPackagesListPathsLongDuration;
-    }
+  if (!isDefaultMalwareList) {
+    // This uses the default npm.json and pypi.json
+    // And not the newer npm_48h.json and pypi_48h.json, as it would break compatibility with mirrors.
+    return newPackagesListPathsLongDuration;
+  }
 
-    if (getMinimumPackageAgeHours() > 48) {
-      return newPackagesListPathsLongDuration;
-    }
+  if (getMinimumPackageAgeHours() > 48) {
+    return newPackagesListPathsLongDuration;
+  }
 
-    return newPackagesListPathsDefault;
+  return newPackagesListPathsDefault;
+}
+
+function getRefererHeader() {
+  const version = getVersion();
+  return `https://safe-chain.${version}.aikido.dev`;
 }
