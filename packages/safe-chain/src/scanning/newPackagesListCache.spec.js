@@ -24,6 +24,7 @@ mock.module("../config/settings.js", {
     ECOSYSTEM_JS: "js",
     ECOSYSTEM_PY: "py",
     defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
+    getVersion: () => "0.0.0",
   },
 });
 
