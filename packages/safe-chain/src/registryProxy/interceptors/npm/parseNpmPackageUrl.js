@@ -1,3 +1,5 @@
+import { canonicalizeHost, canonicalizeRegistry } from "./canonicalizeHost.js";
+
 /**
  * @param {string} url
  * @param {string} registry
@@ -19,8 +21,10 @@ export function parseNpmPackageUrl(url, registry) {
     return { packageName, version };
   }
 
-  const registryPrefix = `${registry}/`;
-  const urlAfterProtocol = `${parsedUrl.host}${pathname}`;
+  // Canonicalize the registry and request hosts so trailing-dot / mixed-case
+  // hostnames cannot bypass the comparison.
+  const registryPrefix = `${canonicalizeRegistry(registry)}/`;
+  const urlAfterProtocol = `${canonicalizeHost(parsedUrl.host)}${pathname}`;
   if (!urlAfterProtocol.startsWith(registryPrefix)) {
     return { packageName, version };
   }

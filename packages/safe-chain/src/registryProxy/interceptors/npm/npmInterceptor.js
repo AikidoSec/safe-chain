@@ -11,6 +11,10 @@ import {
   modifyNpmInfoResponse,
 } from "./modifyNpmInfo.js";
 import { parseNpmPackageUrl } from "./parseNpmPackageUrl.js";
+import {
+  canonicalizeHost,
+  canonicalizeRegistry,
+} from "./canonicalizeHost.js";
 import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
 import {
   isExcludedFromMinimumPackageAge,
@@ -27,8 +31,19 @@ const knownJsRegistries = [
  * @returns {import("../interceptorBuilder.js").Interceptor | undefined}
  */
 export function npmInterceptorForUrl(url) {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return undefined;
+  }
+
+  // Canonicalize the request host (lowercase, strip trailing dots) so that
+  // hostname variations cannot be used to evade registry detection.
+  const requestPrefix = `${canonicalizeHost(parsedUrl.host)}${parsedUrl.pathname}`;
+
   const registry = [...knownJsRegistries, ...getNpmCustomRegistries()].find(
-    (reg) => url.includes(reg)
+    (reg) => requestPrefix.startsWith(`${canonicalizeRegistry(reg)}/`)
   );
 
   if (registry) {
