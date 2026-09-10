@@ -66,7 +66,7 @@ export function mergeSafeChainProxyEnvironmentVariables(env) {
     // So we only copy the variable if it's not already set in a different case
     const upperKey = key.toUpperCase();
 
-    if (!proxyEnv[upperKey] && env[key]) {
+    if (!(upperKey in proxyEnv) && env[key] !== undefined) {
       proxyEnv[key] = env[key];
     }
   }
