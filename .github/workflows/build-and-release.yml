@@ -31,6 +31,8 @@ jobs:
     uses: ./.github/workflows/create-artifact.yml
     with:
       version: ${{ needs.set-version.outputs.version }}
+      enable_signing: true
+    secrets: inherit
 
   publish-binaries:
     name: Publish to GitHub release
@@ -57,8 +59,9 @@ jobs:
           mv binaries/safe-chain-linux-arm64/safe-chain release-artifacts/safe-chain-linux-arm64
           mv binaries/safe-chain-linuxstatic-x64/safe-chain release-artifacts/safe-chain-linuxstatic-x64
           mv binaries/safe-chain-linuxstatic-arm64/safe-chain release-artifacts/safe-chain-linuxstatic-arm64
-          mv binaries/safe-chain-win-x64/safe-chain.exe release-artifacts/safe-chain-win-x64.exe
-          mv binaries/safe-chain-win-arm64/safe-chain.exe release-artifacts/safe-chain-win-arm64.exe
+          # The -signed artifacts replace the unsigned ones built by the matrix.
+          mv binaries/safe-chain-win-x64-signed/safe-chain.exe release-artifacts/safe-chain-win-x64.exe
+          mv binaries/safe-chain-win-arm64-signed/safe-chain.exe release-artifacts/safe-chain-win-arm64.exe
 
       - name: Move install scripts and hard-code version and checksums
         env:

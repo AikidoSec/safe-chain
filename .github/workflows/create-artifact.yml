@@ -1,5 +1,11 @@
 name: Create binaries
 
+# SECURITY: Windows signing is gated by the enable_signing input (default: false).
+# Only build-and-release.yml sets enable_signing: true. Pull requests leave it at
+# the default, so no PR run can reach the Azure Key Vault signing credentials or
+# get an arbitrary binary signed with the company certificate. Unsigned binaries
+# are still produced for testing.
+
 on:
   pull_request:
   workflow_call:
@@ -8,6 +14,11 @@ on:
         description: "Version to set in package.json"
         required: false
         type: string
+      enable_signing:
+        description: "Sign the Windows binaries with the production certificate"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   create-binaries:
@@ -92,3 +103,49 @@ jobs:
         with:
           name: safe-chain-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*
+
+  # Both architectures are signed on the x64 runner because Authenticode does not
+  # care about the target architecture of the binary it signs.
+  sign-windows:
+    name: Sign binary for win-${{ matrix.arch }}
+    needs: create-binaries
+    # Only sign when the caller explicitly opts in (build-and-release.yml). On a
+    # pull_request event `inputs` is undefined, so this is false and the job is
+    # skipped, keeping the signing credentials out of every PR run.
+    if: ${{ inputs.enable_signing == true }}
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+
+    steps:
+      - name: Download unsigned binary
+        uses: actions/download-artifact@v4
+        with:
+          name: safe-chain-win-${{ matrix.arch }}
+          path: dist
+
+      - name: Sign Windows binary
+        shell: bash
+        run: |
+          dotnet tool install --global AzureSignTool --version 6.0.1
+          AzureSignTool sign -kvu "${{ secrets.AZURE_KEY_VAULT_URI }}" -kvi "${{ secrets.AZURE_CLIENT_ID }}" -kvt "${{ secrets.AZURE_TENANT_ID }}" -kvs "${{ secrets.AZURE_CLIENT_SECRET }}" -kvc "${{ secrets.AZURE_CERT_NAME }}" -tr http://timestamp.globalsign.com/tsa/advanced -v "dist/safe-chain.exe"
+
+      - name: Verify Authenticode signature
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $sig = Get-AuthenticodeSignature "dist/safe-chain.exe"
+          if ($sig.Status -ne "Valid") {
+            throw "Signature is $($sig.Status): $($sig.StatusMessage)"
+          }
+          Write-Host "Signed by $($sig.SignerCertificate.Subject)"
+
+      - name: Upload signed binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: safe-chain-win-${{ matrix.arch }}-signed
+          if-no-files-found: error
+          path: dist/safe-chain.exe
