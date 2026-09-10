@@ -6,10 +6,10 @@ const endMarker = `${escapeChar}[?2004h`;
 // This module removes control characters and escape sequences from shell output.
 // So it is allowed to use control characters in the regex patterns here.
 
-export function parseShellOutput(rawData) {
+export function parseShellOutput(rawData, sentinel) {
   const stringData = rawData.join("");
 
-  let output = getDataBetweenStartAndEndMarkers(stringData);
+  let output = getCommandOutput(stringData, sentinel);
   output = processBackspaces(output);
   output = processEraseCommands(output);
   output = removeOscSequences(output);
@@ -19,19 +19,33 @@ export function parseShellOutput(rawData) {
   return output.trim();
 }
 
-function getDataBetweenStartAndEndMarkers(data) {
-  if (!data.includes(startMarker) || !data.includes(endMarker)) {
+function getCommandOutput(data, sentinel) {
+  const sentinelIndex = sentinel ? data.indexOf(sentinel) : -1;
+  const scope = sentinelIndex === -1 ? data : data.slice(0, sentinelIndex);
+  const accepted = [];
+
+  for (
+    let index = scope.indexOf(startMarker);
+    index !== -1;
+    index = scope.indexOf(startMarker, index + startMarker.length)
+  ) {
+    accepted.push(index + startMarker.length);
+  }
+
+  if (accepted.length === 0) {
     return data;
   }
 
-  const startIndex = data.indexOf(startMarker);
-  const endIndex = data.indexOf(endMarker, startIndex + startMarker.length);
+  // The shell echoes every line back before accepting it, so output only starts
+  // at the last line it accepted. That is the line echoing the sentinel, or the
+  // command's own last line when the command timed out before we sent it. Taking
+  // the last prompt as the end keeps output that a mid-command prompt redraw
+  // would otherwise cut short.
+  const skip = sentinelIndex === -1 ? 1 : 2;
+  const from = accepted[Math.max(0, accepted.length - skip)];
+  const to = scope.lastIndexOf(endMarker);
 
-  if (startIndex === -1 || endIndex === -1) {
-    return "";
-  }
-
-  return data.slice(startIndex + startMarker.length, endIndex);
+  return to > from ? scope.slice(from, to) : scope.slice(from);
 }
 
 function processBackspaces(data) {
