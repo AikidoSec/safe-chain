@@ -6,24 +6,79 @@
 export function parsePackagesFromArguments(args) {
   let defaultTag = "latest";
 
+  // Packages explicitly requested via --package / -p. npx allows this flag to be
+  // specified multiple times, so every occurrence must be collected and scanned.
+  const explicitPackages = [];
+  // The first positional (non-option) argument, used only as a fallback when no
+  // explicit --package flag is present.
+  let positionalPackage = undefined;
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const option = getOption(arg);
 
     if (option) {
-      // If the option has a parameter, skip the next argument as well
-      i += option.numberOfParameters;
+      // --package=x is handled by parsePackagename below; other options may
+      // consume a following parameter that must be skipped.
+      if (!isPackageOption(arg)) {
+        i += option.numberOfParameters;
+        continue;
+      }
+    }
 
+    if (isPackageFlag(arg)) {
+      // "--package x" / "-p x" form: the package name is the next argument.
+      const next = args[i + 1];
+      if (next !== undefined) {
+        const packageDetails = parsePackagename(next, defaultTag);
+        if (packageDetails) {
+          explicitPackages.push(packageDetails);
+        }
+        i += 1;
+      }
+      continue;
+    }
+
+    if (arg.startsWith("--package=")) {
+      // "--package=x" form.
+      const packageDetails = parsePackagename(arg, defaultTag);
+      if (packageDetails) {
+        explicitPackages.push(packageDetails);
+      }
       continue;
     }
 
     const packageDetails = parsePackagename(arg, defaultTag);
-    if (packageDetails) {
-      return [packageDetails];
+    if (packageDetails && positionalPackage === undefined) {
+      positionalPackage = packageDetails;
     }
   }
 
+  if (explicitPackages.length > 0) {
+    return explicitPackages;
+  }
+
+  if (positionalPackage !== undefined) {
+    return [positionalPackage];
+  }
+
   return [];
+}
+
+/**
+ * @param {string} arg
+ * @returns {boolean}
+ */
+function isPackageFlag(arg) {
+  return arg === "--package" || arg === "-p";
+}
+
+/**
+ * @param {string} arg
+ * @returns {boolean}
+ */
+function isPackageOption(arg) {
+  return isPackageFlag(arg) || arg.startsWith("--package=");
 }
 
 /**
