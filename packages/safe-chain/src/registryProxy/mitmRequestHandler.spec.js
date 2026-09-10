@@ -56,6 +56,12 @@ describe("mitmRequestHandler", async () => {
     },
   });
 
+  mock.module("./certBundle.js", {
+    namedExports: {
+      getCombinedCaCertificates: () => ["SYSTEM-STORE-CA-PEM"],
+    },
+  });
+
   mock.module("https-proxy-agent", {
     namedExports: {
       HttpsProxyAgent: class {},
@@ -128,6 +134,11 @@ describe("mitmRequestHandler", async () => {
     await capturedHandler(request, res);
 
     assert.equal(capturedOptions.hostname, "pypi.org");
+    // The upstream request must trust the combined CA store (Node roots +
+    // certifi + OS system store + NODE_EXTRA_CA_CERTS) so OS-installed
+    // self-signed registries validate instead of returning Bad Gateway (#270).
+    assert.ok(Array.isArray(capturedOptions.ca), "upstream request passes a ca array");
+    assert.ok(capturedOptions.ca.length > 0, "ca array is non-empty");
     assert.equal(resState.statusCode, 200);
     assert.equal(resState.headers["transfer-encoding"], undefined);
     assert.equal(
