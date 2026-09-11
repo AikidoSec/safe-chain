@@ -149,6 +149,32 @@ The Aikido Safe Chain integrates with your shell to provide a seamless experienc
 
 More information about the shell integration can be found in the [shell integration documentation](https://github.com/AikidoSec/safe-chain/blob/main/docs/shell-integration.md).
 
+### Usage with AI coding agents
+
+AI coding agents such as Claude Code, Codex, and Cursor commonly run package managers in non-interactive subprocesses. These subprocesses do not always source `.bashrc`, `.zshrc`, or other shell startup files, so the functions created by `safe-chain setup` may not be available even when Safe Chain works in your interactive terminal.
+
+Create executable package-manager shims for agent and subprocess use:
+
+```shell
+safe-chain setup-ci
+export PATH="$HOME/.safe-chain/shims:$HOME/.safe-chain/bin:$PATH"
+```
+
+Start the agent from a shell with that `PATH`, or configure the agent environment to prepend those directories. Then verify that the shim is selected and Safe Chain is active:
+
+```shell
+command -v npm
+# Expected: ~/.safe-chain/shims/npm
+
+npm safe-chain-verify
+# Expected: OK: Safe-chain works!
+```
+
+Safe Chain starts a local proxy on `127.0.0.1` using an ephemeral port when a package-manager command needs registry access. If the agent runs in a sandbox, allow the process to bind and connect to loopback (`127.0.0.1` or `localhost`). Loopback access is required for the package manager to reach Safe Chain's proxy; disabling the sandbox is not required. The proxy binds only to loopback and is not exposed to the local network.
+
+> [!IMPORTANT]
+> Agents must invoke package managers by name, such as `npm`, `uv`, or `pip`. Absolute paths such as `/usr/bin/npm` bypass both shell functions and `PATH` shims.
+
 ## Uninstallation
 
 To uninstall the Aikido Safe Chain, use our one-line uninstaller:
