@@ -12,15 +12,15 @@
 set -e  # Exit on error
 
 # Configuration
-BASE_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.9.4"
+BASE_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.9.1"
 
 # Checksums per artifact, keyed by asset name
-SHA256_AMD64_DEB="24cb569568ef12ca579019fa6a98a46c95a0c265baf4fdbe1a7cea52e6e441d3"
-SHA256_ARM64_DEB="eb00bfdb49b643ece1d6f516f67f76064191fbafbe5cc5dcaa376adfdb002f71"
-SHA256_AMD64_EL9_RPM="4ed35bcd884ca48b7bc792bde844f561edfa7fdf3596d400204f6fec66cc5e5e"
-SHA256_ARM64_EL9_RPM="fbfeb2605a542ced7b2d4e27accfecb380fae5cf75eb8eb80586bee697452b6a"
-SHA256_AMD64_EL10_RPM="dc1bd640d8a5f4aeaea10486b21c71e5f45bac85aa88d28e9ea4ea38c21b25ed"
-SHA256_ARM64_EL10_RPM="f74ef8f78ced5cc4e36d8b581379ef2871a31ad7740cf51e471a7ce152eae52c"
+SHA256_AMD64_DEB="3b3c7638d7d2d08a8aaa0d9e04441b2f8223b81eb9ba8b8c87fb6ec9e82108cb"
+SHA256_ARM64_DEB="e7f0ce16ab180ceba2cc0fb23133a8c10c40b14ed56281d8364264abeca3850d"
+SHA256_AMD64_EL9_RPM="7df52de848ba93a6832daf72e2dfd512b73a1de63cf5e3aba02b54f183d4a331"
+SHA256_ARM64_EL9_RPM="abbebf5cb0000a0f7a93dfd8ab5a20be8a53417c11ce5f309541dae7108d1e4e"
+SHA256_AMD64_EL10_RPM="28d12d0e7d90529e87cf003175ae086de4da1510f92585a51b2db6dcb6a47c9a"
+SHA256_ARM64_EL10_RPM="0c4670e3f98c589257c7fa45c0d5cdaeb3f1d2f89dafd5ad2e5a91aaa50657e7"
 
 # Colors for output
 RED='\033[0;31m'
