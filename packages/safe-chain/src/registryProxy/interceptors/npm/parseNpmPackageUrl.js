@@ -1,4 +1,29 @@
 /**
+ * Normalizes a bare host segment so equivalent hosts compare equal:
+ * lowercases it and strips a single trailing dot (the DNS FQDN notation).
+ * @param {string} host
+ * @returns {string}
+ */
+function normalizeHost(host) {
+  const lower = host.toLowerCase();
+  return lower.endsWith(".") ? lower.slice(0, -1) : lower;
+}
+
+/**
+ * Normalizes only the host segment of a registry (before its first `/`, if
+ * any), leaving any path-prefix portion untouched since paths are
+ * case-sensitive.
+ * @param {string} registry
+ * @returns {string}
+ */
+function normalizeRegistry(registry) {
+  const slashIndex = registry.indexOf("/");
+  const host = slashIndex === -1 ? registry : registry.substring(0, slashIndex);
+  const rest = slashIndex === -1 ? "" : registry.substring(slashIndex);
+  return `${normalizeHost(host)}${rest}`;
+}
+
+/**
  * @param {string} url
  * @param {string} registry
  * @returns {{packageName: string | undefined, version: string | undefined}}
@@ -19,8 +44,10 @@ export function parseNpmPackageUrl(url, registry) {
     return { packageName, version };
   }
 
-  const registryPrefix = `${registry}/`;
-  const urlAfterProtocol = `${parsedUrl.host}${pathname}`;
+  const registryPrefix = `${normalizeRegistry(registry)}/`;
+  const hostname = normalizeHost(parsedUrl.hostname);
+  const host = parsedUrl.port ? `${hostname}:${parsedUrl.port}` : hostname;
+  const urlAfterProtocol = `${host}${pathname}`;
   if (!urlAfterProtocol.startsWith(registryPrefix)) {
     return { packageName, version };
   }
