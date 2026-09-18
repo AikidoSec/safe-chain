@@ -463,6 +463,25 @@ export function getNewPackagesListVersionPath() {
 }
 
 /**
+ * Unlike the new packages list, the safe patches list is not ecosystem-partitioned
+ * upstream (one `safe_patches.json` covers every ecosystem), so its cache file is
+ * shared across ecosystems too, rather than suffixed with `_${ecosystem}`.
+ * @returns {string}
+ */
+export function getSafePatchesListPath() {
+  const safeChainDir = getSafeChainDirectory();
+  return path.join(safeChainDir, "safePatchesList.json");
+}
+
+/**
+ * @returns {string}
+ */
+export function getSafePatchesListVersionPath() {
+  const safeChainDir = getSafeChainDirectory();
+  return path.join(safeChainDir, "safePatchesList_version.txt");
+}
+
+/**
  * @returns {string}
  */
 function getConfigFilePath() {

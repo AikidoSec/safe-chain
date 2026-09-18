@@ -44,6 +44,13 @@ const DEFAULT_FETCH_RETRY_ATTEMPTS = 4;
  */
 
 /**
+ * @typedef {Object} SafePatchEntry
+ * @property {string} package_name
+ * @property {string} version
+ * @property {string} [ecosystem]
+ */
+
+/**
  * @returns {Promise<{malwareDatabase: MalwarePackage[], version: string | undefined}>}
  */
 export async function fetchMalwareDatabase() {
@@ -162,6 +169,63 @@ export async function fetchNewPackagesListVersion() {
 }
 
 /**
+ * @returns {Promise<{safePatchesList: SafePatchEntry[], version: string | undefined}>}
+ */
+export async function fetchSafePatchesList() {
+  return retry(async () => {
+    const url = getSafePatchesListUrl();
+
+    if (!url) {
+      return { safePatchesList: [], version: undefined };
+    }
+
+    const response = await fetch(url, {
+      headers: { Referer: getRefererHeader() },
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Error fetching safe patches list: ${response.statusText}`,
+      );
+    }
+
+    try {
+      const safePatchesList = await response.json();
+      return {
+        safePatchesList,
+        version: response.headers.get("etag") || undefined,
+      };
+    } catch (/** @type {any} */ error) {
+      throw new Error(`Error parsing safe patches list: ${error.message}`);
+    }
+  }, DEFAULT_FETCH_RETRY_ATTEMPTS);
+}
+
+/**
+ * @returns {Promise<string | undefined>}
+ */
+export async function fetchSafePatchesListVersion() {
+  return retry(async () => {
+    const url = getSafePatchesListUrl();
+
+    if (!url) {
+      return undefined;
+    }
+
+    const response = await fetch(url, {
+      method: "HEAD",
+      headers: { Referer: getRefererHeader() },
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Error fetching safe patches list version: ${response.statusText}`,
+      );
+    }
+
+    return response.headers.get("etag") || undefined;
+  }, DEFAULT_FETCH_RETRY_ATTEMPTS);
+}
+
+/**
  * Retries an asynchronous function multiple times until it succeeds or exhausts all attempts.
  *
  * @template T
@@ -212,6 +276,19 @@ function getNewPackagesListUrl() {
   }
 
   return `${baseUrl}/${path}`;
+}
+
+function getSafePatchesListUrl() {
+  const baseUrl = getMalwareListBaseUrl();
+  const isDefaultMalwareList = baseUrl === defaultMalwareListBaseUrl;
+
+  if (!isDefaultMalwareList) {
+    // Mirrors are not guaranteed to carry this file; treat it as unavailable
+    // rather than retrying against a URL that will never succeed.
+    return undefined;
+  }
+
+  return `${baseUrl}/safe_patches.json`;
 }
 
 function getNewPackagesListPaths() {

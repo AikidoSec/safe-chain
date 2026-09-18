@@ -7,6 +7,7 @@ import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
 import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 import { getHasSuppressedVersions } from "./interceptors/suppressedVersionsState.js";
+import { openSafePatchesDatabase } from "../scanning/safePatchesListCache.js";
 
 const SERVER_STOP_TIMEOUT_MS = 1000;
 /**
@@ -94,6 +95,8 @@ function createProxyServer() {
  * @returns {Promise<void>}
  */
 function startServer(server) {
+  void openSafePatchesDatabase();
+
   return new Promise((resolve, reject) => {
     // Bind to loopback only. Without an explicit host, Node listens on every
     // interface, turning the proxy into an unauthenticated forward proxy that

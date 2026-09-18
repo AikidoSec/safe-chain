@@ -6,6 +6,7 @@ describe("npmInterceptor minimum package age", async () => {
   let skipMinimumPackageAgeSetting = false;
   let minimumPackageAgeExclusionsSetting = [];
   let newlyReleasedPackages = new Set();
+  let safePatchedPackages = new Set();
 
   mock.module("../../../config/settings.js", {
     namedExports: {
@@ -23,6 +24,14 @@ describe("npmInterceptor minimum package age", async () => {
       openNewPackagesDatabase: async () => ({
         isNewlyReleasedPackage: (name, version) =>
           newlyReleasedPackages.has(`${name}@${version}`),
+      }),
+    },
+  });
+  mock.module("../../../scanning/safePatchesListCache.js", {
+    namedExports: {
+      openSafePatchesDatabase: async () => ({
+        isSafePatch: (name, version) =>
+          safePatchedPackages.has(`${name}@${version}`),
       }),
     },
   });
@@ -640,11 +649,86 @@ describe("npmInterceptor minimum package age", async () => {
     assert.ok(Object.keys(modifiedJson.versions).includes("1.0.0"));
   });
 
+  it("Should not remove a version confirmed as a safe patch from metadata responses", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = [];
+    safePatchedPackages = new Set(["proxy-addr@2.0.8"]);
+
+    const packageUrl = "https://registry.npmjs.org/proxy-addr";
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      JSON.stringify({
+        name: "proxy-addr",
+        ["dist-tags"]: { latest: "2.0.8" },
+        versions: { ["2.0.7"]: {}, ["2.0.8"]: {} },
+        time: {
+          created: getDate(-365 * 24),
+          modified: getDate(-1),
+          ["2.0.7"]: getDate(-100),
+          ["2.0.8"]: getDate(-1), // Would normally be filtered, but is a confirmed safe patch
+        },
+      })
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    assert.equal(Object.keys(modifiedJson.versions).length, 2);
+    assert.ok(Object.keys(modifiedJson.versions).includes("2.0.8"));
+    assert.equal(modifiedJson["dist-tags"]["latest"], "2.0.8");
+  });
+
+  it("Should still filter a version that is not the exact safe-patched version", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    minimumPackageAgeExclusionsSetting = [];
+    safePatchedPackages = new Set(["proxy-addr@2.0.8"]);
+
+    const packageUrl = "https://registry.npmjs.org/proxy-addr";
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      JSON.stringify({
+        name: "proxy-addr",
+        ["dist-tags"]: { latest: "2.0.9" },
+        versions: { ["2.0.7"]: {}, ["2.0.9"]: {} },
+        time: {
+          created: getDate(-365 * 24),
+          modified: getDate(-1),
+          ["2.0.7"]: getDate(-100),
+          ["2.0.9"]: getDate(-1), // Not the safe-patched version, should still be filtered
+        },
+      })
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    assert.equal(Object.keys(modifiedJson.versions).length, 1);
+    assert.ok(!Object.keys(modifiedJson.versions).includes("2.0.9"));
+  });
+
+  it("Should not directly block tarball requests for a confirmed safe patch", async () => {
+    minimumPackageAgeSettings = 5;
+    skipMinimumPackageAgeSetting = false;
+    newlyReleasedPackages = new Set(["proxy-addr@2.0.8"]);
+    safePatchedPackages = new Set(["proxy-addr@2.0.8"]);
+    const packageUrl =
+      "https://registry.npmjs.org/proxy-addr/-/proxy-addr-2.0.8.tgz";
+
+    const interceptor = npmInterceptorForUrl(packageUrl);
+    const requestHandler = await interceptor.handleRequest(packageUrl);
+
+    assert.equal(requestHandler.blockResponse, undefined);
+    assert.equal(requestHandler.modifiesResponse(), false);
+  });
+
   it("Should reset exclusions between tests", async () => {
     minimumPackageAgeSettings = 5;
     skipMinimumPackageAgeSetting = false;
     minimumPackageAgeExclusionsSetting = []; // Reset to empty
     newlyReleasedPackages = new Set();
+    safePatchedPackages = new Set();
 
     const packageUrl = "https://registry.npmjs.org/lodash";
 

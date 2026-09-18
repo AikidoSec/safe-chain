@@ -5,15 +5,21 @@ describe("pipInterceptor custom registries", async () => {
   let scannedPackages;
   let malwareResponse = false;
   let customRegistries = [];
+  let newlyReleasedPackages = new Set();
+  let safePatchedPackages = new Set();
 
   mock.module("../../../config/settings.js", {
     namedExports: {
+      ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",
       getLoggingLevel: () => "silent",
       getMinimumPackageAgeHours: () => 48,
       getMinimumPackageAgeExclusions: () => [],
       getPipCustomRegistries: () => customRegistries,
+      getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
+      defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
+      getVersion: () => "0.0.0",
       LOGGING_SILENT: "silent",
       LOGGING_VERBOSE: "verbose",
       LOG_FILE_FORMAT_JSON: "json",
@@ -28,7 +34,17 @@ describe("pipInterceptor custom registries", async () => {
   mock.module("../../../scanning/newPackagesListCache.js", {
     namedExports: {
       openNewPackagesDatabase: async () => ({
-        isNewlyReleasedPackage: () => false,
+        isNewlyReleasedPackage: (name, version) =>
+          newlyReleasedPackages.has(`${name}@${version}`),
+      }),
+    },
+  });
+
+  mock.module("../../../scanning/safePatchesListCache.js", {
+    namedExports: {
+      openSafePatchesDatabase: async () => ({
+        isSafePatch: (name, version) =>
+          safePatchedPackages.has(`${name}@${version}`),
       }),
     },
   });
@@ -206,5 +222,34 @@ describe("pipInterceptor custom registries", async () => {
           packageName === "foo-bar" && version === "2.0.0"
       )
     );
+  });
+
+  it("should still block a direct download from a custom registry even when the same name+version is a confirmed safe patch on the public registry", async () => {
+    // A custom/private registry can serve a completely different, unvetted
+    // artifact under the same coordinates as a package Aikido confirmed safe
+    // on the public registry. The safe patch exemption must not follow it there.
+    scannedPackages = [];
+    customRegistries = ["private-pypi.internal.com"];
+    malwareResponse = false;
+    newlyReleasedPackages = new Set(["foo-bar@2.0.0"]);
+    safePatchedPackages = new Set(["foo-bar@2.0.0"]);
+
+    const url =
+      "https://private-pypi.internal.com/packages/foo-bar-2.0.0.tar.gz";
+
+    const interceptor = pipInterceptorForUrl(url);
+    assert.ok(interceptor);
+
+    const result = await interceptor.handleRequest(url);
+
+    assert.ok(result.blockResponse);
+    assert.equal(result.blockResponse.statusCode, 403);
+    assert.equal(
+      result.blockResponse.message,
+      "Forbidden - blocked by safe-chain direct download minimum package age (foo-bar@2.0.0)"
+    );
+
+    newlyReleasedPackages = new Set();
+    safePatchedPackages = new Set();
   });
 });
