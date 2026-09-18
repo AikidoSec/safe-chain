@@ -1,9 +1,9 @@
 import {
-  getMinimumPackageAgeHours,
   getEcoSystem,
   ECOSYSTEM_JS,
   ECOSYSTEM_PY,
 } from "../config/settings.js";
+import { getMinimumPackageAgeCutoff } from "./minimumPackageAgeCutoff.js";
 import { getVersionsEqual } from "./audit/getVersionsEqual.js";
 import { normalizePipPackageName } from "./packageNameVariants.js";
 
@@ -83,9 +83,7 @@ export function buildNewPackagesDatabase(newPackagesList) {
       return false;
     }
 
-    const cutOff = new Date(
-      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000,
-    );
+    const cutOff = getMinimumPackageAgeCutoff();
 
     const entries = entriesByName.get(toLookupKey(name));
     if (entries) {

@@ -4,6 +4,7 @@ import assert from "node:assert";
 describe("aikido API", async () => {
   const mockFetch = mock.fn();
   let ecosystem = "js";
+  let malwareListBaseUrl = "https://malware-list.aikido.dev";
 
   mock.module("make-fetch-happen", {
     defaultExport: mockFetch,
@@ -25,7 +26,7 @@ describe("aikido API", async () => {
       getEcoSystem: () => ecosystem,
       ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
-      getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
+      getMalwareListBaseUrl: () => malwareListBaseUrl,
       defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
       getMinimumPackageAgeHours: mockMinimumPackageAgeSetting,
       getVersion: () => "0.0.0",
@@ -37,11 +38,14 @@ describe("aikido API", async () => {
     fetchMalwareDatabaseVersion,
     fetchNewPackagesList,
     fetchNewPackagesListVersion,
+    fetchSafePatchesList,
+    fetchSafePatchesListVersion,
   } = await import("./aikido.js");
 
   beforeEach(() => {
     mockFetch.mock.resetCalls();
     ecosystem = "js";
+    malwareListBaseUrl = "https://malware-list.aikido.dev";
   });
 
   describe("fetchMalwareDatabase", () => {
@@ -261,6 +265,96 @@ describe("aikido API", async () => {
       });
 
       assert.strictEqual(mockFetch.mock.calls.length, 4);
+    });
+  });
+
+  describe("fetchSafePatchesList", () => {
+    it("should succeed immediately when fetch succeeds on first try", async () => {
+      const safePatches = [
+        { package_name: "proxy-addr", version: "2.0.8", ecosystem: "npm" },
+      ];
+      mockFetch.mock.mockImplementationOnce(() => ({
+        ok: true,
+        json: async () => safePatches,
+        headers: { get: () => '"etag-safe-patches"' },
+      }));
+
+      const result = await fetchSafePatchesList();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 1);
+      assert.strictEqual(
+        mockFetch.mock.calls[0].arguments[0],
+        "https://malware-list.aikido.dev/safe_patches.json"
+      );
+      assert.deepStrictEqual(result.safePatchesList, safePatches);
+      assert.strictEqual(result.version, '"etag-safe-patches"');
+    });
+
+    it("should throw error after exhausting all retries", async () => {
+      mockFetch.mock.mockImplementation(() => {
+        throw new Error("Network error");
+      });
+
+      await assert.rejects(() => fetchSafePatchesList(), {
+        message: "Network error",
+      });
+
+      assert.strictEqual(mockFetch.mock.calls.length, 4);
+    });
+
+    it("should return an empty list without fetching when using a mirror malware list base URL", async () => {
+      malwareListBaseUrl = "https://mirror.example.com";
+
+      const result = await fetchSafePatchesList();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 0);
+      assert.deepStrictEqual(result.safePatchesList, []);
+      assert.strictEqual(result.version, undefined);
+    });
+  });
+
+  describe("fetchSafePatchesListVersion", () => {
+    it("should succeed immediately when fetch succeeds on first try", async () => {
+      mockFetch.mock.mockImplementationOnce(() => ({
+        ok: true,
+        headers: { get: () => '"safe-patches-etag"' },
+      }));
+
+      const result = await fetchSafePatchesListVersion();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 1);
+      assert.strictEqual(
+        mockFetch.mock.calls[0].arguments[0],
+        "https://malware-list.aikido.dev/safe_patches.json"
+      );
+      assert.deepStrictEqual(mockFetch.mock.calls[0].arguments[1], {
+        method: "HEAD",
+        headers: {
+          Referer: 'https://safe-chain.0.0.0.aikido.dev',
+        }
+      });
+      assert.strictEqual(result, '"safe-patches-etag"');
+    });
+
+    it("should throw error after exhausting all retries", async () => {
+      mockFetch.mock.mockImplementation(() => {
+        throw new Error("Connection refused");
+      });
+
+      await assert.rejects(() => fetchSafePatchesListVersion(), {
+        message: "Connection refused",
+      });
+
+      assert.strictEqual(mockFetch.mock.calls.length, 4);
+    });
+
+    it("should return undefined without fetching when using a mirror malware list base URL", async () => {
+      malwareListBaseUrl = "https://mirror.example.com";
+
+      const result = await fetchSafePatchesListVersion();
+
+      assert.strictEqual(mockFetch.mock.calls.length, 0);
+      assert.strictEqual(result, undefined);
     });
   });
 });

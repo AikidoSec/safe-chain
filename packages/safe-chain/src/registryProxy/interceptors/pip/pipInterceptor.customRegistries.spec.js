@@ -8,12 +8,16 @@ describe("pipInterceptor custom registries", async () => {
 
   mock.module("../../../config/settings.js", {
     namedExports: {
+      ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",
       getLoggingLevel: () => "silent",
       getMinimumPackageAgeHours: () => 48,
       getMinimumPackageAgeExclusions: () => [],
       getPipCustomRegistries: () => customRegistries,
+      getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
+      defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
+      getVersion: () => "0.0.0",
       LOGGING_SILENT: "silent",
       LOGGING_VERBOSE: "verbose",
       LOG_FILE_FORMAT_JSON: "json",
@@ -29,6 +33,14 @@ describe("pipInterceptor custom registries", async () => {
     namedExports: {
       openNewPackagesDatabase: async () => ({
         isNewlyReleasedPackage: () => false,
+      }),
+    },
+  });
+
+  mock.module("../../../scanning/safePatchesListCache.js", {
+    namedExports: {
+      openSafePatchesDatabase: async () => ({
+        isSafePatch: () => false,
       }),
     },
   });

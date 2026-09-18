@@ -5,9 +5,8 @@ import {
 } from "../../../config/settings.js";
 import { isMalwarePackage } from "../../../scanning/audit/index.js";
 import { getEquivalentPackageNames } from "../../../scanning/packageNameVariants.js";
-import { openNewPackagesDatabase } from "../../../scanning/newPackagesListCache.js";
 import { interceptRequests } from "../interceptorBuilder.js";
-import { isExcludedFromMinimumPackageAge } from "../minimumPackageAgeExclusions.js";
+import { openMinimumPackageAgeChecker } from "../minimumPackageAgeChecker.js";
 import {
   modifyPipInfoRequestHeaders,
   modifyPipInfoResponse,
@@ -68,23 +67,22 @@ function createPipRequestHandler(registry) {
       }
     }
 
-    if (
-      minimumAgeChecksEnabled &&
-      metadataPackageName &&
-      !isExcludedFromMinimumPackageAge(metadataPackageName)
-    ) {
-      const newPackagesDatabase = await openNewPackagesDatabase();
-      reqContext.modifyRequestHeaders(modifyPipInfoRequestHeaders);
-      reqContext.modifyBody((body, headers) =>
-        modifyPipInfoResponse(
-          body,
-          headers,
-          reqContext.targetUrl,
-          newPackagesDatabase.isNewlyReleasedPackage,
-          metadataPackageName
-        )
-      );
-      return;
+    if (minimumAgeChecksEnabled && metadataPackageName) {
+      const checker = await openMinimumPackageAgeChecker();
+
+      if (!checker.isPackageExempt(metadataPackageName)) {
+        reqContext.modifyRequestHeaders(modifyPipInfoRequestHeaders);
+        reqContext.modifyBody((body, headers) =>
+          modifyPipInfoResponse(
+            body,
+            headers,
+            reqContext.targetUrl,
+            checker.isTooNewByFeed,
+            metadataPackageName
+          )
+        );
+        return;
+      }
     }
 
     const { packageName, version } = parsePipPackageFromUrl(
@@ -113,18 +111,13 @@ function createPipRequestHandler(registry) {
       return;
     }
 
-    if (
-      version &&
-      minimumAgeChecksEnabled &&
-      !isExcludedFromMinimumPackageAge(packageName)
-    ) {
-      const newPackagesDatabase = await openNewPackagesDatabase();
-      const isNewlyReleased = newPackagesDatabase.isNewlyReleasedPackage(
-        packageName,
-        version
-      );
+    if (version && minimumAgeChecksEnabled) {
+      const checker = await openMinimumPackageAgeChecker();
 
-      if (isNewlyReleased) {
+      if (
+        !checker.isPackageExempt(packageName) &&
+        checker.isTooNewByFeed(packageName, version)
+      ) {
         reqContext.blockMinimumAgeRequest(
           packageName,
           version,
