@@ -12,9 +12,12 @@ import { ui } from "../../environment/userInteraction.js";
  * @property {function(string | undefined, string | undefined, string): boolean} isTooNewByReleaseDate
  */
 
+/** @type {import("../../scanning/safePatchesDatabaseBuilder.js").SafePatchesDatabase} */
+const NO_SAFE_PATCHES = { isSafePatch: () => false };
+
 /**
  * Centralizes the "is this version too new to install?" decision.
- * 
+ *
  * There are two independent sources of evidence for that decision, and both must
  * be kept:
  *
@@ -34,13 +37,26 @@ import { ui } from "../../environment/userInteraction.js";
  * (unmemoized) config file via `isExcludedFromMinimumPackageAge`, and a metadata
  * response can carry thousands of versions.
  *
- * @param {{ newPackagesDatabase: import("../../scanning/newPackagesDatabaseBuilder.js").NewPackagesDatabase, safePatchesDatabase: import("../../scanning/safePatchesDatabaseBuilder.js").SafePatchesDatabase }} databases
+ * `allowSafePatches` must be false for any registry that isn't one of the known
+ * public ones (registry.npmjs.org, pypi.org, etc). A safe patch entry only
+ * certifies the specific artifact Aikido inspected on the public registry - a
+ * custom/private registry can publish an unrelated, unvetted artifact under the
+ * exact same ecosystem+name+version, and matching on that tuple alone would
+ * wrongly exempt it too. When false, the safe patches database is never
+ * consulted, regardless of what is passed in.
+ *
+ * @param {{ newPackagesDatabase: import("../../scanning/newPackagesDatabaseBuilder.js").NewPackagesDatabase, safePatchesDatabase: import("../../scanning/safePatchesDatabaseBuilder.js").SafePatchesDatabase, allowSafePatches?: boolean }} databases
  * @returns {MinimumPackageAgeChecker}
  */
 export function createMinimumPackageAgeChecker({
   newPackagesDatabase,
   safePatchesDatabase,
+  allowSafePatches = true,
 }) {
+  const effectiveSafePatchesDatabase = allowSafePatches
+    ? safePatchesDatabase
+    : NO_SAFE_PATCHES;
+
   /**
    * @param {string | undefined} packageName
    * @returns {boolean}
@@ -61,7 +77,7 @@ export function createMinimumPackageAgeChecker({
       return false;
     }
 
-    if (safePatchesDatabase.isSafePatch(name, version)) {
+    if (effectiveSafePatchesDatabase.isSafePatch(name, version)) {
       logSafePatchExemption(name, version);
       return false;
     }
@@ -81,7 +97,7 @@ export function createMinimumPackageAgeChecker({
       return false;
     }
 
-    if (safePatchesDatabase.isSafePatch(name, version)) {
+    if (effectiveSafePatchesDatabase.isSafePatch(name, version)) {
       logSafePatchExemption(name, version);
       return false;
     }
@@ -103,16 +119,22 @@ function logSafePatchExemption(name, version) {
 }
 
 /**
+ * @param {{ allowSafePatches?: boolean }} [options]
  * @returns {Promise<MinimumPackageAgeChecker>}
  */
-export async function openMinimumPackageAgeChecker() {
+export async function openMinimumPackageAgeChecker({
+  allowSafePatches = true,
+} = {}) {
   const [newPackagesDatabase, safePatchesDatabase] = await Promise.all([
     openNewPackagesDatabase(),
-    openSafePatchesDatabase(),
+    // Skip the fetch entirely when this call site can never use it - e.g. a
+    // request routed to a custom/private registry.
+    allowSafePatches ? openSafePatchesDatabase() : Promise.resolve(NO_SAFE_PATCHES),
   ]);
 
   return createMinimumPackageAgeChecker({
     newPackagesDatabase,
     safePatchesDatabase,
+    allowSafePatches,
   });
 }

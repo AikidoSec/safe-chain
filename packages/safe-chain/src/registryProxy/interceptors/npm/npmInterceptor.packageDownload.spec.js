@@ -353,4 +353,30 @@ describe("npmInterceptor with custom registries", async () => {
       "Should not create interceptor for unknown registry"
     );
   });
+
+  it("should still block a direct download from a custom registry even when the same name+version is a confirmed safe patch on the public registry", async () => {
+    // A custom/private registry can serve a completely different, unvetted
+    // artifact under the same coordinates as a package Aikido confirmed safe
+    // on the public registry. The safe patch exemption must not follow it there.
+    customRegistries = ["npm.company.com"];
+    malwareResponse = false;
+    skipMinimumPackageAgeSetting = false;
+    newlyReleasedPackages = new Set(["proxy-addr@2.0.8"]);
+    safePatchedPackages = new Set(["proxy-addr@2.0.8"]);
+
+    const url = "https://npm.company.com/proxy-addr/-/proxy-addr-2.0.8.tgz";
+
+    const interceptor = npmInterceptorForUrl(url);
+    const result = await interceptor.handleRequest(url);
+
+    assert.ok(result.blockResponse);
+    assert.equal(result.blockResponse.statusCode, 403);
+    assert.equal(
+      result.blockResponse.message,
+      "Forbidden - blocked by safe-chain direct download minimum package age (proxy-addr@2.0.8)"
+    );
+
+    newlyReleasedPackages = new Set();
+    safePatchedPackages = new Set();
+  });
 });

@@ -36,6 +36,12 @@ export function npmInterceptorForUrl(url) {
  * @returns {import("../interceptorBuilder.js").Interceptor}
  */
 function buildNpmInterceptor(registry) {
+  // A safe patch entry only certifies the artifact Aikido inspected on the
+  // known public registry - a custom/private registry can serve a different,
+  // unvetted artifact under the exact same name+version, so the exemption must
+  // never apply there. See minimumPackageAgeChecker.js.
+  const allowSafePatches = knownJsRegistries.includes(registry);
+
   return interceptRequests(async (reqContext) => {
     const { packageName, version } = parseNpmPackageUrl(
       reqContext.targetUrl,
@@ -54,7 +60,7 @@ function buildNpmInterceptor(registry) {
     }
 
     if (isPackageInfoUrl(reqContext.targetUrl)) {
-      const checker = await openMinimumPackageAgeChecker();
+      const checker = await openMinimumPackageAgeChecker({ allowSafePatches });
       reqContext.modifyRequestHeaders(modifyNpmInfoRequestHeaders);
       reqContext.modifyBody((body, headers) =>
         modifyNpmInfoResponse(body, headers, checker)
@@ -65,7 +71,7 @@ function buildNpmInterceptor(registry) {
     // For tarball requests the metadata check above is skipped, so we check the
     // new packages list as a fallback (covers e.g. frozen-lockfile installs).
     if (packageName && version) {
-      const checker = await openMinimumPackageAgeChecker();
+      const checker = await openMinimumPackageAgeChecker({ allowSafePatches });
 
       if (
         !checker.isPackageExempt(packageName) &&

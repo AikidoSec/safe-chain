@@ -37,7 +37,11 @@ describe("minimumPackageAgeChecker", async () => {
     return new Date(Date.now() - hours * 3600 * 1000).toISOString();
   }
 
-  function makeChecker({ newlyReleased = new Set(), safePatches = new Set() } = {}) {
+  function makeChecker({
+    newlyReleased = new Set(),
+    safePatches = new Set(),
+    allowSafePatches = true,
+  } = {}) {
     return createMinimumPackageAgeChecker({
       newPackagesDatabase: {
         isNewlyReleasedPackage: (name, version) =>
@@ -46,6 +50,7 @@ describe("minimumPackageAgeChecker", async () => {
       safePatchesDatabase: {
         isSafePatch: (name, version) => safePatches.has(`${name}@${version}`),
       },
+      allowSafePatches,
     });
   }
 
@@ -194,6 +199,65 @@ describe("minimumPackageAgeChecker", async () => {
       } finally {
         minimumPackageAgeHours = 48;
       }
+    });
+  });
+
+  describe("allowSafePatches", () => {
+    // A safe patch entry only certifies the artifact Aikido inspected on the
+    // known public registry. When a request is routed through a custom/private
+    // registry, allowSafePatches must be false, and the safe patches database
+    // must never be consulted - not even to confirm a match - so a private
+    // registry can never inherit an exemption for an unrelated artifact that
+    // merely shares the same name+version.
+
+    it("still blocks a feed-flagged version claimed as a safe patch when allowSafePatches is false", () => {
+      const checker = makeChecker({
+        newlyReleased: new Set(["proxy-addr@2.0.8"]),
+        safePatches: new Set(["proxy-addr@2.0.8"]),
+        allowSafePatches: false,
+      });
+      assert.strictEqual(checker.isTooNewByFeed("proxy-addr", "2.0.8"), true);
+    });
+
+    it("still blocks a timestamp-flagged version claimed as a safe patch when allowSafePatches is false", () => {
+      const checker = makeChecker({
+        safePatches: new Set(["proxy-addr@2.0.8"]),
+        allowSafePatches: false,
+      });
+      assert.strictEqual(
+        checker.isTooNewByReleaseDate("proxy-addr", "2.0.8", hoursAgo(1)),
+        true
+      );
+    });
+
+    it("never calls into the safe patches database when allowSafePatches is false", () => {
+      let safePatchLookups = 0;
+      const checker = createMinimumPackageAgeChecker({
+        newPackagesDatabase: { isNewlyReleasedPackage: () => true },
+        safePatchesDatabase: {
+          isSafePatch: () => {
+            safePatchLookups++;
+            return true;
+          },
+        },
+        allowSafePatches: false,
+      });
+
+      checker.isTooNewByFeed("proxy-addr", "2.0.8");
+      checker.isTooNewByReleaseDate("proxy-addr", "2.0.8", hoursAgo(1));
+
+      assert.strictEqual(safePatchLookups, 0);
+    });
+
+    it("defaults to allowing safe patches when the option is omitted", () => {
+      const checker = createMinimumPackageAgeChecker({
+        newPackagesDatabase: { isNewlyReleasedPackage: () => true },
+        safePatchesDatabase: {
+          isSafePatch: (name, version) => `${name}@${version}` === "proxy-addr@2.0.8",
+        },
+      });
+
+      assert.strictEqual(checker.isTooNewByFeed("proxy-addr", "2.0.8"), false);
     });
   });
 });

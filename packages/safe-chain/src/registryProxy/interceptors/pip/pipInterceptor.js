@@ -54,6 +54,12 @@ function buildPipInterceptor(registry) {
  * @returns {(reqContext: import("../interceptorBuilder.js").RequestInterceptionContext) => Promise<void>}
  */
 function createPipRequestHandler(registry) {
+  // A safe patch entry only certifies the artifact Aikido inspected on the
+  // known public registry - a custom/private registry can serve a different,
+  // unvetted artifact under the exact same name+version, so the exemption must
+  // never apply there. See minimumPackageAgeChecker.js.
+  const allowSafePatches = knownPipRegistries.includes(registry);
+
   return async (reqContext) => {
     const minimumAgeChecksEnabled = !skipMinimumPackageAge();
     const metadataInfo = parsePipMetadataUrl(reqContext.targetUrl);
@@ -68,7 +74,7 @@ function createPipRequestHandler(registry) {
     }
 
     if (minimumAgeChecksEnabled && metadataPackageName) {
-      const checker = await openMinimumPackageAgeChecker();
+      const checker = await openMinimumPackageAgeChecker({ allowSafePatches });
 
       if (!checker.isPackageExempt(metadataPackageName)) {
         reqContext.modifyRequestHeaders(modifyPipInfoRequestHeaders);
@@ -112,7 +118,7 @@ function createPipRequestHandler(registry) {
     }
 
     if (version && minimumAgeChecksEnabled) {
-      const checker = await openMinimumPackageAgeChecker();
+      const checker = await openMinimumPackageAgeChecker({ allowSafePatches });
 
       if (
         !checker.isPackageExempt(packageName) &&
