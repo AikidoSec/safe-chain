@@ -37,12 +37,8 @@ error() {
     exit 1
 }
 
-# WSL1 runs Linux binaries as Windows pico processes: no Linux kernel, so no
-# eBPF, no BTF and no cgroup v2, and Linux has no L7 fallback. The shell and
-# the package manager work, so without this check the install succeeds and
-# protects nothing. Detected positively (WSL1's own rootfs type, or its
-# synthetic 4.4.0-<winbuild>-Microsoft kernel) rather than by "not WSL2", so an
-# unrecognised future WSL generation is not refused by mistake.
+# WSL1 has no Linux kernel, so the L4 datapath cannot load there. Matched on
+# WSL1-only signals, never on "not WSL2".
 is_wsl1() {
     awk '$2 == "/" && ($3 == "wslfs" || $3 == "lxfs") { found = 1 }
          END { exit !found }' /proc/mounts 2>/dev/null && return 0
@@ -335,7 +331,7 @@ main() {
     fi
 
     if is_wsl1; then
-        error "WSL1 is not supported. It has no Linux kernel, so Aikido Endpoint Protection cannot inspect traffic in this distribution. Convert it to WSL2 from Windows with 'wsl --set-version <distro> 2', then re-run this installer."
+        error "WSL1 is not supported."
     fi
 
     # Check if we're running as root
