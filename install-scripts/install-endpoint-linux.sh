@@ -37,6 +37,12 @@ error() {
     exit 1
 }
 
+is_wsl1() {
+    awk '$2 == "/" && ($3 == "wslfs" || $3 == "lxfs") { found = 1 }
+         END { exit !found }' /proc/mounts 2>/dev/null && return 0
+    grep -qE -- '-Microsoft$' /proc/sys/kernel/osrelease 2>/dev/null
+}
+
 # Download file
 download() {
     url="$1"
@@ -320,6 +326,10 @@ main() {
     # 1. Check if we're running on Linux
     if [ "$(uname -s)" != "Linux" ]; then
         error "This script is only supported on Linux."
+    fi
+
+    if is_wsl1; then
+        error "WSL1 is not supported. Aikido Endpoint Protection requires WSL2."
     fi
 
     # Check if we're running as root
