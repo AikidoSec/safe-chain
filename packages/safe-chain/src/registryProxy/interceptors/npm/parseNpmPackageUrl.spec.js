@@ -47,6 +47,13 @@ describe("parse npm package url", () => {
         assert.equal(result.version, "1.0.0");
     });
 
+   it("parses packages from a url with double slash '//'", () => {
+        const result = parseNpmPackageUrl("https://registry.npmjs.org//dummy-package/-/dummy-package-1.0.0.tgz", "registry.npmjs.org");
+
+        assert.equal(result.packageName, "dummy-package");
+        assert.equal(result.version, "1.0.0");
+    });
+
     it("parses packages when the configured registry has a trailing '.'", () => {
         const result = parseNpmPackageUrl("https://registry.npmjs.org/dummy-package/-/dummy-package-1.0.0.tgz", "registry.npmjs.org.");
 
