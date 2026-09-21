@@ -337,7 +337,7 @@ main() {
     fi
 
     if is_wsl1; then
-        error "WSL1 is not supported. Convert the distro to WSL2 from Windows ('wsl -l -v' for its name, then 'wsl --set-version <name> 2') and re-run this installer."
+        error "WSL1 is not supported: it has no Linux kernel, so traffic cannot be inspected. Aikido Endpoint Protection requires WSL2."
     fi
 
     # Check if we're running as root
