@@ -334,7 +334,7 @@ main() {
     fi
 
     if is_wsl1; then
-        error "WSL1 is not supported: it has no Linux kernel, so traffic cannot be inspected. Aikido Endpoint Protection requires WSL2."
+        error "WSL1 is not supported. Aikido Endpoint Protection requires WSL2."
     fi
 
     # Check if we're running as root
