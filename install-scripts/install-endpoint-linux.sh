@@ -37,11 +37,6 @@ error() {
     exit 1
 }
 
-# WSL1 has no Linux kernel, so the L4 datapath cannot load there. Detected on
-# WSL1-only signals, never as "not WSL2", so a future generation is not refused
-# by mistake. Do not relax the kernel test: WSL2 reports a lowercase
-# -microsoft-standard-WSL2, so -i or a dropped $ refuses every WSL2 install,
-# and dropping the -- makes the pattern parse as options and the check pass.
 is_wsl1() {
     awk '$2 == "/" && ($3 == "wslfs" || $3 == "lxfs") { found = 1 }
          END { exit !found }' /proc/mounts 2>/dev/null && return 0
