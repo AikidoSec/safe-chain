@@ -39,6 +39,12 @@ error() {
 
 # WSL1 has no Linux kernel, so the L4 datapath cannot load there. Matched on
 # WSL1-only signals, never on "not WSL2".
+#
+# Do not loosen the kernel pattern below. The capital M and the trailing $ are
+# load-bearing: every WSL2 kernel Microsoft ships ends in -microsoft-standard
+# or -microsoft-standard-WSL2, lowercase, so adding -i or dropping the anchor
+# would match WSL2 and refuse every WSL2 install. The -- is required too, or
+# the leading dash is parsed as option letters.
 is_wsl1() {
     awk '$2 == "/" && ($3 == "wslfs" || $3 == "lxfs") { found = 1 }
          END { exit !found }' /proc/mounts 2>/dev/null && return 0
@@ -331,7 +337,7 @@ main() {
     fi
 
     if is_wsl1; then
-        error "WSL1 is not supported."
+        error "WSL1 is not supported. Convert the distro to WSL2 from Windows ('wsl -l -v' for its name, then 'wsl --set-version <name> 2') and re-run this installer."
     fi
 
     # Check if we're running as root
