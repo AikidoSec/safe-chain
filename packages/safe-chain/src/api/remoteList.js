@@ -61,11 +61,14 @@ export async function getRemoteList(listType) {
   const md5 = await computeMd5(cacheLocation).catch(() => undefined);
 
   let result;
+  let parsedResponse;
   try {
     result = await fetchRemoteList(listType, md5);
 
     if (!result.notModified) {
       const buffer = Buffer.from(await result.data.arrayBuffer());
+      // Parse the file first to make sure we're not saving a malformed json
+      parsedResponse = JSON.parse(buffer.toString("utf-8"));  
       await writeFileAtomic(cacheLocation, buffer);
     }
   } catch (err) {
@@ -76,6 +79,10 @@ export async function getRemoteList(listType) {
         `Failed to fetch the latest ${listMetaData[listType].displayName}. Using cached version.`,
       );
     }
+  }
+
+  if (parsedResponse) {
+    return parsedResponse;
   }
 
   try {

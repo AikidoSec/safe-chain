@@ -21,17 +21,23 @@ export function openNewPackagesDatabase() {
   const ecoSystem = getEcoSystem();
   // Mirrors of the malware list base URL only host the long-duration feed (npm.json / pypi.json),
   // not the newer npm_48h.json / pypi_48h.json - using the 48h feed there would break compatibility.
-  const isDefaultMalwareList = getMalwareListBaseUrl() === defaultMalwareListBaseUrl;
+  const isDefaultMalwareList =
+    getMalwareListBaseUrl() === defaultMalwareListBaseUrl;
   const useLongDuration =
     !isDefaultMalwareList || getMinimumPackageAgeHours() > 48;
 
-  const listType = useLongDuration
-    ? ecoSystem === ECOSYSTEM_PY
-      ? ListType.PYPI_NEW_PACKAGES_LIST_7D
-      : ListType.NPM_NEW_PACKAGES_LIST_7D
-    : ecoSystem === ECOSYSTEM_PY
-      ? ListType.PYPI_NEW_PACKAGES_LIST_2D
-      : ListType.NPM_NEW_PACKAGES_LIST_2D;
+  let listType;
+  if (useLongDuration) {
+    listType =
+      ecoSystem === ECOSYSTEM_PY
+        ? ListType.PYPI_NEW_PACKAGES_LIST_7D
+        : ListType.NPM_NEW_PACKAGES_LIST_7D;
+  } else {
+    listType =
+      ecoSystem === ECOSYSTEM_PY
+        ? ListType.PYPI_NEW_PACKAGES_LIST_2D
+        : ListType.NPM_NEW_PACKAGES_LIST_2D;
+  }
 
   return openCachedList(listType, buildNewPackagesDatabase).catch((error) => {
     warnOnceAboutUnavailableDatabase(error);
