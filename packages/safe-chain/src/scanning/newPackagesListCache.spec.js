@@ -1,12 +1,35 @@
 import { describe, it, mock, beforeEach } from "node:test";
 import assert from "node:assert";
-import fs from "fs";
-import path from "path";
-import os from "os";
 
-let writeWarningCalls = [];
 let ecosystem = "js";
-let testHomeDir = "";
+let minimumPackageAgeHours = 24;
+let malwareListBaseUrl = "https://malware-list.aikido.dev";
+let openCachedListCalls = [];
+let openCachedListShouldReject = false;
+let writeWarningCalls = [];
+
+mock.module("../config/settings.js", {
+  namedExports: {
+    getEcoSystem: () => ecosystem,
+    ECOSYSTEM_JS: "js",
+    ECOSYSTEM_PY: "py",
+    getMinimumPackageAgeHours: () => minimumPackageAgeHours,
+    getMalwareListBaseUrl: () => malwareListBaseUrl,
+    defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
+  },
+});
+
+mock.module("./remoteListCache.js", {
+  namedExports: {
+    openCachedList: (listType, builder) => {
+      openCachedListCalls.push({ listType, builder });
+      if (openCachedListShouldReject) {
+        return Promise.reject(new Error("feed unavailable"));
+      }
+      return Promise.resolve(builder([]));
+    },
+  },
+});
 
 mock.module("../environment/userInteraction.js", {
   namedExports: {
@@ -16,165 +39,132 @@ mock.module("../environment/userInteraction.js", {
   },
 });
 
-mock.module("../config/settings.js", {
-  namedExports: {
-    getEcoSystem: () => ecosystem,
-    getMinimumPackageAgeHours: () => 24,
-    getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
-    ECOSYSTEM_JS: "js",
-    ECOSYSTEM_PY: "py",
-    defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
-    getVersion: () => "0.0.0",
-  },
+// Mocked so this spec doesn't drag in remoteList.js's own dependency chain
+// (settings.js / userInteraction.js / fileLogger.js), which the narrow settings.js
+// mock above can't satisfy.
+const ListType = {
+  NPM_NEW_PACKAGES_LIST_2D: "NPM_NEW_PACKAGES_LIST_2D",
+  PYPI_NEW_PACKAGES_LIST_2D: "PYPI_NEW_PACKAGES_LIST_2D",
+  NPM_NEW_PACKAGES_LIST_7D: "NPM_NEW_PACKAGES_LIST_7D",
+  PYPI_NEW_PACKAGES_LIST_7D: "PYPI_NEW_PACKAGES_LIST_7D",
+};
+mock.module("../api/remoteList.js", {
+  namedExports: { ListType },
 });
 
-const { readNewPackagesListFromLocalCache, writeNewPackagesListToLocalCache } =
-  await import("./newPackagesListCache.js");
+const { openNewPackagesDatabase } = await import("./newPackagesListCache.js");
+const { buildNewPackagesDatabase } = await import(
+  "./newPackagesDatabaseBuilder.js"
+);
+const { resetWarningState } = await import("./newPackagesDatabaseWarnings.js");
 
 describe("newPackagesListCache", () => {
   beforeEach(() => {
-    writeWarningCalls = [];
     ecosystem = "js";
-    testHomeDir = path.join(
-      os.tmpdir(),
-      `safe-chain-list-cache-${process.pid}-${Date.now()}`
-    );
-    fs.rmSync(testHomeDir, { recursive: true, force: true });
-    fs.mkdirSync(testHomeDir, { recursive: true });
-    process.env.HOME = testHomeDir;
+    minimumPackageAgeHours = 24;
+    malwareListBaseUrl = "https://malware-list.aikido.dev";
+    openCachedListCalls = [];
+    openCachedListShouldReject = false;
+    writeWarningCalls = [];
+    resetWarningState();
   });
 
-  describe("readNewPackagesListFromLocalCache", () => {
-    it("returns null for both fields when no cache file exists", () => {
-      const result = readNewPackagesListFromLocalCache();
+  describe("list type selection", () => {
+    it("requests the npm 2-day list for js under the default mirror within the age threshold", async () => {
+      await openNewPackagesDatabase();
 
-      assert.deepStrictEqual(result, { newPackagesList: null, version: null });
+      assert.strictEqual(
+        openCachedListCalls[0].listType,
+        ListType.NPM_NEW_PACKAGES_LIST_2D
+      );
     });
 
-    it("returns the list and version when both files exist", () => {
-      const list = [{ package_name: "foo", version: "1.0.0" }];
-      const safeChainDir = path.join(testHomeDir, ".safe-chain");
-      fs.mkdirSync(safeChainDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(safeChainDir, "newPackagesList_js.json"),
-        JSON.stringify(list)
-      );
-      fs.writeFileSync(
-        path.join(safeChainDir, "newPackagesList_version_js.txt"),
-        "etag-42"
-      );
-
-      const result = readNewPackagesListFromLocalCache();
-
-      assert.deepStrictEqual(result.newPackagesList, list);
-      assert.strictEqual(result.version, "etag-42");
-    });
-
-    it("returns null version when version file is missing", () => {
-      const list = [{ package_name: "foo", version: "1.0.0" }];
-      const safeChainDir = path.join(testHomeDir, ".safe-chain");
-      fs.mkdirSync(safeChainDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(safeChainDir, "newPackagesList_js.json"),
-        JSON.stringify(list)
-      );
-
-      const result = readNewPackagesListFromLocalCache();
-
-      assert.deepStrictEqual(result.newPackagesList, list);
-      assert.strictEqual(result.version, null);
-    });
-
-    it("trims whitespace from the version string", () => {
-      const safeChainDir = path.join(testHomeDir, ".safe-chain");
-      fs.mkdirSync(safeChainDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(safeChainDir, "newPackagesList_js.json"),
-        JSON.stringify([])
-      );
-      fs.writeFileSync(
-        path.join(safeChainDir, "newPackagesList_version_js.txt"),
-        "  etag-trimmed  \n"
-      );
-
-      const { version } = readNewPackagesListFromLocalCache();
-
-      assert.strictEqual(version, "etag-trimmed");
-    });
-
-    it("uses the ecosystem name in the file path", () => {
+    it("requests the pypi 2-day list for py under the default mirror within the age threshold", async () => {
       ecosystem = "py";
-      const safeChainDir = path.join(testHomeDir, ".safe-chain");
-      fs.mkdirSync(safeChainDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(safeChainDir, "newPackagesList_py.json"),
-        JSON.stringify([{ package_name: "requests", version: "2.0.0" }])
+
+      await openNewPackagesDatabase();
+
+      assert.strictEqual(
+        openCachedListCalls[0].listType,
+        ListType.PYPI_NEW_PACKAGES_LIST_2D
       );
-
-      const result = readNewPackagesListFromLocalCache();
-
-      assert.ok(result.newPackagesList !== null);
     });
 
-    it("warns and returns nulls when the list file contains invalid JSON", () => {
-      const safeChainDir = path.join(testHomeDir, ".safe-chain");
-      fs.mkdirSync(safeChainDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(safeChainDir, "newPackagesList_js.json"),
-        "not-valid-json"
+    it("requests the 7-day list when minimumPackageAgeHours exceeds 48", async () => {
+      minimumPackageAgeHours = 168;
+
+      await openNewPackagesDatabase();
+
+      assert.strictEqual(
+        openCachedListCalls[0].listType,
+        ListType.NPM_NEW_PACKAGES_LIST_7D
       );
+    });
 
-      const result = readNewPackagesListFromLocalCache();
+    it("requests the 7-day list for py when minimumPackageAgeHours exceeds 48", async () => {
+      ecosystem = "py";
+      minimumPackageAgeHours = 168;
 
-      assert.deepStrictEqual(result, { newPackagesList: null, version: null });
-      assert.strictEqual(writeWarningCalls.length, 1);
-      assert.ok(writeWarningCalls[0].includes("local cache"));
+      await openNewPackagesDatabase();
+
+      assert.strictEqual(
+        openCachedListCalls[0].listType,
+        ListType.PYPI_NEW_PACKAGES_LIST_7D
+      );
+    });
+
+    it("uses the 7-day list on a non-default mirror even within the age threshold", async () => {
+      // Mirrors only host the long-duration feed (npm.json / pypi.json), not the newer
+      // npm_48h.json / pypi_48h.json - requesting the 48h feed there would break them.
+      malwareListBaseUrl = "https://mirror.example.com/lists";
+
+      await openNewPackagesDatabase();
+
+      assert.strictEqual(
+        openCachedListCalls[0].listType,
+        ListType.NPM_NEW_PACKAGES_LIST_7D
+      );
+    });
+
+    it("uses the 2-day list on the default mirror regardless of trailing slash normalisation", async () => {
+      malwareListBaseUrl = "https://malware-list.aikido.dev";
+
+      await openNewPackagesDatabase();
+
+      assert.strictEqual(
+        openCachedListCalls[0].listType,
+        ListType.NPM_NEW_PACKAGES_LIST_2D
+      );
+    });
+
+    it("builds the list with buildNewPackagesDatabase", async () => {
+      await openNewPackagesDatabase();
+
+      assert.strictEqual(openCachedListCalls[0].builder, buildNewPackagesDatabase);
     });
   });
 
-  describe("writeNewPackagesListToLocalCache", () => {
-    it("writes the list and version to disk", () => {
-      const safeChainDir = path.join(testHomeDir, ".safe-chain");
-      fs.mkdirSync(safeChainDir, { recursive: true });
+  describe("fail-open behaviour", () => {
+    it("returns a database that reports no newly released packages when the list cannot be loaded", async () => {
+      openCachedListShouldReject = true;
 
-      const list = [{ package_name: "foo", version: "1.0.0" }];
-      writeNewPackagesListToLocalCache(list, "etag-99");
+      const db = await openNewPackagesDatabase();
 
-      const writtenList = JSON.parse(
-        fs.readFileSync(path.join(safeChainDir, "newPackagesList_js.json"), "utf8")
-      );
-      const writtenVersion = fs.readFileSync(
-        path.join(safeChainDir, "newPackagesList_version_js.txt"),
-        "utf8"
-      );
-
-      assert.deepStrictEqual(writtenList, list);
-      assert.strictEqual(writtenVersion, "etag-99");
+      assert.strictEqual(db.isNewlyReleasedPackage("foo", "1.0.0"), false);
     });
 
-    it("converts a numeric version to a string", () => {
-      const safeChainDir = path.join(testHomeDir, ".safe-chain");
-      fs.mkdirSync(safeChainDir, { recursive: true });
+    it("warns only once across repeated failures", async () => {
+      openCachedListShouldReject = true;
 
-      writeNewPackagesListToLocalCache([], 42);
-
-      const written = fs.readFileSync(
-        path.join(safeChainDir, "newPackagesList_version_js.txt"),
-        "utf8"
-      );
-      assert.strictEqual(written, "42");
-    });
-
-    it("warns when writing fails", () => {
-      // Place a regular file at the .safe-chain path so getSafeChainDirectory
-      // returns it as-is (existsSync is true) but writing a child path fails.
-      const safeChainPath = path.join(testHomeDir, ".safe-chain");
-      fs.writeFileSync(safeChainPath, "not-a-directory");
-
-      writeNewPackagesListToLocalCache([], "etag-fail");
+      await openNewPackagesDatabase();
+      await openNewPackagesDatabase();
 
       assert.strictEqual(writeWarningCalls.length, 1);
-      assert.ok(writeWarningCalls[0].includes("local cache"));
+      assert.ok(
+        writeWarningCalls[0].includes(
+          "Continuing with metadata-based minimum age checks only"
+        )
+      );
     });
   });
 });
