@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { parse as parseYaml } from "yaml";
-import { ui } from "../environment/userInteraction.js";
 import { getEcoSystem } from "./settings.js";
 import { getSafeChainBaseDir } from "./safeChainDir.js";
 
@@ -207,60 +206,6 @@ export function getMinimumPackageAgeExclusions() {
 }
 
 /**
- * @param {import("../api/aikido.js").MalwarePackage[]} data
- * @param {string | number} version
- *
- * @returns {void}
- */
-export function writeDatabaseToLocalCache(data, version) {
-  try {
-    const databasePath = getDatabasePath();
-    const versionPath = getDatabaseVersionPath();
-
-    fs.writeFileSync(databasePath, JSON.stringify(data));
-    fs.writeFileSync(versionPath, version.toString());
-  } catch {
-    ui.writeWarning(
-      "Failed to write malware database to local cache, next time the database will be fetched from the server again."
-    );
-  }
-}
-
-/**
- * @returns {{malwareDatabase: import("../api/aikido.js").MalwarePackage[] | null, version: string | null}}
- */
-export function readDatabaseFromLocalCache() {
-  try {
-    const databasePath = getDatabasePath();
-    if (!fs.existsSync(databasePath)) {
-      return {
-        malwareDatabase: null,
-        version: null,
-      };
-    }
-    const data = fs.readFileSync(databasePath, "utf8");
-    const malwareDatabase = JSON.parse(data);
-    const versionPath = getDatabaseVersionPath();
-    let version = null;
-    if (fs.existsSync(versionPath)) {
-      version = fs.readFileSync(versionPath, "utf8").trim();
-    }
-    return {
-      malwareDatabase: malwareDatabase,
-      version: version,
-    };
-  } catch {
-    ui.writeWarning(
-      "Failed to read malware database from local cache. Continuing without local cache."
-    );
-    return {
-      malwareDatabase: null,
-      version: null,
-    };
-  }
-}
-
-/**
  * @returns {SafeChainConfig}
  */
 function readConfigFile() {
@@ -427,39 +372,6 @@ function deepMergeConfig(base, override) {
  */
 function isPlainObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
- * @returns {string}
- */
-function getDatabasePath() {
-  const aikidoDir = getAikidoDirectory();
-  const ecosystem = getEcoSystem();
-  return path.join(aikidoDir, `malwareDatabase_${ecosystem}.json`);
-}
-
-function getDatabaseVersionPath() {
-  const aikidoDir = getAikidoDirectory();
-  const ecosystem = getEcoSystem();
-  return path.join(aikidoDir, `version_${ecosystem}.txt`);
-}
-
-/**
- * @returns {string}
- */
-export function getNewPackagesListPath() {
-  const safeChainDir = getSafeChainDirectory();
-  const ecosystem = getEcoSystem();
-  return path.join(safeChainDir, `newPackagesList_${ecosystem}.json`);
-}
-
-/**
- * @returns {string}
- */
-export function getNewPackagesListVersionPath() {
-  const safeChainDir = getSafeChainDirectory();
-  const ecosystem = getEcoSystem();
-  return path.join(safeChainDir, `newPackagesList_version_${ecosystem}.txt`);
 }
 
 /**

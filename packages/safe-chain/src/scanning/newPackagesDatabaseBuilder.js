@@ -8,6 +8,13 @@ import { getVersionsEqual } from "./audit/getVersionsEqual.js";
 import { normalizePipPackageName } from "./packageNameVariants.js";
 
 /**
+ * @typedef {Object} NewPackageEntry
+ * @property {string} [source]
+ * @property {string} package_name
+ * @property {string} version
+ * @property {number} released_on  - Unix timestamp (seconds)
+ * @property {number} scraped_on   - Unix timestamp (seconds)
+ * 
  * @typedef {Object} NewPackagesDatabase
  * @property {function(string | undefined, string | undefined): boolean} isNewlyReleasedPackage
  */
@@ -31,7 +38,7 @@ function getCurrentFeedSource() {
 }
 
 /**
- * @param {import("../api/aikido.js").NewPackageEntry[]} newPackagesList
+ * @param {NewPackageEntry[]} newPackagesList
  * @returns {NewPackagesDatabase}
  */
 export function buildNewPackagesDatabase(newPackagesList) {
@@ -55,7 +62,7 @@ export function buildNewPackagesDatabase(newPackagesList) {
     return ecosystem === ECOSYSTEM_PY ? normalizePipPackageName(name) : name;
   }
 
-  /** @type {Map<string, import("../api/aikido.js").NewPackageEntry[]>} */
+  /** @type {Map<string, NewPackageEntry[]>} */
   const entriesByName = new Map();
   for (const pkg of newPackagesList) {
     const packageName = pkg && pkg.package_name;
