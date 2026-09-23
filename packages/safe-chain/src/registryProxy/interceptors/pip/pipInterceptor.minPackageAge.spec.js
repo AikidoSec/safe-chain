@@ -5,6 +5,7 @@ describe("pipInterceptor minimum package age", async () => {
   let skipMinimumPackageAgeSetting = false;
   let newlyReleasedPackageResponse = false;
   let minimumPackageAgeExclusionsSetting = [];
+  let safePatchedPackages = new Set();
 
   mock.module("../../../scanning/audit/index.js", {
     namedExports: {
@@ -26,14 +27,27 @@ describe("pipInterceptor minimum package age", async () => {
     },
   });
 
+  mock.module("../../../scanning/safePatchesListCache.js", {
+    namedExports: {
+      openSafePatchesDatabase: async () => ({
+        isSafePatch: (packageName, version) =>
+          safePatchedPackages.has(`${packageName}@${version}`),
+      }),
+    },
+  });
+
   mock.module("../../../config/settings.js", {
     namedExports: {
+      ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "py",
       getLoggingLevel: () => "silent",
       getMinimumPackageAgeHours: () => 48,
       getMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
       getPipCustomRegistries: () => [],
+      getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
+      defaultMalwareListBaseUrl: "https://malware-list.aikido.dev",
+      getVersion: () => "0.0.0",
       LOGGING_SILENT: "silent",
       LOGGING_VERBOSE: "verbose",
       LOG_FILE_FORMAT_JSON: "json",
@@ -153,6 +167,48 @@ describe("pipInterceptor minimum package age", async () => {
     assert.equal(headers["if-modified-since"], undefined, "If-Modified-Since must be stripped");
     assert.equal(headers.accept, "*/*", "unrelated headers must be preserved");
 
+    newlyReleasedPackageResponse = false;
+  });
+
+  it("should not block a confirmed safe patch package download", async () => {
+    const url =
+      "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl";
+    newlyReleasedPackageResponse = true;
+    safePatchedPackages = new Set(["foo_bar@2.0.0"]);
+
+    const interceptor = pipInterceptorForUrl(url);
+    const result = await interceptor.handleRequest(url);
+
+    assert.equal(result.blockResponse, undefined);
+
+    safePatchedPackages = new Set();
+    newlyReleasedPackageResponse = false;
+  });
+
+  it("should not suppress a confirmed safe patch version from simple metadata responses", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    newlyReleasedPackageResponse = true;
+    safePatchedPackages = new Set(["foo-bar@2.0.0"]);
+
+    const interceptor = pipInterceptorForUrl(url);
+    const result = await interceptor.handleRequest(url);
+
+    assert.equal(result.modifiesResponse(), true);
+
+    const modifiedBody = result.modifyBody(
+      Buffer.from(`
+        <a href="https://files.pythonhosted.org/packages/xx/yy/foo_bar-1.0.0.tar.gz">foo_bar-1.0.0.tar.gz</a>
+        <a href="https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0.tar.gz">foo_bar-2.0.0.tar.gz</a>
+      `),
+      {
+        "content-type": "application/vnd.pypi.simple.v1+html",
+      }
+    ).toString("utf8");
+
+    assert.ok(modifiedBody.includes("foo_bar-1.0.0.tar.gz"));
+    assert.ok(modifiedBody.includes("foo_bar-2.0.0.tar.gz"));
+
+    safePatchedPackages = new Set();
     newlyReleasedPackageResponse = false;
   });
 

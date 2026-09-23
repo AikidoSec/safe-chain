@@ -17,6 +17,7 @@ export const ListType = {
   PYPI_NEW_PACKAGES_LIST_2D: "PYPI_NEW_PACKAGES_LIST_2D",
   NPM_NEW_PACKAGES_LIST_7D: "NPM_NEW_PACKAGES_LIST_7D",
   PYPI_NEW_PACKAGES_LIST_7D: "PYPI_NEW_PACKAGES_LIST_7D",
+  SAFE_PATCHES_LIST: "SAFE_PATCHES_LIST",
 };
 
 const listMetaData = {
@@ -49,6 +50,11 @@ const listMetaData = {
     cacheFileName: "newPackagesList_pypi_7d.json",
     urlPath: "releases/pypi.json",
     displayName: "new packages list",
+  },
+  [ListType.SAFE_PATCHES_LIST]: {
+    cacheFileName: "safePatchesList.json",
+    urlPath: "safe_patches.json",
+    displayName: "safe patches list",
   },
 };
 
