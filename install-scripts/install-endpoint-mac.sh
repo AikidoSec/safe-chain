@@ -7,8 +7,8 @@
 set -e  # Exit on error
 
 # Configuration
-INSTALL_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.9.8/EndpointProtection.pkg"
-DOWNLOAD_SHA256="757373eb68964100268ba289d9b472c51f0328d4dda19c3840b2b5c0484dabf3"
+INSTALL_URL="https://github.com/AikidoSec/safechain-internals/releases/download/v1.9.7/EndpointProtection.pkg"
+DOWNLOAD_SHA256="1d12e80819e11c39c1f07a1f7e82829c4b919d1f5a7f30a3d4b5bf5be1012436"
 TOKEN_FILE="/tmp/aikido_endpoint_token.txt"
 
 # Colors for output
