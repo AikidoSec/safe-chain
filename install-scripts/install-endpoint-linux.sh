@@ -3,7 +3,9 @@
 # Downloads and installs Aikido Endpoint Protection on Linux
 #
 # Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--headless] [--container|--ci-cd]
+#    or: curl -fsSL <url> | sudo AIKIDO_TOKEN=<TOKEN> sh -s -- [--headless] [--container|--ci-cd]
 #
+#   --token      enrollment token. Optional when AIKIDO_TOKEN is set; --token wins if both are set.
 #   --headless   server/VM: no tray, skip GTK/WebKit Recommends, still L4, reboot required
 #   --container  run *inside* a container: no tray, skip Recommends, L7, ephemeral secrets, no reboot
 #                not for Docker/Jenkins hosts; those use --headless
@@ -337,9 +339,10 @@ main() {
         error "Root privileges required. Please re-run with sudo, e.g.: curl -fsSL <url> | sudo sh -s -- --token <TOKEN>"
     fi
 
-    # Check if token is provided via command argument
+    [ -z "$TOKEN" ] && TOKEN="${AIKIDO_TOKEN:-}"
+
     if [ -z "$TOKEN" ]; then
-        error "Token is required. Pass it with --token <TOKEN>."
+        error "Token is required. Pass it with --token <TOKEN> or set AIKIDO_TOKEN."
     fi
 
     # Validate token to prevent injection
