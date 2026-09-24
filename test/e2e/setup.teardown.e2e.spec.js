@@ -25,7 +25,8 @@ describe("E2E: safe-chain setup command", () => {
     it(`safe-chain setup wraps npm command after installation for ${shell}`, async () => {
       // setting up the container
       const installationShell = await container.openShell(shell);
-      await installationShell.runCommand("safe-chain setup");
+      const out = await installationShell.runCommand("safe-chain setup");
+      console.log(out.output);
 
       const projectShell = await container.openShell(shell);
       await projectShell.runCommand("cd /testapp");

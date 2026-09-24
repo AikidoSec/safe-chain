@@ -1,4 +1,4 @@
-FROM node:24-bookworm as builder
+FROM node:24-bookworm AS builder
 
 ENV CI=true
 
@@ -6,17 +6,20 @@ ENV CI=true
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY packages/safe-chain/package*.json ./
+COPY packages/safe-chain/package.json ./packages/safe-chain/package.json
+COPY ./package.json ./package.json
+COPY ./npm-shrinkwrap.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy the rest of the application
-COPY packages/safe-chain ./
+COPY packages/safe-chain ./packages/safe-chain
 
 # Build the application
-RUN npm --no-git-tag-version version 1.0.0 --allow-same-version
-RUN npm pack
+RUN npm --no-git-tag-version version 1.0.0 --allow-same-version --workspace=packages/safe-chain
+RUN cp ./npm-shrinkwrap.json packages/safe-chain/
+RUN npm pack --workspace=packages/safe-chain
 
 FROM buildpack-deps:trixie
 
