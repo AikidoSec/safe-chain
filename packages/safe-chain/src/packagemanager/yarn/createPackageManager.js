@@ -2,7 +2,7 @@ import { commandArgumentScanner } from "./dependencyScanner/commandArgumentScann
 import { runYarnCommand } from "./runYarnCommand.js";
 
 // yarn commands that only execute scripts and never download packages.
-const YARN_LIFECYCLE_COMMANDS = new Set(["run", "node"]);
+const YARN_LIFECYCLE_COMMANDS = new Set(["run", "node", "test", "start", "exec"]);
 
 const scanner = commandArgumentScanner();
 
