@@ -8,7 +8,6 @@ import fsSync from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import ini from "ini";
-import { spawn } from "child_process";
 import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
 /**
@@ -78,20 +77,18 @@ export async function runPip(command, args) {
   // Check if we should bypass safe-chain (python/python3 without -m pip)
   if (shouldBypassSafeChain(command, args)) {
     ui.writeVerbose(`Safe-chain: Bypassing safe-chain for non-pip invocation: ${command} ${args.join(" ")}`);
-    // Spawn the ORIGINAL command with ORIGINAL args
-    return new Promise((_resolve) => {
-      const proc = spawn(command, args, { stdio: "inherit" });
-      proc.on("exit", (/** @type {number | null} */ code) => {
-        ui.writeVerbose(`${command} ${args.join(" ")} exited with status ${code}`);
-        ui.writeBufferedLogsAndStopBuffering();
-        process.exit(code ?? 0);
-      });
-      proc.on("error", (/** @type {Error} */ err) => {
-        ui.writeError(`Error executing command: ${err.message}`);
-        ui.writeBufferedLogsAndStopBuffering();
-        process.exit(1);
-      });
-    });
+    // Spawn the ORIGINAL command with ORIGINAL args using the vetted safeSpawn
+    // wrapper, which validates the command name before executing it.
+    try {
+      const result = await safeSpawn(command, args, { stdio: "inherit" });
+      ui.writeVerbose(`${command} ${args.join(" ")} exited with status ${result.status}`);
+      ui.writeBufferedLogsAndStopBuffering();
+      process.exit(result.status);
+    } catch (/** @type any */ err) {
+      ui.writeError(`Error executing command: ${err.message}`);
+      ui.writeBufferedLogsAndStopBuffering();
+      process.exit(1);
+    }
   }
 
   try {
