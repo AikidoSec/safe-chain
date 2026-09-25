@@ -1,5 +1,6 @@
 import * as http from "http";
 import * as https from "https";
+import { getCombinedCaCertificates } from "./certBundle.js";
 import { ui } from "../environment/userInteraction.js";
 
 /**
@@ -57,10 +58,19 @@ function handleRequest(req, res) {
     return;
   }
 
+  /** @type {import("https").RequestOptions} */
+  const requestOptions = { method: req.method, headers: req.headers };
+  if (protocol === https) {
+    // Trust the OS system store (plus certifi + Node roots + NODE_EXTRA_CA_CERTS)
+    // on the direct-HTTPS fallback so OS-trusted self-signed hosts don't fail
+    // with "Bad Gateway: unable to get local issuer certificate".
+    requestOptions.ca = getCombinedCaCertificates();
+  }
+
   const proxyRequest = protocol
     .request(
       req.url,
-      { method: req.method, headers: req.headers },
+      requestOptions,
       (proxyRes) => {
         if (!proxyRes.statusCode) {
           ui.writeError("Safe-chain: Proxy response missing status code");
