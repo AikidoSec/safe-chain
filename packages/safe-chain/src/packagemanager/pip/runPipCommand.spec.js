@@ -416,4 +416,27 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "pip3"]), false);
   });
 
+  it("should NOT bypass when pip is run behind python interpreter flags (AIKIDO-NY9TUHL5)", async () => {
+    // Python interpreter flags placed before "-m pip" must not fool the check.
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-B", "-m", "pip", "install", "requests"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-u", "-m", "pip", "install", "requests"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-E", "-m", "pip", "install", "requests"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-I", "-m", "pip", "install", "requests"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-vv", "-m", "pip", "install", "requests"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-B", "-u", "-m", "pip", "install", "requests"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python", ["-B", "-m", "pip3", "install", "requests"]), false);
+    // Value-taking flags must not let their value be mistaken for "-m pip".
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-W", "ignore", "-m", "pip", "install", "x"]), false);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-X", "utf8", "-m", "pip", "install", "x"]), false);
+  });
+
+  it("should still bypass genuine non-pip python invocations (even behind flags)", async () => {
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-B", "-m", "http.server"]), true);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-c", "print(1)"]), true);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-B", "script.py"]), true);
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-"]), true);
+    // "-m" followed by a value-flag-looking token that is not pip.
+    assert.strictEqual(shouldBypassSafeChain("python3", ["-W", "ignore", "-m", "venv"]), true);
+  });
+
 });
