@@ -120,6 +120,43 @@ Check that your startup file sources safe-chain scripts from `~/.safe-chain/scri
 * Fish: `~/.config/fish/config.fish`
 * PowerShell: `$PROFILE`
 
+### AI Agent or Non-Interactive Install Is Not Protected
+
+**Symptom:** Safe Chain works in your terminal, but an install started by Claude Code, Codex, Cursor, a CI job, or another subprocess does not show Safe Chain output.
+
+**Cause:** `safe-chain setup` installs shell functions through startup files such as `.bashrc` and `.zshrc`. Non-interactive subprocesses may not source those files, so they resolve the original package-manager binary instead.
+
+**Resolution:** Create executable shims and put them first in the agent's `PATH`:
+
+```bash
+safe-chain setup-ci
+export PATH="$HOME/.safe-chain/shims:$HOME/.safe-chain/bin:$PATH"
+
+command -v npm
+# Expected: ~/.safe-chain/shims/npm
+
+npm safe-chain-verify
+# Expected: OK: Safe-chain works!
+```
+
+Start the agent from the configured shell or add the same `PATH` prefix to its environment settings. Make sure the agent invokes `npm`, `uv`, `pip`, or another supported package manager by name. Absolute paths such as `/usr/bin/npm` bypass the shims.
+
+### Agent Sandbox Blocks Package Installs
+
+**Symptoms:** A package install fails with a loopback connection error, proxy error, or a permission error such as `listen EPERM`.
+
+**Cause:** Safe Chain starts a local proxy on `127.0.0.1` using an ephemeral port. The package manager connects to that proxy through the `HTTPS_PROXY` setting supplied by Safe Chain. Some agent sandboxes block processes from binding or connecting to loopback by default.
+
+**Resolution:** Configure the sandbox to allow the agent process to bind and connect to `127.0.0.1` or `localhost`. Keep other sandbox restrictions enabled. Safe Chain binds the proxy only to loopback, so it is not exposed to the local network.
+
+After changing the sandbox configuration, run:
+
+```bash
+npm safe-chain-verify
+```
+
+The expected output is `OK: Safe-chain works!`.
+
 ### "Command Not Found: safe-chain"
 
 **Symptom:** Binary not found in PATH
