@@ -5,6 +5,7 @@ let lastPackage;
 let malwareResponse = false;
 let customRegistries = [];
 let newlyReleasedPackages = new Set();
+let safePatchedPackages = new Set();
 let skipMinimumPackageAgeSetting = false;
 
 mock.module("../../../scanning/audit/index.js", {
@@ -45,6 +46,14 @@ mock.module("../../../scanning/newPackagesListCache.js", {
     }),
   },
 });
+mock.module("../../../scanning/safePatchesListCache.js", {
+  namedExports: {
+    openSafePatchesDatabase: async () => ({
+      isSafePatch: (name, version) =>
+        safePatchedPackages.has(`${name}@${version}`),
+    }),
+  },
+});
 
 describe("npmInterceptor", async () => {
   const { npmInterceptorForUrl } = await import("./npmInterceptor.js");
@@ -54,6 +63,7 @@ describe("npmInterceptor", async () => {
     malwareResponse = false;
     customRegistries = [];
     newlyReleasedPackages = new Set();
+    safePatchedPackages = new Set();
     skipMinimumPackageAgeSetting = false;
   });
 
@@ -203,6 +213,27 @@ describe("npmInterceptor", async () => {
       result.blockResponse.message,
       "Forbidden - blocked by safe-chain",
       "Block response should have correct status message"
+    );
+  });
+
+  it("should block a package as malware even when it is also a confirmed safe patch", async () => {
+    // A safe patch exemption must only ever bypass the minimum package age
+    // check, never the malware check - the two are independent gates.
+    const url =
+      "https://registry.npmjs.org/malicious-package/-/malicious-package-1.0.0.tgz";
+    malwareResponse = true;
+    newlyReleasedPackages = new Set(["malicious-package@1.0.0"]);
+    safePatchedPackages = new Set(["malicious-package@1.0.0"]);
+
+    const interceptor = npmInterceptorForUrl(url);
+    const result = await interceptor.handleRequest(url);
+
+    assert.ok(result.blockResponse, "Should contain a blockResponse");
+    assert.equal(result.blockResponse.statusCode, 403);
+    assert.equal(
+      result.blockResponse.message,
+      "Forbidden - blocked by safe-chain",
+      "Should be blocked with the malware message, not the minimum age message"
     );
   });
 

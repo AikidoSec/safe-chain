@@ -137,6 +137,8 @@ Current enforcement differs by ecosystem:
 
 By default, the minimum package age is 48 hours. This provides an additional security layer during the critical period when newly published packages are most vulnerable to containing undetected threats. You can configure this threshold or bypass this protection entirely - see the [Minimum Package Age Configuration](#minimum-package-age) section below.
 
+For urgent CVE fixes, Aikido confirms the patch release is free of malware and Safe Chain exempts it from the minimum age check, so you're not left exposed to the vulnerability it fixes while waiting out the window.
+
 ### Shell Integration
 
 The Aikido Safe Chain integrates with your shell to provide a seamless experience when using npm, npx, yarn, pnpm, pnpx, rush, rushx, bun, bunx, and Python package managers (pip, uv, uvx, poetry, pipx, pdm). It sets up aliases for these commands so that they are wrapped by the Aikido Safe Chain commands, which manage the proxy server before executing the original commands. We currently support:

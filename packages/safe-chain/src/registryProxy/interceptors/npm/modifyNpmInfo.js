@@ -40,9 +40,10 @@ export function isPackageInfoUrl(url) {
  *
  * @param {Buffer} body
  * @param {NodeJS.Dict<string | string[]> | undefined} headers
+ * @param {import("../minimumPackageAgeChecker.js").MinimumPackageAgeChecker} checker
  * @returns Buffer
  */
-export function modifyNpmInfoResponse(body, headers) {
+export function modifyNpmInfoResponse(body, headers, checker) {
   try {
     const contentType = getHeaderValueAsString(headers, "content-type");
     if (!contentType?.toLowerCase().includes("application/json")) {
@@ -62,9 +63,9 @@ export function modifyNpmInfoResponse(body, headers) {
       return body;
     }
 
-    const cutOff = new Date(
-      new Date().getTime() - getMinimumPackageAgeHours() * 3600 * 1000
-    );
+    if (checker.isPackageExempt(bodyJson.name)) {
+      return body;
+    }
 
     const hasLatestTag = !!bodyJson["dist-tags"]["latest"];
 
@@ -75,8 +76,8 @@ export function modifyNpmInfoResponse(body, headers) {
       }))
       .filter((x) => x.version !== "created" && x.version !== "modified");
 
-    const versionsToRemove = versions.filter(
-      ({ timestamp }) => new Date(timestamp) > cutOff
+    const versionsToRemove = versions.filter(({ version, timestamp }) =>
+      checker.isTooNewByReleaseDate(bodyJson.name, version, timestamp)
     );
 
     if (versionsToRemove.length === 0) {
@@ -175,23 +176,4 @@ function getMostRecentTag(tagList) {
   }
 
   return current;
-}
-
-/**
- * @param {Buffer} body
- * @param {NodeJS.Dict<string | string[]> | undefined} headers
- * @returns {string | undefined}
- */
-export function getPackageNameFromMetadataResponse(body, headers) {
-  try {
-    const contentType = getHeaderValueAsString(headers, "content-type");
-    if (!contentType?.toLowerCase().includes("application/json")) {
-      return undefined;
-    }
-
-    const bodyJson = JSON.parse(body.toString("utf8"));
-    return typeof bodyJson.name === "string" ? bodyJson.name : undefined;
-  } catch {
-    return undefined;
-  }
 }
