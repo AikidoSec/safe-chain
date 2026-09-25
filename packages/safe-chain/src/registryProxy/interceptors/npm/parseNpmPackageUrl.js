@@ -52,9 +52,12 @@ export function parseNpmPackageUrl(url, registry) {
     return { packageName, version };
   }
 
-  const afterRegistry = decodeURIComponent(
+  let afterRegistry = decodeURIComponent(
     urlAfterProtocol.substring(registryPrefix.length)
   );
+  while (afterRegistry.startsWith("/")) {
+    afterRegistry = afterRegistry.substring(1);
+  }
 
   const separatorIndex = afterRegistry.indexOf("/-/");
   if (separatorIndex === -1) {
