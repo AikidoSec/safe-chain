@@ -39,11 +39,15 @@ const { getRemoteList, ListType } = await import("./remoteList.js");
 /**
  * @param {number} status
  * @param {any} [data]
+ * @param {string} [etag]
  */
-function fetchResponse(status, data) {
+function fetchResponse(status, data, etag) {
   return {
     status,
     statusText: `status ${status}`,
+    headers: {
+      get: (name) => (name.toLowerCase() === "etag" ? etag ?? null : null),
+    },
     blob: async () => ({
       arrayBuffer: async () => Buffer.from(JSON.stringify(data)),
     }),
@@ -112,5 +116,55 @@ describe("remoteList", () => {
     const result = await getRemoteList(ListType.NPM_MALWARE_LIST);
 
     assert.deepStrictEqual(result, [{ package_name: "unchanged-pkg", version: "1.0.0" }]);
+  });
+
+  describe("ETag revalidation", () => {
+    function sentIfNoneMatch(callIndex) {
+      return mockFetch.mock.calls[callIndex].arguments[1].headers["If-None-Match"];
+    }
+
+    it("sends the ETag from the previous response in If-None-Match", async () => {
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(200, [], '"abc"'));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(304));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+
+      assert.strictEqual(sentIfNoneMatch(0), undefined);
+      assert.strictEqual(sentIfNoneMatch(1), '"abc"');
+    });
+
+    it("sends a weak ETag back unchanged", async () => {
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(200, [], 'W/"abc"'));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(304));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+
+      assert.strictEqual(sentIfNoneMatch(1), 'W/"abc"');
+    });
+
+    it("does not revalidate when the previous response had no ETag", async () => {
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(200, [], '"abc"'));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(200, []));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(200, []));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+
+      assert.strictEqual(sentIfNoneMatch(2), undefined);
+    });
+
+    it("does not revalidate when the cached list is missing", async () => {
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(200, [], '"abc"'));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+      fs.rmSync(path.join(testHomeDir, "malwareDatabase_npm.json"));
+
+      mockFetch.mock.mockImplementationOnce(async () => fetchResponse(200, []));
+      await getRemoteList(ListType.NPM_MALWARE_LIST);
+
+      assert.strictEqual(sentIfNoneMatch(1), undefined);
+    });
   });
 });

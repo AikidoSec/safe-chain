@@ -1,6 +1,5 @@
-import { createHash } from "crypto";
 import { getSafeChainDirectory } from "../config/configFile.js";
-import { createReadStream, existsSync } from "fs";
+import { existsSync } from "fs";
 import { writeFile, readFile, rename, rm } from "fs/promises";
 import path from "path";
 import { ui } from "../environment/userInteraction.js";
@@ -64,18 +63,28 @@ const listMetaData = {
  */
 export async function getRemoteList(listType) {
   const cacheLocation = getCacheLocation(listType);
-  const md5 = await computeMd5(cacheLocation).catch(() => undefined);
+  const etagLocation = `${cacheLocation}.etag`;
+  const cachedEtag = existsSync(cacheLocation)
+    ? await readFile(etagLocation, "utf-8").catch(() => undefined)
+    : undefined;
 
   let result;
   let parsedResponse;
   try {
-    result = await fetchRemoteList(listType, md5);
+    result = await fetchRemoteList(listType, cachedEtag);
 
     if (!result.notModified) {
       const buffer = Buffer.from(await result.data.arrayBuffer());
       // Parse the file first to make sure we're not saving a malformed json
-      parsedResponse = JSON.parse(buffer.toString("utf-8"));  
+      parsedResponse = JSON.parse(buffer.toString("utf-8"));
+
+      // Data first, then ETag: if we die in between, the stale ETag just causes a re-download.
       await writeFileAtomic(cacheLocation, buffer);
+      if (result.etag) {
+        await writeFileAtomic(etagLocation, Buffer.from(result.etag));
+      } else {
+        await rm(etagLocation, { force: true });
+      }
     }
   } catch (err) {
     if (!existsSync(cacheLocation)) {
@@ -100,6 +109,7 @@ export async function getRemoteList(listType) {
     // only find out once we try to parse it. Discard the poison pill so the next call doesn't
     // fail the same way forever.
     await rm(cacheLocation, { force: true });
+    await rm(etagLocation, { force: true });
     throw new Error(`Cached ${listType} was unreadable and has been discarded: ${err}`);
   }
 }
@@ -132,9 +142,10 @@ function getCacheLocation(listType) {
  * @typedef {object} RemoteListData
  * @property {false} notModified
  * @property {import("node-fetch").Blob} data
+ * @property {string|undefined} etag
  *
  * @param {ListType} listType
- * @param {string|undefined} cachedEtag
+ * @param {string|undefined} cachedEtag The ETag header value as the server sent it
  * @returns {Promise<RemoteListNotModified | RemoteListData>}
  */
 async function fetchRemoteList(listType, cachedEtag) {
@@ -147,7 +158,7 @@ async function fetchRemoteList(listType, cachedEtag) {
     Referer: getRefererHeader(),
   };
   if (cachedEtag) {
-    headers["If-None-Match"] = `"${cachedEtag}"`;
+    headers["If-None-Match"] = cachedEtag;
   }
 
   const response = await fetch(url, {
@@ -174,6 +185,7 @@ async function fetchRemoteList(listType, cachedEtag) {
     return {
       notModified: false,
       data,
+      etag: response.headers.get("etag") ?? undefined,
     };
   }
 
@@ -183,23 +195,4 @@ async function fetchRemoteList(listType, cachedEtag) {
 function getRefererHeader() {
   const version = getVersion();
   return `https://safe-chain.${version}.aikido.dev`;
-}
-
-/**
- * @param {string} filePath
- * @returns {Promise<string>}
- */
-function computeMd5(filePath) {
-  const hash = createHash("md5");
-  const stream = createReadStream(filePath);
-
-  return new Promise((resolve, reject) => {
-    stream.on("data", (chunk) => hash.update(chunk));
-    stream.on("end", () => {
-      resolve(hash.digest("hex"));
-    });
-    stream.on("error", () => {
-      reject();
-    });
-  });
 }
