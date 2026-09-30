@@ -6,10 +6,10 @@ import { runPnpmCommand } from "./runPnpmCommand.js";
 // `exec` runs a pre-installed binary in project context; `node` runs Node.js.
 const PNPM_LIFECYCLE_COMMANDS = new Set(["run", "exec", "node", "test", "start", "stop", "restart"]);
 
-// `publish` downloads no packages, and pnpm >= 12's OIDC token exchange ignores
-// NODE_EXTRA_CA_CERTS, so it rejects safe-chain's MITM certificate (#596).
-// Installs from its lifecycle scripts are still caught by the shims.
-const PNPM_NO_PROXY_COMMANDS = new Set([...PNPM_LIFECYCLE_COMMANDS, "publish"]);
+// `publish` and `stage` download no packages, and pnpm >= 12's OIDC token
+// exchange ignores NODE_EXTRA_CA_CERTS, so it rejects safe-chain's MITM
+// certificate (#596). Installs from lifecycle scripts are still caught by the shims.
+const PNPM_NO_PROXY_COMMANDS = new Set([...PNPM_LIFECYCLE_COMMANDS, "publish", "stage"]);
 
 // Global flags whose value is a separate argument, which must be skipped when
 // looking for the subcommand. eg: pnpm --dir ./packages/foo publish
@@ -24,6 +24,7 @@ const PNPM_GLOBAL_FLAGS_WITH_VALUE = new Set([
   "--workspace-concurrency",
   "--reporter",
   "--loglevel",
+  "--registry",
 ]);
 
 const scanner = commandArgumentScanner();
