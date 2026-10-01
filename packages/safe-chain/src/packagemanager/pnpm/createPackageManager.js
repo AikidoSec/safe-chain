@@ -6,7 +6,45 @@ import { runPnpmCommand } from "./runPnpmCommand.js";
 // `exec` runs a pre-installed binary in project context; `node` runs Node.js.
 const PNPM_LIFECYCLE_COMMANDS = new Set(["run", "exec", "node", "test", "start", "stop", "restart"]);
 
+// `publish` and `stage` download no packages, and pnpm >= 12's OIDC token
+// exchange ignores NODE_EXTRA_CA_CERTS, so it rejects safe-chain's MITM
+// certificate (#596). Installs from lifecycle scripts are still caught by the shims.
+const PNPM_NO_PROXY_COMMANDS = new Set([...PNPM_LIFECYCLE_COMMANDS, "publish", "stage"]);
+
+// Global flags whose value is a separate argument, which must be skipped when
+// looking for the subcommand. eg: pnpm --dir ./packages/foo publish
+const PNPM_GLOBAL_FLAGS_WITH_VALUE = new Set([
+  "-C",
+  "--dir",
+  "-F",
+  "--filter",
+  "--filter-prod",
+  "--test-pattern",
+  "--changed-files-ignore-pattern",
+  "--workspace-concurrency",
+  "--reporter",
+  "--loglevel",
+  "--registry",
+]);
+
 const scanner = commandArgumentScanner();
+
+/**
+ * @param {string[]} args
+ * @returns {string | undefined}
+ */
+function findPnpmSubcommand(args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg.startsWith("-")) {
+      return arg.toLowerCase();
+    }
+    if (PNPM_GLOBAL_FLAGS_WITH_VALUE.has(arg)) {
+      i++;
+    }
+  }
+  return undefined;
+}
 
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
@@ -28,8 +66,8 @@ export function createPnpmPackageManager() {
     getDependencyUpdatesForCommand: (args) =>
       getDependencyUpdatesForCommand(args, false),
     commandNeedsProxy(args) {
-      const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
-      return !command || !PNPM_LIFECYCLE_COMMANDS.has(command);
+      const command = findPnpmSubcommand(args);
+      return !command || !PNPM_NO_PROXY_COMMANDS.has(command);
     },
   };
 }
