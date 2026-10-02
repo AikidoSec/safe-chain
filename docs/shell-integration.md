@@ -2,7 +2,12 @@
 
 ## Overview
 
-The shell integration automatically wraps common package manager commands (`npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `rush`, `rushx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `uvx`, `poetry`, `pipx`) with Aikido's security scanning functionality. It also intercepts Python module invocations for pip when available: `python -m pip`, `python -m pip3`, `python3 -m pip`, `python3 -m pip3`. This is achieved by sourcing startup scripts that define shell functions to wrap these commands with their Aikido-protected equivalents.
+The shell integration automatically wraps common package manager commands (`npm`, `npx`, `yarn`, `pnpm`, `pnpx`, `rush`, `rushx`, `bun`, `bunx`, `pip`, `pip3`, `uv`, `uvx`, `poetry`, `pipx`) with Aikido's security scanning functionality. It also intercepts Python module invocations for pip when available: `python -m pip`, `python -m pip3`, `python3 -m pip`, `python3 -m pip3`.
+
+Safe Chain provides two integration modes:
+
+- `safe-chain setup` adds shell functions for interactive terminals.
+- `safe-chain setup-ci` creates executable shims for CI systems, AI coding agents, and other non-interactive subprocesses that may not source shell startup files.
 
 ## Supported Shells
 
@@ -32,6 +37,37 @@ This command:
 - Adds lightweight interceptors so `python -m pip[...]` and `python3 -m pip[...]` route through Safe Chain when invoked by name
 
 ❗ After running this command, **you must restart your terminal** for the changes to take effect. This ensures that the startup scripts are sourced correctly.
+
+### Setup for CI and AI coding agents
+
+```bash
+safe-chain setup-ci
+```
+
+This command creates executable shims in `~/.safe-chain/shims`. Unlike the functions created by `safe-chain setup`, these shims work in non-interactive subprocesses as long as the shims directory appears before the original package-manager binaries in `PATH`.
+
+Prepend the shims and Safe Chain binary directories before starting an AI coding agent or another subprocess:
+
+```bash
+export PATH="$HOME/.safe-chain/shims:$HOME/.safe-chain/bin:$PATH"
+```
+
+Verify the configuration:
+
+```bash
+command -v npm
+# Expected: ~/.safe-chain/shims/npm
+
+npm safe-chain-verify
+# Expected: OK: Safe-chain works!
+```
+
+Safe Chain automatically persists these paths in supported CI environments when their environment variables are available, including `GITHUB_PATH` for GitHub Actions, `TF_BUILD` for Azure Pipelines, and `BASH_ENV` for CircleCI. Other environments must persist or inherit the `PATH` explicitly.
+
+If the agent is sandboxed, allow binding and connections on loopback (`127.0.0.1` or `localhost`). Safe Chain uses a loopback-only proxy on an ephemeral port for package registry traffic. You do not need to disable the rest of the agent's sandbox restrictions.
+
+> [!IMPORTANT]
+> Invoke package managers by name. An absolute path such as `/usr/bin/npm` bypasses both shell functions and `PATH` shims.
 
 ### Remove Shell Integration
 
