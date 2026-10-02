@@ -169,6 +169,31 @@ function forwardRequest(req, hostname, port, res, requestHandler) {
 }
 
 /**
+ * @param {string} baseUrl
+ * @param {string} path
+ * @returns {string}
+ */
+function buildValidatedUrl(baseUrl, path) {
+  try {
+    // Minimal path validation
+    if (path && (path.includes('/../') || /\/%2e%2e\//i.test(path))) {
+      throw new Error('Invalid path');
+    }
+    
+    const url = new URL(baseUrl);
+    
+    // Set the path if provided
+    if (path) {
+      url.pathname = path.startsWith('/') ? path : '/' + path;
+    }
+    
+    return url.href;
+  } catch {
+    throw new Error('Invalid URL');
+  }
+}
+
+/**
  * @param {string} hostname
  * @param {string} port
  * @param {import("http").IncomingMessage} req
@@ -187,11 +212,16 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
   }
   headers = requestHandler.modifyRequestHeaders(headers);
 
+  // Validate the target URL to prevent SSRF
+  const baseUrl = `https://${hostname}:${port || 443}`;
+  const validatedUrl = buildValidatedUrl(baseUrl, req.url);
+  const parsedUrl = new URL(validatedUrl);
+
   /** @type {import("http").RequestOptions} */
   const options = {
-    hostname: hostname,
-    port: port || 443,
-    path: req.url,
+    hostname: parsedUrl.hostname,
+    port: parsedUrl.port || 443,
+    path: parsedUrl.pathname + parsedUrl.search + parsedUrl.hash,
     method: req.method,
     headers: { ...headers },
   };
