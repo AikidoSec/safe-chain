@@ -7,15 +7,14 @@ on:
   release:
     types: [published]
 
-permissions:
-  id-token: write
-  contents: write
+permissions: {}
 
 jobs:
   set-version:
     name: Set version number
     if: github.event_name == 'push'
     runs-on: open-source-releaser
+    permissions: {}
     outputs:
       version: ${{ steps.get_version.outputs.tag }}
     steps:
@@ -28,6 +27,8 @@ jobs:
   create-binaries:
     if: github.event_name == 'push'
     needs: set-version
+    permissions:
+      contents: read
     uses: ./.github/workflows/create-artifact.yml
     with:
       version: ${{ needs.set-version.outputs.version }}
@@ -39,6 +40,8 @@ jobs:
     if: github.event_name == 'push'
     needs: [set-version, create-binaries]
     runs-on: open-source-releaser
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -170,6 +173,9 @@ jobs:
     name: Publish to npm
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
