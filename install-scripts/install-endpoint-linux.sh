@@ -5,7 +5,8 @@
 # Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--headless] [--container|--ci-cd]
 #    or: curl -fsSL <url> | sudo AIKIDO_TOKEN=<TOKEN> sh -s -- [--headless] [--container|--ci-cd]
 #
-#   --token      enrollment token. Optional when AIKIDO_TOKEN is set; --token wins if both are set.
+#   --token      enrollment token. Optional when AIKIDO_TOKEN is set, or when this
+#                machine already has a token. --token wins over AIKIDO_TOKEN.
 #   --headless   server/VM: no tray, skip GTK/WebKit Recommends, still L4, reboot required
 #   --container  run *inside* a container: no tray, skip Recommends, L7, ephemeral secrets, no reboot
 #                not for Docker/Jenkins hosts; those use --headless
@@ -247,6 +248,17 @@ detect_package() {
     fi
 }
 
+# Enrollment file written by the package. An upgrade leaves it in place, so a
+# new token is required only when this file has none.
+ENDPOINT_CONFIG="/var/lib/aikidosecurity/endpoint-protection/run/config.json"
+
+# Non-empty token in config.json, compact {"token":"x"} or the daemon's
+# pretty-printed "token": "x". "token":"" is not enrolled.
+config_has_token() {
+    [ -f "$1" ] || return 1
+    grep -Eq '"token"[[:space:]]*:[[:space:]]*"[^"[:space:]]' "$1"
+}
+
 # Run the package manager with the settings the installer reads from the environment.
 # --container/--ci-cd wins if headless is also set: do not also export AIKIDO_HEADLESS.
 # Export both env names so this script works against today's v1.8.1 package
@@ -342,7 +354,11 @@ main() {
     [ -z "$TOKEN" ] && TOKEN="${AIKIDO_TOKEN:-}"
 
     if [ -z "$TOKEN" ]; then
-        error "Token is required. Pass it with --token <TOKEN> or set AIKIDO_TOKEN."
+        if config_has_token "$ENDPOINT_CONFIG"; then
+            info "Already enrolled. Keeping the existing token."
+        else
+            error "Token is required. Pass it with --token <TOKEN> or set AIKIDO_TOKEN."
+        fi
     fi
 
     # Validate token to prevent injection
