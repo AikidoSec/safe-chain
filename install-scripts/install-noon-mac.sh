@@ -4,7 +4,7 @@
 #
 # Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN>
 
-set -e  # Exit on error
+set -e
 
 # Configuration
 INSTALL_URL="https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/v1.10.7/NoonSecurity.pkg"
