@@ -106,6 +106,7 @@ jobs:
           cp install-scripts/uninstall-safe-chain.sh release-artifacts/uninstall-safe-chain.sh
           cp install-scripts/uninstall-safe-chain.ps1 release-artifacts/uninstall-safe-chain.ps1
           cp install-scripts/install-endpoint-mac.sh release-artifacts/install-endpoint-mac.sh
+          cp install-scripts/install-noon-mac.sh release-artifacts/install-noon-mac.sh
           cp install-scripts/install-endpoint-windows.ps1 release-artifacts/install-endpoint-windows.ps1
           cp install-scripts/uninstall-endpoint-mac.sh release-artifacts/uninstall-endpoint-mac.sh
           cp install-scripts/uninstall-endpoint-windows.ps1 release-artifacts/uninstall-endpoint-windows.ps1
@@ -132,6 +133,7 @@ jobs:
             release-artifacts/uninstall-safe-chain.sh \
             release-artifacts/uninstall-safe-chain.ps1 \
             release-artifacts/install-endpoint-mac.sh \
+            release-artifacts/install-noon-mac.sh \
             release-artifacts/install-endpoint-windows.ps1 \
             release-artifacts/uninstall-endpoint-mac.sh \
             release-artifacts/uninstall-endpoint-windows.ps1
