@@ -40,6 +40,10 @@ jobs:
           echo "mac=$(sha256sum /tmp/EndpointProtection.pkg | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           echo "win=$(sha256sum /tmp/EndpointProtection.msi | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
+          # NoonSecurity.pkg is only guaranteed on S3, where the endpoint release uploads it; the GitHub release may not carry it.
+          curl -fsSL "https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/${VERSION}/NoonSecurity.pkg" -o /tmp/NoonSecurity.pkg
+          echo "noon_mac=$(sha256sum /tmp/NoonSecurity.pkg | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
           for entry in \
             "linux_amd64_deb:EndpointProtection-amd64.deb" \
             "linux_arm64_deb:EndpointProtection-arm64.deb" \
@@ -60,9 +64,13 @@ jobs:
           OLD="${{ steps.current.outputs.version }}"
           MAC_SHA="${{ steps.checksums.outputs.mac }}"
           WIN_SHA="${{ steps.checksums.outputs.win }}"
+          NOON_MAC_SHA="${{ steps.checksums.outputs.noon_mac }}"
 
           sed -i "s|${OLD}/EndpointProtection.pkg|${NEW}/EndpointProtection.pkg|" install-scripts/install-endpoint-mac.sh
           sed -i "s|^DOWNLOAD_SHA256=\"[^\"]*\"|DOWNLOAD_SHA256=\"${MAC_SHA}\"|" install-scripts/install-endpoint-mac.sh
+
+          sed -i "s|${OLD}/NoonSecurity.pkg|${NEW}/NoonSecurity.pkg|" install-scripts/install-noon-mac.sh
+          sed -i "s|^DOWNLOAD_SHA256=\"[^\"]*\"|DOWNLOAD_SHA256=\"${NOON_MAC_SHA}\"|" install-scripts/install-noon-mac.sh
 
           sed -i "s|${OLD}/EndpointProtection.msi|${NEW}/EndpointProtection.msi|" install-scripts/install-endpoint-windows.ps1
           sed -i 's|^\$DownloadSha256 = "[^"]*"|\$DownloadSha256 = "'"${WIN_SHA}"'"|' install-scripts/install-endpoint-windows.ps1
@@ -93,7 +101,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add install-scripts/install-endpoint-mac.sh install-scripts/install-endpoint-windows.ps1 install-scripts/install-endpoint-linux.sh
+          git add install-scripts/install-endpoint-mac.sh install-scripts/install-noon-mac.sh install-scripts/install-endpoint-windows.ps1 install-scripts/install-endpoint-linux.sh
           git commit -m "Bump Endpoint to ${NEW}"
           git push origin "$BRANCH"
           PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
