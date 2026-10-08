@@ -122,7 +122,52 @@ function removeAlias(arg) {
   // Eg.: server@npm:http-server@latest becomes http-server@latest
   const aliasIndex = arg.indexOf("@npm:");
   if (aliasIndex !== -1) {
-    return arg.slice(aliasIndex + 5);
+    // Validate that this is actually an npm alias and not a URL or other format
+    // containing "@npm:" in a query parameter or path.
+    // An npm alias must have the format: alias@npm:package[@version]
+    // The alias name must be a valid package name (not a URL, file path, etc.)
+    const aliasName = arg.slice(0, aliasIndex);
+    
+    // Check if the part before @npm: looks like a valid package name
+    // Valid package names:
+    // - Don't contain protocol separators (://)
+    // - Don't start with . or / (file paths)
+    // - Don't contain URL-like patterns
+    if (isValidPackageName(aliasName)) {
+      return arg.slice(aliasIndex + 5);
+    }
   }
   return arg;
+}
+
+/**
+ * @param {string} name
+ * @returns {boolean}
+ */
+function isValidPackageName(name) {
+  if (!name) {
+    return false;
+  }
+  
+  // Reject URLs (http://, https://, git://, etc.)
+  if (name.includes("://")) {
+    return false;
+  }
+  
+  // Reject file paths
+  if (name.startsWith("./") || name.startsWith("../") || name.startsWith("/")) {
+    return false;
+  }
+  
+  // Reject Windows-style paths
+  if (/^[a-zA-Z]:/.test(name)) {
+    return false;
+  }
+  
+  // Reject file: protocol
+  if (name.startsWith("file:")) {
+    return false;
+  }
+  
+  return true;
 }
