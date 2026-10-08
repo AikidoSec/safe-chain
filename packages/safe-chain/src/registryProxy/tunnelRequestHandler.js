@@ -5,6 +5,70 @@ import { getConnectTimeout } from "./getConnectTimeout.js";
 
 /** @type {string[]} */
 let timedoutImdsEndpoints = [];
+let nextTunnelId = 0;
+const HALF_OPEN_TIMEOUT_MS = 10000;
+
+/**
+ * Allow in-flight client writes after upstream FIN, but bound socket retention.
+ * @param {import("http").ServerResponse} clientSocket
+ * @param {import("net").Socket} upstreamSocket
+ * @param {string} label
+ */
+function limitHalfOpenTunnel(clientSocket, upstreamSocket, label) {
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let timer;
+  upstreamSocket.once("end", () => {
+    timer = setTimeout(() => {
+      ui.writeVerbose(
+        `Safe-chain: ${label} half-open timeout after ${HALF_OPEN_TIMEOUT_MS}ms`
+      );
+      upstreamSocket.destroy();
+      clientSocket.destroy();
+    }, HALF_OPEN_TIMEOUT_MS);
+    timer.unref();
+  });
+  const clearTimer = () => clearTimeout(timer);
+  clientSocket.once("close", clearTimer);
+  upstreamSocket.once("close", clearTimer);
+}
+
+/**
+ * Byte counts are TCP totals, including CONNECT for system proxies.
+ * @param {import("http").ServerResponse} clientSocket
+ * @param {string} target
+ * @param {string} route
+ */
+function createTunnelDiagnostics(clientSocket, target, route) {
+  const label = `tunnel #${++nextTunnelId} ${target} (${route})`;
+  const started = Date.now();
+  let established = false;
+  ui.writeVerbose(`Safe-chain: ${label} opening`);
+  clientSocket.on("end", () => ui.writeVerbose(`Safe-chain: ${label} client FIN`));
+  clientSocket.on("error", (err) =>
+    ui.writeVerbose(`Safe-chain: ${label} client error: ${formatSocketError(err)}`)
+  );
+  return {
+    label,
+    /** @param {import("net").Socket} socket */
+    observeUpstream(socket) {
+      socket.on("end", () => ui.writeVerbose(`Safe-chain: ${label} upstream FIN`));
+      socket.once("close", () => ui.writeVerbose(
+        `Safe-chain: ${label} upstream closed after ${Date.now() - started}ms; established=${established}; TCP bytes up=${socket.bytesWritten} down=${socket.bytesRead}`
+      ));
+    },
+    connected() {
+      established = true;
+      ui.writeVerbose(
+        `Safe-chain: ${label} established after ${Date.now() - started}ms`
+      );
+    },
+  };
+}
+
+/** @param {Error & { code?: string }} err */
+function formatSocketError(err) {
+  return `${err.code || "UNKNOWN"} (${err.message})`;
+}
 
 /**
  * @param {import("http").IncomingMessage} req
@@ -44,16 +108,21 @@ function tunnelRequestToDestination(req, clientSocket, head) {
   const { port, hostname } = new URL(`http://${req.url}`);
   const isImds = isImdsEndpoint(hostname);
   const targetPort = Number.parseInt(port) || 443;
+  const diagnostics = createTunnelDiagnostics(
+    clientSocket,
+    `${hostname}:${targetPort}`,
+    "direct"
+  );
 
   if (timedoutImdsEndpoints.includes(hostname)) {
     clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
     if (isImds) {
       ui.writeVerbose(
-        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`
+        `Safe-chain: ${diagnostics.label} closing because previously timedout connect to ${hostname}`
       );
     } else {
       ui.writeError(
-        `Safe-chain: Closing connection because previously timedout connect to ${hostname}`
+        `Safe-chain: ${diagnostics.label} closing because previously timedout connect to ${hostname}`
       );
     }
     return;
@@ -67,11 +136,11 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     if (isImds) {
       timedoutImdsEndpoints.push(hostname);
       ui.writeVerbose(
-        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`
+        `Safe-chain: ${diagnostics.label} connect timed out after ${connectTimeout}ms`
       );
     } else {
       ui.writeError(
-        `Safe-chain: connect to ${hostname}:${targetPort} timed out after ${connectTimeout}ms`
+        `Safe-chain: ${diagnostics.label} connect timed out after ${connectTimeout}ms`
       );
     }
     serverSocket.destroy();
@@ -80,42 +149,65 @@ function tunnelRequestToDestination(req, clientSocket, head) {
     }
   }, connectTimeout);
 
-  const serverSocket = net.connect(targetPort, hostname, () => {
-    // Clear timer to prevent false timeout errors after successful connection
-    clearTimeout(connectTimer);
+  let isConnected = false;
+  const serverSocket = net.connect(
+    {
+      port: targetPort,
+      host: hostname,
+      // Forward the upstream FIN without automatically ending our writable side.
+      // The client may still have data in flight; pipe() forwards its FIN too.
+      allowHalfOpen: true,
+    },
+    () => {
+      // Clear timer to prevent false timeout errors after successful connection
+      clearTimeout(connectTimer);
+      if (clientSocket.destroyed || clientSocket.writableEnded) {
+        serverSocket.destroy();
+        return;
+      }
+      isConnected = true;
+      diagnostics.connected();
+      limitHalfOpenTunnel(clientSocket, serverSocket, diagnostics.label);
 
-    clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-    serverSocket.write(head);
-    serverSocket.pipe(clientSocket);
-    clientSocket.pipe(serverSocket);
-  });
+      clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      serverSocket.write(head);
+      serverSocket.pipe(clientSocket);
+      clientSocket.pipe(serverSocket);
+    }
+  );
+  diagnostics.observeUpstream(serverSocket);
 
   clientSocket.on("error", () => {
     // This can happen if the client TCP socket sends RST instead of FIN.
     // Not subscribing to 'error' event will cause node to throw and crash.
     clearTimeout(connectTimer);
-    if (serverSocket.writable) {
-      serverSocket.end();
-    }
+    serverSocket.destroy();
   });
 
   clientSocket.on("close", () => {
     // Client closed connection - clean up server socket
     clearTimeout(connectTimer);
-    if (serverSocket.writable) {
-      serverSocket.end();
-    }
+    serverSocket.destroy();
   });
 
   serverSocket.on("error", (err) => {
     clearTimeout(connectTimer);
+    if (isConnected) {
+      ui.writeVerbose(
+        `Safe-chain: ${diagnostics.label} upstream error after CONNECT: ${formatSocketError(err)}`
+      );
+      // Once CONNECT succeeds, this socket carries TLS, not HTTP. Sending a
+      // plaintext 502 here corrupts that stream instead of reporting closure.
+      clientSocket.destroy();
+      return;
+    }
     if (isImds) {
       ui.writeVerbose(
-        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`
+        `Safe-chain: error connecting to ${hostname}:${targetPort} [${diagnostics.label}] - ${formatSocketError(err)}`
       );
     } else {
       ui.writeError(
-        `Safe-chain: error connecting to ${hostname}:${targetPort} - ${err.message}`
+        `Safe-chain: error connecting to ${hostname}:${targetPort} [${diagnostics.label}] - ${formatSocketError(err)}`
       );
     }
     if (clientSocket.writable) {
@@ -141,12 +233,19 @@ function tunnelRequestToDestination(req, clientSocket, head) {
 function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
   const { port, hostname } = new URL(`http://${req.url}`);
   const proxy = new URL(proxyUrl);
+  const diagnostics = createTunnelDiagnostics(
+    clientSocket,
+    `${hostname}:${port || 443}`,
+    `proxy ${proxy.hostname}:${proxy.port || 80}`
+  );
 
   // Connect to proxy server
   const proxySocket = net.connect({
     host: proxy.hostname,
     port: Number.parseInt(proxy.port) || 80,
+    allowHalfOpen: true,
   });
+  diagnostics.observeUpstream(proxySocket);
 
   proxySocket.on("connect", () => {
     // Send CONNECT request to proxy
@@ -166,14 +265,20 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
 
     // Check if CONNECT succeeded (HTTP/1.1 200)
     if (response.startsWith("HTTP/1.1 200")) {
+      if (clientSocket.destroyed || clientSocket.writableEnded) {
+        proxySocket.destroy();
+        return;
+      }
       isConnected = true;
+      diagnostics.connected();
+      limitHalfOpenTunnel(clientSocket, proxySocket, diagnostics.label);
       clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       proxySocket.write(head);
       proxySocket.pipe(clientSocket);
       clientSocket.pipe(proxySocket);
     } else {
       ui.writeError(
-        `Safe-chain: proxy CONNECT failed: ${response.split("\r\n")[0]}`
+        `Safe-chain: ${diagnostics.label} proxy CONNECT failed: ${response.split("\r\n")[0]}`
       );
       if (clientSocket.writable) {
         clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
@@ -187,27 +292,43 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
   proxySocket.on("error", (err) => {
     if (!isConnected) {
       ui.writeError(
-        `Safe-chain: error connecting to proxy ${proxy.hostname}:${
-          proxy.port || 8080
-        } - ${err.message}`
+        `Safe-chain: ${diagnostics.label} error connecting to proxy - ${formatSocketError(err)}`
       );
       if (clientSocket.writable) {
         clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
       }
     } else {
+      ui.writeVerbose(
+        `Safe-chain: ${diagnostics.label} proxy socket error after CONNECT: ${formatSocketError(err)}`
+      );
+      clientSocket.destroy();
+    }
+  });
+
+  proxySocket.on("end", () => {
+    if (!isConnected) {
       ui.writeError(
-        `Safe-chain: proxy socket error after connection - ${err.message}`
+        `Safe-chain: ${diagnostics.label} proxy closed connection before completing CONNECT`
       );
       if (clientSocket.writable) {
-        clientSocket.end();
+        clientSocket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
       }
+      // No pipe is established yet to end our half-open writable side.
+      proxySocket.destroy();
     }
   });
 
   clientSocket.on("error", () => {
-    if (proxySocket.writable) {
-      proxySocket.end();
+    proxySocket.destroy();
+  });
+
+  clientSocket.on("close", () => {
+    proxySocket.destroy();
+  });
+
+  proxySocket.on("close", () => {
+    if (clientSocket.writable) {
+      clientSocket.end();
     }
   });
 }
-
