@@ -6,6 +6,31 @@ import { getConnectTimeout } from "./getConnectTimeout.js";
 /** @type {string[]} */
 let timedoutImdsEndpoints = [];
 let nextTunnelId = 0;
+const HALF_OPEN_TIMEOUT_MS = 10000;
+
+/**
+ * Allow in-flight client writes after upstream FIN, but bound socket retention.
+ * @param {import("http").ServerResponse} clientSocket
+ * @param {import("net").Socket} upstreamSocket
+ * @param {string} label
+ */
+function limitHalfOpenTunnel(clientSocket, upstreamSocket, label) {
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let timer;
+  upstreamSocket.once("end", () => {
+    timer = setTimeout(() => {
+      ui.writeVerbose(
+        `Safe-chain: ${label} half-open timeout after ${HALF_OPEN_TIMEOUT_MS}ms`
+      );
+      upstreamSocket.destroy();
+      clientSocket.destroy();
+    }, HALF_OPEN_TIMEOUT_MS);
+    timer.unref();
+  });
+  const clearTimer = () => clearTimeout(timer);
+  clientSocket.once("close", clearTimer);
+  upstreamSocket.once("close", clearTimer);
+}
 
 /**
  * Byte counts are TCP totals, including CONNECT for system proxies.
@@ -142,6 +167,7 @@ function tunnelRequestToDestination(req, clientSocket, head) {
       }
       isConnected = true;
       diagnostics.connected();
+      limitHalfOpenTunnel(clientSocket, serverSocket, diagnostics.label);
 
       clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       serverSocket.write(head);
@@ -245,6 +271,7 @@ function tunnelRequestViaProxy(req, clientSocket, head, proxyUrl) {
       }
       isConnected = true;
       diagnostics.connected();
+      limitHalfOpenTunnel(clientSocket, proxySocket, diagnostics.label);
       clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
       proxySocket.write(head);
       proxySocket.pipe(clientSocket);

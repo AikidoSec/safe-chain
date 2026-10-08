@@ -152,6 +152,7 @@ for (const viaProxy of [false, true]) {
     it("forwards a clean upstream FIN without losing data or late client writes", { timeout: 3000 }, async (t) => {
       const { client, remote, outgoing, errors, verbose, chunks, clientClosed, remoteClosed } =
         await createTunnel(t, viaProxy);
+      t.mock.timers.enable({ apis: ["setTimeout"] });
       const clientEnded = once(client, "end");
       remote.end("upstream response");
       await clientEnded;
@@ -171,6 +172,31 @@ for (const viaProxy of [false, true]) {
       assert.ok(summary.includes(`TCP bytes up=${outgoing.bytesWritten} down=${outgoing.bytesRead}`));
       assert.ok(outgoing.bytesWritten >= Buffer.byteLength("late client data"));
       assert.ok(outgoing.bytesRead >= Buffer.byteLength("upstream response"));
+      t.mock.timers.tick(10000);
+      assert.ok(verbose.mock.calls.every((call) =>
+        !call.arguments[0].includes("half-open timeout")
+      ));
+    });
+
+    it("bounds half-open retention when the client ignores upstream FIN", { timeout: 3000 }, async (t) => {
+      const { client, remote, outgoing, verbose, clientClosed, remoteClosed } =
+        await createTunnel(t, viaProxy);
+      t.mock.timers.enable({ apis: ["setTimeout"] });
+      const clientEnded = once(client, "end");
+      remote.end();
+      await clientEnded;
+      t.mock.timers.tick(9999);
+      assert.equal(outgoing.destroyed, false);
+      t.mock.timers.tick(1);
+      assert.equal(outgoing.destroyed, true);
+      await remoteClosed;
+      assert.equal(verbose.mock.calls.filter((call) =>
+        call.arguments[0].includes("half-open timeout after 10000ms")
+      ).length, 1);
+      // The test client deliberately remains half-open even after the proxy
+      // destroys its side; finish it locally so test cleanup can complete.
+      client.destroy();
+      await clientClosed;
     });
 
     it("cleans up the upstream when the client disconnects", { timeout: 3000 }, async (t) => {
