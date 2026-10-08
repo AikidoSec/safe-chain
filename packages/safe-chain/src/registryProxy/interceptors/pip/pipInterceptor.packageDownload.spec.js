@@ -128,6 +128,18 @@ describe("pipInterceptor", async () => {
       url: "https://pypi.org/packages/source/f/foo_bar/foo_bar-latest.tar.gz",
       expected: { packageName: undefined, version: undefined },
     },
+    {
+      url: "https://files.pythonhosted.org/packages/source/v/victim/victim-1.0-1.tar.gz",
+      expected: { packageName: "victim", version: "1.0-1" },
+    },
+    {
+      url: "https://pypi.org/packages/source/f/foo-bar/foo-bar-2.0-1.tar.gz",
+      expected: { packageName: "foo-bar", version: "2.0-1" },
+    },
+    {
+      url: "https://files.pythonhosted.org/packages/xx/yy/victim-1.0-1-py3-none-any.whl",
+      expected: { packageName: "victim", version: "1.0-1" },
+    },
   ];
 
   parserCases.forEach(({ url, expected }, index) => {
