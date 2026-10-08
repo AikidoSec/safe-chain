@@ -81,7 +81,7 @@ jobs:
           node-version: "20.x"
 
       - name: Setup safe-chain
-        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+        run: sh install-scripts/install-safe-chain.sh --ci
         shell: bash
 
       - name: Install dependencies
