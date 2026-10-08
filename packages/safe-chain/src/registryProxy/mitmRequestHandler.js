@@ -70,7 +70,9 @@ function createHttpsServer(hostname, port, interceptor) {
       }
 
       const pathAndQuery = getRequestPathAndQuery(req.url);
-      const targetUrl = `https://${hostname}${pathAndQuery}`;
+      // Include port in targetUrl if it's non-standard (not 443 for HTTPS)
+      const portSuffix = port && port !== "443" ? `:${port}` : "";
+      const targetUrl = `https://${hostname}${portSuffix}${pathAndQuery}`;
 
       const requestInterceptor = await interceptor.handleRequest(targetUrl);
       const blockResponse = requestInterceptor.blockResponse;
