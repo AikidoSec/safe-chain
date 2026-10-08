@@ -8,7 +8,7 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, []);
+    assert.deepEqual(result, { packages: [], registry: null });
   });
 
   it("should return an array of changes for one package", () => {
@@ -16,7 +16,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "14.1.1" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "14.1.1" }],
+      registry: null
+    });
   });
 
   it("should return the package in the format @vercel/otel", () => {
@@ -24,7 +27,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "@vercel/otel", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "@vercel/otel", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should return the package with latest tag if absent", () => {
@@ -32,7 +38,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should ignore double --", () => {
@@ -40,7 +49,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should only return the first package", () => {
@@ -48,7 +60,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should return package with -p option", () => {
@@ -56,7 +71,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should return package with --package option", () => {
@@ -64,7 +82,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should return package with --package=x option", () => {
@@ -72,7 +93,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should return package with --package=x@version option", () => {
@@ -80,7 +104,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "1.0.0" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "1.0.0" }],
+      registry: null
+    });
   });
 
   it("should ignore options with parameters and return an array of changes", () => {
@@ -88,7 +115,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "14.1.1" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "14.1.1" }],
+      registry: null
+    });
   });
 
   it("should parse version even for aliased packages", () => {
@@ -96,7 +126,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "14.1.1" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "14.1.1" }],
+      registry: null
+    });
   });
 
   it("should parse scoped packages", () => {
@@ -104,7 +137,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "@scope/package", version: "1.0.0" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "@scope/package", version: "1.0.0" }],
+      registry: null
+    });
   });
 
   it("should parse packages with version ranges", () => {
@@ -112,7 +148,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "http-server", version: "^14.1.1" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "http-server", version: "^14.1.1" }],
+      registry: null
+    });
   });
 
   it("should parse package folders", () => {
@@ -120,7 +159,10 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [{ name: "./local-package", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "./local-package", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should parse tarballs", () => {
@@ -128,9 +170,12 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [
-      { name: "file:./local-package.tgz", version: "latest" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "file:./local-package.tgz", version: "latest" },
+      ],
+      registry: null
+    });
   });
 
   it("should parse tarball URLs", () => {
@@ -138,9 +183,12 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [
-      { name: "https://example.com/local-package.tgz", version: "latest" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "https://example.com/local-package.tgz", version: "latest" },
+      ],
+      registry: null
+    });
   });
 
   it("should parse git URLs", () => {
@@ -148,8 +196,24 @@ describe("parsePackagesFromArguments", () => {
 
     const result = parsePackagesFromArguments(args);
 
-    assert.deepEqual(result, [
-      { name: "git://github.com/http-party/http-server", version: "latest" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "git://github.com/http-party/http-server", version: "latest" },
+      ],
+      registry: null
+    });
+  });
+
+  it("should capture registry option", () => {
+    const args = ["http-server", "--registry", "https://custom.registry.com"];
+
+    const result = parsePackagesFromArguments(args);
+
+    assert.deepEqual(result, {
+      packages: [
+        { name: "http-server", version: "latest" },
+      ],
+      registry: "https://custom.registry.com"
+    });
   });
 });
