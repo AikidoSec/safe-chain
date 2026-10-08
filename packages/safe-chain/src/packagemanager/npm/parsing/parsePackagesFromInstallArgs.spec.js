@@ -181,4 +181,112 @@ describe("parsePackagesFromInstallArgs", () => {
       { name: "git://github.com/npm/cli.git", version: "latest" },
     ]);
   });
+
+  it("should not strip @npm: from URLs with @npm: in query string", () => {
+    const args = ["install", "https://evil.com/malware.tgz?foo=@npm:clean-package@1.0.0"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [
+      {
+        name: "https://evil.com/malware.tgz?foo=@npm:clean-package@1.0.0",
+        version: "latest",
+      },
+    ]);
+  });
+
+  it("should not strip @npm: from URLs with @npm: in fragment", () => {
+    const args = ["install", "https://evil.com/malware.tgz#@npm:clean-package@1.0.0"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [
+      {
+        name: "https://evil.com/malware.tgz#@npm:clean-package@1.0.0",
+        version: "latest",
+      },
+    ]);
+  });
+
+  it("should not strip @npm: from http URLs", () => {
+    const args = ["install", "http://evil.com/malware.tgz?x=@npm:clean@1.0.0"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [
+      {
+        name: "http://evil.com/malware.tgz?x=@npm:clean@1.0.0",
+        version: "latest",
+      },
+    ]);
+  });
+
+  it("should not strip @npm: from file: URLs", () => {
+    const args = ["install", "file:./package.tgz?x=@npm:clean@1.0.0"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [
+      {
+        name: "file:./package.tgz?x=@npm:clean@1.0.0",
+        version: "latest",
+      },
+    ]);
+  });
+
+  it("should not strip @npm: from git URLs", () => {
+    const args = ["install", "git://github.com/user/repo?x=@npm:clean@1.0.0"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [
+      {
+        name: "git://github.com/user/repo?x=@npm:clean@1.0.0",
+        version: "latest",
+      },
+    ]);
+  });
+
+  it("should not strip @npm: from git+ URLs", () => {
+    const args = ["install", "git+https://github.com/user/repo?x=@npm:clean@1.0.0"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [
+      {
+        name: "git+https://github.com/user/repo?x=@npm:clean@1.0.0",
+        version: "latest",
+      },
+    ]);
+  });
+
+  it("should not strip @npm: from github: URLs", () => {
+    const args = ["install", "github:user/repo?x=@npm:clean@1.0.0"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [
+      {
+        name: "github:user/repo?x=@npm:clean@1.0.0",
+        version: "latest",
+      },
+    ]);
+  });
+
+  it("should not process @npm: at the start as an alias", () => {
+    const args = ["install", "@npm:express@4.17.1"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    // @npm: at the start is not valid alias syntax, so it should be treated as-is
+    assert.deepEqual(result, [{ name: "@npm:express", version: "4.17.1" }]);
+  });
+
+  it("should still strip valid aliases with @npm:", () => {
+    const args = ["install", "myalias@npm:express@4.17.1"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, [{ name: "express", version: "4.17.1" }]);
+  });
 });
