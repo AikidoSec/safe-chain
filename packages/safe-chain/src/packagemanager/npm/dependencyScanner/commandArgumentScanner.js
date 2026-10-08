@@ -1,6 +1,7 @@
 import { resolvePackageVersion } from "../../../api/npmApi.js";
 import { parsePackagesFromInstallArgs } from "../parsing/parsePackagesFromInstallArgs.js";
 import { hasDryRunArg } from "../utils/npmCommands.js";
+import { validateNotExternalPackageSpec } from "../../_shared/externalPackageSpec.js";
 
 /**
  * @typedef {Object} ScanResult
@@ -60,6 +61,9 @@ export async function checkChangesFromArgs(args) {
   const packageUpdates = parsePackagesFromInstallArgs(args);
 
   for (const packageUpdate of packageUpdates) {
+    // Reject external package specifications (Git, HTTPS, file paths, etc.)
+    validateNotExternalPackageSpec(packageUpdate.name, "npm");
+
     var exactVersion = await resolvePackageVersion(
       packageUpdate.name,
       packageUpdate.version
