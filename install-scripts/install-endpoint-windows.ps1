@@ -1,6 +1,15 @@
 # Downloads and installs Aikido Endpoint Protection on Windows
 #
-# Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } -token <TOKEN> [-is-mdm] [-debug]"
+# Usage:
+#   $installer = Join-Path $env:TEMP "install-endpoint-windows.ps1"
+#   Invoke-WebRequest "<url>" -OutFile $installer -UseBasicParsing
+#   $expectedHash = "<HASH>"
+#   if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) {
+#       Remove-Item $installer -ErrorAction SilentlyContinue
+#       throw "Checksum verification failed for install-endpoint-windows.ps1"
+#   }
+#   & $installer -token <TOKEN> [-is-mdm] [-debug]
+#   Remove-Item $installer
 
 param(
     [string]$token,
@@ -13,7 +22,7 @@ $InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/downloa
 $DownloadSha256 = "90cb6931e849b02d7355408c1d592615efe245bcc4727fcd9abbe6f5b62d8693"
 
 $script:KeepLogFile = $false
-$script:DebugUsage = 'iex "& { $(iwr ''<url>'' -UseBasicParsing) } -token <TOKEN> -debug"'
+$script:DebugUsage = 'Download the script, verify its checksum, then run: & $installer -token <TOKEN> -debug'
 
 # Ensure TLS 1.2 is enabled for downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
