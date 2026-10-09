@@ -11,13 +11,20 @@
  */
 
 /**
+ * @typedef {Object} ParseResult
+ * @property {PackageDetail[]} packages
+ * @property {string | null} registry
+ */
+
+/**
  * @param {string[]} args
- * @returns {PackageDetail[]}
+ * @returns {ParseResult}
  */
 export function parsePackagesFromInstallArgs(args) {
   /** @type {{name: string, version: string | null}[]} */
   const changes  = [];
   let defaultTag = "latest";
+  let registry = null;
 
   // Skip first argument (install command)
   for (let i = 1; i < args.length; i++) {
@@ -31,6 +38,11 @@ export function parsePackagesFromInstallArgs(args) {
       // it a tag is specified, set the default tag
       if (npmOption.name === "--tag") {
         defaultTag = args[i];
+      }
+
+      // Capture registry specification
+      if (npmOption.name === "--registry") {
+        registry = args[i];
       }
 
       continue;
@@ -49,7 +61,10 @@ export function parsePackagesFromInstallArgs(args) {
     }
   }
 
-  return /** @type {PackageDetail[]} */ (changes);
+  return {
+    packages: /** @type {PackageDetail[]} */ (changes),
+    registry,
+  };
 }
 
 /**
