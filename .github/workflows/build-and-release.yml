@@ -20,8 +20,10 @@ jobs:
     steps:
       - name: Set version number
         id: get_version
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          version="${{ github.ref_name }}"
+          version="$REF_NAME"
           echo "tag=$version" >> $GITHUB_OUTPUT
 
   create-binaries:
