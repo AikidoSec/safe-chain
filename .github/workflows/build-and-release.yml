@@ -196,7 +196,7 @@ jobs:
         run: npm i -g npm@11.15.0
 
       - name: Setup safe-chain
-        run: curl -fsSL https://github.com/AikidoSec/safe-chain/releases/latest/download/install-safe-chain.sh | sh -s -- --ci
+        run: sh install-scripts/install-safe-chain.sh --ci
 
       - name: Set the version in safe-chain package
         run: npm --no-git-tag-version version ${{ github.event.release.tag_name }} --workspace=packages/safe-chain
