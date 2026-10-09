@@ -11,9 +11,11 @@ export async function resolvePackageVersion(packageName, versionRange) {
     versionRange = "latest";
   }
 
-  if (semver.valid(versionRange)) {
+  const canonicalVersion = semver.valid(versionRange);
+  if (canonicalVersion) {
     // The version is a fixed version, no need to resolve
-    return versionRange;
+    // Return the canonical form to ensure consistent comparison in malware database
+    return canonicalVersion;
   }
 
   const packageInfo = (
