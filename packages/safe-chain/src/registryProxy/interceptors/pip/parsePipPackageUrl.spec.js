@@ -97,4 +97,54 @@ describe("parsePipPackageUrl", () => {
       { packageName: undefined, version: undefined }
     );
   });
+
+  it("parses sdist with hyphenated PEP 440 version (post-release)", () => {
+    assert.deepEqual(
+      parsePipPackageFromUrl(
+        "https://files.pythonhosted.org/packages/source/v/victim/victim-1.0-1.tar.gz",
+        "files.pythonhosted.org"
+      ),
+      { packageName: "victim", version: "1.0-1" }
+    );
+  });
+
+  it("parses sdist with hyphenated package name and hyphenated version", () => {
+    assert.deepEqual(
+      parsePipPackageFromUrl(
+        "https://files.pythonhosted.org/packages/source/f/foo-bar/foo-bar-2.0-1.tar.gz",
+        "files.pythonhosted.org"
+      ),
+      { packageName: "foo-bar", version: "2.0-1" }
+    );
+  });
+
+  it("parses sdist with multiple hyphens in package name", () => {
+    assert.deepEqual(
+      parsePipPackageFromUrl(
+        "https://files.pythonhosted.org/packages/source/m/my-test-pkg/my-test-pkg-1.2.3.tar.gz",
+        "files.pythonhosted.org"
+      ),
+      { packageName: "my-test-pkg", version: "1.2.3" }
+    );
+  });
+
+  it("parses wheel with hyphenated PEP 440 version (post-release)", () => {
+    assert.deepEqual(
+      parsePipPackageFromUrl(
+        "https://files.pythonhosted.org/packages/xx/yy/victim-1.0-1-py3-none-any.whl",
+        "files.pythonhosted.org"
+      ),
+      { packageName: "victim", version: "1.0-1" }
+    );
+  });
+
+  it("parses wheel with hyphenated package name and hyphenated version", () => {
+    assert.deepEqual(
+      parsePipPackageFromUrl(
+        "https://files.pythonhosted.org/packages/xx/yy/foo-bar-2.0-1-py3-none-any.whl",
+        "files.pythonhosted.org"
+      ),
+      { packageName: "foo-bar", version: "2.0-1" }
+    );
+  });
 });
