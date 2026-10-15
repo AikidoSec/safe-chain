@@ -3,7 +3,10 @@ name: Create Release
 on:
   push:
     tags:
-      - "*"
+      # Only allow semantic version tags to trigger production signing and release.
+      # This prevents arbitrary tags from accessing production signing credentials.
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
   release:
     types: [published]
 
@@ -17,7 +20,22 @@ jobs:
     permissions: {}
     outputs:
       version: ${{ steps.get_version.outputs.tag }}
+      is_valid_release_tag: ${{ steps.validate_tag.outputs.is_valid }}
     steps:
+      - name: Validate tag format
+        id: validate_tag
+        run: |
+          tag="${{ github.ref_name }}"
+          # Enforce semantic versioning pattern: v1.2.3 or v1.2.3-prerelease
+          if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "is_valid=true" >> $GITHUB_OUTPUT
+            echo "Tag $tag is valid for release"
+          else
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+            echo "::error::Tag $tag does not match required semantic version pattern (v*.*.* or v*.*.*-*)"
+            exit 1
+          fi
+
       - name: Set version number
         id: get_version
         run: |
@@ -25,10 +43,12 @@ jobs:
           echo "tag=$version" >> $GITHUB_OUTPUT
 
   create-binaries:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && needs.set-version.outputs.is_valid_release_tag == 'true'
     needs: set-version
     permissions:
       contents: read
+    # Require manual approval via protected environment before accessing signing credentials
+    environment: production-signing
     uses: ./.github/workflows/create-artifact.yml
     with:
       version: ${{ needs.set-version.outputs.version }}
@@ -37,17 +57,17 @@ jobs:
 
   publish-binaries:
     name: Publish to GitHub release
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && needs.set-version.outputs.is_valid_release_tag == 'true'
     needs: [set-version, create-binaries]
     runs-on: open-source-releaser
     permissions:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
 
       - name: Download all binary artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: binaries/
           pattern: safe-chain-*
@@ -117,10 +137,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.set-version.outputs.version }}
         run: |
+          # Create release only if it doesn't exist; fail if assets already exist
+          # to prevent unauthorized replacement of published release artifacts.
           if ! gh release view "$VERSION" &>/dev/null; then
             gh release create "$VERSION" --draft --title "$VERSION" --generate-notes
+          else
+            echo "::warning::Release $VERSION already exists. Verifying assets..."
+            # Check if any of the critical assets already exist
+            if gh release view "$VERSION" --json assets -q '.assets[].name' | grep -q "safe-chain-"; then
+              echo "::error::Release $VERSION already has assets. Refusing to overwrite existing release artifacts."
+              echo "::error::Delete the existing release first if you need to recreate it."
+              exit 1
+            fi
           fi
-          gh release upload "$VERSION" --clobber \
+          # Upload without --clobber to fail if assets already exist
+          gh release upload "$VERSION" \
             release-artifacts/safe-chain-macos-x64 \
             release-artifacts/safe-chain-macos-arm64 \
             release-artifacts/safe-chain-linux-x64 \
@@ -183,10 +214,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org/"
