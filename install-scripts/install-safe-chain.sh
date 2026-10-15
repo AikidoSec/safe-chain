@@ -313,11 +313,11 @@ remove_npm_installation() {
         info "Detected npm global installation of @aikidosec/safe-chain"
         info "Uninstalling npm version before installing binary version..."
 
-        if npm uninstall -g @aikidosec/safe-chain >/dev/null 2>&1; then
+        if npm uninstall -g @aikidosec/safe-chain --ignore-scripts >/dev/null 2>&1; then
             info "Successfully uninstalled npm version"
         else
             warn "Failed to uninstall npm version automatically"
-            warn "Please run: npm uninstall -g @aikidosec/safe-chain"
+            warn "Please run: npm uninstall -g @aikidosec/safe-chain --ignore-scripts"
         fi
     fi
 }
@@ -383,7 +383,7 @@ remove_nvm_installation() {
             fi
 
             info "  Removing from Node $version..."
-            if nvm exec "$version" npm uninstall -g @aikidosec/safe-chain >/dev/null 2>&1; then
+            if nvm exec "$version" npm uninstall -g @aikidosec/safe-chain --ignore-scripts >/dev/null 2>&1; then
                 info "  Successfully uninstalled from Node $version"
             else
                 warn "  Failed to uninstall from Node $version"
@@ -399,7 +399,7 @@ remove_nvm_installation() {
 
     # If any uninstall failed, error out instead of continuing
     if [ "$uninstall_failed" = true ]; then
-        error "Failed to uninstall @aikidosec/safe-chain from all nvm Node versions. Please uninstall manually and try again."
+        error "Failed to uninstall @aikidosec/safe-chain from all nvm Node versions. Please uninstall manually with --ignore-scripts and try again."
     fi
 }
 
