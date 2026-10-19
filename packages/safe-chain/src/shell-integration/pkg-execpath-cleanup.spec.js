@@ -69,7 +69,7 @@ describe("PKG_EXECPATH cleanup", () => {
     const content = fs.readFileSync(file, "utf-8");
     assert.match(
       content,
-      /set -g _sc_shims_dir \(builtin realpath -- "\$safe_chain_base\/shims"[\s\S]*function removeSafeChainShimFromPath[\s\S]*\$_sc_shims_dir/,
+      /set -g _sc_shims_dir "\$safe_chain_base\/shims"[\s\S]*function removeSafeChainShimFromPath[\s\S]*\$_sc_shims_dir/,
       "init-fish.fish must remove the shims directory derived from the installed safe-chain base",
     );
   });

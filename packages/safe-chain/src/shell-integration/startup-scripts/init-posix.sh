@@ -103,26 +103,16 @@ function printSafeChainWarning() {
 }
 
 function removeSafeChainShimFromPath() {
-  # Match entries the same way the setup-ci shims do: ignore trailing slashes and
-  # resolve symlinks, since $_sc_shims_dir is a physical path (pwd -P above).
-  local rest="$PATH:" entry trimmed path_without_shims=""
+  # -ef compares the directories themselves, so trailing slashes and symlinks
+  # pointing at the shims dir are removed too.
+  local rest="$PATH:" entry path_without_shims=""
 
   while [ -n "$rest" ]; do
     entry=${rest%%:*}
     rest=${rest#*:}
-    trimmed=$entry
-    while [ "$trimmed" != "/" ] && [ "${trimmed%/}" != "$trimmed" ]; do
-      trimmed=${trimmed%/}
-    done
-    case "$trimmed" in
-      */shims)
-        # Only resolve entries that could be the shims dir, to keep this cheap.
-        if [ "$trimmed" = "$_sc_shims_dir" ] ||
-          [ "$(CDPATH= cd -- "$trimmed" 2>/dev/null && pwd -P)" = "$_sc_shims_dir" ]; then
-          continue
-        fi
-        ;;
-    esac
+    if [ -n "$entry" ] && [ "$entry" -ef "$_sc_shims_dir" ]; then
+      continue
+    fi
     path_without_shims="${path_without_shims}${entry}:"
   done
   printf "%s" "${path_without_shims%:}"

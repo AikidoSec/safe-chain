@@ -1,8 +1,7 @@
 set -l safe_chain_script (status filename)
 set -l safe_chain_scripts_dir (dirname $safe_chain_script)
 set -l safe_chain_base (dirname $safe_chain_scripts_dir)
-# Physical path, so symlinked PATH entries pointing at the shims dir still match.
-set -g _sc_shims_dir (builtin realpath -- "$safe_chain_base/shims" 2>/dev/null; or echo "$safe_chain_base/shims")
+set -g _sc_shims_dir "$safe_chain_base/shims"
 set -gx PATH $PATH $safe_chain_base/bin
 
 function npx
@@ -111,16 +110,10 @@ function removeSafeChainShimFromPath
     set -l path_without_shims
 
     for path_entry in $PATH
-        # Match entries the same way the setup-ci shims do: ignore trailing
-        # slashes and resolve symlinks.
-        set -l trimmed (string trim -r -c / -- "$path_entry")
-        test -z "$trimmed"; and set trimmed /
-        if string match -q -- '*/shims' "$trimmed"
-            # Only resolve entries that could be the shims dir, to keep this cheap.
-            set -l resolved (builtin realpath -- "$trimmed" 2>/dev/null)
-            if test "$trimmed" = "$_sc_shims_dir"; or test "$resolved" = "$_sc_shims_dir"
-                continue
-            end
+        # -ef compares the directories themselves, so trailing slashes and
+        # symlinks pointing at the shims dir are removed too.
+        if test -n "$path_entry"; and test "$path_entry" -ef "$_sc_shims_dir"
+            continue
         end
         set -a path_without_shims "$path_entry"
     end

@@ -123,6 +123,15 @@ for (const { shell, initFile, command } of shells) {
         );
       });
 
+      it("removes a symlink to the shims dir with a different name", () => {
+        const alias = path.join(tmpDir, "sc-link");
+        fs.symlinkSync(shimsDir, alias);
+        assert.strictEqual(
+          removeShims(`/usr/bin:${alias}:/bin`),
+          "/usr/bin:/bin",
+        );
+      });
+
       it("keeps other dirs named shims and prefixes of the shims dir", () => {
         const otherShims = path.join(tmpDir, "other", "shims");
         fs.mkdirSync(otherShims, { recursive: true });
