@@ -1,12 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-// @ts-ignore - certifi has no type definitions
-import certifi from "certifi";
 import tls from "node:tls";
 import { X509Certificate } from "node:crypto";
 import { getCaCertPath } from "./certUtils.js";
 import { ui } from "../environment/userInteraction.js";
+import { mozillaCaBundle } from "./mozillaCaBundle.js";
 
 /** @type {string | null} */
 let bundlePath = null;
@@ -50,7 +49,7 @@ function isParsable(pem) {
  * Build a combined CA bundle.
  * Automatically includes:
  * - Safe Chain CA (for MITM of known registries)
- * - Mozilla roots via certifi (for public HTTPS)
+ * - Mozilla roots (embedded bundle) (for public HTTPS)
  * - Node's built-in root certificates (fallback)
  * - User's custom certificates (if NODE_EXTRA_CA_CERTS environment variable is set)
  * 
@@ -73,13 +72,8 @@ export function getCombinedCaBundlePath() {
     // Ignore if Safe Chain CA is not available
   }
 
-  // 2) certifi (Mozilla CA bundle for all public HTTPS)
-  try {
-    const certifiPem = fs.readFileSync(certifi, "utf8");
-    if (isParsable(certifiPem)) parts.push(certifiPem.trim());
-  } catch {
-    // Ignore if certifi bundle is not available
-  }
+  // 2) Embedded Mozilla CA bundle for all public HTTPS
+  if (isParsable(mozillaCaBundle)) parts.push(mozillaCaBundle.trim());
 
   // 3) Node's built-in root certificates
   try {
