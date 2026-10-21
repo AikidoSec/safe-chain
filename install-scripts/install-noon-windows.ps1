@@ -9,8 +9,8 @@ param(
 )
 
 # Configuration
-$InstallUrl = "https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/v1.10.18/NoonSecurity.msi"
-$DownloadSha256 = "61bb74ce8509b36daa9b592eedd0a601c78cfb8f6586f5df34822daecbb0d5d0"
+$InstallUrl = "https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/v1.10.20/NoonSecurity.msi"
+$DownloadSha256 = "37824ba05c0858e825cbe249a60aeac7153db16ed777cbd60e054180b5f13e01"
 
 $script:KeepLogFile = $false
 $script:DebugUsage = 'iex "& { $(iwr ''<url>'' -UseBasicParsing) } -token <TOKEN> -debug"'
