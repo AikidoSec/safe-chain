@@ -14,7 +14,26 @@ const startupFileCommand = "echo ~/.bashrc";
 const eol = "\n"; // When bash runs on Windows (e.g., Git Bash or WSL), it expects LF line endings.
 
 function isInstalled() {
-  return doesExecutableExistOnSystem(executableName);
+  if (!doesExecutableExistOnSystem(executableName)) {
+    return false;
+  }
+
+  if (os.platform() !== "win32") {
+    return true;
+  }
+
+  try {
+    const result = spawnSync(executableName, ["-lc", "uname -s"], {
+      encoding: "utf8",
+    });
+    if (result.status !== 0) {
+      return false;
+    }
+
+    return result.stdout.trim().toLowerCase() !== "linux";
+  } catch {
+    return false;
+  }
 }
 
 /**
