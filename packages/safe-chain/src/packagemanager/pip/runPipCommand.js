@@ -19,14 +19,47 @@ import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
  * @returns {boolean}
  */
 export function shouldBypassSafeChain(command, args) {
-  if (command === PYTHON_COMMAND || command === PYTHON3_COMMAND) {
-    // Check if args start with -m pip
-    if (args.length >= 2 && args[0] === "-m" && (args[1] === PIP_COMMAND || args[1] === PIP3_COMMAND)) {
-      return false;
-    }
-    return true;
+  if (command !== PYTHON_COMMAND && command !== PYTHON3_COMMAND) {
+    return false;
   }
-  return false;
+
+  // Scan the leading interpreter options for a "-m pip" / "-m pip3" invocation.
+  // Python interpreter flags (e.g. -B, -u, -E, -I, -v/-vv, -O, -s, -X ..., -W ...)
+  // may appear before "-m". We must NOT be fooled into bypassing safe-chain when
+  // pip is actually being run behind such flags.
+  //
+  // Option flags that consume a following value. When we see one of these we
+  // skip its argument so that value can never be mistaken for "-m"/"pip".
+  const flagsWithValue = new Set(["-W", "-X"]);
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === "-m") {
+      const moduleName = args[i + 1];
+      if (moduleName === PIP_COMMAND || moduleName === PIP3_COMMAND) {
+        return false; // Running pip via python -m pip: intercept it.
+      }
+      // "-m" with a non-pip module -> genuinely not a pip invocation.
+      return true;
+    }
+
+    // "-c <cmd>" runs an inline program and "-" reads from stdin; a bare token
+    // (e.g. a script path) also ends the option list. In all these cases the
+    // interpreter is not being asked to run "-m pip".
+    if (arg === "-c" || arg === "-" || !arg.startsWith("-")) {
+      return true;
+    }
+
+    // Skip the value consumed by value-taking flags (supports both "-X opt"
+    // and the combined "-Xopt" form).
+    if (flagsWithValue.has(arg)) {
+      i++;
+    }
+  }
+
+  // No "-m pip" found among the interpreter options -> not a pip invocation.
+  return true;
 }
 
 /**
