@@ -24,10 +24,8 @@ if (!target) {
 
   // Copy assets that need to be included in the binary
   // - All shell scripts that are used to setup safe-chain
-  // - Certifi because it contains static root certs for Python
   // - Package.json for its metadata (package name, version, ...)
   await copyShellScripts();
-  await copyCertifi();
   await copyAndModifyPackageJson();
   console.log("- Copied auxiliary resources (shell, package.json,...) ✅")
 
@@ -53,7 +51,6 @@ async function bundleSafeChain() {
     platform: "node",
     target: "node24",
     outfile: "./build/bin/safe-chain.cjs",
-    external: ["certifi"],
   });
 
   let bundledContent = await readFile("./build/bin/safe-chain.cjs", "utf-8");
@@ -76,12 +73,6 @@ async function copyShellScripts() {
   );
 }
 
-async function copyCertifi() {
-  await mkdir("./build/node_modules/certifi", { recursive: true });
-  await cp("./node_modules/certifi/", "./build/node_modules/certifi", {
-    recursive: true,
-  });
-}
 async function copyAndModifyPackageJson() {
   const packageJsonContent = await readFile(
     "./packages/safe-chain/package.json",
@@ -102,7 +93,6 @@ async function copyAndModifyPackageJson() {
   packageJson.pkg = {
     outputPath: "dist",
     assets: [
-      "node_modules/certifi/**/*",
       "bin/startup-scripts/**/*",
       "bin/path-wrappers/**/*",
     ],

@@ -1187,15 +1187,6 @@
         "node": ">= 0.4"
       }
     },
-    "node_modules/certifi": {
-      "version": "14.5.15",
-      "resolved": "https://registry.npmjs.org/certifi/-/certifi-14.5.15.tgz",
-      "integrity": "sha512-NeLXuKCqSzwQNjpJ+WaSp5m8ntdTKJ8HnBu+eA7DxHfgzU7F1sjwrJFang+4U38+vmWbiFUpPZMV3uwwnHAisQ==",
-      "license": "MPL-2.0",
-      "engines": {
-        "node": ">=0.10.0"
-      }
-    },
     "node_modules/chalk": {
       "version": "5.4.1",
       "resolved": "https://registry.npmjs.org/chalk/-/chalk-5.4.1.tgz",
@@ -3144,7 +3135,6 @@
       "version": "1.0.0",
       "license": "AGPL-3.0-or-later",
       "dependencies": {
-        "certifi": "14.5.15",
         "chalk": "5.4.1",
         "https-proxy-agent": "7.0.6",
         "ini": "6.0.0",
