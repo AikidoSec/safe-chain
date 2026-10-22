@@ -30,9 +30,48 @@ const knownPipRegistries = [
  * @returns {import("../interceptorBuilder.js").Interceptor | undefined}
  */
 export function pipInterceptorForUrl(url) {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return undefined;
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const port = parsedUrl.port;
+  const pathname = parsedUrl.pathname;
+
   const customRegistries = getPipCustomRegistries();
   const registries = [...knownPipRegistries, ...customRegistries];
-  const registry = registries.find((reg) => url.includes(reg));
+  const registry = registries.find((reg) => {
+    // Normalize the registry for comparison
+    const regLower = reg.toLowerCase();
+    const slashIndex = regLower.indexOf("/");
+    const regHost = slashIndex === -1 ? regLower : regLower.substring(0, slashIndex);
+    const regPath = slashIndex === -1 ? "" : regLower.substring(slashIndex);
+
+    // Check if registry host contains a port
+    const colonIndex = regHost.indexOf(":");
+    const regHostname = colonIndex === -1 ? regHost : regHost.substring(0, colonIndex);
+    const regPort = colonIndex === -1 ? "" : regHost.substring(colonIndex + 1);
+
+    // Match hostname
+    if (hostname !== regHostname && !hostname.endsWith("." + regHostname)) {
+      return false;
+    }
+
+    // Match port if specified in registry
+    if (regPort && port !== regPort) {
+      return false;
+    }
+
+    // Match path prefix if specified in registry
+    if (regPath && !pathname.startsWith(regPath)) {
+      return false;
+    }
+
+    return true;
+  });
 
   if (registry) {
     return buildPipInterceptor(registry);
@@ -91,7 +130,9 @@ function createPipRequestHandler(registry) {
       registry
     );
 
+    // Block requests with incomplete package identity to fail closed
     if (!packageName) {
+      reqContext.blockMalware(packageName, version);
       return;
     }
 
@@ -101,7 +142,14 @@ function createPipRequestHandler(registry) {
     );
     let isMalicious = false;
     for (const equivalentPackageName of equivalentPackageNames) {
-      if (await isMalwarePackage(equivalentPackageName, version)) {
+      try {
+        if (await isMalwarePackage(equivalentPackageName, version)) {
+          isMalicious = true;
+          break;
+        }
+      } catch (err) {
+        // isMalwarePackage throws when package identity is incomplete.
+        // Block the request to fail closed rather than forwarding unverified artifacts.
         isMalicious = true;
         break;
       }
