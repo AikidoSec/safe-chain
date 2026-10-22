@@ -1,6 +1,17 @@
 # Uninstalls safe-chain from Windows
 #
-# Usage with "iex (iwr {url} -UseBasicParsing)" --> See README.md
+# Usage:
+#   $uninstaller = Join-Path $env:TEMP "uninstall-safe-chain.ps1"
+#   Invoke-WebRequest "<url>" -OutFile $uninstaller -UseBasicParsing
+#   $expectedHash = "<HASH>"
+#   if ((Get-FileHash $uninstaller -Algorithm SHA256).Hash -ne $expectedHash) {
+#       Remove-Item $uninstaller -ErrorAction SilentlyContinue
+#       throw "Checksum verification failed for uninstall-safe-chain.ps1"
+#   }
+#   & $uninstaller
+#   Remove-Item $uninstaller
+#
+# See README.md for complete uninstallation instructions with current version and hash.
 
 # Use HOME on Unix, USERPROFILE on Windows (PowerShell Core is cross-platform)
 $HomeDir = if ($env:HOME) { $env:HOME } else { $env:USERPROFILE }
