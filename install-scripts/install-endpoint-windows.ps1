@@ -110,6 +110,56 @@ function Test-Administrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Create a protected staging directory with restricted ACLs
+function New-ProtectedStagingDirectory {
+    $stagingDir = Join-Path $env:TEMP "AikidoStaging-$([System.Guid]::NewGuid().ToString('N'))"
+    
+    try {
+        # Create the directory
+        $dir = New-Item -Path $stagingDir -ItemType Directory -Force -ErrorAction Stop
+        
+        # Get the current user's identity
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $userSid = $identity.User
+        
+        # Create a new ACL that only grants access to the current user and SYSTEM
+        $acl = New-Object System.Security.AccessControl.DirectorySecurity
+        $acl.SetAccessRuleProtection($true, $false)  # Disable inheritance, don't copy existing rules
+        
+        # Grant full control to the current user
+        $userRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $userSid,
+            [System.Security.AccessControl.FileSystemRights]::FullControl,
+            [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit,
+            [System.Security.AccessControl.PropagationFlags]::None,
+            [System.Security.AccessControl.AccessControlType]::Allow
+        )
+        $acl.AddAccessRule($userRule)
+        
+        # Grant full control to SYSTEM
+        $systemSid = New-Object System.Security.Principal.SecurityIdentifier([System.Security.Principal.WellKnownSidType]::LocalSystemSid, $null)
+        $systemRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $systemSid,
+            [System.Security.AccessControl.FileSystemRights]::FullControl,
+            [System.Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [System.Security.AccessControl.InheritanceFlags]::ObjectInherit,
+            [System.Security.AccessControl.PropagationFlags]::None,
+            [System.Security.AccessControl.AccessControlType]::Allow
+        )
+        $acl.AddAccessRule($systemRule)
+        
+        # Apply the ACL to the directory
+        $dir.SetAccessControl($acl)
+        
+        return $stagingDir
+    }
+    catch {
+        if (Test-Path $stagingDir) {
+            Remove-Item -Path $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        throw "Failed to create protected staging directory: $_"
+    }
+}
+
 # Main installation
 function Install-Endpoint {
     # 1. Check if we're running as Administrator
@@ -130,8 +180,17 @@ function Install-Endpoint {
         Write-Error-Custom "Invalid token format. Token must not contain quotes, semicolons, backticks, dollar signs, or whitespace."
     }
 
-    # 2. Download the .msi
-    $msiFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).msi"
+    # 2. Create a protected staging directory to prevent TOCTOU attacks
+    Write-Info "Creating protected staging directory..."
+    try {
+        $stagingDir = New-ProtectedStagingDirectory
+    }
+    catch {
+        Write-Error-Custom $_
+    }
+
+    # 3. Download the .msi to the protected directory
+    $msiFile = Join-Path $stagingDir "AikidoEndpoint.msi"
     $logFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).log"
 
     Write-Info "Downloading Aikido Endpoint Protection..."
@@ -141,6 +200,7 @@ function Install-Endpoint {
         $ProgressPreference = 'Continue'
     }
     catch {
+        Remove-Item -Path $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
         Write-Error-Custom "Failed to download from $InstallUrl : $_"
     }
 
@@ -153,7 +213,7 @@ function Install-Endpoint {
         }
         Write-Info "Checksum verified successfully."
 
-        # 3. Install the package with token passed as MSI property
+        # 4. Install the package with token passed as MSI property
         Write-Info "Installing Aikido Endpoint Protection..."
         $msiArgs = @("/i", "`"$msiFile`"", "/qn", "/norestart", "AIKIDO_TOKEN=$token")
         if (${is-mdm}) {
@@ -185,9 +245,9 @@ function Install-Endpoint {
         Write-Info "Aikido Endpoint Protection installed successfully!"
     }
     finally {
-        # Cleanup
-        if (Test-Path $msiFile) {
-            Remove-Item -Path $msiFile -Force -ErrorAction SilentlyContinue
+        # Cleanup protected staging directory
+        if (Test-Path $stagingDir) {
+            Remove-Item -Path $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
         }
         if ((Test-Path $logFile) -and -not $script:KeepLogFile) {
             Remove-Item -Path $logFile -Force -ErrorAction SilentlyContinue
