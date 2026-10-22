@@ -185,13 +185,13 @@ function Remove-NpmInstallation {
         Write-Info "Detected npm global installation of @aikidosec/safe-chain"
         Write-Info "Uninstalling npm version before installing binary version..."
 
-        npm uninstall -g @aikidosec/safe-chain 2>&1 | Out-Null
+        npm uninstall -g @aikidosec/safe-chain --ignore-scripts 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Info "Successfully uninstalled npm version"
         }
         else {
             Write-Warn "Failed to uninstall npm version automatically"
-            Write-Warn "Please run: npm uninstall -g @aikidosec/safe-chain"
+            Write-Warn "Please run: npm uninstall -g @aikidosec/safe-chain --ignore-scripts"
         }
     }
 }
