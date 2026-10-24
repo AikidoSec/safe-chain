@@ -18,6 +18,38 @@ describe("resolvePackageVersion", async () => {
     assert.strictEqual(result, "4.17.1");
   });
 
+  it("should canonicalize non-canonical version strings", async () => {
+    const result = await resolvePackageVersion("express", "v4.17.1");
+
+    assert.strictEqual(result, "4.17.1");
+  });
+
+  it("should canonicalize version with leading 'v' prefix", async () => {
+    const result = await resolvePackageVersion("lodash", "v1.2.3");
+
+    assert.strictEqual(result, "1.2.3");
+  });
+
+  it("should canonicalize version with build metadata (strips metadata per semver spec)", async () => {
+    // Note: semver.valid() strips build metadata as it's not part of version precedence
+    const result = await resolvePackageVersion("lodash", "1.2.3+build.123");
+
+    assert.strictEqual(result, "1.2.3");
+  });
+
+  it("should canonicalize prerelease versions", async () => {
+    const result = await resolvePackageVersion("lodash", "v1.2.3-alpha.1");
+
+    assert.strictEqual(result, "1.2.3-alpha.1");
+  });
+
+  it("should canonicalize prerelease with build metadata", async () => {
+    // Note: semver.valid() strips build metadata
+    const result = await resolvePackageVersion("lodash", "v2.0.0-rc.1+20130313144700");
+
+    assert.strictEqual(result, "2.0.0-rc.1");
+  });
+
   it("should use 'latest' as default version range when not provided", async () => {
     mockNpmFetchJson.mock.mockImplementationOnce(() => ({
       "dist-tags": {
