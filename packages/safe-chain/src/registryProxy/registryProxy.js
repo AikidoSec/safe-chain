@@ -5,7 +5,7 @@ import { handleHttpProxyRequest } from "./plainHttpProxy.js";
 import { getCombinedCaBundlePath, cleanupCertBundle } from "./certBundle.js";
 import { ui } from "../environment/userInteraction.js";
 import chalk from "chalk";
-import { createInterceptorForUrl } from "./interceptors/createInterceptorForEcoSystem.js";
+import { createInterceptorForUrl, isRecognizedRegistryUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 import { getHasSuppressedVersions } from "./interceptors/suppressedVersionsState.js";
 import { openSafePatchesDatabase } from "../scanning/safePatchesListCache.js";
 
@@ -178,7 +178,27 @@ function handleConnect(req, clientSocket, head) {
 
     mitmConnect(req, clientSocket, interceptor);
   } else {
-    // For other hosts, just tunnel the request to the destination tcp socket
+    // No interceptor found - check if this is a recognized registry
+    if (!isRecognizedRegistryUrl(req.url || "")) {
+      // Block requests to unrecognized destinations to prevent bypass
+      ui.writeError(
+        `Safe-chain: Blocked CONNECT request to unrecognized destination: ${req.url}`
+      );
+      ui.writeError(
+        `Safe-chain: Only requests to known package registries are allowed. Configure custom registries via SAFE_CHAIN_NPM_CUSTOM_REGISTRIES or SAFE_CHAIN_PIP_CUSTOM_REGISTRIES.`
+      );
+      if (clientSocket.writable) {
+        clientSocket.end(
+          "HTTP/1.1 403 Forbidden\r\n" +
+          "Content-Type: text/plain\r\n" +
+          "\r\n" +
+          "Safe-chain: Request blocked - unrecognized package registry destination\r\n"
+        );
+      }
+      return;
+    }
+
+    // For recognized registries without an interceptor, tunnel the request
     ui.writeVerbose(`Safe-chain: Tunneling request to ${req.url}`);
     tunnelRequest(req, clientSocket, head);
   }
