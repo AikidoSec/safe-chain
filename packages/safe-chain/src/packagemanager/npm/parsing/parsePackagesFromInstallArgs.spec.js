@@ -8,7 +8,7 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, []);
+    assert.deepEqual(result, { packages: [], registry: null });
   });
 
   it("should return an array of changes for one package", () => {
@@ -16,7 +16,10 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [{ name: "@jest/transform", version: "29.7.0" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "@jest/transform", version: "29.7.0" }],
+      registry: null
+    });
   });
 
   it("should return the package in the format @vercel/otel", () => {
@@ -24,7 +27,10 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [{ name: "@vercel/otel", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "@vercel/otel", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should return an array of changes for multiple packages", () => {
@@ -32,10 +38,13 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "express", version: "4.17.1" },
-      { name: "lodash", version: "4.17.21" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "4.17.1" },
+        { name: "lodash", version: "4.17.21" },
+      ],
+      registry: null
+    });
   });
 
   it("should ignore options and return an array of changes", () => {
@@ -49,10 +58,13 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "express", version: "4.17.1" },
-      { name: "lodash", version: "4.17.21" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "4.17.1" },
+        { name: "lodash", version: "4.17.21" },
+      ],
+      registry: null
+    });
   });
 
   it("should ignore options with parameters and return an array of changes", () => {
@@ -67,10 +79,13 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "express", version: "4.17.1" },
-      { name: "lodash", version: "4.17.21" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "4.17.1" },
+        { name: "lodash", version: "4.17.21" },
+      ],
+      registry: null
+    });
   });
 
   it("should not ignore the next argument if it is passed directly with the option", () => {
@@ -84,10 +99,13 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "express", version: "4.17.1" },
-      { name: "lodash", version: "4.17.21" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "4.17.1" },
+        { name: "lodash", version: "4.17.21" },
+      ],
+      registry: null
+    });
   });
 
   it("should set the default tag for packages", () => {
@@ -95,10 +113,13 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "express", version: "latest" },
-      { name: "lodash", version: "4.17.21" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "latest" },
+        { name: "lodash", version: "4.17.21" },
+      ],
+      registry: null
+    });
   });
 
   it("should set the default tag for packages with a specific tag", () => {
@@ -106,10 +127,13 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "express", version: "beta" },
-      { name: "lodash", version: "4.17.21" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "beta" },
+        { name: "lodash", version: "4.17.21" },
+      ],
+      registry: null
+    });
   });
 
   it("should ignore alias", () => {
@@ -117,7 +141,10 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [{ name: "express", version: "4.17.1" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "express", version: "4.17.1" }],
+      registry: null
+    });
   });
 
   it("should parse version even for aliased packages", () => {
@@ -125,7 +152,10 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [{ name: "express", version: "4.17.1" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "express", version: "4.17.1" }],
+      registry: null
+    });
   });
 
   it("should parse scoped packages", () => {
@@ -133,7 +163,10 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [{ name: "@scope/package", version: "1.0.0" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "@scope/package", version: "1.0.0" }],
+      registry: null
+    });
   });
 
   it("should parse packages with version ranges", () => {
@@ -141,7 +174,10 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [{ name: "express", version: "^4.17.1" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "express", version: "^4.17.1" }],
+      registry: null
+    });
   });
 
   it("should parse package folders", () => {
@@ -149,7 +185,10 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [{ name: "./local-package", version: "latest" }]);
+    assert.deepEqual(result, { 
+      packages: [{ name: "./local-package", version: "latest" }],
+      registry: null
+    });
   });
 
   it("should parse tarballs", () => {
@@ -157,9 +196,12 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "file:./local-package.tgz", version: "latest" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "file:./local-package.tgz", version: "latest" },
+      ],
+      registry: null
+    });
   });
 
   it("should parse tarball URLs", () => {
@@ -167,9 +209,12 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "https://example.com/local-package.tgz", version: "latest" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "https://example.com/local-package.tgz", version: "latest" },
+      ],
+      registry: null
+    });
   });
 
   it("should parse git URLs", () => {
@@ -177,8 +222,38 @@ describe("parsePackagesFromInstallArgs", () => {
 
     const result = parsePackagesFromInstallArgs(args);
 
-    assert.deepEqual(result, [
-      { name: "git://github.com/npm/cli.git", version: "latest" },
-    ]);
+    assert.deepEqual(result, {
+      packages: [
+        { name: "git://github.com/npm/cli.git", version: "latest" },
+      ],
+      registry: null
+    });
+  });
+
+  it("should capture registry option", () => {
+    const args = ["install", "express@4.17.1", "--registry", "https://custom.registry.com"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "4.17.1" },
+      ],
+      registry: "https://custom.registry.com"
+    });
+  });
+
+  it("should capture registry option with multiple packages", () => {
+    const args = ["install", "express", "lodash", "--registry", "https://custom.registry.com"];
+
+    const result = parsePackagesFromInstallArgs(args);
+
+    assert.deepEqual(result, {
+      packages: [
+        { name: "express", version: "latest" },
+        { name: "lodash", version: "latest" },
+      ],
+      registry: "https://custom.registry.com"
+    });
   });
 });
