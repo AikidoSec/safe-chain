@@ -196,6 +196,16 @@ detect_package_type() {
             fi
             error "Unsupported distribution: Amazon Linux ${OS_VERSION_ID:-unknown}. Only Amazon Linux 2023 is supported."
             ;;
+        fedora)
+            # Fedora 44 is the tested release. It installs the el10 RPM.
+            # A later major stays refused until that version is tested.
+            if [ "$OS_VERSION_ID" = "44" ]; then
+                PKG_TYPE="rpm"
+                EL_VERSION="el10"
+                return
+            fi
+            error "Unsupported distribution: Fedora ${OS_VERSION_ID:-unknown}. Only Fedora 44 is supported."
+            ;;
     esac
 
     # Unrecognized distribution: fall back to the family it declares
