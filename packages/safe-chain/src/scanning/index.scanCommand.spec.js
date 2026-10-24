@@ -67,10 +67,60 @@ describe("scanCommand", async () => {
 
   const { scanCommand } = await import("./index.js");
 
-  it("should succeed when there are no changes", async () => {
+  it("should fail when there are no changes to prevent bypass", async () => {
     mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
 
-    await scanCommand(["install", "lodash"]);
+    const result = await scanCommand(["install"]);
+
+    assert.equal(result, 1);
+  });
+
+  it("should block no-operand install command (CVE mitigation)", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
+
+    const result = await scanCommand(["install"]);
+
+    assert.equal(result, 1, "No-operand install should be blocked");
+  });
+
+  it("should block no-operand install --offline command (CVE mitigation)", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
+
+    const result = await scanCommand(["install", "--offline"]);
+
+    assert.equal(result, 1, "No-operand install --offline should be blocked");
+  });
+
+  it("should block no-operand up command (CVE mitigation)", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
+
+    const result = await scanCommand(["up"]);
+
+    assert.equal(result, 1, "No-operand up command should be blocked");
+  });
+
+  it("should block no-operand upgrade command (CVE mitigation)", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
+
+    const result = await scanCommand(["upgrade"]);
+
+    assert.equal(result, 1, "No-operand upgrade command should be blocked");
+  });
+
+  it("should block install with only flags and no packages (CVE mitigation)", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
+
+    const result = await scanCommand(["install", "--production", "--frozen-lockfile"]);
+
+    assert.equal(result, 1, "Install with only flags should be blocked");
+  });
+
+  it("should block install with cache-related flags (CVE mitigation)", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => []);
+
+    const result = await scanCommand(["install", "--prefer-offline"]);
+
+    assert.equal(result, 1, "Install with cache flags should be blocked");
   });
 
   it("should succeed when changes are not malicious", async () => {
@@ -78,7 +128,30 @@ describe("scanCommand", async () => {
       { name: "lodash", version: "4.17.21" },
     ]);
 
-    await scanCommand(["install", "lodash"]);
+    const result = await scanCommand(["install", "lodash"]);
+
+    assert.equal(result, 0, "Install with explicit package should succeed");
+  });
+
+  it("should succeed when installing explicit package with version", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
+      { name: "lodash", version: "4.17.21" },
+    ]);
+
+    const result = await scanCommand(["add", "lodash@4.17.21"]);
+
+    assert.equal(result, 0, "Install with explicit package and version should succeed");
+  });
+
+  it("should succeed when installing multiple explicit packages", async () => {
+    mockGetDependencyUpdatesForCommand.mock.mockImplementation(() => [
+      { name: "lodash", version: "4.17.21" },
+      { name: "express", version: "4.18.2" },
+    ]);
+
+    const result = await scanCommand(["add", "lodash", "express"]);
+
+    assert.equal(result, 0, "Install with multiple explicit packages should succeed");
   });
 
   it("should throw an error when timing out", async () => {
