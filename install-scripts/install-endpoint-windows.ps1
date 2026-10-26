@@ -12,6 +12,11 @@ param(
 $InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.10.21/EndpointProtection.msi"
 $DownloadSha256 = "e65c0fcfa6409902aba60b7c1422bf5bd9dc540f2cd152233dff188ff60426f4"
 
+# Expected Authenticode certificate subject for origin verification
+# This provides cryptographic proof that the MSI was signed by the legitimate vendor,
+# independent of the download source. Update this value when the signing certificate changes.
+$ExpectedSignerSubject = "CN=Aikido Security BVBA, O=Aikido Security BVBA, L=Ghent, S=East Flanders, C=BE"
+
 $script:KeepLogFile = $false
 $script:DebugUsage = 'iex "& { $(iwr ''<url>'' -UseBasicParsing) } -token <TOKEN> -debug"'
 
@@ -152,6 +157,28 @@ function Install-Endpoint {
             Write-Error-Custom "Checksum verification failed. Expected: $DownloadSha256, Got: $actualHash"
         }
         Write-Info "Checksum verified successfully."
+
+        # Verify Authenticode signature to authenticate the MSI's origin
+        Write-Info "Verifying Authenticode signature..."
+        try {
+            $signature = Get-AuthenticodeSignature -FilePath $msiFile -ErrorAction Stop
+            
+            if ($signature.Status -ne 'Valid') {
+                Write-Error-Custom "Authenticode signature verification failed. Status: $($signature.Status). The MSI must be signed by a trusted certificate authority."
+            }
+            
+            # Verify the signer matches the expected vendor certificate
+            $signerSubject = $signature.SignerCertificate.Subject
+            if ($signerSubject -ne $ExpectedSignerSubject) {
+                Write-Error-Custom "Authenticode signer verification failed. Expected subject: '$ExpectedSignerSubject', Got: '$signerSubject'. This MSI was not signed by the expected vendor."
+            }
+            
+            Write-Info "Authenticode signature verified successfully."
+            Write-Info "Signed by: $signerSubject"
+        }
+        catch {
+            Write-Error-Custom "Failed to verify Authenticode signature: $_"
+        }
 
         # 3. Install the package with token passed as MSI property
         Write-Info "Installing Aikido Endpoint Protection..."
