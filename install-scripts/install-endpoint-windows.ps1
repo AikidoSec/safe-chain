@@ -9,8 +9,8 @@ param(
 )
 
 # Configuration
-$InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.10.21/EndpointProtection.msi"
-$DownloadSha256 = "e65c0fcfa6409902aba60b7c1422bf5bd9dc540f2cd152233dff188ff60426f4"
+$InstallUrl = "https://github.com/AikidoSec/safechain-internals/releases/download/v1.10.22/EndpointProtection.msi"
+$DownloadSha256 = "df3a7fea7df64d4e95b24412fc18156aa2a8e97141cd51b69d3e27a2aa92b3bb"
 
 $script:KeepLogFile = $false
 $script:DebugUsage = 'iex "& { $(iwr ''<url>'' -UseBasicParsing) } -token <TOKEN> -debug"'
