@@ -296,4 +296,10 @@ describe("mitmRequestHandler", async () => {
     assert.equal(sent.headers["content-encoding"], "zstd");
     assert.equal(sent.body.toString(), '{"name":"pkg"}');
   });
+
+  it("only offers upstream the encodings it can decode when it may read the response", async () => {
+    await interceptWithEncoding("gzip", (body) => body);
+
+    assert.equal(capturedOptions.headers["accept-encoding"], "identity");
+  });
 });

@@ -2,7 +2,7 @@ import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
-import { decodeBody } from "./decodeBody.js";
+import { decodeBody, supportedAcceptEncoding } from "./decodeBody.js";
 import { omitHeaders } from "./http-utils.js";
 
 /**
@@ -186,6 +186,11 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
     delete headers.host;
   }
   headers = requestHandler.modifyRequestHeaders(headers);
+  if (headers && requestHandler.modifiesResponse()) {
+    headers["accept-encoding"] = supportedAcceptEncoding(
+      headers["accept-encoding"]
+    );
+  }
 
   /** @type {import("http").RequestOptions} */
   const options = {
