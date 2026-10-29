@@ -2,7 +2,7 @@ import https from "https";
 import { generateCertForHost } from "./certUtils.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
-import { gunzipSync } from "zlib";
+import { decodeBody } from "./decodeBody.js";
 import { omitHeaders } from "./http-utils.js";
 
 /**
@@ -229,16 +229,15 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
 
       proxyRes.on("data", (chunk) => chunks.push(chunk));
 
-      proxyRes.on("end", () => {
+      proxyRes.on("end", async () => {
         /** @type {Buffer} */
         const originalBuffer = Buffer.concat(chunks);
 
         try {
-          let decodedBuffer = originalBuffer;
-
-          if (proxyRes.headers["content-encoding"] === "gzip") {
-            decodedBuffer = gunzipSync(originalBuffer);
-          }
+          const decodedBuffer = await decodeBody(
+            originalBuffer,
+            proxyRes.headers["content-encoding"]
+          );
 
           const modifiedBuffer = requestHandler.modifyBody(decodedBuffer, headers);
 
