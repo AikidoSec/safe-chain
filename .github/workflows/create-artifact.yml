@@ -33,42 +33,42 @@ jobs:
           - os: macos
             arch: x64
             runner: macos-15-intel
-            target: node20-macos-x64
+            target: node24-macos-x64
             extension: ""
           - os: macos
             arch: arm64
             runner: macos-latest
-            target: node20-macos-arm64
+            target: node24-macos-arm64
             extension: ""
           - os: linux
             arch: x64
             runner: ubuntu-latest
-            target: node20-linux-x64
+            target: node24-linux-x64
             extension: ""
           - os: linux
             arch: arm64
             runner: ubuntu-24.04-arm
-            target: node20-linux-arm64
+            target: node24-linux-arm64
             extension: ""
           - os: linuxstatic
             arch: x64
             runner: ubuntu-latest
-            target: node20-linuxstatic-x64
+            target: node24-linuxstatic-x64
             extension: ""
           - os: linuxstatic
             arch: arm64
             runner: ubuntu-24.04-arm
-            target: node20-linuxstatic-arm64
+            target: node24-linuxstatic-arm64
             extension: ""
           - os: win
             arch: x64
             runner: windows-latest
-            target: node20-win-x64
+            target: node24-win-x64
             extension: ".exe"
           - os: win
             arch: arm64
             runner: windows-11-arm
-            target: node20-win-arm64
+            target: node24-win-arm64
             extension: ".exe"
 
     steps:
