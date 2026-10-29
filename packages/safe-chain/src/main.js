@@ -8,6 +8,7 @@ import { getLogFile } from "./config/settings.js";
 import { createSafeChainProxy } from "./registryProxy/registryProxy.js";
 import chalk from "chalk";
 import { getAuditStats } from "./scanning/audit/index.js";
+import { prefetchLists } from "./scanning/prefetchLists.js";
 import {
   initializeFileLogger,
   closeFileLogger,
@@ -57,6 +58,7 @@ export async function main(args) {
     // shims in PATH. Not starting the proxy prevents HTTPS_PROXY from leaking
     // into lifecycle-script child processes (vitest, native binaries, nock, etc.).
     if (getPackageManager().commandNeedsProxy(args)) {
+      prefetchLists();
       await proxy.startServer();
     }
 
