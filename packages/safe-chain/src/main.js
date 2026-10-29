@@ -57,8 +57,11 @@ export async function main(args) {
     // themselves — nested installs inside those scripts are re-intercepted by the
     // shims in PATH. Not starting the proxy prevents HTTPS_PROXY from leaking
     // into lifecycle-script child processes (vitest, native binaries, nock, etc.).
-    if (getPackageManager().commandNeedsProxy(args)) {
-      prefetchLists();
+    const packageManager = getPackageManager();
+    if (packageManager.commandNeedsProxy(args)) {
+      if (packageManager.commandInstallsPackages?.(args)) {
+        prefetchLists();
+      }
       await proxy.startServer();
     }
 

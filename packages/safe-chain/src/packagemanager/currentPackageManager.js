@@ -38,6 +38,7 @@ const state = {
  * @property {(args: string[]) => boolean} isSupportedCommand
  * @property {(args: string[]) => Promise<GetDependencyUpdatesResult[]> | GetDependencyUpdatesResult[]} getDependencyUpdatesForCommand
  * @property {(args: string[]) => boolean} commandNeedsProxy - Returns true when the command downloads packages and needs the MITM proxy. Returns false for lifecycle-script commands (run/test/start/etc.) so their child processes don't inherit HTTPS_PROXY.
+ * @property {(args: string[]) => boolean} [commandInstallsPackages] - Returns true when the command installs dependencies, so the lists the proxy consults are worth fetching before the first request. Package managers without it load the lists on first use.
  */
 
 /**

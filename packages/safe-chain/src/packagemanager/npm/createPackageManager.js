@@ -12,6 +12,14 @@ import {
 // themselves. Nested npm install/ci/etc. calls within those scripts are
 // re-intercepted by the shims in PATH.
 const NPM_LIFECYCLE_COMMANDS = new Set(["run", "start", "stop", "restart", "test"]);
+const NPM_INSTALL_COMMANDS = new Set([
+  "install",
+  "ci",
+  "install-test",
+  "install-ci-test",
+  "update",
+  "dedupe",
+]);
 
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
@@ -50,6 +58,10 @@ export function createNpmPackageManager() {
     commandNeedsProxy(args) {
       const command = getNpmCommandForArgs(args);
       return command === null || !NPM_LIFECYCLE_COMMANDS.has(command);
+    },
+    commandInstallsPackages(args) {
+      const command = getNpmCommandForArgs(args);
+      return command !== null && NPM_INSTALL_COMMANDS.has(command);
     },
   };
 }

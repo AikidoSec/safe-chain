@@ -3,6 +3,7 @@ import { runYarnCommand } from "./runYarnCommand.js";
 
 // yarn commands that only execute scripts and never download packages.
 const YARN_LIFECYCLE_COMMANDS = new Set(["run", "node"]);
+const YARN_INSTALL_COMMANDS = new Set(["install", "add", "up", "upgrade"]);
 
 const scanner = commandArgumentScanner();
 
@@ -24,6 +25,10 @@ export function createYarnPackageManager() {
     commandNeedsProxy(args) {
       const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
       return !command || !YARN_LIFECYCLE_COMMANDS.has(command);
+    },
+    commandInstallsPackages(args) {
+      const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
+      return !command || YARN_INSTALL_COMMANDS.has(command);
     },
   };
 }
