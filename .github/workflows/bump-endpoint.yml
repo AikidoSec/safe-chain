@@ -59,6 +59,19 @@ jobs:
             echo "${KEY}=$(sha256sum "/tmp/${ASSET}" | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           done
 
+          for entry in \
+            "noon_linux_amd64_deb:NoonSecurity-amd64.deb" \
+            "noon_linux_arm64_deb:NoonSecurity-arm64.deb" \
+            "noon_linux_amd64_el9_rpm:NoonSecurity-amd64.el9.rpm" \
+            "noon_linux_arm64_el9_rpm:NoonSecurity-arm64.el9.rpm" \
+            "noon_linux_amd64_el10_rpm:NoonSecurity-amd64.el10.rpm" \
+            "noon_linux_arm64_el10_rpm:NoonSecurity-arm64.el10.rpm"; do
+            KEY="${entry%%:*}"
+            ASSET="${entry#*:}"
+            curl -fsSL "https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/${VERSION}/${ASSET}" -o "/tmp/${ASSET}"
+            echo "${KEY}=$(sha256sum "/tmp/${ASSET}" | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          done
+
       - name: Update install scripts
         if: steps.latest.outputs.version != steps.current.outputs.version
         run: |
@@ -90,6 +103,14 @@ jobs:
           sed -i "s|^SHA256_AMD64_EL10_RPM=\"[^\"]*\"|SHA256_AMD64_EL10_RPM=\"${{ steps.checksums.outputs.linux_amd64_el10_rpm }}\"|" install-scripts/install-endpoint-linux.sh
           sed -i "s|^SHA256_ARM64_EL10_RPM=\"[^\"]*\"|SHA256_ARM64_EL10_RPM=\"${{ steps.checksums.outputs.linux_arm64_el10_rpm }}\"|" install-scripts/install-endpoint-linux.sh
 
+          sed -i -E "s|^BASE_URL=\"https://aikido-endpoint-binaries\.s3\.eu-west-1\.amazonaws\.com/v[^\"]+\"|BASE_URL=\"https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/${NEW}\"|" install-scripts/install-noon-linux.sh
+          sed -i "s|^SHA256_AMD64_DEB=\"[^\"]*\"|SHA256_AMD64_DEB=\"${{ steps.checksums.outputs.noon_linux_amd64_deb }}\"|" install-scripts/install-noon-linux.sh
+          sed -i "s|^SHA256_ARM64_DEB=\"[^\"]*\"|SHA256_ARM64_DEB=\"${{ steps.checksums.outputs.noon_linux_arm64_deb }}\"|" install-scripts/install-noon-linux.sh
+          sed -i "s|^SHA256_AMD64_EL9_RPM=\"[^\"]*\"|SHA256_AMD64_EL9_RPM=\"${{ steps.checksums.outputs.noon_linux_amd64_el9_rpm }}\"|" install-scripts/install-noon-linux.sh
+          sed -i "s|^SHA256_ARM64_EL9_RPM=\"[^\"]*\"|SHA256_ARM64_EL9_RPM=\"${{ steps.checksums.outputs.noon_linux_arm64_el9_rpm }}\"|" install-scripts/install-noon-linux.sh
+          sed -i "s|^SHA256_AMD64_EL10_RPM=\"[^\"]*\"|SHA256_AMD64_EL10_RPM=\"${{ steps.checksums.outputs.noon_linux_amd64_el10_rpm }}\"|" install-scripts/install-noon-linux.sh
+          sed -i "s|^SHA256_ARM64_EL10_RPM=\"[^\"]*\"|SHA256_ARM64_EL10_RPM=\"${{ steps.checksums.outputs.noon_linux_arm64_el10_rpm }}\"|" install-scripts/install-noon-linux.sh
+
       - name: Open PR
         if: steps.latest.outputs.version != steps.current.outputs.version
         env:
@@ -108,7 +129,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add install-scripts/install-endpoint-mac.sh install-scripts/install-noon-mac.sh install-scripts/install-endpoint-windows.ps1 install-scripts/install-noon-windows.ps1 install-scripts/install-endpoint-linux.sh
+          git add install-scripts/install-endpoint-mac.sh install-scripts/install-noon-mac.sh install-scripts/install-endpoint-windows.ps1 install-scripts/install-noon-windows.ps1 install-scripts/install-endpoint-linux.sh install-scripts/install-noon-linux.sh
           git commit -m "Bump Endpoint to ${NEW}"
           git push origin "$BRANCH"
           PR_URL="https://github.com/${{ github.repository }}/compare/main...${BRANCH}?expand=1"
