@@ -2366,9 +2366,9 @@
       }
     },
     "node_modules/ip-address": {
-      "version": "10.7.3",
-      "resolved": "https://registry.npmjs.org/ip-address/-/ip-address-10.7.3.tgz",
-      "integrity": "sha512-A1kdq/tSb5QjvKvAMgIoEvDBIgL7qaqVP/jkvSwYYRZ9iEzvPpopxp2wQfu3SuZRHtpHNxMn8Fs0bS+gf5Xmwg==",
+      "version": "10.7.5",
+      "resolved": "https://registry.npmjs.org/ip-address/-/ip-address-10.7.5.tgz",
+      "integrity": "sha512-t2v0rkILYv9WXmSL7TpAaU3HXgaFYOPUcH3QHgwQ++gpJuH3bqyMy4Fvt/DJCTKwzH3Cf+bAp5W/mFL39KPLzA==",
       "license": "MIT",
       "engines": {
         "node": ">= 12"
@@ -2759,9 +2759,9 @@
       }
     },
     "node_modules/node-forge": {
-      "version": "1.4.0",
-      "resolved": "https://registry.npmjs.org/node-forge/-/node-forge-1.4.0.tgz",
-      "integrity": "sha512-LarFH0+6VfriEhqMMcLX2F7SwSXeWwnEAJEsYm5QKWchiVYVvJyV9v7UDvUv+w5HO23ZpQTXDv/GxdDdMyOuoQ==",
+      "version": "1.4.1",
+      "resolved": "https://registry.npmjs.org/node-forge/-/node-forge-1.4.1.tgz",
+      "integrity": "sha512-w5/MfWaeMrpR/5ba6fZyAUTLSuE6aYz7H/3cYrqwZEmf5eQS3IaaLgJt4MBv7HglGFWmV22K8h4U18RJQmw/ow==",
       "license": "(BSD-3-Clause OR GPL-2.0)",
       "engines": {
         "node": ">= 6.13.0"
@@ -3642,14 +3642,14 @@
     },
     "packages/safe-chain": {
       "name": "@aikidosec/safe-chain",
-      "version": "1.0.0",
+      "version": "1.5.7",
       "license": "AGPL-3.0-or-later",
       "dependencies": {
         "chalk": "5.4.1",
         "https-proxy-agent": "7.0.6",
         "ini": "6.0.0",
         "make-fetch-happen": "15.0.3",
-        "node-forge": "1.4.0",
+        "node-forge": "1.4.1",
         "npm-registry-fetch": "19.1.1",
         "semver": "7.7.2",
         "yaml": "2.9.1"
