@@ -427,7 +427,13 @@ main() {
         install_rpm
     fi
 
-    info "Aikido Endpoint Protection installed successfully!"
+    # A fresh WSL install leaves this marker until the distro restarts. The
+    # sentence must match endpoint-protection's constants.WSLRestartNotice("").
+    if [ -f /run/aikido-endpoint-protection.restart-distro ]; then
+        echo "Restart this WSL distro. Programs and background services that were already running before the install keep their old environment, so Node and uv in them can fail with TLS errors and their package downloads may not be checked."
+    else
+        info "Aikido Endpoint Protection installed successfully!"
+    fi
 }
 
 main "$@"
