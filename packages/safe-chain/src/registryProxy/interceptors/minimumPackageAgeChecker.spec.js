@@ -3,7 +3,6 @@ import assert from "node:assert";
 
 describe("minimumPackageAgeChecker", async () => {
   let minimumPackageAgeHours = 48;
-  let minimumPackageAgeHoursReads = 0;
   let skipMinimumPackageAgeSetting = false;
   let minimumPackageAgeExclusionsSetting = [];
 
@@ -12,10 +11,7 @@ describe("minimumPackageAgeChecker", async () => {
       ECOSYSTEM_JS: "js",
       ECOSYSTEM_PY: "py",
       getEcoSystem: () => "js",
-      getMinimumPackageAgeHours: () => {
-        minimumPackageAgeHoursReads++;
-        return minimumPackageAgeHours;
-      },
+      getMinimumPackageAgeHours: () => minimumPackageAgeHours,
       skipMinimumPackageAge: () => skipMinimumPackageAgeSetting,
       getMinimumPackageAgeExclusions: () => minimumPackageAgeExclusionsSetting,
       getMalwareListBaseUrl: () => "https://malware-list.aikido.dev",
@@ -190,18 +186,6 @@ describe("minimumPackageAgeChecker", async () => {
         checker.isTooNewByReleaseDate(undefined, "1.0.0", hoursAgo(1)),
         true
       );
-    });
-
-    it("reads the age threshold once per checker, not once per version", () => {
-      minimumPackageAgeHoursReads = 0;
-      const checker = makeChecker();
-      assert.strictEqual(minimumPackageAgeHoursReads, 0);
-
-      for (let i = 0; i < 100; i++) {
-        checker.isTooNewByReleaseDate("lodash", `1.0.${i}`, hoursAgo(i));
-      }
-
-      assert.strictEqual(minimumPackageAgeHoursReads, 1);
     });
 
     it("respects a custom minimumPackageAgeHours threshold", () => {

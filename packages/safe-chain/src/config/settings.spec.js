@@ -28,6 +28,8 @@ const {
   getLogFileVerbosity,
   LOG_FILE_FORMAT_PLAIN,
   LOG_FILE_FORMAT_JSON,
+  getMinimumPackageAgeHours,
+  resetMinimumPackageAgeHoursCache,
 } = await import("./settings.js");
 const { initializeCliArguments } = await import("./cliArguments.js");
 
@@ -373,6 +375,59 @@ describe("getLoggingLevel", () => {
     const level = getLoggingLevel();
 
     assert.strictEqual(level, LOGGING_NORMAL);
+  });
+});
+
+describe("getMinimumPackageAgeHours", () => {
+  const envVarName = "SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS";
+  let originalEnv;
+
+  beforeEach(() => {
+    originalEnv = process.env[envVarName];
+    delete process.env[envVarName];
+    initializeCliArguments([]);
+    resetMinimumPackageAgeHoursCache();
+    mock.timers.enable({ apis: ["Date"], now: 1_000_000 });
+  });
+
+  afterEach(() => {
+    mock.timers.reset();
+    if (originalEnv !== undefined) {
+      process.env[envVarName] = originalEnv;
+    } else {
+      delete process.env[envVarName];
+    }
+    configFileContent = undefined;
+    resetMinimumPackageAgeHoursCache();
+  });
+
+  it("should default to 48 hours", () => {
+    assert.strictEqual(getMinimumPackageAgeHours(), 48);
+  });
+
+  it("should read the value from the config file", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: 72 });
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 72);
+  });
+
+  it("should prioritize the environment variable over the config file", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: 72 });
+    process.env[envVarName] = "24";
+
+    assert.strictEqual(getMinimumPackageAgeHours(), 24);
+  });
+
+  it("should cache the resolved value until the TTL expires", () => {
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: 72 });
+    assert.strictEqual(getMinimumPackageAgeHours(), 72);
+
+    configFileContent = JSON.stringify({ minimumPackageAgeHours: 168 });
+    mock.timers.tick(9_999);
+    assert.strictEqual(getMinimumPackageAgeHours(), 72);
+
+    mock.timers.tick(1);
+    assert.strictEqual(getMinimumPackageAgeHours(), 168);
   });
 });
 

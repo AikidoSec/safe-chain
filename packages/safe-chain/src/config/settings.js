@@ -182,8 +182,35 @@ export function getVersion(){
 }
 
 const defaultMinimumPackageAge = 48;
+
+// Read once per version in a metadata response, so avoid re-reading the config file each time.
+const MINIMUM_PACKAGE_AGE_CACHE_TTL_MS = 10_000;
+
+/** @type {{ value: number, expiresAt: number } | undefined} */
+let minimumPackageAgeHoursCache;
+
 /** @returns {number} */
 export function getMinimumPackageAgeHours() {
+  const now = Date.now();
+  if (minimumPackageAgeHoursCache && now < minimumPackageAgeHoursCache.expiresAt) {
+    return minimumPackageAgeHoursCache.value;
+  }
+
+  const value = resolveMinimumPackageAgeHours();
+  minimumPackageAgeHoursCache = {
+    value,
+    expiresAt: now + MINIMUM_PACKAGE_AGE_CACHE_TTL_MS,
+  };
+  return value;
+}
+
+/** Test-only. */
+export function resetMinimumPackageAgeHoursCache() {
+  minimumPackageAgeHoursCache = undefined;
+}
+
+/** @returns {number} */
+function resolveMinimumPackageAgeHours() {
   // Priority 1: CLI argument
   const cliValue = validateMinimumPackageAgeHours(
     cliArguments.getMinimumPackageAgeHours()

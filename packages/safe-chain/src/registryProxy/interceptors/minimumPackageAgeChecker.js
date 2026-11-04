@@ -35,12 +35,6 @@ export function createMinimumPackageAgeChecker({
   newPackagesDatabase,
   safePatchesDatabase,
 }) {
-  // Resolved on first use and then kept: the threshold comes from the config
-  // file, and isTooNewByReleaseDate runs for every version in a metadata
-  // response. Tarball checkers never call it, so they never read it.
-  /** @type {Date | undefined} */
-  let cutoff;
-
   /**
    * @param {string | undefined} packageName
    * @returns {boolean}
@@ -78,8 +72,7 @@ export function createMinimumPackageAgeChecker({
    * @returns {boolean}
    */
   function isTooNewByReleaseDate(name, version, timestamp) {
-    cutoff ??= getMinimumPackageAgeCutoff();
-    if (!(new Date(timestamp) > cutoff)) {
+    if (!(new Date(timestamp) > getMinimumPackageAgeCutoff())) {
       // Common case: most versions were not published within the age window.
       return false;
     }
