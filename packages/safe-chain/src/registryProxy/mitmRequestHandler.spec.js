@@ -272,30 +272,30 @@ describe("mitmRequestHandler", async () => {
     return { seenByInterceptor, sent };
   }
 
-  for (const encoding of ["br", "deflate"]) {
-    it(`decodes a ${encoding} response before the interceptor sees it`, async () => {
-      const { seenByInterceptor, sent } = await interceptWithEncoding(
-        encoding,
-        () => Buffer.from('{"name":"rewritten"}')
-      );
+  it("decodes a gzip response before the interceptor sees it", async () => {
+    const { seenByInterceptor, sent } = await interceptWithEncoding(
+      "gzip",
+      () => Buffer.from('{"name":"rewritten"}')
+    );
 
-      assert.equal(seenByInterceptor.toString(), '{"name":"pkg"}');
-      assert.equal(sent.headers["content-encoding"], undefined);
-      assert.equal(sent.body.toString(), '{"name":"rewritten"}');
+    assert.equal(seenByInterceptor.toString(), '{"name":"pkg"}');
+    assert.equal(sent.headers["content-encoding"], undefined);
+    assert.equal(sent.body.toString(), '{"name":"rewritten"}');
+  });
+
+  for (const encoding of ["zstd", "br", "deflate"]) {
+    it(`forwards a ${encoding} response unmodified since it is not decoded`, async () => {
+      let interceptorCalled = false;
+      const { sent } = await interceptWithEncoding(encoding, (body) => {
+        interceptorCalled = true;
+        return body;
+      });
+
+      assert.equal(interceptorCalled, false);
+      assert.equal(sent.headers["content-encoding"], encoding);
+      assert.deepEqual(sent.body, encoders[encoding](Buffer.from('{"name":"pkg"}')));
     });
   }
-
-  it("forwards the response unmodified when its encoding is not supported", async () => {
-    let interceptorCalled = false;
-    const { sent } = await interceptWithEncoding("zstd", (body) => {
-      interceptorCalled = true;
-      return body;
-    });
-
-    assert.equal(interceptorCalled, false);
-    assert.equal(sent.headers["content-encoding"], "zstd");
-    assert.equal(sent.body.toString(), '{"name":"pkg"}');
-  });
 
   it("only offers upstream the encodings it can decode when it may read the response", async () => {
     await interceptWithEncoding("gzip", (body) => body);
