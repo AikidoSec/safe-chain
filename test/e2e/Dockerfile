@@ -82,6 +82,7 @@ RUN apt-get update && apt-get install -y pipx && \
         ln -sf /root/.local/bin/poetry /usr/local/bin/poetry
 
 # Install PDM
+# pinned: hishel 2.0.0 removed SyncSqliteStorage, which pdm still uses (pdm-project/pdm#3995)
 RUN pipx install pdm && \
     ln -sf /root/.local/bin/pdm /usr/local/bin/pdm
 
