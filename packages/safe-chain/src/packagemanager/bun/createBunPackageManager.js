@@ -4,6 +4,7 @@ import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
 // bun commands that only execute scripts; they never download packages.
 const BUN_LIFECYCLE_COMMANDS = new Set(["run", "test"]);
+const BUN_INSTALL_COMMANDS = new Set(["install", "i", "add", "a", "update"]);
 
 /**
  * @returns {import("../currentPackageManager.js").PackageManager}
@@ -20,6 +21,10 @@ export function createBunPackageManager() {
     commandNeedsProxy(args) {
       const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
       return !command || !BUN_LIFECYCLE_COMMANDS.has(command);
+    },
+    commandInstallsPackages(args) {
+      const command = args.find((arg) => !arg.startsWith("-"))?.toLowerCase();
+      return command !== undefined && BUN_INSTALL_COMMANDS.has(command);
     },
   };
 }

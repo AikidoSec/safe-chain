@@ -11,6 +11,8 @@ const PNPM_LIFECYCLE_COMMANDS = new Set(["run", "exec", "node", "test", "start",
 // certificate (#596). Installs from lifecycle scripts are still caught by the shims.
 const PNPM_NO_PROXY_COMMANDS = new Set([...PNPM_LIFECYCLE_COMMANDS, "publish", "stage"]);
 
+const PNPM_INSTALL_COMMANDS = new Set(["install", "i", "add", "update", "up", "upgrade"]);
+
 // Global flags whose value is a separate argument, which must be skipped when
 // looking for the subcommand. eg: pnpm --dir ./packages/foo publish
 const PNPM_GLOBAL_FLAGS_WITH_VALUE = new Set([
@@ -68,6 +70,10 @@ export function createPnpmPackageManager() {
     commandNeedsProxy(args) {
       const command = findPnpmSubcommand(args);
       return !command || !PNPM_NO_PROXY_COMMANDS.has(command);
+    },
+    commandInstallsPackages(args) {
+      const command = findPnpmSubcommand(args);
+      return !command || PNPM_INSTALL_COMMANDS.has(command);
     },
   };
 }
