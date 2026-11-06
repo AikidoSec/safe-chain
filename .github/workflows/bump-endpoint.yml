@@ -21,6 +21,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(gh api repos/AikidoSec/safechain-internals/releases/latest --jq '.tag_name')
+          # Validate version format to prevent command injection
+          # Allow semantic versioning with optional 'v' prefix: v1.2.3, 1.2.3, v1.2.3-beta, etc.
+          if ! [[ "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9._-]+)?$ ]]; then
+            echo "ERROR: Invalid version format: $VERSION" >&2
+            echo "Version must match semantic versioning pattern (e.g., v1.2.3 or 1.2.3-beta)" >&2
+            exit 1
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Get current version from install script
