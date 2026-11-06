@@ -112,11 +112,14 @@ function wrapSafeChainCommand() {
     return $?
   fi
 
-  if command -v safe-chain > /dev/null 2>&1; then
+  # Resolve the full path to safe-chain to prevent working directory shadowing
+  local safe_chain_path
+  safe_chain_path=$(command -v safe-chain 2>/dev/null)
+  if [ -n "$safe_chain_path" ]; then
     # If the aikido command is available, just run it with the provided arguments.
     # Unset PKG_EXECPATH so the yao-pkg bootstrap inside the safe-chain binary doesn't
     # mistake argv[1] for a script path and try to resolve it against cwd.
-    (unset PKG_EXECPATH; safe-chain "$@")
+    (unset PKG_EXECPATH; "$safe_chain_path" "$@")
   else
     # If the aikido command is not available, print a warning and run the original command
     printSafeChainWarning "$original_cmd"
