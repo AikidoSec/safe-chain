@@ -163,7 +163,7 @@ function Install-Endpoint {
             Write-Info "Debug logging enabled. MSI log: $logFile"
             $msiArgs += @("/L*V", "`"$logFile`"")
         }
-        $process = Start-Process -FilePath "msiexec" -ArgumentList $msiArgs -Wait -PassThru
+        $process = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
 
         # Before the log is echoed below or kept for support by Write-MsiFailure.
         Protect-MsiLog -LogFile $logFile -Token $token

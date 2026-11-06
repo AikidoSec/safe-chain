@@ -96,7 +96,7 @@ function Uninstall-Endpoint {
             Write-Info "Debug logging enabled. MSI log: $logFile"
             $msiArgs += @("/L*V", "`"$logFile`"")
         }
-        $process = Start-Process -FilePath "msiexec" -ArgumentList $msiArgs -Wait -PassThru
+        $process = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList $msiArgs -Wait -PassThru
 
         if ($debug) {
             Write-Info "MSI uninstaller log output:"
