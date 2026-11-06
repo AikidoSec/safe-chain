@@ -3,6 +3,7 @@ import assert from "node:assert";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { EventEmitter } from "node:events";
 import ini from "ini";
 
 describe("runPipCommand environment variable handling", () => {
@@ -416,4 +417,63 @@ describe("runPipCommand environment variable handling", () => {
     assert.strictEqual(shouldBypassSafeChain("python3", ["-m", "pip3"]), false);
   });
 
+});
+
+describe("runPipCommand spawn hardening", () => {
+  let runPip;
+  let spawnMock;
+  let safeSpawnMock;
+  let importId = 0;
+
+  beforeEach(async () => {
+    spawnMock = mock.fn(() => new EventEmitter());
+    safeSpawnMock = mock.fn(async () => ({ status: 0 }));
+
+    mock.module("child_process", {
+      namedExports: { spawn: spawnMock },
+    });
+    mock.module("../../utils/safeSpawn.js", {
+      namedExports: { safeSpawn: safeSpawnMock },
+    });
+    mock.method(process, "exit", () => {});
+
+    const mod = await import(`./runPipCommand.js?spawn-hardening=${importId++}`);
+    runPip = mod.runPip;
+  });
+
+  afterEach(() => {
+    mock.reset();
+  });
+
+  it("should reject unknown commands without spawning", async () => {
+    assert.deepStrictEqual(await runPip("bash", ["-c", "echo hi"]), { status: 1 });
+    assert.deepStrictEqual(await runPip("python; rm", ["-m", "pip", "install", "x"]), { status: 1 });
+    assert.strictEqual(safeSpawnMock.mock.callCount(), 0);
+    assert.strictEqual(spawnMock.mock.callCount(), 0);
+  });
+
+  it("should pass python3 bypass args verbatim with shell disabled", () => {
+    const args = ["-c", "print(1); rm -rf ~"];
+    void runPip("python3", args);
+
+    assert.strictEqual(spawnMock.mock.callCount(), 1);
+    assert.deepStrictEqual(spawnMock.mock.calls[0].arguments, [
+      "python3",
+      ["-c", "print(1); rm -rf ~"],
+      { stdio: "inherit", shell: false },
+    ]);
+    assert.strictEqual(safeSpawnMock.mock.callCount(), 0);
+  });
+
+  it("should use python for the python bypass", () => {
+    void runPip("python", ["script.py"]);
+
+    assert.strictEqual(spawnMock.mock.callCount(), 1);
+    assert.deepStrictEqual(spawnMock.mock.calls[0].arguments, [
+      "python",
+      ["script.py"],
+      { stdio: "inherit", shell: false },
+    ]);
+    assert.strictEqual(safeSpawnMock.mock.callCount(), 0);
+  });
 });
