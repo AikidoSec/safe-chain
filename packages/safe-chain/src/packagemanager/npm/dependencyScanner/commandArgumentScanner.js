@@ -1,6 +1,7 @@
 import { resolvePackageVersion } from "../../../api/npmApi.js";
 import { parsePackagesFromInstallArgs } from "../parsing/parsePackagesFromInstallArgs.js";
 import { hasDryRunArg } from "../utils/npmCommands.js";
+import { validateRegistryPackages } from "../../_shared/validateRegistryPackages.js";
 
 /**
  * @typedef {Object} ScanResult
@@ -58,6 +59,9 @@ function shouldScanDependencies(args, ignoreDryRun) {
 export async function checkChangesFromArgs(args) {
   const changes = [];
   const packageUpdates = parsePackagesFromInstallArgs(args);
+
+  // Validate that all packages are registry packages
+  validateRegistryPackages(packageUpdates);
 
   for (const packageUpdate of packageUpdates) {
     var exactVersion = await resolvePackageVersion(
