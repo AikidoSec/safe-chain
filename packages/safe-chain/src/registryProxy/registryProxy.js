@@ -48,6 +48,13 @@ function getSafeChainProxyEnvironmentVariables() {
 
   return {
     HTTPS_PROXY: proxyUrl,
+    https_proxy: proxyUrl,
+    HTTP_PROXY: proxyUrl,
+    http_proxy: proxyUrl,
+    ALL_PROXY: proxyUrl,
+    all_proxy: proxyUrl,
+    NO_PROXY: "",
+    no_proxy: "",
     GLOBAL_AGENT_HTTP_PROXY: proxyUrl,
     NODE_EXTRA_CA_CERTS: caCertPath,
   };
@@ -67,7 +74,9 @@ export function mergeSafeChainProxyEnvironmentVariables(env) {
     // So we only copy the variable if it's not already set in a different case
     const upperKey = key.toUpperCase();
 
-    if (!proxyEnv[upperKey] && env[key]) {
+    // Use 'in' operator to check if the key exists, not truthiness check
+    // This ensures that empty string values (like NO_PROXY="") are not overridden
+    if (!(upperKey in proxyEnv) && env[key]) {
       proxyEnv[key] = env[key];
     }
   }
