@@ -1,10 +1,12 @@
 name: Create binaries
 
-# SECURITY: Windows signing is gated by the enable_signing input (default: false).
-# Only build-and-release.yml sets enable_signing: true. Pull requests leave it at
-# the default, so no PR run can reach the Azure Key Vault signing credentials or
-# get an arbitrary binary signed with the company certificate. Unsigned binaries
-# are still produced for testing.
+# SECURITY: Windows signing is gated by the enable_signing input (default: false)
+# and a protected environment in the caller workflow (build-and-release.yml).
+# Only build-and-release.yml sets enable_signing: true, and only for validated
+# semantic version tags (v*.*.*) with environment protection requiring manual approval.
+# Pull requests leave enable_signing at the default (false), so no PR run can reach
+# the Azure Key Vault signing credentials or get an arbitrary binary signed with the
+# company certificate. Unsigned binaries are still produced for testing.
 
 on:
   pull_request:
@@ -73,10 +75,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3.7.0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
         with:
           node-version: "20.x"
 
@@ -99,7 +101,7 @@ jobs:
           node build.js ${{ matrix.target }}
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: safe-chain-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*
@@ -112,6 +114,7 @@ jobs:
     # Only sign when the caller explicitly opts in (build-and-release.yml). On a
     # pull_request event `inputs` is undefined, so this is false and the job is
     # skipped, keeping the signing credentials out of every PR run.
+    # The caller workflow also enforces tag validation and environment protection.
     if: ${{ inputs.enable_signing == true }}
     runs-on: windows-latest
 
@@ -122,7 +125,7 @@ jobs:
 
     steps:
       - name: Download unsigned binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: safe-chain-win-${{ matrix.arch }}
           path: dist
@@ -144,7 +147,7 @@ jobs:
           Write-Host "Signed by $($sig.SignerCertificate.Subject)"
 
       - name: Upload signed binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: safe-chain-win-${{ matrix.arch }}-signed
           if-no-files-found: error
