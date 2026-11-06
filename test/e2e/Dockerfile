@@ -82,9 +82,9 @@ RUN apt-get update && apt-get install -y pipx && \
         ln -sf /root/.local/bin/poetry /usr/local/bin/poetry
 
 # Install PDM
-# pinned: hishel 2.0.0 removed SyncSqliteStorage, which pdm still uses (pdm-project/pdm#3995)
-RUN pipx install pdm && \
-    pipx inject --force pdm 'hishel<2' && \
+# pinned together: pdm <2.29.7 doesn't support hishel 2, and newer hishel may break pdm (pdm-project/pdm#3995)
+RUN pipx install "pdm==2.29.7" && \
+    pipx inject --force pdm "hishel[httpx2]==2.0.0" && \
     ln -sf /root/.local/bin/pdm /usr/local/bin/pdm
 
 # Install pyenv (not activated globally; individual tests opt in by putting
