@@ -1,29 +1,53 @@
 /**
+ * @typedef {Object} NpxParseResult
+ * @property {{name: string, version: string}[]} packages
+ * @property {string | null} registry
+ */
+
+/**
  * @param {string[]} args
  *
- * @returns {{name: string, version: string}[]}
+ * @returns {NpxParseResult}
  */
 export function parsePackagesFromArguments(args) {
   let defaultTag = "latest";
+  let registry = null;
+  let packageDetails = null;
 
+  // First pass: scan all arguments to capture registry and package
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const option = getOption(arg);
 
     if (option) {
+      // Capture registry specification before incrementing
+      if (option.name === "--registry" && i + 1 < args.length) {
+        registry = args[i + 1];
+      }
+
       // If the option has a parameter, skip the next argument as well
       i += option.numberOfParameters;
 
       continue;
     }
 
-    const packageDetails = parsePackagename(arg, defaultTag);
-    if (packageDetails) {
-      return [packageDetails];
+    // Capture the first package we find (but keep scanning for registry)
+    if (!packageDetails) {
+      packageDetails = parsePackagename(arg, defaultTag);
     }
   }
 
-  return [];
+  if (packageDetails) {
+    return {
+      packages: [packageDetails],
+      registry,
+    };
+  }
+
+  return {
+    packages: [],
+    registry,
+  };
 }
 
 /**
