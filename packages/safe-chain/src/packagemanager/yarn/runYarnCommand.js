@@ -28,9 +28,10 @@ export async function runYarnCommand(args) {
  * @returns {Promise<void>}
  */
 async function fixYarnProxyEnvironmentVariables(env) {
-  // Yarn ignores standard proxy environment variable HTTPS_PROXY
+  // Yarn ignores standard proxy environment variable HTTPS_PROXY and HTTP_PROXY
   // It does respect NODE_EXTRA_CA_CERTS for custom CA certificates though.
   // Don't use YARN_HTTPS_CA_FILE_PATH or YARN_CA_FILE_PATH though, it causes yarn to ignore all system CAs
 
   env.YARN_HTTPS_PROXY = env.HTTPS_PROXY;
+  env.YARN_HTTP_PROXY = env.HTTP_PROXY;
 }
