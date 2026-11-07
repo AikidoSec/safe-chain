@@ -1,5 +1,6 @@
 import https from "https";
 import { generateCertForHost } from "./certUtils.js";
+import { getCombinedCaCertificates } from "./certBundle.js";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { ui } from "../environment/userInteraction.js";
 import { gunzipSync } from "zlib";
@@ -187,13 +188,18 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
   }
   headers = requestHandler.modifyRequestHeaders(headers);
 
-  /** @type {import("http").RequestOptions} */
+  /** @type {import("https").RequestOptions} */
   const options = {
     hostname: hostname,
     port: port || 443,
     path: req.url,
     method: req.method,
     headers: { ...headers },
+    // Trust the combined store (Node roots + certifi + OS system store +
+    // NODE_EXTRA_CA_CERTS) so upstream registries served by an OS-installed
+    // self-signed CA validate instead of failing with "unable to get local
+    // issuer certificate". Verification stays on (rejectUnauthorized default).
+    ca: getCombinedCaCertificates(),
   };
 
   const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;

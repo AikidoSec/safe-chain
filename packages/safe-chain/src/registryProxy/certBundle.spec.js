@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import tls from "node:tls";
+import forge from "node-forge";
 
 // Utility to remove the generated bundle so the module rebuilds it on demand
 function removeBundleIfExists() {
@@ -374,6 +375,102 @@ describe("certBundle.getCombinedCaBundlePath with user certs", () => {
       // Should contain base bundle (Safe Chain + Mozilla + Node roots) but NOT user cert
       const certCount = (contents.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
       assert.strictEqual(certCount, baselineCertCount, `Traversal path ${badPath} should be rejected; base bundle only (no user cert added)`);
+    }
+  });
+});
+
+// Generate a genuinely distinct self-signed CA PEM so we can assert on its
+// presence unambiguously (it is not one of Node's built-in roots).
+function makeUniqueCaPem(commonName) {
+  const keys = forge.pki.rsa.generateKeyPair(2048);
+  const cert = forge.pki.createCertificate();
+  cert.publicKey = keys.publicKey;
+  cert.serialNumber = "02";
+  cert.validity.notBefore = new Date();
+  cert.validity.notAfter = new Date();
+  cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);
+  const attrs = [{ name: "commonName", value: commonName }];
+  cert.setSubject(attrs);
+  cert.setIssuer(attrs);
+  cert.sign(keys.privateKey, forge.md.sha256.create());
+  return forge.pki.certificateToPem(cert).trim();
+}
+
+// These tests import the real certBundle (no module mock) so it shares the same
+// node:tls singleton as this spec, letting us drive getCACertificates directly.
+// tls module mocking does not reach a builtin default import in the child graph.
+describe("certBundle system trust store (#270)", () => {
+  const originalGetCACertificates = Object.getOwnPropertyDescriptor(tls, "getCACertificates");
+
+  beforeEach(() => {
+    mock.restoreAll();
+    delete process.env.NODE_EXTRA_CA_CERTS;
+    removeBundleIfExists();
+  });
+
+  function restoreTls() {
+    if (originalGetCACertificates) {
+      Object.defineProperty(tls, "getCACertificates", originalGetCACertificates);
+    } else {
+      // @ts-ignore - property may not exist on older runtimes
+      delete tls.getCACertificates;
+    }
+  }
+
+  it("adds OS system-store certs when tls.getCACertificates is available", async () => {
+    const systemCert = makeUniqueCaPem("safe-chain-system-store-test");
+    // @ts-ignore - override the system-store lookup for the test
+    tls.getCACertificates = () => [systemCert];
+    try {
+      const { getCombinedCaBundlePath, cleanupCertBundle } = await import("./certBundle.js");
+      cleanupCertBundle(); // clear any cached bundle from earlier tests
+      const contents = fs.readFileSync(getCombinedCaBundlePath(), "utf8");
+      assert.ok(
+        contents.includes(systemCert),
+        "Combined bundle should include the OS system-store certificate"
+      );
+    } finally {
+      restoreTls();
+    }
+  });
+
+  it("is a silent no-op (no throw, no system cert) when tls.getCACertificates is absent", async () => {
+    const systemCert = makeUniqueCaPem("safe-chain-absent-api-test");
+    // Simulate Node < 22.15 where the API does not exist.
+    // @ts-ignore - intentionally removing to exercise the feature guard
+    delete tls.getCACertificates;
+    try {
+      const { getCombinedCaBundlePath, cleanupCertBundle } = await import("./certBundle.js");
+      cleanupCertBundle();
+      let bundlePath;
+      assert.doesNotThrow(() => {
+        bundlePath = getCombinedCaBundlePath();
+      }, "Absent getCACertificates must not throw");
+      const contents = fs.readFileSync(bundlePath, "utf8");
+      assert.match(contents, /-----BEGIN CERTIFICATE-----/, "Bundle still built from other sources");
+      assert.ok(!contents.includes(systemCert), "No system cert added when the API is unavailable");
+    } finally {
+      restoreTls();
+    }
+  });
+
+  it("getCombinedCaCertificates returns a PEM array including the system store", async () => {
+    const systemCert = makeUniqueCaPem("safe-chain-array-export-test");
+    // @ts-ignore - override the system-store lookup for the test
+    tls.getCACertificates = () => [systemCert];
+    try {
+      const { getCombinedCaCertificates, cleanupCertBundle } = await import("./certBundle.js");
+      cleanupCertBundle();
+      const certs = getCombinedCaCertificates();
+      assert.ok(Array.isArray(certs), "Returns an array");
+      assert.ok(certs.length > 0, "Array is non-empty");
+      assert.ok(
+        certs.every((c) => typeof c === "string" && c.includes("BEGIN CERTIFICATE")),
+        "Every entry is a PEM string"
+      );
+      assert.ok(certs.includes(systemCert), "Array includes the system-store certificate");
+    } finally {
+      restoreTls();
     }
   });
 });
