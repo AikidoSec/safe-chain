@@ -118,7 +118,14 @@ function Uninstall-Endpoint {
         # Cleanup must never fail an uninstall msiexec already finished. Remove-Item
         # throws on an 8.3 TEMP path longer than the real one (PowerShell/PowerShell#21070).
         if (-not $script:KeepLogFile) {
-            try { [System.IO.File]::Delete($logFile) } catch { }
+            try {
+                $item = Get-Item -LiteralPath $logFile -ErrorAction SilentlyContinue
+                if ($item) {
+                    $item.IsReadOnly = $false
+                    [System.IO.File]::Delete($logFile)
+                }
+            }
+            catch { }
         }
     }
 }
