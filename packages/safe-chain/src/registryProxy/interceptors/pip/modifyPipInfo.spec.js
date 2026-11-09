@@ -2,6 +2,11 @@ import { describe, it, mock } from "node:test";
 import assert from "node:assert";
 
 describe("modifyPipInfo", async () => {
+  const verboseLogs = [];
+  const recent = "2024-01-03T12:00:00.123456Z";
+  const old = "2024-01-01T12:00:00.123456Z";
+  const isFileTooNew = (_name, _version, timestamp) =>
+    new Date(timestamp) > new Date("2024-01-02T12:00:00Z");
   mock.module("../../../config/settings.js", {
     namedExports: {
       getMinimumPackageAgeHours: () => 48,
@@ -12,7 +17,7 @@ describe("modifyPipInfo", async () => {
   mock.module("../../../environment/userInteraction.js", {
     namedExports: {
       ui: {
-        writeVerbose: () => {},
+        writeVerbose: (message) => verboseLogs.push(message),
       },
     },
   });
@@ -298,5 +303,121 @@ describe("modifyPipInfo", async () => {
 
     assert.deepEqual(Object.keys(modified.releases), ["1.0.0rc1"]);
     assert.equal(modified.info.version, "1.0.0rc1");
+  });
+
+  it("filters simple JSON upload times and prunes only versions emptied by filtering", () => {
+    const body = Buffer.from(JSON.stringify({
+      versions: ["1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0"],
+      files: [
+        { filename: "requests-1.0.0.tar.gz", "upload-time": old },
+        { filename: "requests-1.0.0-py3-none-any.whl", "upload-time": recent },
+        { filename: "requests-2.0.0.tar.gz", "upload-time": recent },
+        { filename: "requests-2.0.0-py3-none-any.whl", "upload-time": recent },
+        { filename: "requests-3.0.0.tar.gz" },
+        { filename: "requests-5.0.0.tar.gz", "upload-time": "invalid" },
+      ],
+    }));
+    verboseLogs.length = 0;
+    const headers = { "content-type": "application/vnd.pypi.simple.v1+json", etag: "abc" };
+    const result = JSON.parse(modifyPipInfoResponse(
+      body, headers, "https://pypi.org/simple/requests/", () => false,
+      "requests", isFileTooNew
+    ).toString());
+
+    assert.deepEqual(result.files.map((file) => file.filename), [
+      "requests-1.0.0.tar.gz", "requests-3.0.0.tar.gz", "requests-5.0.0.tar.gz",
+    ]);
+    assert.deepEqual(result.versions, ["1.0.0", "3.0.0", "4.0.0", "5.0.0"]);
+    assert.equal(headers.etag, undefined);
+    assert.equal(verboseLogs.length, 2);
+    assert.equal(verboseLogs.filter((message) => message.includes("requests@2.0.0")).length, 1);
+  });
+
+  it("filters legacy urls by ISO upload time with upload_time fallback", () => {
+    const body = Buffer.from(JSON.stringify({ urls: [
+      { filename: "requests-2.0.0.tar.gz", upload_time_iso_8601: recent },
+      { filename: "requests-2.0.0-py3-none-any.whl", upload_time: recent },
+      { filename: "requests-2.0.0.zip", upload_time_iso_8601: old, upload_time: recent },
+      { filename: "requests-2.0.0.tar.bz2", upload_time_iso_8601: "invalid" },
+      { filename: "requests-2.0.0.tar.xz" },
+    ] }));
+    const result = JSON.parse(modifyPipInfoResponse(
+      body, { "content-type": "application/json" },
+      "https://pypi.org/pypi/requests/2.0.0/json", () => false,
+      "requests", isFileTooNew
+    ).toString());
+    assert.deepEqual(result.urls.map((file) => file.filename), [
+      "requests-2.0.0.zip", "requests-2.0.0.tar.bz2", "requests-2.0.0.tar.xz",
+    ]);
+  });
+
+  it("prunes release files, deletes emptied releases and deduplicates logs across urls", () => {
+    const body = Buffer.from(JSON.stringify({
+      info: { version: "3.0.0" },
+      releases: {
+        "0.5.0": [],
+        "1.0.0": [{ upload_time_iso_8601: old }],
+        "2.0.0": [{ upload_time_iso_8601: recent }, { upload_time: old }],
+        "3.0.0": [{ upload_time_iso_8601: recent }, { upload_time: recent }],
+        "4.0.0rc1": [{ upload_time_iso_8601: old }],
+        "5.0.0": [{ upload_time_iso_8601: old }],
+      },
+      urls: [
+        { filename: "requests-3.0.0.tar.gz", upload_time_iso_8601: recent },
+        { filename: "requests-5.0.0.tar.gz", upload_time_iso_8601: old },
+      ],
+    }));
+    verboseLogs.length = 0;
+    const result = JSON.parse(modifyPipInfoResponse(
+      body, { "content-type": "application/json" },
+      "https://pypi.org/pypi/requests/json", (_name, version) => version === "5.0.0",
+      "requests", isFileTooNew
+    ).toString());
+    assert.deepEqual(Object.keys(result.releases), ["0.5.0", "1.0.0", "2.0.0", "4.0.0rc1"]);
+    assert.deepEqual(result.releases["2.0.0"], [{ upload_time: old }]);
+    assert.equal(result.info.version, "2.0.0");
+    assert.deepEqual(result.urls, []);
+    assert.equal(verboseLogs.length, 3);
+    for (const version of ["2.0.0", "3.0.0", "5.0.0"]) {
+      assert.equal(verboseLogs.filter((message) => message.includes(`requests@${version}`)).length, 1);
+    }
+  });
+
+  it("returns the original JSON buffer and caching headers when upload times are not too new", () => {
+    const body = Buffer.from(JSON.stringify({
+      info: { version: "1.0.0" },
+      versions: ["1.0.0", "2.0.0"],
+      files: [{ filename: "requests-1.0.0.tar.gz", "upload-time": old }],
+      releases: { "1.0.0": [{ upload_time_iso_8601: old }, {}, { upload_time: "invalid" }] },
+      urls: [{ filename: "requests-1.0.0.tar.gz", upload_time: old }],
+    }));
+    const headers = { "content-type": "application/json", etag: "abc", "cache-control": "public" };
+    assert.strictEqual(modifyPipInfoResponse(
+      body, headers, "https://pypi.org/pypi/requests/json", () => false,
+      "requests", isFileTooNew
+    ), body);
+    assert.equal(headers.etag, "abc");
+    assert.equal(headers["cache-control"], "public");
+  });
+
+  it("keeps a recent safe patch when the file predicate exempts its version", () => {
+    const body = Buffer.from(JSON.stringify({
+      files: [{ filename: "requests-2.0.0.tar.gz", "upload-time": recent }],
+    }));
+    assert.strictEqual(modifyPipInfoResponse(
+      body, { "content-type": "application/vnd.pypi.simple.v1+json" },
+      "https://pypi.org/simple/requests/", () => false, "requests",
+      (name, version, timestamp) => version !== "2.0.0" && isFileTooNew(name, version, timestamp)
+    ), body);
+  });
+
+  it("does not apply the file predicate to HTML metadata", () => {
+    const body = Buffer.from('<a href="requests-2.0.0.tar.gz">requests-2.0.0.tar.gz</a>');
+    const predicate = mock.fn(() => true);
+    assert.strictEqual(modifyPipInfoResponse(
+      body, { "content-type": "text/html" }, "https://pypi.org/simple/requests/",
+      () => false, "requests", predicate
+    ), body);
+    assert.equal(predicate.mock.callCount(), 0);
   });
 });

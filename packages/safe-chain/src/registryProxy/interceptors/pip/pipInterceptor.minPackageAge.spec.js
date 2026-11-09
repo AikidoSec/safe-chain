@@ -111,6 +111,56 @@ describe("pipInterceptor minimum package age", async () => {
     newlyReleasedPackageResponse = false;
   });
 
+  it("filters recent simple JSON uploads through the real checker without a feed entry", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    const result = await pipInterceptorForUrl(url).handleRequest(url);
+    const body = Buffer.from(JSON.stringify({ files: [
+      { filename: "foo_bar-1.0.0.tar.gz", "upload-time": new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString() },
+      { filename: "foo_bar-2.0.0.tar.gz", "upload-time": new Date().toISOString().replace(/Z$/, "456Z") },
+      { filename: "foo_bar-3.0.0.tar.gz" },
+      { filename: "foo_bar-4.0.0.tar.gz", "upload-time": "invalid" },
+    ] }));
+    const modified = JSON.parse(result.modifyBody(body, {
+      "content-type": "application/vnd.pypi.simple.v1+json",
+    }).toString());
+    assert.deepEqual(modified.files.map((file) => file.filename), [
+      "foo_bar-1.0.0.tar.gz", "foo_bar-3.0.0.tar.gz", "foo_bar-4.0.0.tar.gz",
+    ]);
+  });
+
+  it("keeps recent simple JSON safe patch uploads through the real checker", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    safePatchedPackages = new Set(["foo-bar@2.0.0"]);
+    try {
+      const result = await pipInterceptorForUrl(url).handleRequest(url);
+      const body = Buffer.from(JSON.stringify({ files: [
+        { filename: "foo_bar-2.0.0.tar.gz", "upload-time": new Date().toISOString() },
+      ] }));
+      assert.strictEqual(result.modifyBody(body, {
+        "content-type": "application/vnd.pypi.simple.v1+json",
+      }), body);
+    } finally {
+      safePatchedPackages = new Set();
+    }
+  });
+
+  it("does not modify recent simple JSON uploads for exempt packages", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    minimumPackageAgeExclusionsSetting = ["foo-bar"];
+    try {
+      const result = await pipInterceptorForUrl(url).handleRequest(url);
+      const body = Buffer.from(JSON.stringify({ files: [
+        { filename: "foo_bar-2.0.0.tar.gz", "upload-time": new Date().toISOString() },
+      ] }));
+      assert.equal(result.modifiesResponse(), false);
+      assert.strictEqual(result.modifyBody(body, {
+        "content-type": "application/vnd.pypi.simple.v1+json",
+      }), body);
+    } finally {
+      minimumPackageAgeExclusionsSetting = [];
+    }
+  });
+
   it("should not block newly released package downloads when skipMinimumPackageAge is enabled", async () => {
     const url =
       "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl";

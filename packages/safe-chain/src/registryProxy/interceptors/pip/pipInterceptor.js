@@ -81,7 +81,10 @@ function createPipRequestHandler(registry) {
             headers,
             reqContext.targetUrl,
             checker.isTooNewByFeed,
-            metadataPackageName
+            metadataPackageName,
+            (packageName, version, uploadTime) =>
+              !!uploadTime &&
+              checker.isTooNewByReleaseDate(packageName, version, uploadTime)
           )
         );
         return;
