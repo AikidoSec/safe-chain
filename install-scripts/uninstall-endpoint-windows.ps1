@@ -115,9 +115,10 @@ function Uninstall-Endpoint {
         Write-Info "Aikido Endpoint Protection uninstalled successfully!"
     }
     finally {
-        # Cleanup
-        if ((Test-Path $logFile) -and -not $script:KeepLogFile) {
-            Remove-Item -Path $logFile -Force -ErrorAction SilentlyContinue
+        # Cleanup must never fail an uninstall msiexec already finished. Remove-Item
+        # throws on an 8.3 TEMP path longer than the real one (PowerShell/PowerShell#21070).
+        if (-not $script:KeepLogFile) {
+            try { [System.IO.File]::Delete($logFile) } catch { }
         }
     }
 }

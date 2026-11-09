@@ -131,8 +131,12 @@ function Install-Endpoint {
     }
 
     # 2. Download the .msi
-    $msiFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).msi"
-    $logFile = Join-Path $env:TEMP "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).log"
+    # TEMP can be an 8.3 profile path (C:\Users\B536F~1.SCH\...) that is longer than
+    # the real folder name; Remove-Item then throws (PowerShell/PowerShell#21070).
+    $tempDir = $env:TEMP
+    try { $tempDir = (Get-Item -LiteralPath $env:TEMP -ErrorAction Stop).FullName } catch { }
+    $msiFile = Join-Path $tempDir "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).msi"
+    $logFile = Join-Path $tempDir "AikidoEndpoint-$([System.Guid]::NewGuid().ToString('N')).log"
 
     Write-Info "Downloading Aikido Endpoint Protection..."
     try {
@@ -185,12 +189,11 @@ function Install-Endpoint {
         Write-Info "Aikido Endpoint Protection installed successfully!"
     }
     finally {
-        # Cleanup
-        if (Test-Path $msiFile) {
-            Remove-Item -Path $msiFile -Force -ErrorAction SilentlyContinue
-        }
-        if ((Test-Path $logFile) -and -not $script:KeepLogFile) {
-            Remove-Item -Path $logFile -Force -ErrorAction SilentlyContinue
+        # Cleanup must never fail an install msiexec already finished.
+        $tempFiles = @($msiFile)
+        if (-not $script:KeepLogFile) { $tempFiles += $logFile }
+        foreach ($file in $tempFiles) {
+            try { [System.IO.File]::Delete($file) } catch { }
         }
     }
 }
