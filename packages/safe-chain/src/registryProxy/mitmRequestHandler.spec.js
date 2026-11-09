@@ -5,6 +5,15 @@ import zlib from "node:zlib";
 describe("mitmRequestHandler", async () => {
   let capturedHandler;
   let capturedOptions;
+  let upstreamEncoding = "gzip";
+  let upstreamBody = Buffer.from("rewritten body");
+
+  const encoders = {
+    gzip: zlib.gzipSync,
+    br: zlib.brotliCompressSync,
+    deflate: zlib.deflateSync,
+    zstd: (buffer) => buffer,
+  };
 
   mock.module("https", {
     defaultExport: {
@@ -22,7 +31,7 @@ describe("mitmRequestHandler", async () => {
         const proxyRes = {
           statusCode: 200,
           headers: {
-            "content-encoding": "gzip",
+            "content-encoding": upstreamEncoding,
             "content-length": "999",
             "transfer-encoding": "chunked",
           },
@@ -37,8 +46,7 @@ describe("mitmRequestHandler", async () => {
           on: () => {},
           write: () => {},
           end: () => {
-            const payload = Buffer.from("rewritten body");
-            listeners["data"]?.(zlib.gzipSync(payload));
+            listeners["data"]?.(encoders[upstreamEncoding](upstreamBody));
             listeners["end"]?.();
           },
           destroy: () => {},
@@ -103,6 +111,8 @@ describe("mitmRequestHandler", async () => {
       body: undefined,
     };
 
+    let responseEnded;
+    const ended = new Promise((resolve) => (responseEnded = resolve));
     const res = {
       headersSent: false,
       writeHead: (statusCode, headers) => {
@@ -111,6 +121,7 @@ describe("mitmRequestHandler", async () => {
       },
       end: (body) => {
         resState.body = body;
+        responseEnded();
       },
     };
 
@@ -126,6 +137,7 @@ describe("mitmRequestHandler", async () => {
     };
 
     await capturedHandler(request, res);
+    await ended;
 
     assert.equal(capturedOptions.hostname, "pypi.org");
     assert.equal(resState.statusCode, 200);
@@ -167,6 +179,8 @@ describe("mitmRequestHandler", async () => {
       body: undefined,
     };
 
+    let responseEnded;
+    const ended = new Promise((resolve) => (responseEnded = resolve));
     const res = {
       headersSent: false,
       writeHead: (statusCode, headers) => {
@@ -175,6 +189,7 @@ describe("mitmRequestHandler", async () => {
       },
       end: (body) => {
         resState.body = body;
+        responseEnded();
       },
     };
 
@@ -190,6 +205,7 @@ describe("mitmRequestHandler", async () => {
     };
 
     await capturedHandler(request, res);
+    await ended;
 
     // Caching/encoding headers are preserved so npm and the registry can keep
     // serving the response from cache instead of re-reading on the next install.
@@ -199,5 +215,91 @@ describe("mitmRequestHandler", async () => {
     assert.equal(resState.headers["transfer-encoding"], "chunked");
     // The body is forwarded still-compressed, exactly as received from upstream.
     assert.deepEqual(resState.body, zlib.gzipSync(Buffer.from("rewritten body")));
+  });
+
+  /**
+   * Runs one intercepted request whose upstream response uses `encoding`, and
+   * returns the body the interceptor saw plus what was sent to the client.
+   */
+  async function interceptWithEncoding(encoding, modifyBody) {
+    upstreamEncoding = encoding;
+    upstreamBody = Buffer.from('{"name":"pkg"}');
+    let seenByInterceptor;
+    const interceptor = {
+      handleRequest: async () => ({
+        blockResponse: undefined,
+        modifyRequestHeaders: (headers) => headers,
+        modifiesResponse: () => true,
+        modifyBody: (body) => {
+          seenByInterceptor = body;
+          return modifyBody(body);
+        },
+      }),
+    };
+
+    mitmConnect(
+      { url: "registry.npmjs.org:443" },
+      { on: () => {}, write: () => {}, writable: true, end: () => {} },
+      interceptor
+    );
+
+    const sent = {};
+    const ended = new Promise((resolve) => {
+      const res = {
+        headersSent: false,
+        writeHead: (statusCode, headers) => {
+          sent.headers = headers;
+        },
+        end: (body) => {
+          sent.body = body;
+          resolve();
+        },
+      };
+      capturedHandler(
+        {
+          url: "/pkg",
+          headers: {},
+          method: "GET",
+          on: (event, handler) => event === "end" && handler(),
+        },
+        res
+      );
+    });
+    await ended;
+
+    upstreamEncoding = "gzip";
+    upstreamBody = Buffer.from("rewritten body");
+    return { seenByInterceptor, sent };
+  }
+
+  it("decodes a gzip response before the interceptor sees it", async () => {
+    const { seenByInterceptor, sent } = await interceptWithEncoding(
+      "gzip",
+      () => Buffer.from('{"name":"rewritten"}')
+    );
+
+    assert.equal(seenByInterceptor.toString(), '{"name":"pkg"}');
+    assert.equal(sent.headers["content-encoding"], undefined);
+    assert.equal(sent.body.toString(), '{"name":"rewritten"}');
+  });
+
+  for (const encoding of ["zstd", "br", "deflate"]) {
+    it(`forwards a ${encoding} response unmodified since it is not decoded`, async () => {
+      let interceptorCalled = false;
+      const { sent } = await interceptWithEncoding(encoding, (body) => {
+        interceptorCalled = true;
+        return body;
+      });
+
+      assert.equal(interceptorCalled, false);
+      assert.equal(sent.headers["content-encoding"], encoding);
+      assert.deepEqual(sent.body, encoders[encoding](Buffer.from('{"name":"pkg"}')));
+    });
+  }
+
+  it("only offers upstream the encodings it can decode when it may read the response", async () => {
+    await interceptWithEncoding("gzip", (body) => body);
+
+    assert.equal(capturedOptions.headers["accept-encoding"], "identity");
   });
 });
