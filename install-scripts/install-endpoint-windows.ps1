@@ -191,13 +191,15 @@ function Install-Endpoint {
         }
         foreach ($file in $tempFiles) {
             try {
-                $item = Get-Item -LiteralPath $file -ErrorAction SilentlyContinue
-                if ($item) {
-                    $item.IsReadOnly = $false
-                    [System.IO.File]::Delete($file)
+                try {
+                    [System.IO.File]::SetAttributes($file, [System.IO.FileAttributes]::Normal)
                 }
+                catch { }
+                [System.IO.File]::Delete($file)
             }
-            catch { }
+            catch {
+                Write-Warn "Could not remove temporary file '${file}': $_"
+            }
         }
     }
 }

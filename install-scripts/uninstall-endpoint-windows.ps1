@@ -117,13 +117,15 @@ function Uninstall-Endpoint {
     finally {
         if (-not $script:KeepLogFile) {
             try {
-                $item = Get-Item -LiteralPath $logFile -ErrorAction SilentlyContinue
-                if ($item) {
-                    $item.IsReadOnly = $false
-                    [System.IO.File]::Delete($logFile)
+                try {
+                    [System.IO.File]::SetAttributes($logFile, [System.IO.FileAttributes]::Normal)
                 }
+                catch { }
+                [System.IO.File]::Delete($logFile)
             }
-            catch { }
+            catch {
+                Write-Warn "Could not remove temporary file '${logFile}': $_"
+            }
         }
     }
 }
