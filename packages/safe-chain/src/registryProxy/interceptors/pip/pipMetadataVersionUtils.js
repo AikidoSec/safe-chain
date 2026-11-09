@@ -11,10 +11,14 @@ export function getPackageVersionFromMetadataFile(file, metadataUrl) {
 
   if (href) {
     const resolvedHref = new URL(href, metadataUrl).toString();
-    return parsePipPackageFromUrl(
+    const parsedVersion = parsePipPackageFromUrl(
       resolvedHref,
       new URL(resolvedHref).host
     ).version;
+    
+    if (parsedVersion) {
+      return parsedVersion;
+    }
   }
 
   if (filename) {
