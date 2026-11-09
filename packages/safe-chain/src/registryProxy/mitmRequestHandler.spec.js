@@ -5,6 +5,8 @@ import zlib from "node:zlib";
 describe("mitmRequestHandler", async () => {
   let capturedHandler;
   let capturedOptions;
+  let resumed = false;
+  let piped = false;
 
   mock.module("https", {
     defaultExport: {
@@ -28,6 +30,11 @@ describe("mitmRequestHandler", async () => {
           },
           on: (event, handler) => {
             listeners[event] = handler;
+          },
+          resume: () => { resumed = true; },
+          pipe: (res) => {
+            piped = true;
+            res.end(zlib.gzipSync(Buffer.from("rewritten body")));
           },
         };
 
@@ -77,6 +84,7 @@ describe("mitmRequestHandler", async () => {
     const interceptor = {
       handleRequest: async () => ({
         blockResponse: undefined,
+        checkResponseHeaders: () => undefined,
         modifyRequestHeaders: (headers) => headers,
         modifiesResponse: () => true,
         modifyBody: () => Buffer.from("rewritten body"),
@@ -140,6 +148,11 @@ describe("mitmRequestHandler", async () => {
     const interceptor = {
       handleRequest: async () => ({
         blockResponse: undefined,
+        checkResponseHeaders: (statusCode, headers) => {
+          assert.equal(statusCode, 200);
+          assert.equal(headers["content-encoding"], "gzip");
+          return undefined;
+        },
         modifyRequestHeaders: (headers) => headers,
         modifiesResponse: () => true,
         // Return the same buffer reference we were given (no modification).
@@ -199,5 +212,79 @@ describe("mitmRequestHandler", async () => {
     assert.equal(resState.headers["transfer-encoding"], "chunked");
     // The body is forwarded still-compressed, exactly as received from upstream.
     assert.deepEqual(resState.body, zlib.gzipSync(Buffer.from("rewritten body")));
+  });
+
+  for (const modifiesResponse of [false, true]) {
+    it(`blocks upstream responses before the ${modifiesResponse ? "buffered" : "piped"} path`, async () => {
+      resumed = false;
+      piped = false;
+      const message = "Forbidden - minimum package age";
+      const interceptor = {
+        handleRequest: async () => ({
+          modifyRequestHeaders: (headers) => headers,
+          checkResponseHeaders: (statusCode, headers) => {
+            assert.equal(statusCode, 200);
+            assert.equal(headers["content-encoding"], "gzip");
+            return { statusCode: 403, message };
+          },
+          modifiesResponse: () => modifiesResponse,
+          modifyBody: () => assert.fail("Blocked body must not be processed"),
+        }),
+      };
+      mitmConnect({ url: "pypi.org:443" }, { on: () => {}, write: () => {} }, interceptor);
+      const state = {};
+      await capturedHandler({
+        url: "/package.whl",
+        headers: {},
+        method: "GET",
+        on: (event, handler) => { if (event === "end") handler(); },
+      }, {
+        writeHead: (statusCode, headers) => {
+          state.statusCode = statusCode;
+          state.headers = headers;
+        },
+        end: (body) => { state.body = body; },
+      });
+
+      assert.deepEqual(state, { statusCode: 403, headers: message, body: message });
+      assert.equal(resumed, true);
+      assert.equal(piped, false);
+    });
+  }
+
+  it("forwards the upstream body unchanged on the piped path when the header check allows it", async () => {
+    resumed = false;
+    piped = false;
+    const interceptor = {
+      handleRequest: async () => ({
+        modifyRequestHeaders: (headers) => headers,
+        checkResponseHeaders: (statusCode, headers) => {
+          assert.equal(statusCode, 200);
+          assert.equal(headers["content-encoding"], "gzip");
+          return undefined;
+        },
+        modifiesResponse: () => false,
+      }),
+    };
+    mitmConnect({ url: "pypi.org:443" }, { on: () => {}, write: () => {} }, interceptor);
+    const state = {};
+    await capturedHandler({
+      url: "/package.whl",
+      headers: {},
+      method: "GET",
+      on: (event, handler) => { if (event === "end") handler(); },
+    }, {
+      writeHead: (statusCode, headers) => {
+        state.statusCode = statusCode;
+        state.headers = headers;
+      },
+      end: (body) => { state.body = body; },
+    });
+
+    assert.equal(state.statusCode, 200);
+    assert.equal(state.headers["content-encoding"], "gzip");
+    assert.deepEqual(state.body, zlib.gzipSync(Buffer.from("rewritten body")));
+    assert.equal(resumed, false);
+    assert.equal(piped, true);
   });
 });

@@ -11,6 +11,7 @@ import { EventEmitter } from "events";
  * @property {string} targetUrl
  * @property {(packageName: string | undefined, version: string | undefined) => void} blockMalware
  * @property {(packageName: string, version: string, message: string) => void} blockMinimumAgeRequest
+ * @property {(check: (statusCode: number, headers: NodeJS.Dict<string | string[]>) => {packageName: string, version: string, message: string} | undefined) => void} blockOnResponseHeaders
  * @property {(modificationFunc: (headers: NodeJS.Dict<string | string[]>) => NodeJS.Dict<string | string[]>) => void} modifyRequestHeaders
  * @property {(modificationFunc: (body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer) => void} modifyBody
  * @property {(response: {statusCode: number, headers: NodeJS.Dict<string>, body: Buffer}) => void} setSyntheticResponse
@@ -20,6 +21,7 @@ import { EventEmitter } from "events";
  * @typedef {Object} RequestInterceptionHandler
  * @property {{statusCode: number, message: string} | undefined} blockResponse
  * @property {{statusCode: number, headers: NodeJS.Dict<string>, body: Buffer} | undefined} syntheticResponse
+ * @property {(statusCode: number, headers: NodeJS.Dict<string | string[]>) => {statusCode: number, message: string} | undefined} checkResponseHeaders
  * @property {(headers: NodeJS.Dict<string | string[]> | undefined) => NodeJS.Dict<string | string[]> | undefined} modifyRequestHeaders
  * @property {() => boolean} modifiesResponse
  * @property {(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer} modifyBody
@@ -86,6 +88,8 @@ function createRequestContext(targetUrl, eventEmitter) {
   let reqheaderModificationFuncs = [];
   /** @type {Array<(body: Buffer, headers: NodeJS.Dict<string | string[]> | undefined) => Buffer>} */
   let modifyBodyFuncs = [];
+  /** @type {((statusCode: number, headers: NodeJS.Dict<string | string[]>) => {packageName: string, version: string, message: string} | undefined) | undefined} */
+  let responseHeadersCheck = undefined;
 
   /**
    * @param {string | undefined} packageName
@@ -166,6 +170,19 @@ function createRequestContext(targetUrl, eventEmitter) {
     return {
       blockResponse,
       syntheticResponse,
+      checkResponseHeaders: (statusCode, headers) => {
+        const block = responseHeadersCheck?.(statusCode, headers);
+        if (!block) {
+          return undefined;
+        }
+        eventEmitter.emit("minimumAgeRequestBlocked", {
+          packageName: block.packageName,
+          version: block.version,
+          targetUrl,
+          timestamp: Date.now(),
+        });
+        return createBlockResponse(block.message);
+      },
       modifyRequestHeaders: modifyRequestHeaders,
       modifiesResponse: () => modifyBodyFuncs.length > 0,
       modifyBody,
@@ -177,6 +194,7 @@ function createRequestContext(targetUrl, eventEmitter) {
     targetUrl,
     blockMalware: blockMalwareSetup,
     blockMinimumAgeRequest: blockMinimumAgeRequestSetup,
+    blockOnResponseHeaders: (check) => { responseHeadersCheck = check; },
     modifyRequestHeaders: (func) => reqheaderModificationFuncs.push(func),
     modifyBody: (func) => modifyBodyFuncs.push(func),
     setSyntheticResponse: (response) => { syntheticResponse = response; },
