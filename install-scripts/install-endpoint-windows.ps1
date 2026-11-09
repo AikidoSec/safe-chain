@@ -191,11 +191,10 @@ function Install-Endpoint {
         }
         foreach ($file in $tempFiles) {
             try {
-                try {
+                if ([System.IO.File]::Exists($file)) {
                     [System.IO.File]::SetAttributes($file, [System.IO.FileAttributes]::Normal)
+                    [System.IO.File]::Delete($file)
                 }
-                catch { }
-                [System.IO.File]::Delete($file)
             }
             catch {
                 Write-Warn "Could not remove temporary file '${file}': $_"

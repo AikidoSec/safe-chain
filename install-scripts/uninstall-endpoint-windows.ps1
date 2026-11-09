@@ -117,11 +117,10 @@ function Uninstall-Endpoint {
     finally {
         if (-not $script:KeepLogFile) {
             try {
-                try {
+                if ([System.IO.File]::Exists($logFile)) {
                     [System.IO.File]::SetAttributes($logFile, [System.IO.FileAttributes]::Normal)
+                    [System.IO.File]::Delete($logFile)
                 }
-                catch { }
-                [System.IO.File]::Delete($logFile)
             }
             catch {
                 Write-Warn "Could not remove temporary file '${logFile}': $_"
