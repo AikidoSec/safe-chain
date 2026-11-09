@@ -185,8 +185,6 @@ function Install-Endpoint {
         Write-Info "Aikido Endpoint Protection installed successfully!"
     }
     finally {
-        # Cleanup must never fail an install msiexec already finished. Remove-Item
-        # throws on an 8.3 TEMP path longer than the real one (PowerShell/PowerShell#21070).
         $tempFiles = @($msiFile)
         if (-not $script:KeepLogFile) {
             $tempFiles += $logFile
