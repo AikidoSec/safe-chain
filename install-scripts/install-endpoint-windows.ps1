@@ -185,12 +185,20 @@ function Install-Endpoint {
         Write-Info "Aikido Endpoint Protection installed successfully!"
     }
     finally {
-        # Cleanup
-        if (Test-Path $msiFile) {
-            Remove-Item -Path $msiFile -Force -ErrorAction SilentlyContinue
+        $tempFiles = @($msiFile)
+        if (-not $script:KeepLogFile) {
+            $tempFiles += $logFile
         }
-        if ((Test-Path $logFile) -and -not $script:KeepLogFile) {
-            Remove-Item -Path $logFile -Force -ErrorAction SilentlyContinue
+        foreach ($file in $tempFiles) {
+            try {
+                if ([System.IO.File]::Exists($file)) {
+                    [System.IO.File]::SetAttributes($file, [System.IO.FileAttributes]::Normal)
+                    [System.IO.File]::Delete($file)
+                }
+            }
+            catch {
+                Write-Warn "Could not remove temporary file '${file}': $_"
+            }
         }
     }
 }

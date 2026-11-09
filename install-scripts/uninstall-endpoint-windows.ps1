@@ -115,9 +115,16 @@ function Uninstall-Endpoint {
         Write-Info "Aikido Endpoint Protection uninstalled successfully!"
     }
     finally {
-        # Cleanup
-        if ((Test-Path $logFile) -and -not $script:KeepLogFile) {
-            Remove-Item -Path $logFile -Force -ErrorAction SilentlyContinue
+        if (-not $script:KeepLogFile) {
+            try {
+                if ([System.IO.File]::Exists($logFile)) {
+                    [System.IO.File]::SetAttributes($logFile, [System.IO.FileAttributes]::Normal)
+                    [System.IO.File]::Delete($logFile)
+                }
+            }
+            catch {
+                Write-Warn "Could not remove temporary file '${logFile}': $_"
+            }
         }
     }
 }
