@@ -11,6 +11,8 @@ import ini from "ini";
 import { spawn } from "child_process";
 import { reportCommandExecutionFailure } from "../_shared/commandErrors.js";
 
+const ALLOWED_PIP_COMMANDS = [PIP_COMMAND, PIP3_COMMAND, PYTHON_COMMAND, PYTHON3_COMMAND];
+
 /**
  * Checks if this pip invocation should bypass safe-chain and spawn directly.
  * Returns true if the tool is python/python3 but NOT being run with -m pip/pip3.
@@ -75,14 +77,19 @@ function setFallbackCaBundleEnvironmentVariables(env, combinedCaPath) {
  * @returns {Promise<{status: number}>} Exit status of the pip command
  */
 export async function runPip(command, args) {
+  const executable = ALLOWED_PIP_COMMANDS.find((allowed) => allowed === command);
+  if (!executable) {
+    ui.writeError(`Safe-chain: Invalid pip command: ${command}`);
+    return { status: 1 };
+  }
+
   // Check if we should bypass safe-chain (python/python3 without -m pip)
-  if (shouldBypassSafeChain(command, args)) {
-    ui.writeVerbose(`Safe-chain: Bypassing safe-chain for non-pip invocation: ${command} ${args.join(" ")}`);
-    // Spawn the ORIGINAL command with ORIGINAL args
+  if (shouldBypassSafeChain(executable, args)) {
+    ui.writeVerbose(`Safe-chain: Bypassing safe-chain for non-pip invocation: ${executable} ${args.join(" ")}`);
     return new Promise((_resolve) => {
-      const proc = spawn(command, args, { stdio: "inherit" });
+      const proc = spawn(executable, args, { stdio: "inherit", shell: false });
       proc.on("exit", (/** @type {number | null} */ code) => {
-        ui.writeVerbose(`${command} ${args.join(" ")} exited with status ${code}`);
+        ui.writeVerbose(`${executable} ${args.join(" ")} exited with status ${code}`);
         ui.writeBufferedLogsAndStopBuffering();
         process.exit(code ?? 0);
       });
@@ -127,7 +134,7 @@ export async function runPip(command, args) {
       // This can do no harm
       setFallbackCaBundleEnvironmentVariables(env, combinedCaPath);
       
-      const result = await safeSpawn(command, args, {
+      const result = await safeSpawn(executable, args, {
         stdio: "inherit",
         env,
       });
@@ -187,7 +194,7 @@ export async function runPip(command, args) {
     // Set fallback CA bundle environment variables for Python libraries that don't read pip config
     setFallbackCaBundleEnvironmentVariables(env, combinedCaPath);
 
-    const result = await safeSpawn(command, args, {
+    const result = await safeSpawn(executable, args, {
       stdio: "inherit",
       env,
     });
@@ -204,6 +211,6 @@ export async function runPip(command, args) {
 
     return { status: result.status };
   } catch (/** @type any */ error) {
-    return reportCommandExecutionFailure(error, command);
+    return reportCommandExecutionFailure(error, executable);
   }
 }
