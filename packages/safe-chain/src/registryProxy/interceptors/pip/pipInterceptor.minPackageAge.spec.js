@@ -6,6 +6,13 @@ describe("pipInterceptor minimum package age", async () => {
   let newlyReleasedPackageResponse = false;
   let minimumPackageAgeExclusionsSetting = [];
   let safePatchedPackages = new Set();
+  const verboseLogs = [];
+
+  mock.module("../../../environment/userInteraction.js", {
+    namedExports: {
+      ui: { writeVerbose: (message) => verboseLogs.push(message) },
+    },
+  });
 
   mock.module("../../../scanning/audit/index.js", {
     namedExports: {
@@ -104,6 +111,56 @@ describe("pipInterceptor minimum package age", async () => {
     newlyReleasedPackageResponse = false;
   });
 
+  it("filters recent simple JSON uploads through the real checker without a feed entry", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    const result = await pipInterceptorForUrl(url).handleRequest(url);
+    const body = Buffer.from(JSON.stringify({ files: [
+      { filename: "foo_bar-1.0.0.tar.gz", "upload-time": new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString() },
+      { filename: "foo_bar-2.0.0.tar.gz", "upload-time": new Date().toISOString().replace(/Z$/, "456Z") },
+      { filename: "foo_bar-3.0.0.tar.gz" },
+      { filename: "foo_bar-4.0.0.tar.gz", "upload-time": "invalid" },
+    ] }));
+    const modified = JSON.parse(result.modifyBody(body, {
+      "content-type": "application/vnd.pypi.simple.v1+json",
+    }).toString());
+    assert.deepEqual(modified.files.map((file) => file.filename), [
+      "foo_bar-1.0.0.tar.gz", "foo_bar-3.0.0.tar.gz", "foo_bar-4.0.0.tar.gz",
+    ]);
+  });
+
+  it("keeps recent simple JSON safe patch uploads through the real checker", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    safePatchedPackages = new Set(["foo-bar@2.0.0"]);
+    try {
+      const result = await pipInterceptorForUrl(url).handleRequest(url);
+      const body = Buffer.from(JSON.stringify({ files: [
+        { filename: "foo_bar-2.0.0.tar.gz", "upload-time": new Date().toISOString() },
+      ] }));
+      assert.strictEqual(result.modifyBody(body, {
+        "content-type": "application/vnd.pypi.simple.v1+json",
+      }), body);
+    } finally {
+      safePatchedPackages = new Set();
+    }
+  });
+
+  it("does not modify recent simple JSON uploads for exempt packages", async () => {
+    const url = "https://pypi.org/simple/foo-bar/";
+    minimumPackageAgeExclusionsSetting = ["foo-bar"];
+    try {
+      const result = await pipInterceptorForUrl(url).handleRequest(url);
+      const body = Buffer.from(JSON.stringify({ files: [
+        { filename: "foo_bar-2.0.0.tar.gz", "upload-time": new Date().toISOString() },
+      ] }));
+      assert.equal(result.modifiesResponse(), false);
+      assert.strictEqual(result.modifyBody(body, {
+        "content-type": "application/vnd.pypi.simple.v1+json",
+      }), body);
+    } finally {
+      minimumPackageAgeExclusionsSetting = [];
+    }
+  });
+
   it("should not block newly released package downloads when skipMinimumPackageAge is enabled", async () => {
     const url =
       "https://files.pythonhosted.org/packages/xx/yy/foo_bar-2.0.0-py3-none-any.whl";
@@ -116,6 +173,9 @@ describe("pipInterceptor minimum package age", async () => {
     assert.equal(result.blockResponse, undefined);
 
     skipMinimumPackageAgeSetting = false;
+    assert.equal(result.checkResponseHeaders(200, {
+      "last-modified": new Date().toUTCString(),
+    }), undefined);
     newlyReleasedPackageResponse = false;
   });
 
@@ -130,6 +190,9 @@ describe("pipInterceptor minimum package age", async () => {
 
     assert.equal(result.blockResponse, undefined);
 
+    assert.equal(result.checkResponseHeaders(200, {
+      "last-modified": new Date().toUTCString(),
+    }), undefined);
     minimumPackageAgeExclusionsSetting = [];
     newlyReleasedPackageResponse = false;
   });
@@ -143,6 +206,9 @@ describe("pipInterceptor minimum package age", async () => {
     const result = await interceptor.handleRequest(url);
 
     assert.equal(result.modifiesResponse(), false);
+    assert.equal(result.checkResponseHeaders(200, {
+      "last-modified": new Date().toUTCString(),
+    }), undefined);
 
     minimumPackageAgeExclusionsSetting = [];
     newlyReleasedPackageResponse = false;
@@ -181,6 +247,9 @@ describe("pipInterceptor minimum package age", async () => {
 
     assert.equal(result.blockResponse, undefined);
 
+    assert.equal(result.checkResponseHeaders(200, {
+      "last-modified": new Date().toUTCString(),
+    }), undefined);
     safePatchedPackages = new Set();
     newlyReleasedPackageResponse = false;
   });
@@ -226,4 +295,81 @@ describe("pipInterceptor minimum package age", async () => {
     minimumPackageAgeExclusionsSetting = [];
     newlyReleasedPackageResponse = false;
   });
+
+  for (const filename of [
+    "foo_bar-2.0.0-py3-none-any.whl",
+    "foo_bar-2.0.0-py3-none-any.whl.metadata",
+    "foo_bar-2.0.0.tar.gz",
+  ]) {
+    it(`blocks ${filename} with recent Last-Modified when the feed does not list it`, async () => {
+      newlyReleasedPackageResponse = false;
+      const url = `https://files.pythonhosted.org/packages/xx/yy/${filename}`;
+      const interceptor = pipInterceptorForUrl(url);
+      const events = [];
+      interceptor.on("minimumAgeRequestBlocked", (event) => events.push(event));
+      const result = await interceptor.handleRequest(url);
+
+      assert.equal(result.blockResponse, undefined);
+      assert.deepEqual(result.checkResponseHeaders(200, {
+        "last-modified": new Date().toUTCString(),
+      }), {
+        statusCode: 403,
+        message: "Forbidden - blocked by safe-chain direct download minimum package age (foo_bar@2.0.0)",
+      });
+      assert.equal(events.length, 1);
+      assert.equal(events[0].packageName, "foo_bar");
+      assert.equal(events[0].version, "2.0.0");
+      assert.equal(events[0].targetUrl, url);
+    });
+  }
+
+  it("allows artifacts with old Last-Modified", async () => {
+    const url = "https://files.pythonhosted.org/packages/foo_bar-2.0.0.tar.gz";
+    const result = await pipInterceptorForUrl(url).handleRequest(url);
+
+    assert.equal(result.checkResponseHeaders(200, {
+      "last-modified": new Date(Date.now() - 72 * 60 * 60 * 1000).toUTCString(),
+    }), undefined);
+  });
+
+  for (const lastModified of [undefined, "not a date"]) {
+    it(`fails open and logs when Last-Modified is ${lastModified === undefined ? "missing" : "invalid"}`, async () => {
+      const url = "https://files.pythonhosted.org/packages/foo_bar-2.0.0.tar.gz";
+      const result = await pipInterceptorForUrl(url).handleRequest(url);
+      verboseLogs.length = 0;
+
+      assert.equal(result.checkResponseHeaders(200, {
+        "last-modified": lastModified,
+      }), undefined);
+      assert.equal(verboseLogs.length, 1);
+      assert.ok(verboseLogs[0].includes("foo_bar@2.0.0"));
+      assert.ok(verboseLogs[0].includes(url));
+    });
+  }
+
+  for (const statusCode of [304, 302, 404, 500]) {
+    it(`does not check Last-Modified on status ${statusCode}`, async () => {
+      const url = "https://files.pythonhosted.org/packages/foo_bar-2.0.0.tar.gz";
+      const result = await pipInterceptorForUrl(url).handleRequest(url);
+      verboseLogs.length = 0;
+
+      assert.equal(result.checkResponseHeaders(statusCode, {
+        "last-modified": new Date().toUTCString(),
+      }), undefined);
+      assert.deepEqual(verboseLogs, []);
+    });
+  }
+
+  for (const url of [
+    "https://pypi.org/simple/foo-bar/",
+    "https://pypi.org/pypi/foo-bar/json",
+  ]) {
+    it(`does not apply artifact header checks to metadata at ${url}`, async () => {
+      const result = await pipInterceptorForUrl(url).handleRequest(url);
+
+      assert.equal(result.checkResponseHeaders(200, {
+        "last-modified": new Date().toUTCString(),
+      }), undefined);
+    });
+  }
 });

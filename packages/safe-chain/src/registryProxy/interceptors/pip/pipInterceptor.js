@@ -17,6 +17,8 @@ import {
   synthesizePipSimpleResponse,
 } from "./pipTestPackages.js";
 import { parsePipPackageFromUrl } from "./parsePipPackageUrl.js";
+import { getHeaderValueAsString } from "../../http-utils.js";
+import { ui } from "../../../environment/userInteraction.js";
 
 const knownPipRegistries = [
   "files.pythonhosted.org",
@@ -79,7 +81,10 @@ function createPipRequestHandler(registry) {
             headers,
             reqContext.targetUrl,
             checker.isTooNewByFeed,
-            metadataPackageName
+            metadataPackageName,
+            (packageName, version, uploadTime) =>
+              !!uploadTime &&
+              checker.isTooNewByReleaseDate(packageName, version, uploadTime)
           )
         );
         return;
@@ -124,6 +129,32 @@ function createPipRequestHandler(registry) {
           version,
           `Forbidden - blocked by safe-chain direct download minimum package age (${packageName}@${version})`
         );
+      }
+
+      if (!checker.isPackageExempt(packageName)) {
+        reqContext.blockOnResponseHeaders((statusCode, headers) => {
+          if (statusCode < 200 || statusCode >= 300) {
+            return undefined;
+          }
+
+          const lastModified = getHeaderValueAsString(headers, "last-modified");
+          if (!lastModified || Number.isNaN(new Date(lastModified).getTime())) {
+            ui.writeVerbose(
+              `Safe-chain: Missing or invalid Last-Modified for ${packageName}@${version} at ${reqContext.targetUrl}, allowing download`
+            );
+            return undefined;
+          }
+
+          if (checker.isTooNewByReleaseDate(packageName, version, lastModified)) {
+            return {
+              packageName,
+              version,
+              message: `Forbidden - blocked by safe-chain direct download minimum package age (${packageName}@${version})`,
+            };
+          }
+
+          return undefined;
+        });
       }
     }
   };

@@ -223,4 +223,19 @@ describe("pipInterceptor custom registries", async () => {
       )
     );
   });
+
+  it("blocks recent artifacts from a custom registry even when the feed does not list them", async () => {
+    scannedPackages = [];
+    customRegistries = ["private-pypi.internal.com"];
+    const url = "https://private-pypi.internal.com/packages/foo_bar-2.0.0-py3-none-any.whl";
+    const result = await pipInterceptorForUrl(url).handleRequest(url);
+
+    assert.equal(result.blockResponse, undefined);
+    assert.deepEqual(result.checkResponseHeaders(200, {
+      "last-modified": new Date().toUTCString(),
+    }), {
+      statusCode: 403,
+      message: "Forbidden - blocked by safe-chain direct download minimum package age (foo_bar@2.0.0)",
+    });
+  });
 });

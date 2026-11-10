@@ -34,6 +34,7 @@ const HTML_ANCHOR_HREF_RE =
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
+ * @param {(packageName: string, version: string, uploadTime: string | undefined) => boolean} [isFileTooNew]
  * @returns {Buffer}
  */
 export function modifyPipInfoResponse(
@@ -41,7 +42,8 @@ export function modifyPipInfoResponse(
   headers,
   metadataUrl,
   isNewlyReleasedPackage,
-  packageName
+  packageName,
+  isFileTooNew = () => false
 ) {
   try {
     const contentType = getPipMetadataContentType(headers);
@@ -72,7 +74,8 @@ export function modifyPipInfoResponse(
         headers,
         metadataUrl,
         isNewlyReleasedPackage,
-        packageName
+        packageName,
+        isFileTooNew
       );
     }
 
@@ -160,6 +163,7 @@ function createHtmlAnchorRewriter(
  * @param {string} metadataUrl
  * @param {(packageName: string | undefined, version: string | undefined) => boolean} isNewlyReleasedPackage
  * @param {string} packageName
+ * @param {(packageName: string, version: string, uploadTime: string | undefined) => boolean} isFileTooNew
  * @returns {Buffer}
  */
 function modifyJsonResponse(
@@ -167,14 +171,16 @@ function modifyJsonResponse(
   headers,
   metadataUrl,
   isNewlyReleasedPackage,
-  packageName
+  packageName,
+  isFileTooNew
 ) {
   const json = JSON.parse(body.toString("utf8"));
   const modified = modifyPipJsonResponse(
     json,
     metadataUrl,
     isNewlyReleasedPackage,
-    packageName
+    packageName,
+    isFileTooNew
   );
 
   if (!modified) return body;

@@ -223,6 +223,15 @@ function createProxyRequest(hostname, port, req, res, requestHandler) {
 
     const { statusCode, headers } = proxyRes;
 
+    const headerBlock = requestHandler.checkResponseHeaders(statusCode, headers);
+    if (headerBlock) {
+      ui.writeVerbose(`Safe-chain: Blocking upstream response for ${req.url} for ${hostname}`);
+      proxyRes.resume();
+      res.writeHead(headerBlock.statusCode, headerBlock.message);
+      res.end(headerBlock.message);
+      return;
+    }
+
     if (requestHandler.modifiesResponse()) {
       /** @type {Array<any>} */
       let chunks = [];
