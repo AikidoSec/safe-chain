@@ -337,7 +337,7 @@ install_rpm() {
     fi
 
     if [ -n "$CONTAINER" ] || [ -n "$HEADLESS" ]; then
-        set -- "$@" --setopt=install_weak_deps=False
+        set -- "$@" --setopt=install_weak_deps=0
     fi
 
     run_installer "$@" "$PKG_FILE"
