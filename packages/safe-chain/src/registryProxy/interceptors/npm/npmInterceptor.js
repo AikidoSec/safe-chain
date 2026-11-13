@@ -20,8 +20,47 @@ const knownJsRegistries = [
  * @returns {import("../interceptorBuilder.js").Interceptor | undefined}
  */
 export function npmInterceptorForUrl(url) {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return undefined;
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const port = parsedUrl.port;
+  const pathname = parsedUrl.pathname;
+
   const registry = [...knownJsRegistries, ...getNpmCustomRegistries()].find(
-    (reg) => url.includes(reg)
+    (reg) => {
+      // Normalize the registry for comparison
+      const regLower = reg.toLowerCase();
+      const slashIndex = regLower.indexOf("/");
+      const regHost = slashIndex === -1 ? regLower : regLower.substring(0, slashIndex);
+      const regPath = slashIndex === -1 ? "" : regLower.substring(slashIndex);
+
+      // Check if registry host contains a port
+      const colonIndex = regHost.indexOf(":");
+      const regHostname = colonIndex === -1 ? regHost : regHost.substring(0, colonIndex);
+      const regPort = colonIndex === -1 ? "" : regHost.substring(colonIndex + 1);
+
+      // Match hostname
+      if (hostname !== regHostname && !hostname.endsWith("." + regHostname)) {
+        return false;
+      }
+
+      // Match port if specified in registry
+      if (regPort && port !== regPort) {
+        return false;
+      }
+
+      // Match path prefix if specified in registry
+      if (regPath && !pathname.startsWith(regPath)) {
+        return false;
+      }
+
+      return true;
+    }
   );
 
   if (registry) {
@@ -43,7 +82,15 @@ function buildNpmInterceptor(registry) {
       registry
     );
 
-    if (await isMalwarePackage(packageName, version)) {
+    // Perform malware check; block if malicious or if identity is incomplete
+    try {
+      if (await isMalwarePackage(packageName, version)) {
+        reqContext.blockMalware(packageName, version);
+        return;
+      }
+    } catch (err) {
+      // isMalwarePackage throws when package identity is incomplete.
+      // Block the request to fail closed rather than forwarding unverified artifacts.
       reqContext.blockMalware(packageName, version);
       return;
     }
