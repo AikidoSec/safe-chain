@@ -217,8 +217,22 @@ function Test-Checksum {
 function Invoke-SafeChainSetup {
     param(
         [string]$BinaryPath,
-        [string]$InstallDirectory
+        [string]$InstallDirectory,
+        [string]$ExpectedChecksum
     )
+
+    # Re-verify checksum immediately before execution to prevent TOCTOU attacks
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedChecksum)) {
+        Write-Info "Re-verifying checksum before execution..."
+        $actual = (Get-FileHash -Path $BinaryPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        $expectedLower = $ExpectedChecksum.ToLowerInvariant()
+
+        if ($actual -ne $expectedLower) {
+            Remove-Item -Path $BinaryPath -Force -ErrorAction SilentlyContinue
+            Write-Error-Custom "Checksum verification failed before execution. Expected: $expectedLower, Got: $actual. The file may have been modified after download."
+        }
+        Write-Info "Pre-execution checksum verified."
+    }
 
     $setupCmd = if ($ci) { "setup-ci" } else { "setup" }
 
@@ -369,7 +383,7 @@ function Install-SafeChain {
 
     Write-Info "Binary installed to: $finalFile"
 
-    Invoke-SafeChainSetup -BinaryPath $finalFile -InstallDirectory $InstallDir
+    Invoke-SafeChainSetup -BinaryPath $finalFile -InstallDirectory $InstallDir -ExpectedChecksum $expectedSha
 }
 
 # Run installation
