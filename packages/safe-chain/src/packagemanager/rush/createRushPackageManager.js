@@ -1,6 +1,7 @@
 import { runRushCommand } from "./runRushCommand.js";
 import { resolvePackageVersion } from "../../api/npmApi.js";
 import { parsePackagesFromRushAddArgs } from "./parsing/parsePackagesFromRushAddArgs.js";
+import { validateRegistryPackages } from "../_shared/validateRegistryPackages.js";
 
 // Rush commands that download packages. Everything else (build, test, list, etc.)
 // only executes scripts and should not get HTTPS_PROXY.
@@ -33,6 +34,12 @@ async function scanRushAddCommand(args) {
   }
 
   const parsedSpecs = parsePackagesFromRushAddArgs(args.slice(1));
+
+  // Validate that all packages are registry packages
+  validateRegistryPackages(parsedSpecs.map(spec => ({
+    name: spec.name,
+    version: spec.version || "latest"
+  })));
 
   const resolvedVersions = await Promise.all(
     parsedSpecs.map(async (parsed) => {
