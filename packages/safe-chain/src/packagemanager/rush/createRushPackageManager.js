@@ -1,6 +1,7 @@
 import { runRushCommand } from "./runRushCommand.js";
 import { resolvePackageVersion } from "../../api/npmApi.js";
 import { parsePackagesFromRushAddArgs } from "./parsing/parsePackagesFromRushAddArgs.js";
+import { validateNotExternalPackageSpec } from "../_shared/externalPackageSpec.js";
 
 // Rush commands that download packages. Everything else (build, test, list, etc.)
 // only executes scripts and should not get HTTPS_PROXY.
@@ -36,6 +37,9 @@ async function scanRushAddCommand(args) {
 
   const resolvedVersions = await Promise.all(
     parsedSpecs.map(async (parsed) => {
+      // Reject external package specifications (Git, HTTPS, file paths, etc.)
+      validateNotExternalPackageSpec(parsed.name, "rush");
+
       const exactVersion = await resolvePackageVersion(parsed.name, parsed.version);
       return {
         parsed,
