@@ -2,8 +2,8 @@
 
 # Downloads and installs Aikido Endpoint Protection on Linux
 #
-# Usage: curl -fsSL <url> | sudo sh -s -- --token <TOKEN> [--headless] [--container|--ci-cd]
-#    or: curl -fsSL <url> | sudo AIKIDO_TOKEN=<TOKEN> sh -s -- [--headless] [--container|--ci-cd]
+# Usage: curl -fsSL <url> | sh -s -- --token <TOKEN> [--headless] [--container|--ci-cd]
+#    or: curl -fsSL <url> | AIKIDO_TOKEN=<TOKEN> sh -s -- [--headless] [--container|--ci-cd]
 #
 #   --token      enrollment token. Optional when AIKIDO_TOKEN is set, or when this
 #                machine already has a token. --token wins over AIKIDO_TOKEN.
@@ -12,6 +12,26 @@
 #                not for Docker/Jenkins hosts; those use --headless
 #   --ci-cd      deprecated alias for --container
 
+# The body below is fed to this on stdin, so a `curl | sh` run can re-run it as root
+run_as_root() {
+    if [ "$(id -u)" -eq 0 ]; then
+        sh -s -- "$@"
+        return
+    fi
+
+    # sudo/doas reset the environment, so the inputs read from it are passed through
+    for escalate in sudo doas; do
+        if command -v "$escalate" >/dev/null 2>&1; then
+            "$escalate" env AIKIDO_TOKEN="${AIKIDO_TOKEN:-}" AIKIDO_PACKAGE_FILE="${AIKIDO_PACKAGE_FILE:-}" sh -s -- "$@"
+            return
+        fi
+    done
+
+    printf '\033[0;31m[ERROR]\033[0m %s\n' "Root privileges required. Install sudo or doas, or re-run as root." >&2
+    return 1
+}
+
+run_as_root "$@" <<'AIKIDO_EOF'
 set -e  # Exit on error
 
 # Configuration
@@ -356,11 +376,6 @@ main() {
         error "WSL1 is not supported. Aikido Endpoint Protection requires WSL2."
     fi
 
-    # Check if we're running as root
-    if [ "$(id -u)" -ne 0 ]; then
-        error "Root privileges required. Please re-run with sudo, e.g.: curl -fsSL <url> | sudo sh -s -- --token <TOKEN>"
-    fi
-
     [ -z "$TOKEN" ] && TOKEN="${AIKIDO_TOKEN:-}"
 
     if [ -z "$TOKEN" ]; then
@@ -431,3 +446,4 @@ main() {
 }
 
 main "$@"
+AIKIDO_EOF
