@@ -47,6 +47,7 @@ function getSafeChainProxyEnvironmentVariables() {
   const caCertPath = getCombinedCaBundlePath();
 
   return {
+    HTTP_PROXY: proxyUrl,
     HTTPS_PROXY: proxyUrl,
     GLOBAL_AGENT_HTTP_PROXY: proxyUrl,
     NODE_EXTRA_CA_CERTS: caCertPath,

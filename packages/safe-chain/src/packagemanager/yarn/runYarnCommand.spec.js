@@ -31,6 +31,7 @@ describe("runYarnCommand", () => {
         mergeSafeChainProxyEnvironmentVariables: (env) => {
           return {
             ...env,
+            HTTP_PROXY: "http://localhost:8080",
             HTTPS_PROXY: "http://localhost:8080",
             NODE_EXTRA_CA_CERTS: "/path/to/ca-cert.pem",
           };
@@ -65,6 +66,11 @@ describe("runYarnCommand", () => {
       "YARN_HTTPS_PROXY should be set to the HTTPS_PROXY value"
     );
     assert.strictEqual(
+      capturedEnv.YARN_HTTP_PROXY,
+      "http://localhost:8080",
+      "YARN_HTTP_PROXY should be set to the HTTP_PROXY value"
+    );
+    assert.strictEqual(
       capturedEnv.YARN_HTTPS_CA_FILE_PATH,
       undefined,
       "YARN_HTTPS_CA_FILE_PATH should NOT be set to avoid overriding system CAs"
@@ -79,6 +85,11 @@ describe("runYarnCommand", () => {
       capturedEnv.YARN_HTTPS_PROXY,
       "http://localhost:8080",
       "YARN_HTTPS_PROXY should be set to the HTTPS_PROXY value"
+    );
+    assert.strictEqual(
+      capturedEnv.YARN_HTTP_PROXY,
+      "http://localhost:8080",
+      "YARN_HTTP_PROXY should be set to the HTTP_PROXY value"
     );
     assert.strictEqual(
       capturedEnv.YARN_CA_FILE_PATH,
@@ -97,6 +108,11 @@ describe("runYarnCommand", () => {
       "YARN_HTTPS_PROXY should be set to the HTTPS_PROXY value"
     );
     assert.strictEqual(
+      capturedEnv.YARN_HTTP_PROXY,
+      "http://localhost:8080",
+      "YARN_HTTP_PROXY should be set to the HTTP_PROXY value"
+    );
+    assert.strictEqual(
       capturedEnv.YARN_CA_FILE_PATH,
       undefined,
       "YARN_CA_FILE_PATH should NOT be set to avoid overriding system CAs"
@@ -110,7 +126,12 @@ describe("runYarnCommand", () => {
     assert.strictEqual(
       capturedEnv.YARN_HTTPS_PROXY,
       "http://localhost:8080",
-      "YARN_HTTPS_PROXY should not be set for Yarn v1"
+      "YARN_HTTPS_PROXY should be set for Yarn v1"
+    );
+    assert.strictEqual(
+      capturedEnv.YARN_HTTP_PROXY,
+      "http://localhost:8080",
+      "YARN_HTTP_PROXY should be set for Yarn v1"
     );
     assert.strictEqual(
       capturedEnv.YARN_HTTPS_CA_FILE_PATH,
@@ -146,6 +167,19 @@ describe("runYarnCommand", () => {
         capturedEnv.HTTPS_PROXY,
         "http://localhost:8080",
         `HTTPS_PROXY should be preserved for Yarn ${version}`
+      );
+    }
+  });
+
+  it("should preserve HTTP_PROXY for all Yarn versions", async () => {
+    for (const version of ["4.1.0", "3.6.4", "2.4.3", "1.22.19"]) {
+      yarnVersion = version;
+      await runYarnCommand(["add", "lodash"]);
+
+      assert.strictEqual(
+        capturedEnv.HTTP_PROXY,
+        "http://localhost:8080",
+        `HTTP_PROXY should be preserved for Yarn ${version}`
       );
     }
   });
