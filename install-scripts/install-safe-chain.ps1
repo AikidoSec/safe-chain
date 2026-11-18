@@ -1,6 +1,17 @@
 # Downloads and installs safe-chain for Windows
 #
-# Usage with "iex (iwr {url} -UseBasicParsing)" --> See README.md
+# Usage:
+#   $installer = Join-Path $env:TEMP "install-safe-chain.ps1"
+#   Invoke-WebRequest "<url>" -OutFile $installer -UseBasicParsing
+#   $expectedHash = "<HASH>"
+#   if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) {
+#       Remove-Item $installer -ErrorAction SilentlyContinue
+#       throw "Checksum verification failed for install-safe-chain.ps1"
+#   }
+#   & $installer [-ci] [-InstallDir <path>]
+#   Remove-Item $installer
+#
+# See README.md for complete installation instructions with current version and hash.
 
 param(
     [switch]$ci,
@@ -162,13 +173,23 @@ function Write-VersionDeprecationWarning {
 
     Write-Warn "SAFE_CHAIN_VERSION environment variable is deprecated."
     Write-Warn ""
-    Write-Warn "Please use direct download URLs for version pinning instead:"
+    Write-Warn "Please use direct download URLs for version pinning instead."
+    Write-Warn "See README.md for the secure installation pattern with checksum verification."
     Write-Warn ""
+    Write-Warn "Example for version $env:SAFE_CHAIN_VERSION :"
+    Write-Warn '  $installer = Join-Path $env:TEMP "install-safe-chain.ps1"'
+    Write-Warn "  Invoke-WebRequest `"https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1`" -OutFile `$installer -UseBasicParsing"
+    Write-Warn '  $expectedHash = "<HASH>"  # Get hash from release notes'
+    Write-Warn '  if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) {'
+    Write-Warn '      Remove-Item $installer -ErrorAction SilentlyContinue'
+    Write-Warn '      throw "Checksum verification failed"'
+    Write-Warn '  }'
     if ($ci) {
-        Write-Warn "  iex `"& { `$(iwr 'https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1' -UseBasicParsing) } -ci`""
+        Write-Warn '  & $installer -ci'
     } else {
-        Write-Warn "  iex (iwr `"https://github.com/AikidoSec/safe-chain/releases/download/$env:SAFE_CHAIN_VERSION/install-safe-chain.ps1`" -UseBasicParsing)"
+        Write-Warn '  & $installer'
     }
+    Write-Warn '  Remove-Item $installer'
     Write-Warn ""
 }
 
