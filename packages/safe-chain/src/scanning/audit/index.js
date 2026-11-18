@@ -47,10 +47,13 @@ export function getAuditStats() {
  * @param {string | undefined} name
  * @param {string | undefined} version
  * @returns {Promise<boolean>}
+ * @throws {Error} When name or version is missing, indicating incomplete package identity
  */
 export async function isMalwarePackage(name, version) {
   if (!name || !version) {
-    return false;
+    throw new Error(
+      `Cannot perform malware check: incomplete package identity (name: ${name}, version: ${version})`
+    );
   }
 
   const auditResult = await auditChanges([{ name, version, type: "add" }]);
