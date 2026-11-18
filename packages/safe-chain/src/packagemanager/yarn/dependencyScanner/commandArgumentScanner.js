@@ -1,5 +1,6 @@
 import { resolvePackageVersion } from "../../../api/npmApi.js";
 import { parsePackagesFromArguments } from "../parsing/parsePackagesFromArguments.js";
+import { validateNotExternalPackageSpec } from "../../_shared/externalPackageSpec.js";
 
 /**
  * @returns {import("../../npm/dependencyScanner/commandArgumentScanner.js").CommandArgumentScanner}
@@ -20,6 +21,9 @@ async function scanDependencies(args) {
   const packageUpdates = parsePackagesFromArguments(args);
 
   for (const packageUpdate of packageUpdates) {
+    // Reject external package specifications (Git, HTTPS, file paths, etc.)
+    validateNotExternalPackageSpec(packageUpdate.name, "yarn");
+
     var exactVersion = await resolvePackageVersion(
       packageUpdate.name,
       packageUpdate.version
