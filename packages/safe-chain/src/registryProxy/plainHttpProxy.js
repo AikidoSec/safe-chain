@@ -1,6 +1,7 @@
 import * as http from "http";
 import * as https from "https";
 import { ui } from "../environment/userInteraction.js";
+import { isRecognizedRegistryUrl } from "./interceptors/createInterceptorForEcoSystem.js";
 
 /**
  * @param {import("http").IncomingMessage} req
@@ -42,6 +43,21 @@ function handleRequest(req, res) {
   }
 
   const url = new URL(req.url);
+
+  // Check if this is a request to a recognized registry
+  if (!isRecognizedRegistryUrl(req.url)) {
+    ui.writeError(
+      `Safe-chain: Blocked HTTP request to unrecognized destination: ${req.url}`
+    );
+    ui.writeError(
+      `Safe-chain: Only requests to known package registries are allowed. Configure custom registries via SAFE_CHAIN_NPM_CUSTOM_REGISTRIES or SAFE_CHAIN_PIP_CUSTOM_REGISTRIES.`
+    );
+    res.writeHead(403, "Forbidden");
+    res.end(
+      "Safe-chain: Request blocked - unrecognized package registry destination\n"
+    );
+    return;
+  }
 
   // The protocol for the plainHttpProxy should usually only be http:
   // but when the client for some reason sends an https: request directly
