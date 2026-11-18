@@ -1,5 +1,6 @@
 import { resolvePackageVersion } from "../../../api/npmApi.js";
 import { parsePackagesFromArguments } from "../parsing/parsePackagesFromArguments.js";
+import { validateRegistryPackages } from "../../_shared/validateRegistryPackages.js";
 
 /**
  * @returns {import("../../npm/dependencyScanner/commandArgumentScanner.js").CommandArgumentScanner}
@@ -26,6 +27,9 @@ function scanDependencies(args) {
 export async function checkChangesFromArgs(args) {
   const changes = [];
   const packageUpdates = parsePackagesFromArguments(args);
+
+  // Validate that all packages are registry packages
+  validateRegistryPackages(packageUpdates);
 
   for (const packageUpdate of packageUpdates) {
     var exactVersion = await resolvePackageVersion(
