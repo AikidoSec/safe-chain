@@ -22,6 +22,16 @@ jobs:
         id: get_version
         run: |
           version="${{ github.ref_name }}"
+          
+          # Validate that the version tag contains only safe characters to prevent
+          # command injection when the tag is embedded into installer scripts.
+          # Allow: alphanumeric, dot, hyphen, underscore, and leading 'v'
+          if ! echo "$version" | grep -qE '^[a-zA-Z0-9._-]+$'; then
+            echo "ERROR: Version tag contains unsafe characters: $version" >&2
+            echo "Only alphanumeric characters, dots, hyphens, and underscores are allowed." >&2
+            exit 1
+          fi
+          
           echo "tag=$version" >> $GITHUB_OUTPUT
 
   create-binaries:
