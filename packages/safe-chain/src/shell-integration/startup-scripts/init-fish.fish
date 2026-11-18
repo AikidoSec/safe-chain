@@ -123,11 +123,13 @@ function wrapSafeChainCommand
        return $oldstatus
     end
 
-    if type -q safe-chain
+    # Resolve the full path to safe-chain to prevent working directory shadowing
+    set safe_chain_path (type -p safe-chain 2>/dev/null)
+    if test -n "$safe_chain_path"
         # If the safe-chain command is available, just run it with the provided arguments.
         # Unset PKG_EXECPATH for this invocation so the yao-pkg bootstrap inside the
         # safe-chain binary doesn't mistake argv[1] for a script path to resolve against cwd.
-        env -u PKG_EXECPATH safe-chain $original_cmd $cmd_args
+        env -u PKG_EXECPATH $safe_chain_path $original_cmd $cmd_args
     else
         # If the safe-chain command is not available, print a warning and run the original command
         printSafeChainWarning $original_cmd

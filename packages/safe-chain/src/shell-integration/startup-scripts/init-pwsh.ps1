@@ -104,11 +104,11 @@ function Test-CommandAvailable {
     param([string]$Command)
     
     try {
-        Get-Command $Command -ErrorAction Stop | Out-Null
-        return $true
+        $cmd = Get-Command $Command -ErrorAction Stop
+        return $cmd.Source
     }
     catch {
-        return $false
+        return $null
     }
 }
 
@@ -175,11 +175,16 @@ function Invoke-WrappedCommand {
         }
     }
 
-    if ($isWindowsPlatform -and (Test-CommandAvailable "safe-chain.cmd")) {
-        & safe-chain.cmd $OriginalCmd @Arguments
+    $safeChainPath = $null
+    if ($isWindowsPlatform) {
+        $safeChainPath = Test-CommandAvailable "safe-chain.cmd"
     }
-    elseif (Test-CommandAvailable "safe-chain") {
-        & safe-chain $OriginalCmd @Arguments
+    if (-not $safeChainPath) {
+        $safeChainPath = Test-CommandAvailable "safe-chain"
+    }
+    
+    if ($safeChainPath) {
+        & $safeChainPath $OriginalCmd @Arguments
     }
     else {
         Write-SafeChainWarning $OriginalCmd
