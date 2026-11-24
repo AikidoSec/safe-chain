@@ -44,6 +44,7 @@ SHA256_AMD64_EL9_RPM="d058a7e9879a78bdee7c60272bb024eb31bd208efc9d77a6a9125fb9c2
 SHA256_ARM64_EL9_RPM="fbfed590e581d7cad271bb749bef6748db0c9247ee52534b370c42eac1fd5ac1"
 SHA256_AMD64_EL10_RPM="4e232839a2d381086982155c466c303a5f500f93d56ee583fd7ea788cb5817e5"
 SHA256_ARM64_EL10_RPM="cea6c57afb8aa13a08c9410ee85ade3775b6bf1f71cd3803f593db911a5e6901"
+SHA256_AMD64_ARCH_PKG="558d9c8026293de1bce6b7b9ef936679877496ab415b857b241b568de8745e0c"
 
 # Colors for output
 RED='\033[0;31m'
@@ -226,6 +227,10 @@ detect_package_type() {
             fi
             error "Unsupported distribution: Fedora ${OS_VERSION_ID:-unknown}. Only Fedora 44 is supported."
             ;;
+        arch)
+            PKG_TYPE="pacman"
+            return
+            ;;
     esac
 
     # Unrecognized distribution: fall back to the family it declares
@@ -239,6 +244,10 @@ detect_package_type() {
             detect_el_version
             return
             ;;
+        *" arch "*)
+            PKG_TYPE="pacman"
+            return
+            ;;
     esac
 
     # No usable os-release: a Debian-based system is still safe to detect from dpkg
@@ -247,7 +256,7 @@ detect_package_type() {
         return
     fi
 
-    error "Unsupported distribution: ${OS_ID:-unknown} ${OS_VERSION_ID:-unknown}. Only Debian-based and Enterprise Linux 9/10 distributions are supported."
+    error "Unsupported distribution: ${OS_ID:-unknown} ${OS_VERSION_ID:-unknown}. Only Debian-based, Enterprise Linux 9/10 and Arch-based distributions are supported."
 }
 
 # Resolve the asset to download and its expected checksum
@@ -258,6 +267,10 @@ detect_package() {
     if [ "$PKG_TYPE" = "deb" ]; then
         ASSET="EndpointProtection-${ARCH}.deb"
         command -v dpkg >/dev/null 2>&1 || error "dpkg not found, which is required to install the .deb package."
+    elif [ "$PKG_TYPE" = "pacman" ]; then
+        [ "$ARCH" = "amd64" ] || error "Unsupported architecture for Arch Linux: $ARCH. Only amd64 (x86_64) is supported."
+        ASSET="EndpointProtection-${ARCH}.pkg.tar.zst"
+        command -v pacman >/dev/null 2>&1 || error "pacman not found, which is required to install the Arch Linux package."
     else
         ASSET="EndpointProtection-${ARCH}.${EL_VERSION}.rpm"
         command -v rpm >/dev/null 2>&1 || error "rpm not found, which is required to install the .rpm package."
@@ -270,6 +283,7 @@ detect_package() {
         EndpointProtection-arm64.el9.rpm) EXPECTED_SHA256="$SHA256_ARM64_EL9_RPM" ;;
         EndpointProtection-amd64.el10.rpm) EXPECTED_SHA256="$SHA256_AMD64_EL10_RPM" ;;
         EndpointProtection-arm64.el10.rpm) EXPECTED_SHA256="$SHA256_ARM64_EL10_RPM" ;;
+        EndpointProtection-amd64.pkg.tar.zst) EXPECTED_SHA256="$SHA256_AMD64_ARCH_PKG" ;;
         *) error "No package available for this system ($ASSET)." ;;
     esac
 
@@ -363,6 +377,11 @@ install_rpm() {
     run_installer "$@" "$PKG_FILE"
 }
 
+# pacman -U reinstalls the same version, so re-running still applies the token.
+install_pacman() {
+    run_installer pacman -U --noconfirm "$PKG_FILE"
+}
+
 # Main installation
 main() {
     parse_arguments "$@"
@@ -408,13 +427,16 @@ main() {
         fi
         case "$AIKIDO_PACKAGE_FILE" in
             *.deb)
-                [ "$PKG_TYPE" = "deb" ] || error "AIKIDO_PACKAGE_FILE is a .deb but this system needs an RPM ($ASSET)."
+                [ "$PKG_TYPE" = "deb" ] || error "AIKIDO_PACKAGE_FILE is a .deb but this system needs $ASSET."
                 ;;
             *.rpm)
-                [ "$PKG_TYPE" = "rpm" ] || error "AIKIDO_PACKAGE_FILE is an RPM but this system needs a .deb ($ASSET)."
+                [ "$PKG_TYPE" = "rpm" ] || error "AIKIDO_PACKAGE_FILE is an RPM but this system needs $ASSET."
+                ;;
+            *.pkg.tar.zst)
+                [ "$PKG_TYPE" = "pacman" ] || error "AIKIDO_PACKAGE_FILE is an Arch Linux package but this system needs $ASSET."
                 ;;
             *)
-                error "AIKIDO_PACKAGE_FILE must be a .deb or .rpm (got: $AIKIDO_PACKAGE_FILE)"
+                error "AIKIDO_PACKAGE_FILE must be a .deb, .rpm or .pkg.tar.zst (got: $AIKIDO_PACKAGE_FILE)"
                 ;;
         esac
         PKG_FILE="$AIKIDO_PACKAGE_FILE"
@@ -422,7 +444,7 @@ main() {
         info "Using local package $PKG_FILE (checksum skipped)"
     else
         # 3. Download and verify checksum
-        PKG_FILE=$(mktemp "/tmp/AikidoEndpoint.XXXXXX.${ASSET##*.}")
+        PKG_FILE=$(mktemp "/tmp/AikidoEndpoint.XXXXXX.${ASSET#*.}")
         PKG_FILE_OWNED=1
         trap cleanup EXIT
 
@@ -438,6 +460,8 @@ main() {
     info "Installing Aikido Endpoint Protection..."
     if [ "$PKG_TYPE" = "deb" ]; then
         install_deb
+    elif [ "$PKG_TYPE" = "pacman" ]; then
+        install_pacman
     else
         install_rpm
     fi

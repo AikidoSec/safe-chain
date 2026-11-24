@@ -40,6 +40,7 @@ SHA256_AMD64_EL9_RPM="aa074a36b0e496c588c2ca9af9910c2e29b4d7a7cf3a3b6bf0bfb55a73
 SHA256_ARM64_EL9_RPM="ef5062ec07375ba45e2201eabacff913274c0371ad4180a3c97b915020a57ee5"
 SHA256_AMD64_EL10_RPM="08258b794be14d6b35ecca24bb1721866668a60703fbabebeb2319191a816b2b"
 SHA256_ARM64_EL10_RPM="66c11f2afb9d9d55615726063d2cf2e60810771e4b9ef7ffa3d8fdc07919103e"
+SHA256_AMD64_ARCH_PKG="8d44685cd62d1e66cd9b7aa57db0ef9c12253bacf1231ce9e3ecaafd80746222"
 
 # Colors for output
 RED='\033[0;31m'
@@ -210,6 +211,10 @@ detect_package_type() {
             fi
             error "Unsupported distribution: Fedora ${OS_VERSION_ID:-unknown}. Only Fedora 44 is supported."
             ;;
+        arch)
+            PKG_TYPE="pacman"
+            return
+            ;;
     esac
 
     # Unrecognized distribution: fall back to the family it declares
@@ -223,6 +228,10 @@ detect_package_type() {
             detect_el_version
             return
             ;;
+        *" arch "*)
+            PKG_TYPE="pacman"
+            return
+            ;;
     esac
 
     # No usable os-release: a Debian-based system is still safe to detect from dpkg
@@ -231,7 +240,7 @@ detect_package_type() {
         return
     fi
 
-    error "Unsupported distribution: ${OS_ID:-unknown} ${OS_VERSION_ID:-unknown}. Only Debian-based and Enterprise Linux 9/10 distributions are supported."
+    error "Unsupported distribution: ${OS_ID:-unknown} ${OS_VERSION_ID:-unknown}. Only Debian-based, Enterprise Linux 9/10 and Arch-based distributions are supported."
 }
 
 # Resolve the asset to download and its expected checksum
@@ -242,6 +251,10 @@ detect_package() {
     if [ "$PKG_TYPE" = "deb" ]; then
         ASSET="NoonSecurity-${ARCH}.deb"
         command -v dpkg >/dev/null 2>&1 || error "dpkg not found, which is required to install the .deb package."
+    elif [ "$PKG_TYPE" = "pacman" ]; then
+        [ "$ARCH" = "amd64" ] || error "Unsupported architecture for Arch Linux: $ARCH. Only amd64 (x86_64) is supported."
+        ASSET="NoonSecurity-${ARCH}.pkg.tar.zst"
+        command -v pacman >/dev/null 2>&1 || error "pacman not found, which is required to install the Arch Linux package."
     else
         ASSET="NoonSecurity-${ARCH}.${EL_VERSION}.rpm"
         command -v rpm >/dev/null 2>&1 || error "rpm not found, which is required to install the .rpm package."
@@ -254,6 +267,7 @@ detect_package() {
         NoonSecurity-arm64.el9.rpm) EXPECTED_SHA256="$SHA256_ARM64_EL9_RPM" ;;
         NoonSecurity-amd64.el10.rpm) EXPECTED_SHA256="$SHA256_AMD64_EL10_RPM" ;;
         NoonSecurity-arm64.el10.rpm) EXPECTED_SHA256="$SHA256_ARM64_EL10_RPM" ;;
+        NoonSecurity-amd64.pkg.tar.zst) EXPECTED_SHA256="$SHA256_AMD64_ARCH_PKG" ;;
         *) error "No package available for this system ($ASSET)." ;;
     esac
 
@@ -329,6 +343,11 @@ install_rpm() {
     run_installer "$@" "$PKG_FILE"
 }
 
+# pacman -U reinstalls the same version, so re-running still applies the token.
+install_pacman() {
+    run_installer pacman -U --noconfirm "$PKG_FILE"
+}
+
 # Main installation
 main() {
     parse_arguments "$@"
@@ -374,13 +393,16 @@ main() {
         fi
         case "$AIKIDO_PACKAGE_FILE" in
             *.deb)
-                [ "$PKG_TYPE" = "deb" ] || error "AIKIDO_PACKAGE_FILE is a .deb but this system needs an RPM ($ASSET)."
+                [ "$PKG_TYPE" = "deb" ] || error "AIKIDO_PACKAGE_FILE is a .deb but this system needs $ASSET."
                 ;;
             *.rpm)
-                [ "$PKG_TYPE" = "rpm" ] || error "AIKIDO_PACKAGE_FILE is an RPM but this system needs a .deb ($ASSET)."
+                [ "$PKG_TYPE" = "rpm" ] || error "AIKIDO_PACKAGE_FILE is an RPM but this system needs $ASSET."
+                ;;
+            *.pkg.tar.zst)
+                [ "$PKG_TYPE" = "pacman" ] || error "AIKIDO_PACKAGE_FILE is an Arch Linux package but this system needs $ASSET."
                 ;;
             *)
-                error "AIKIDO_PACKAGE_FILE must be a .deb or .rpm (got: $AIKIDO_PACKAGE_FILE)"
+                error "AIKIDO_PACKAGE_FILE must be a .deb, .rpm or .pkg.tar.zst (got: $AIKIDO_PACKAGE_FILE)"
                 ;;
         esac
         PKG_FILE="$AIKIDO_PACKAGE_FILE"
@@ -388,7 +410,7 @@ main() {
         info "Using local package $PKG_FILE (checksum skipped)"
     else
         # 3. Download and verify checksum
-        PKG_FILE=$(mktemp "/tmp/NoonSecurity.XXXXXX.${ASSET##*.}")
+        PKG_FILE=$(mktemp "/tmp/NoonSecurity.XXXXXX.${ASSET#*.}")
         PKG_FILE_OWNED=1
         trap cleanup EXIT
 
@@ -404,6 +426,8 @@ main() {
     info "Installing Noon Device Protection..."
     if [ "$PKG_TYPE" = "deb" ]; then
         install_deb
+    elif [ "$PKG_TYPE" = "pacman" ]; then
+        install_pacman
     else
         install_rpm
     fi
