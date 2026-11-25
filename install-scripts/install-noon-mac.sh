@@ -7,8 +7,8 @@
 set -e
 
 # Configuration
-INSTALL_URL="https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/v1.10.39/NoonSecurity.pkg"
-DOWNLOAD_SHA256="2b9dbcffa0b4be84f720e2ae54a130fff5f5fb1544493ca28f276bc6ec20a1a4"
+INSTALL_URL="https://aikido-endpoint-binaries.s3.eu-west-1.amazonaws.com/v1.10.40/NoonSecurity.pkg"
+DOWNLOAD_SHA256="54fe804c580208294b0a85324c17846dbe3befe938e1567592bcbc84c2658e84"
 TOKEN_FILE="/tmp/aikido_endpoint_token.txt"
 
 # Colors for output
