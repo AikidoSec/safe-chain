@@ -48,8 +48,8 @@ Installing the Aikido Safe Chain is easy with the installation script.
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
-  && echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c - \
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
+  && echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c - \
   && sh /tmp/install-safe-chain.sh \
   && rm /tmp/install-safe-chain.sh
 ```
@@ -58,8 +58,8 @@ curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/inst
 
 ```powershell
 $installer = Join-Path $env:TEMP "install-safe-chain.ps1"
-Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.ps1" -OutFile $installer -UseBasicParsing
-$expectedHash = "9B9F329CB3E6EFC3B1BFB8B0B791F546FA52AC6CA791C8E9961C5830936D64F3"
+Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.ps1" -OutFile $installer -UseBasicParsing
+$expectedHash = "7E970D192638126CC8F9160DA066B1268EA54BAC963DFF9D724A59A9E15ABE79"
 if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) {
     Remove-Item $installer -ErrorAction SilentlyContinue
     throw "Checksum verification failed for install-safe-chain.ps1"
@@ -72,7 +72,7 @@ The install commands above always reference a specific release. To install a dif
 
 ### Download integrity
 
-The install scripts are served from a versioned release URL (`releases/download/1.5.27/...`). GitHub releases are immutable — once an artifact is published at a versioned URL it cannot be modified or replaced, so the file you download is guaranteed to be exactly what was released.
+The install scripts are served from a versioned release URL (`releases/download/1.5.30/...`). GitHub releases are immutable — once an artifact is published at a versioned URL it cannot be modified or replaced, so the file you download is guaranteed to be exactly what was released.
 
 ### Verify the installation
 
@@ -158,13 +158,13 @@ To uninstall the Aikido Safe Chain, use our one-line uninstaller:
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/uninstall-safe-chain.sh | sh
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/uninstall-safe-chain.sh | sh
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/uninstall-safe-chain.ps1" -UseBasicParsing)
+iex (iwr "https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/uninstall-safe-chain.ps1" -UseBasicParsing)
 ```
 
 **❗Restart your terminal** after uninstalling to ensure all aliases are removed.
@@ -408,8 +408,8 @@ When set, all Safe Chain data (binary, shims, scripts, config) is placed under t
 ### Unix/Linux/macOS
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
-  && echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c - \
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
+  && echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c - \
   && sh /tmp/install-safe-chain.sh --install-dir /usr/local/.safe-chain \
   && rm /tmp/install-safe-chain.sh
 ```
@@ -418,8 +418,8 @@ curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/inst
 
 ```powershell
 $installer = Join-Path $env:TEMP "install-safe-chain.ps1"
-Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.ps1" -OutFile $installer -UseBasicParsing
-$expectedHash = "9B9F329CB3E6EFC3B1BFB8B0B791F546FA52AC6CA791C8E9961C5830936D64F3"
+Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.ps1" -OutFile $installer -UseBasicParsing
+$expectedHash = "7E970D192638126CC8F9160DA066B1268EA54BAC963DFF9D724A59A9E15ABE79"
 if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) {
     Remove-Item $installer -ErrorAction SilentlyContinue
     throw "Checksum verification failed for install-safe-chain.ps1"
@@ -439,8 +439,8 @@ Use the `--ci` flag to automatically configure Aikido Safe Chain for CI/CD envir
 ### Unix/Linux/macOS (GitHub Actions, Azure Pipelines, etc.)
 
 ```shell
-curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
-  && echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c - \
+curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
+  && echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c - \
   && sh /tmp/install-safe-chain.sh --ci \
   && rm /tmp/install-safe-chain.sh
 ```
@@ -449,8 +449,8 @@ curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/inst
 
 ```powershell
 $installer = Join-Path $env:TEMP "install-safe-chain.ps1"
-Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.ps1" -OutFile $installer -UseBasicParsing
-$expectedHash = "9B9F329CB3E6EFC3B1BFB8B0B791F546FA52AC6CA791C8E9961C5830936D64F3"
+Invoke-WebRequest "https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.ps1" -OutFile $installer -UseBasicParsing
+$expectedHash = "7E970D192638126CC8F9160DA066B1268EA54BAC963DFF9D724A59A9E15ABE79"
 if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $expectedHash) {
     Remove-Item $installer -ErrorAction SilentlyContinue
     throw "Checksum verification failed for install-safe-chain.ps1"
@@ -479,8 +479,8 @@ Remove-Item $installer
 
 - name: Install safe-chain
   run: |
-    curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh
-    echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c -
+    curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh
+    echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c -
     sh /tmp/install-safe-chain.sh --ci
     rm /tmp/install-safe-chain.sh
 
@@ -497,8 +497,8 @@ Remove-Item $installer
   displayName: "Install Node.js"
 
 - script: |
-    curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh
-    echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c -
+    curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh
+    echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c -
     sh /tmp/install-safe-chain.sh --ci
     rm /tmp/install-safe-chain.sh
   displayName: "Install safe-chain"
@@ -518,8 +518,8 @@ jobs:
     steps:
       - checkout
       - run: |
-          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh
-          echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c -
+          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh
+          echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c -
           sh /tmp/install-safe-chain.sh --ci
           rm /tmp/install-safe-chain.sh
       - run: npm ci
@@ -551,8 +551,8 @@ pipeline {
           set -euo pipefail
 
           # Install Safe Chain for CI
-          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh
-          echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c -
+          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh
+          echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c -
           sh /tmp/install-safe-chain.sh --ci
           rm /tmp/install-safe-chain.sh
         '''
@@ -581,8 +581,8 @@ steps:
       name: Install
       script:
         - |
-          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh
-          echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c -
+          curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh
+          echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c -
           sh /tmp/install-safe-chain.sh --ci
           rm /tmp/install-safe-chain.sh
         - export PATH=~/.safe-chain/shims:~/.safe-chain/bin:$PATH
@@ -601,8 +601,8 @@ To add safe-chain in GitLab pipelines, you need to install it in the image runni
    FROM node:lts
 
    # Install safe-chain
-   RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.27/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
-     && echo "600ebddcb3aaf1fd53653a8d7985df44528722c0f5ee7eb9fff86f26a1a4e5a8  /tmp/install-safe-chain.sh" | sha256sum -c - \
+   RUN curl -fsSL https://github.com/AikidoSec/safe-chain/releases/download/1.5.30/install-safe-chain.sh -o /tmp/install-safe-chain.sh \
+     && echo "c2e65ef2ae0d51cd120866297089dde88a148a0e8a4816a111c43bd60ab8293d  /tmp/install-safe-chain.sh" | sha256sum -c - \
      && sh /tmp/install-safe-chain.sh --ci \
      && rm /tmp/install-safe-chain.sh
 
