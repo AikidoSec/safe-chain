@@ -7,7 +7,7 @@
 set -e  # Exit on error
 
 # Configuration
-# Must match the package name in the .deb control file and the .rpm spec
+# Must match the package name in the .deb control file, the .rpm spec and the PKGBUILD
 PKG_NAME="aikido-endpoint-protection"
 
 # Colors for output
@@ -35,6 +35,12 @@ deb_installed() {
 rpm_installed() {
     command -v rpm >/dev/null 2>&1 || return 1
     rpm -q "$PKG_NAME" >/dev/null 2>&1
+}
+
+# Check whether the package is installed through pacman
+pacman_installed() {
+    command -v pacman >/dev/null 2>&1 || return 1
+    pacman -Q "$PKG_NAME" >/dev/null 2>&1
 }
 
 # Main uninstallation
@@ -67,6 +73,10 @@ main() {
         else
             rpm -e "$PKG_NAME"
         fi
+    elif pacman_installed; then
+        info "Uninstalling Aikido Endpoint Protection..."
+        # -n drops saved config like apt-get purge; no -s, so shared deps stay
+        pacman -Rn --noconfirm "$PKG_NAME"
     else
         error "Aikido Endpoint Protection does not appear to be installed."
     fi
