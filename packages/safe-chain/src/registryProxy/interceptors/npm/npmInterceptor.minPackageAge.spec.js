@@ -219,7 +219,7 @@ describe("npmInterceptor minimum package age", async () => {
     assert.strictEqual(result, originalBuffer);
   });
 
-  it("Should set the package to the new latest non-preview release", async () => {
+  it("Should set latest to the highest eligible stable release, not the newest by publication time", async () => {
     minimumPackageAgeSettings = 5;
     const packageUrl = "https://registry.npmjs.org/lodash";
 
@@ -228,29 +228,59 @@ describe("npmInterceptor minimum package age", async () => {
       JSON.stringify({
         name: "lodash",
         ["dist-tags"]: {
-          latest: "3.0.0",
+          latest: "12.2.0",
         },
         versions: {
-          ["1.0.0"]: {},
-          ["2.0.0"]: {},
-          ["3.0.0"]: {},
+          ["12.1.0"]: {},
+          ["11.28.9"]: {},
+          ["13.0.0-alpha"]: {},
+          ["12.2.0"]: {},
         },
         time: {
           created: getDate(-365 * 24),
           modified: getDate(-3),
-          ["1.0.0"]: getDate(-7),
-          ["0.0.1"]: getDate(-8), // package order: this package is older than 1.0.0, it should not be considered latest
-          ["2.0.0-alpha"]: getDate(-6), //package is a pre-release, it should not be latest
-          // cutoff-date here
-          ["2.0.0"]: getDate(-4),
-          ["3.0.0"]: getDate(-3),
+          ["12.1.0"]: getDate(-8),
+          ["11.28.9"]: getDate(-7), // Backport published after 12.1.0
+          ["13.0.0-alpha"]: getDate(-6),
+          ["12.2.0"]: getDate(-3), // Too young
         },
       })
     );
 
     const modifiedJson = JSON.parse(modifiedBody);
 
-    assert.equal(modifiedJson["dist-tags"]["latest"], "1.0.0");
+    assert.equal(modifiedJson["dist-tags"]["latest"], "12.1.0");
+    assert.ok(!Object.hasOwn(modifiedJson.versions, "12.2.0"));
+  });
+
+  it("Should fall back to the most recently published eligible prerelease when no stable candidate remains", async () => {
+    minimumPackageAgeSettings = 5;
+    const packageUrl = "https://registry.npmjs.org/lodash";
+
+    const modifiedBody = await runModifyNpmInfoRequest(
+      packageUrl,
+      JSON.stringify({
+        name: "lodash",
+        ["dist-tags"]: { latest: "3.0.0" },
+        versions: {
+          ["3.0.0"]: {},
+          ["3.0.0-beta.2"]: {},
+          ["2.0.0-beta.1"]: {},
+          invalid: {},
+        },
+        time: {
+          ["3.0.0"]: getDate(-1),
+          ["3.0.0-beta.2"]: getDate(-10),
+          ["2.0.0-beta.1"]: getDate(-9),
+          ["1.0.0"]: getDate(-8), // No corresponding manifest
+          invalid: getDate(-7),
+        },
+      })
+    );
+
+    const modifiedJson = JSON.parse(modifiedBody);
+
+    assert.equal(modifiedJson["dist-tags"]["latest"], "2.0.0-beta.1");
   });
 
   it("Should remove dist-tags if version was removed", async () => {
