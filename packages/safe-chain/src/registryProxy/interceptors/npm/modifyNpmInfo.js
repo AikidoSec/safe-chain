@@ -1,3 +1,4 @@
+import * as semver from "semver";
 import { getMinimumPackageAgeHours } from "../../../config/settings.js";
 import { ui } from "../../../environment/userInteraction.js";
 import { clearCachingHeaders, getHeaderValueAsString } from "../../http-utils.js";
@@ -102,9 +103,10 @@ export function modifyNpmInfoResponse(body, headers, checker) {
     clearCachingHeaders(headers);
 
     if (hasLatestTag && !bodyJson["dist-tags"]["latest"]) {
-      // The latest tag was removed because it contained a package younger than the treshold.
-      // A new latest tag needs to be calculated
-      bodyJson["dist-tags"]["latest"] = calculateLatestTag(bodyJson.time);
+      bodyJson["dist-tags"]["latest"] = calculateLatestTag(
+        bodyJson.time,
+        bodyJson.versions
+      );
     }
 
     return Buffer.from(JSON.stringify(bodyJson));
@@ -140,40 +142,29 @@ function deleteVersionFromJson(json, version) {
 }
 
 /**
- * @param {Record<string, string>} tagList
+ * @param {Record<string, string>} publishTimes
+ * @param {Record<string, unknown>} manifests
  * @returns {string | undefined}
  */
-function calculateLatestTag(tagList) {
-  const entries = Object.entries(tagList).filter(
-    ([version, _]) => version !== "created" && version !== "modified"
-  );
+function calculateLatestTag(publishTimes, manifests) {
+  let latestStable, latestStableSemver, latestPrerelease, latestPrereleaseTime;
 
-  const latestFullRelease = getMostRecentTag(
-    Object.fromEntries(entries.filter(([version, _]) => !version.includes("-")))
-  );
-  if (latestFullRelease) {
-    return latestFullRelease;
-  }
+  for (const [version, timestamp] of Object.entries(publishTimes)) {
+    if (!Object.hasOwn(manifests, version)) continue;
 
-  const latestPrerelease = getMostRecentTag(
-    Object.fromEntries(entries.filter(([version, _]) => version.includes("-")))
-  );
-  return latestPrerelease;
-}
+    const parsedVersion = semver.parse(version);
+    if (!parsedVersion) continue;
 
-/**
- * @param {Record<string, string>} tagList
- * @returns {string | undefined}
- */
-function getMostRecentTag(tagList) {
-  let current, currentDate;
-
-  for (const [version, timestamp] of Object.entries(tagList)) {
-    if (!currentDate || currentDate < timestamp) {
-      current = version;
-      currentDate = timestamp;
+    if (parsedVersion.prerelease.length === 0) {
+      if (!latestStableSemver || parsedVersion.compare(latestStableSemver) > 0) {
+        latestStable = version;
+        latestStableSemver = parsedVersion;
+      }
+    } else if (!latestPrereleaseTime || latestPrereleaseTime < timestamp) {
+      latestPrerelease = version;
+      latestPrereleaseTime = timestamp;
     }
   }
 
-  return current;
+  return latestStable ?? latestPrerelease;
 }
