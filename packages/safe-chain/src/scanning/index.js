@@ -31,11 +31,13 @@ export async function scanCommand(args) {
   let timedOut = false;
   /** @type {import("./audit/index.js").AuditResult | undefined} */
   let audit;
+  /** @type {import("./audit/index.js").PackageChange[]} */
+  let changes = [];
 
   await Promise.race([
     (async () => {
       const packageManager = getPackageManager();
-      const changes = await packageManager.getDependencyUpdatesForCommand(args);
+      changes = await packageManager.getDependencyUpdatesForCommand(args);
 
       if (timedOut) {
         return;
@@ -50,6 +52,23 @@ export async function scanCommand(args) {
 
   if (timedOut) {
     throw new Error("Timeout exceeded while scanning npm install command.");
+  }
+
+  // Reject commands that are marked as scannable but produce no explicit package operands.
+  // Such commands may install dependencies from manifests, lockfiles, or caches without audit.
+  if (changes.length === 0) {
+    ui.writeInformation(
+      chalk.red("✖") + " Safe-chain: " + chalk.bold("Command blocked: no explicit packages to audit")
+    );
+    ui.emptyLine();
+    ui.writeInformation(
+      "This command would install packages without explicit operands, bypassing malware scanning."
+    );
+    ui.writeInformation(
+      "Please specify explicit package names and versions to install, or use a package manager command that does not install dependencies."
+    );
+    ui.emptyLine();
+    return 1;
   }
 
   if (!audit || audit.isAllowed) {
