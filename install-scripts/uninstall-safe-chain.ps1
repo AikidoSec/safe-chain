@@ -24,8 +24,13 @@ function Write-Error-Custom {
 
 # Derives the safe-chain base install directory from a resolved binary path.
 # Rejects wrapper scripts and paths that do not match the packaged bin layout.
+# When an expected install directory is provided, validates that the binary path
+# resides within that directory to prevent PATH-injection attacks.
 function Get-InstallDirFromBinaryPath {
-    param([string]$BinaryPath)
+    param(
+        [string]$BinaryPath,
+        [string]$ExpectedInstallDir = $null
+    )
 
     if ([string]::IsNullOrWhiteSpace($BinaryPath)) {
         return $null
@@ -52,7 +57,26 @@ function Get-InstallDirFromBinaryPath {
         return $null
     }
 
-    return (Split-Path -Parent $binDir)
+    $derivedInstallDir = Split-Path -Parent $binDir
+
+    # When an expected install directory is provided, enforce that the binary
+    # resides within that directory to prevent execution of attacker-controlled
+    # binaries from arbitrary PATH locations.
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedInstallDir)) {
+        try {
+            $normalizedExpected = [System.IO.Path]::GetFullPath($ExpectedInstallDir).TrimEnd('\', '/')
+            $normalizedDerived = [System.IO.Path]::GetFullPath($derivedInstallDir).TrimEnd('\', '/')
+            
+            if ($normalizedDerived -ne $normalizedExpected) {
+                return $null
+            }
+        }
+        catch {
+            return $null
+        }
+    }
+
+    return $derivedInstallDir
 }
 
 # Returns the first safe-chain command found on PATH, if any.
@@ -61,32 +85,25 @@ function Get-SafeChainCommand {
     return Get-Command safe-chain -ErrorAction SilentlyContinue | Select-Object -First 1
 }
 
-# Returns the safe-chain command path only when it points to a valid packaged binary install.
-# Prevents teardown from invoking arbitrary wrappers or scripts from PATH.
-function Get-ValidatedSafeChainCommandPath {
+# Invokes the validated safe-chain binary with get-install-dir and returns the reported base directory.
+# Safely returns $null when the command is unavailable or the lookup fails.
+# Accepts an optional expected install directory to constrain validation.
+function Get-ReportedInstallDir {
+    param([string]$ExpectedInstallDir = $null)
+    
     $command = Get-SafeChainCommand
     if (-not $command -or [string]::IsNullOrWhiteSpace($command.Path)) {
         return $null
     }
 
-    $installDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path
+    # Validate that the command path belongs to the expected installation
+    $installDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path -ExpectedInstallDir $ExpectedInstallDir
     if (-not $installDir) {
         return $null
     }
 
-    return $command.Path
-}
-
-# Invokes the validated safe-chain binary with get-install-dir and returns the reported base directory.
-# Safely returns $null when the command is unavailable or the lookup fails.
-function Get-ReportedInstallDir {
-    $safeChainPath = Get-ValidatedSafeChainCommandPath
-    if (-not $safeChainPath) {
-        return $null
-    }
-
     try {
-        $reportedInstallDir = & $safeChainPath get-install-dir 2>$null | Select-Object -First 1
+        $reportedInstallDir = & $command.Path get-install-dir 2>$null | Select-Object -First 1
         if ($reportedInstallDir) {
             $reportedInstallDir = $reportedInstallDir.Trim()
         }
@@ -102,31 +119,38 @@ function Get-ReportedInstallDir {
 }
 
 # Determines the safe-chain base install directory for uninstall.
-# Prefers the binary-reported location, then derives it from PATH, then falls back to the default home-dir layout.
+# Uses a two-phase approach: first establishes the expected install directory
+# (default home-dir layout), then validates any PATH-resolved commands against
+# that expected location to prevent PATH-injection attacks.
 function Get-SafeChainInstallDir {
-    $reportedInstallDir = Get-ReportedInstallDir
+    # Establish the expected install directory (default location)
+    $defaultInstallDir = Join-Path $HomeDir ".safe-chain"
+    
+    # First, try to get the reported install dir, but only if it matches
+    # the expected location to prevent an attacker-controlled binary from
+    # reporting a false installation directory
+    $reportedInstallDir = Get-ReportedInstallDir -ExpectedInstallDir $defaultInstallDir
     if ($reportedInstallDir) {
         return $reportedInstallDir
     }
 
+    # Next, try to derive the install dir from PATH, but only if the
+    # PATH-resolved command resides within the expected install directory
     $command = Get-SafeChainCommand
     if ($command -and $command.Path) {
-        $discoveredInstallDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path
+        $discoveredInstallDir = Get-InstallDirFromBinaryPath -BinaryPath $command.Path -ExpectedInstallDir $defaultInstallDir
         if ($discoveredInstallDir) {
             return $discoveredInstallDir
         }
     }
 
-    return (Join-Path $HomeDir ".safe-chain")
+    # Fall back to the default location
+    return $defaultInstallDir
 }
 
 # Finds the installed safe-chain binary inside the resolved install directory.
-# Falls back to the safe-chain on PATH when the expected file is missing. The
-# PATH fallback is intentionally not restricted to the packaged-binary layout:
-# npm, nvm, volta, pnpm and bun all expose safe-chain through differently-shaped
-# shims (.cmd/.ps1/.exe), and teardown must run for all of them. (Install-dir
-# derivation, which feeds Remove-Item, stays strict and is handled separately by
-# Get-ReportedInstallDir / Get-InstallDirFromBinaryPath.)
+# Only returns binaries that reside within the expected installation directory
+# to prevent execution of attacker-controlled binaries from PATH.
 function Find-SafeChainBinary {
     param([string]$DotSafeChain)
 
@@ -141,11 +165,9 @@ function Find-SafeChainBinary {
         return $safeChainBin
     }
 
-    $command = Get-SafeChainCommand
-    if ($command -and -not [string]::IsNullOrWhiteSpace($command.Path)) {
-        return $command.Path
-    }
-
+    # Do not fall back to PATH resolution. If the binary is not in the expected
+    # location, teardown cannot be performed safely. The installation directory
+    # will still be removed, but without running teardown hooks.
     return $null
 }
 
