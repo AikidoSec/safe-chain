@@ -65,13 +65,58 @@ function buildCommand(command, args) {
  */
 function resolveCommandPath(command) {
   // command will be "npm", "yarn", etc.
-  // Use 'command -v' to find the full path
-  const fullPath = execSync(`command -v ${command}`, {
-    encoding: "utf8",
-  }).trim();
+  // Resolve the full path to prevent CWD hijacking attacks
+  let fullPath;
+  
+  if (os.platform() === "win32") {
+    // On Windows, use 'where' to find the full path
+    // where.exe returns multiple matches (one per line) if the command exists in multiple locations
+    // We take the first non-CWD match to prevent hijacking attacks
+    try {
+      const output = execSync(`where ${command}`, {
+        encoding: "utf8",
+      }).trim();
+      
+      const paths = output.split(/\r?\n/).map(p => p.trim()).filter(p => p);
+      
+      if (paths.length === 0) {
+        throw new Error(`Command not found: ${command}`);
+      }
+      
+      // Filter out any paths from the current working directory
+      // We want the system-installed version, not a local hijack attempt
+      const cwd = process.cwd();
+      const systemPaths = paths.filter(p => {
+        // Normalize paths for comparison
+        const normalizedPath = p.toLowerCase();
+        const normalizedCwd = cwd.toLowerCase();
+        // Reject if the path is in the current directory
+        return !normalizedPath.startsWith(normalizedCwd + "\\") && 
+               normalizedPath !== normalizedCwd;
+      });
+      
+      if (systemPaths.length === 0) {
+        throw new Error(`Command ${command} only found in current directory, refusing to execute for security reasons`);
+      }
+      
+      fullPath = systemPaths[0];
+    } catch (error) {
+      // If the error is already our custom error, re-throw it
+      if (error instanceof Error && error.message.includes("only found in current directory")) {
+        throw error;
+      }
+      // Otherwise, it's a command not found error
+      throw new Error(`Command not found: ${command}`);
+    }
+  } else {
+    // On Unix-like systems, use 'command -v' to find the full path
+    fullPath = execSync(`command -v ${command}`, {
+      encoding: "utf8",
+    }).trim();
 
-  if (!fullPath) {
-    throw new Error(`Command not found: ${command}`);
+    if (!fullPath) {
+      throw new Error(`Command not found: ${command}`);
+    }
   }
 
   return fullPath;
@@ -93,16 +138,19 @@ export async function safeSpawn(command, args, options = {}) {
   }
 
   return new Promise((resolve, reject) => {
-    // Windows requires shell: true because .bat and .cmd files are not executable
-    // without a terminal. On Unix/macOS, we resolve the full path first, then use
-    // array args (safer, no escaping needed).
-    // See: https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
+    // Resolve the full path to the command to prevent CWD hijacking attacks
+    // where a malicious npm.cmd in the current directory could be executed
+    // instead of the system-installed package manager.
+    const fullPath = resolveCommandPath(command);
+    
     let child;
     if (os.platform() === "win32") {
-      const fullCommand = buildCommand(command, args);
+      // Windows requires shell: true because .bat and .cmd files are not executable
+      // without a terminal. We use the full path to prevent CWD hijacking.
+      const fullCommand = buildCommand(fullPath, args);
       child = spawn(fullCommand, { ...options, shell: true });
     } else {
-      const fullPath = resolveCommandPath(command);
+      // On Unix/macOS, we use array args (safer, no escaping needed).
       child = spawn(fullPath, args, options);
     }
 
