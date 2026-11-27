@@ -1,6 +1,15 @@
 # Uninstalls Aikido Endpoint Protection endpoint on Windows
 #
-# Usage: iex "& { $(iwr '<url>' -UseBasicParsing) } [-debug]"
+# Usage:
+#   $uninstaller = Join-Path $env:TEMP "uninstall-endpoint-windows.ps1"
+#   Invoke-WebRequest "<url>" -OutFile $uninstaller -UseBasicParsing
+#   $expectedHash = "<HASH>"
+#   if ((Get-FileHash $uninstaller -Algorithm SHA256).Hash -ne $expectedHash) {
+#       Remove-Item $uninstaller -ErrorAction SilentlyContinue
+#       throw "Checksum verification failed for uninstall-endpoint-windows.ps1"
+#   }
+#   & $uninstaller [-debug]
+#   Remove-Item $uninstaller
 
 param(
     [switch]$debug
@@ -9,7 +18,7 @@ param(
 # Configuration
 $AppName = "Aikido Endpoint Protection"
 $script:KeepLogFile = $false
-$script:DebugUsage = 'iex "& { $(iwr ''<url>'' -UseBasicParsing) } -debug"'
+$script:DebugUsage = 'Download the script, verify its checksum, then run: & $uninstaller -debug'
 
 # Helper functions
 function Write-Info {
